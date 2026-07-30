@@ -1,0 +1,1057 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+
+#game {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+/* ---- Landed / spaceport overlay ---- */
+#landed-ui {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(10, 16, 28, 0.88), rgba(0, 0, 0, 0.96));
+  color: #cfd8e3;
+}
+
+/*
+ * Dialog shell. Nova's interface PICTs are bespoke per screen — 8529 is
+ * literally the Galaxy Racing Network panel — so none of them survive being
+ * stretched across a layout that reflows. The panels keep their own outline
+ * instead; what follows Nova is the arrangement inside them.
+ */
+.panel {
+  width: min(760px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #141c2b, #0c1220);
+  border: 1px solid #3b5070;
+  border-radius: 6px;
+  box-shadow: 0 8px 44px rgba(0, 0, 0, 0.75);
+  padding: 20px 24px;
+}
+
+.land-hero {
+  width: calc(100% + 48px);
+  margin: -20px -24px 16px;
+  height: 250px;
+  background-size: cover;
+  background-position: center;
+  border-bottom: 1px solid #3b4c66;
+}
+.land-hero.dim { filter: brightness(0.45) saturate(0.7); }
+
+.panel h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #e8eef6;
+  letter-spacing: 0.5px;
+}
+
+.panel h1 .sys {
+  font-size: 13px;
+  font-weight: 400;
+  color: #7d90aa;
+  margin-left: 10px;
+}
+
+.panel .desc {
+  margin: 12px 0 16px;
+  line-height: 1.5;
+  font-size: 14px;
+  color: #aebbcc;
+}
+
+/* section heading inside a panel, e.g. the hiring hall's two lists */
+.panel h2.sub {
+  margin: 18px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #7d90aa;
+}
+
+.panel .desc kbd {
+  padding: 1px 5px;
+  border: 1px solid #35496a;
+  border-radius: 3px;
+  background: #16203a;
+  font: inherit;
+  font-size: 12px;
+  color: #cfe0f5;
+}
+
+.statusbar {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: #9fb2c8;
+  padding: 8px 0 14px;
+  border-bottom: 1px solid #2a3a52;
+  margin-bottom: 14px;
+}
+.statusbar b { color: #ffd479; font-weight: 600; }
+
+.btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+button.evbtn {
+  background: linear-gradient(180deg, #2a3a58, #1a2436);
+  /* cölr ButtonUp/Down/Grey are the three button text colours Nova defines */
+  color: var(--ev-button-up, #d6e2f0);
+  border: 1px solid #4a5f80;
+  border-radius: 4px;
+  padding: 8px 16px;
+  /* cölr ButtonFont/ButtonFontSz — "Charcoal" at 12pt in the shipped data */
+  font-family: var(--ev-button-font), Helvetica, Arial, sans-serif;
+  font-size: var(--ev-button-font-size, 13px);
+  cursor: pointer;
+}
+button.evbtn:hover { background: linear-gradient(180deg, #35496e, #22304a); border-color: #6b84aa; }
+button.evbtn:disabled { opacity: 0.4; cursor: default; color: var(--ev-button-grey, #d6e2f0); }
+button.evbtn:active { color: var(--ev-button-down, #d6e2f0); }
+button.evbtn.primary { border-color: #7ba7d9; color: #eaf3ff; }
+
+/* trade table */
+table.trade {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.trade th {
+  text-align: left;
+  color: #7d90aa;
+  font-weight: 500;
+  padding: 6px 8px;
+  border-bottom: 1px solid #2a3a52;
+}
+table.trade td { padding: 7px 8px; border-bottom: 1px solid #1c2839; }
+table.trade td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.lvl-low { color: #6fd18b; }
+.lvl-med { color: #c9d4e0; }
+.lvl-high { color: #e88f6f; }
+td.actions { text-align: right; white-space: nowrap; }
+td.actions button {
+  background: #1c2a42;
+  border: 1px solid #3b5070;
+  color: #c4d4e8;
+  border-radius: 3px;
+  padding: 3px 9px;
+  margin-left: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+td.actions button:hover { background: #2a3d5e; }
+td.actions button:disabled { opacity: 0.35; cursor: default; }
+
+.hint { margin-top: 14px; font-size: 12px; color: #62748c; }
+.hint.warn { color: #d9a05a; }
+
+/* ---- Comms panel: reply and options left, ship picture right ---- */
+#hail-ui {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  color: #cfd8e3;
+  z-index: 5;
+}
+.comms {
+  display: grid;
+  grid-template-columns: 250px 210px;
+  gap: 10px;
+  padding: 10px;
+  background: linear-gradient(180deg, rgba(26, 34, 48, 0.97), rgba(12, 17, 28, 0.98));
+  border: 1px solid #4a5666;
+  border-radius: 5px;
+  box-shadow: 0 6px 34px rgba(0, 0, 0, 0.7);
+}
+.comms-left { display: flex; flex-direction: column; gap: 8px; }
+.comms-reply {
+  min-height: 62px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #d6dfea;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.comms-info {
+  padding: 6px 10px;
+  font-size: 11.5px;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.comms-info > div { display: flex; gap: 8px; padding: 1px 0; }
+.comms-info span { color: #8fa2ba; min-width: 46px; }
+.comms-info b { font-weight: 600; color: #d6dfea; }
+.comms-info b.tone-good { color: #6fce8a; }
+.comms-info b.tone-bad { color: #e08a7a; }
+.comms-opts { display: flex; flex-direction: column; gap: 6px; }
+.comms-opts .portbtn { text-align: center; }
+.comms-pic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.comms-pic img { width: 100%; height: 100%; object-fit: contain; }
+.comms-noPic { font-size: 12px; color: #5b6c84; padding: 12px; text-align: center; }
+
+/* ---- Title menu: Nova's own PICT 8000 backdrop, at its native 1024x768 ---- */
+#menu-ui {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #cfd8e3;
+  overflow: hidden;
+}
+.ttl-stage {
+  position: relative;
+  width: 1024px;
+  height: 768px;
+  flex: 0 0 auto;
+  background-size: 1024px 768px;
+  background-repeat: no-repeat;
+  transform-origin: center center;
+}
+.menu-ov {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  pointer-events: none;
+}
+.ttl-btn {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent no-repeat 0 0;
+  cursor: pointer;
+  font-size: 0;
+  /* the plates slide out first; the buttons land on them afterwards */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+.ttl-stage.ready .ttl-btn { opacity: 1; pointer-events: auto; }
+/* frame 1 of each two-frame sheet is the lit rollover */
+.ttl-btn:hover { background-position-x: var(--hover-x); }
+.ttl-btn:active { filter: brightness(0.75); }
+
+.ttl-emblem {
+  position: absolute;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 320ms ease-out;
+}
+.ttl-stage.ready .ttl-emblem { opacity: 1; }
+
+/*
+ * The readout sits inside the console's red dome, which is symmetric about the
+ * stage centre (x 512) and widens as it drops. The two columns and the hull
+ * between them therefore straddle 512, low enough that the outer edges clear
+ * the dome's shoulders: the block spans x 284-742, y 645-729.
+ */
+.ttl-info {
+  position: absolute;
+  top: 645px;
+  width: 170px;
+  font: 11px/1.35 system-ui, sans-serif;
+}
+.ttl-info.left { left: 273px; text-align: right; }
+.ttl-info.right { left: 583px; text-align: right; }
+/*
+ * The pilot's hull, in the gap between the two readout columns (x 443-583).
+ * Every target silhouette Nova ships is exactly 128x64, so the gap is sized to
+ * clear one with room to spare rather than letting it print over the text.
+ * Centred on the stage's own centre line and pinned by negative margins so it
+ * stays centred on the readout's middle row whatever size the silhouette is.
+ */
+.ttl-ship {
+  position: absolute;
+  /* three ~28px rows from y 645, so the block's middle is y 687 */
+  top: 687px;
+  left: 513px;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 320ms ease-out;
+}
+.ttl-stage.ready .ttl-ship { opacity: 1; }
+
+.ttl-field { margin-bottom: 6px; }
+.ttl-field span { display: block; color: #8a2626; font-size: 9.5px; letter-spacing: 0.4px; }
+.ttl-field b { display: block; color: #e04a4a; font-weight: 600; }
+
+.ttl-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+}
+.ttl-dialog {
+  width: min(600px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(16, 24, 40, 0.97), rgba(9, 14, 26, 0.98));
+  border: 1px solid #3b4c66;
+  border-radius: 8px;
+  padding: 22px 24px 18px;
+}
+.ttl-dialog h2 { font-size: 18px; color: #eaf3ff; margin-bottom: 12px; }
+.ttl-dialog p { font-size: 12.5px; line-height: 1.5; color: #9fb0c6; margin-bottom: 10px; }
+.ttl-label { display: block; font-size: 12px; color: #9fb0c6; margin-bottom: 12px; }
+.ttl-label input {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 7px 9px;
+  background: #0b1220;
+  border: 1px solid #2b3d56;
+  border-radius: 4px;
+  color: #e2eaf4;
+  font: 13px system-ui, sans-serif;
+}
+.ttl-check { display: flex; gap: 7px; font-size: 12px; color: #9fb0c6; margin-bottom: 14px; }
+.ttl-splash { display: block; width: 100%; border-radius: 5px; margin-bottom: 12px; }
+.keytable { width: 100%; font-size: 12px; color: #9fb0c6; border-collapse: collapse; }
+.keytable td { padding: 3px 0; }
+.keytable td:last-child { text-align: right; }
+.keytable kbd {
+  background: #16202f;
+  border: 1px solid #2b3d56;
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: #cfd8e3;
+  font: 11px ui-monospace, monospace;
+}
+.pilot-list { margin: 0 0 14px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.pilot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(20, 30, 48, 0.6);
+  border: 1px solid #263850;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.pilot-row.sel { border-color: var(--ev-list-hilite, #7d1a1a); background: rgba(60, 16, 16, 0.5); }
+.esc-row.sel { background: var(--ev-escort-hilite, #8e1414); color: var(--ev-list-text, #fff); }
+.pilot-name { font-size: 15px; font-weight: 600; color: #e2eaf4; }
+.pilot-desc { font-size: 12px; color: #8fa2ba; margin-top: 2px; }
+.pilot-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.menu-empty { font-size: 13px; color: #62748c; text-align: center; padding: 12px 0; }
+.menu-hint { margin-top: 4px; font-size: 11.5px; color: #4e6078; }
+
+/* ---- master-detail shops (shipyard / outfitter) ---- */
+.panel.wide { width: min(940px, 95vw); }
+
+.shop-pict {
+  display: block;
+  margin: 0 auto 12px;
+  max-width: 100%;
+  border-radius: 4px;
+  border: 1px solid #2a3a52;
+}
+.shop-pict.outfit { max-height: 120px; }
+.shop-sprite { margin: 0 auto 12px; }
+.shop-title { font-size: 16px; font-weight: 600; color: #e8eef6; margin-bottom: 8px; }
+.shop-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.shop-stats-grid .stat { white-space: nowrap; }
+.shop-stats-grid span { color: #7d90aa; margin-right: 5px; }
+.shop-stats-grid b { color: #c9d4e0; font-weight: 600; }
+.shop-desc { font-size: 13px; line-height: 1.5; color: #aebbcc; margin-bottom: 14px; }
+.shop-buyrow { display: flex; align-items: center; gap: 12px; }
+
+/* shipyard */
+.ship-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ship-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  background: rgba(20, 30, 48, 0.55);
+  border: 1px solid #263850;
+  border-radius: 5px;
+}
+.ship-thumb-box {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ship-thumb { background-repeat: no-repeat; background-position: 0 0; }
+.ship-info { flex: 1; min-width: 0; }
+.ship-name { font-size: 14px; font-weight: 600; color: #e2eaf4; }
+.ship-name .current { color: #7fd18b; font-weight: 400; font-size: 12px; }
+.ship-name .subtitle { color: #8fa2ba; font-weight: 400; font-size: 12px; font-style: italic; }
+.ship-stats { font-size: 11.5px; color: #8fa2ba; margin: 2px 0 4px; }
+.ship-desc { font-size: 11.5px; color: #6e8098; line-height: 1.35; }
+.ship-buy { text-align: right; flex: 0 0 auto; }
+.ship-price { font-size: 13px; color: #ffd479; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+
+/* ---- Outfitter: Nova's four-across picture grid ---- */
+.panel.wide.outfitter { width: min(1000px, 96vw); }
+.oi-body {
+  display: grid;
+  grid-template-columns: 372px 1fr 232px;
+  gap: 12px;
+  height: min(430px, 56vh);
+  margin-top: 6px;
+}
+.oi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 84px;
+  gap: 2px;
+  overflow-y: auto;
+  align-content: start;
+  padding: 2px;
+  background: var(--ev-list-bkgnd, rgba(8, 13, 24, 0.6));
+  border: 1px solid var(--ev-grid-line, #263850);
+  border-radius: 4px;
+}
+.oi-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4px 2px 2px;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  overflow: hidden;
+}
+.oi-cell:hover { background: rgba(40, 60, 90, 0.35); }
+.oi-cell.sel { border-color: var(--ev-grid-sel, #c02020); background: rgba(60, 16, 16, 0.4); }
+.oi-icon {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.oi-icon img { max-width: 82px; max-height: 46px; object-fit: contain; }
+.oi-name {
+  margin-top: 3px;
+  font-size: 9.5px;
+  line-height: 1.1;
+  text-align: center;
+  color: #d6dfea;
+}
+.oi-qty {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+.oi-desc {
+  overflow-y: auto;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b9c7da;
+  background: rgba(8, 13, 24, 0.6);
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+.oi-side { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.oi-hero {
+  width: 100%;
+  height: 168px;
+  object-fit: contain;
+  background: #05080f;
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+.oi-hero.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #5b6c84;
+}
+.oi-info {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  background: rgba(8, 13, 24, 0.6);
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+.oi-info > div { display: flex; justify-content: space-between; gap: 8px; }
+.oi-info > div.gap { margin-top: 8px; }
+.oi-info span { color: #8fa2ba; }
+.oi-info b { color: #e2eaf4; font-weight: 600; }
+.oi-status { display: block !important; margin-top: 10px; color: #e04a4a; font-size: 11px; }
+.oi-bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.oi-spacer { flex: 1; }
+.oi-arrow {
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #7d1a1a;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #8e1414, #4d0a0a);
+  color: #ffdede;
+  font-size: 10px;
+  cursor: pointer;
+}
+.oi-arrow:hover { background: linear-gradient(180deg, #c02020, #66100f); }
+
+/* ---- Mission board: list left, briefing right, Accept / Leave below ---- */
+.panel.wide.misn-board { width: min(880px, 95vw); }
+.misn-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #d6dfea;
+  background: rgba(20, 30, 48, 0.7);
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+.misn-date { color: #8fa2ba; font-size: 11.5px; }
+.misn-body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 12px;
+  height: min(360px, 50vh);
+}
+.misn-list {
+  overflow-y: auto;
+  padding: 2px;
+  background: rgba(8, 13, 24, 0.6);
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+.misn-item {
+  padding: 4px 8px;
+  font-size: 12.5px;
+  color: #d6dfea;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.misn-item:hover { background: rgba(40, 60, 90, 0.4); }
+.misn-item.sel { background: var(--ev-list-hilite, #8e1414); color: var(--ev-list-text, #fff); }
+.misn-detail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: rgba(8, 13, 24, 0.6);
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+.misn-head {
+  padding: 6px 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #e04a4a;
+  border-bottom: 1px solid #263850;
+}
+.misn-text {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+.misn-text p { font-size: 12.5px; line-height: 1.5; color: #b9c7da; margin-bottom: 8px; }
+.misn-text p.hint { color: #8fa2ba; font-size: 11.5px; }
+.misn-text p.hint.warn { color: #e0a04a; }
+.btnrow.center { justify-content: center; }
+
+/* ---- Spaceport: landing picture, name, then services down both sides ---- */
+.panel.wide.spaceport { width: min(860px, 95vw); }
+.spaceport .land-hero {
+  height: min(240px, 30vh);
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 0;
+}
+.port-name {
+  padding: 6px 0 2px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: #eaf3ff;
+}
+.port-sub {
+  text-align: center;
+  font-size: 11.5px;
+  color: #8fa2ba;
+  margin-bottom: 6px;
+}
+.port-body {
+  display: grid;
+  grid-template-columns: 168px 1fr 168px;
+  gap: 14px;
+  align-items: start;
+  margin-top: 6px;
+  min-height: 190px;
+}
+.port-col { display: flex; flex-direction: column; gap: 8px; }
+.port-gap { height: 18px; }
+.portbtn {
+  padding: 7px 10px;
+  border: 1px solid #7d1a1a;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #8e1414 0%, #5a0c0c 55%, #3d0808 100%);
+  color: #ffdede;
+  font: 600 12px system-ui, sans-serif;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px #000;
+  cursor: pointer;
+}
+.portbtn:hover:not(:disabled) { background: linear-gradient(180deg, #c02020, #4d0a0a); }
+.portbtn:disabled { opacity: 0.45; cursor: default; }
+.port-desc {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #b9c7da;
+  background: rgba(8, 13, 24, 0.6);
+  border: 1px solid #263850;
+  border-radius: 4px;
+}
+
+/* ---- Shipyard: icon column, big portrait, three-column stat block ---- */
+.panel.wide.shipyard { width: min(940px, 96vw); }
+
+.sy-icon img { max-width: 100px; max-height: 40px; object-fit: contain; }
+
+.sy-hero {
+  width: 100%;
+  height: 210px;
+  /* the source PICTs are 200x200; scale-down only, so they stay sharp */
+  object-fit: scale-down;
+  background: #05080f;
+  flex: 0 0 auto;
+}
+.sy-hero.sprite { background-repeat: no-repeat; background-position: 0 center; }
+.sy-fullname {
+  padding: 6px 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #eaf3ff;
+  background: rgba(20, 30, 48, 0.8);
+  border-top: 1px solid #263850;
+  border-bottom: 1px solid #263850;
+}
+.sy-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+}
+.sy-col > div { display: flex; justify-content: space-between; gap: 8px; padding: 1px 0; }
+.sy-col span { color: #8fa2ba; }
+.sy-col b { color: #e2eaf4; font-weight: 600; }
+.sy-weap-head { color: #8fa2ba; margin-bottom: 3px; }
+.sy-weap { color: #e2eaf4; line-height: 1.45; }
+.sy-desc {
+  padding: 0 12px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b9c7da;
+}
+
+/* ---- Plunder dialog: the victim's manifest, one hold at a time ---- */
+#plunder-ui {
+  position: fixed;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  color: #cfd8e3;
+  z-index: 6;
+}
+.plunder {
+  width: 320px;
+  padding: 10px;
+  background: linear-gradient(180deg, rgba(26, 34, 48, 0.97), rgba(12, 17, 28, 0.98));
+  border: 1px solid #3b5070;
+  border-radius: 5px;
+  box-shadow: 0 6px 34px rgba(0, 0, 0, 0.7);
+}
+.pl-head { font-size: 12px; color: #d6dfea; margin-bottom: 8px; }
+.pl-manifest {
+  padding: 7px 10px;
+  font-size: 11.5px;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.pl-manifest > div { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; }
+.pl-manifest span { color: #8fa2ba; }
+.pl-manifest b { color: #d6dfea; font-weight: 600; text-align: right; }
+.pl-odds { margin-top: 6px; border-top: 1px solid #1d2a3c; padding-top: 5px !important; }
+.pl-dim { color: #62748c; font-weight: 400; }
+.pl-note { margin-top: 7px; font-size: 11.5px; color: #a8d9b0; }
+.pl-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 9px;
+}
+.pl-buttons .portbtn { text-align: center; padding: 6px 4px; font-size: 11.5px; }
+.pl-buttons #pl-capture { grid-column: 1 / 3; }
+
+/* ---- Hypergate destination chart ---- */
+.gatemap {
+  margin: 4px 0 12px;
+  padding: 6px;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.gatemap svg { display: block; width: 100%; height: auto; }
+.gatemap.empty {
+  padding: 22px 12px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #62748c;
+  font-style: italic;
+}
+.gm-link {
+  stroke: #2f5d86;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.gm-here .gm-dot { fill: #e8c97a; }
+.gm-star .gm-dot { fill: #79a6d2; transition: fill 0.12s, r 0.12s; }
+.gm-star.unvisited .gm-dot { fill: #45607d; }
+.gm-star.unvisited .gm-label { fill: #5c6d84; }
+.gm-star .gm-hit { fill: transparent; cursor: pointer; }
+.gm-star:hover .gm-dot,
+.gm-star.hot .gm-dot { fill: #ffe9a8; }
+.gm-label {
+  fill: #7d90aa;
+  font-size: 10px;
+  text-anchor: middle;
+  pointer-events: none;
+  /* systems can sit close enough that labels touch; a halo keeps them legible */
+  paint-order: stroke;
+  stroke: #05080f;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.gm-here .gm-label { fill: #e8c97a; }
+.gm-star:hover .gm-label,
+.gm-star.hot .gm-label { fill: #e8eef6; }
+.ship-card.hot {
+  border-color: #6f8fb5;
+  background: #16203a;
+}
+
+/* ---- In-flight info panels: player info (P), missions (I), jettison (Alt-K) ---- */
+#info-ui {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #cfd8e3;
+  z-index: 7;
+}
+.infopanel {
+  width: 380px;
+  max-height: 78vh;
+  overflow-y: auto;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(26, 34, 48, 0.97), rgba(12, 17, 28, 0.98));
+  border: 1px solid #3b5070;
+  border-radius: 5px;
+  box-shadow: 0 6px 34px rgba(0, 0, 0, 0.7);
+}
+.if-head {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8eef6;
+  margin-bottom: 10px;
+  letter-spacing: 0.4px;
+}
+.if-section {
+  padding: 7px 10px;
+  margin-bottom: 7px;
+  font-size: 11.5px;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.if-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #7d90aa;
+  margin-bottom: 4px;
+}
+.if-row { display: flex; justify-content: space-between; gap: 10px; padding: 1px 0; }
+.if-row span { color: #8fa2ba; }
+.if-row b { color: #d6dfea; font-weight: 600; text-align: right; }
+.if-note { color: #aebbcc; line-height: 1.45; }
+.if-jrow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.if-jrow span { color: #d6dfea; }
+.if-jrow b { color: #8fa2ba; font-weight: 600; }
+.if-jrow .portbtn { padding: 3px 8px; font-size: 11px; text-align: center; }
+.if-buttons { margin-top: 9px; display: flex; justify-content: flex-end; }
+.if-buttons .portbtn { padding: 6px 16px; font-size: 11.5px; text-align: center; }
+
+/* ---- Preamble pages (PICT 8200-8202), shown once on a new pilot ---- */
+.ttl-stage.intro { cursor: pointer; }
+.intro-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 26px;
+  font: 11px system-ui, sans-serif;
+  color: #5f6a78;
+  pointer-events: none;
+}
+.intro-hint { color: #4a5563; }
+
+/* ---- holovid (Nova's news window) ---- */
+.holovid-pic {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 10px;
+}
+.holovid-pic img {
+  max-width: 100%;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.holovid-feed .desc { margin-bottom: 10px; }
+
+/* ---- Galaxy Racing Network ---- */
+.race-stage {
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #2a3a52;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.race-banner {
+  color: #e05a5a;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 10px;
+  text-shadow: 0 1px 2px #000;
+}
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.race-cell {
+  background: rgba(6, 10, 18, 0.55);
+  border: 2px solid #2a3a52;
+  border-radius: 4px;
+  padding: 6px;
+  color: #c9d4e0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.race-cell img { max-width: 100%; display: block; }
+.race-cell.sel { border-color: #e05a5a; }
+.race-cell:disabled { cursor: default; opacity: 0.85; }
+
+/* the pilot standing beside a hull in the hiring hall */
+.ship-pilot {
+  color: #8fa2ba;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+.ship-tag {
+  color: #7d90aa;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* the "- used -" tag Nova prints under a hull's name in a shop grid */
+.oi-name .oi-sub {
+  display: block;
+  color: #7d90aa;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+/*
+ * The shipyard runs the same three columns as the outfitter and the hiring
+ * hall, but its right-hand column carries a full stat block rather than a
+ * couple of prices, so it gets more room and the grid gives some back.
+ */
+.panel.wide.shipyard .oi-body { grid-template-columns: minmax(0, 300px) minmax(0, 1fr) 300px; }
+.panel.wide.shipyard .oi-grid { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 96px; }
+.oi-price {
+  font-size: 10.5px;
+  color: #b9a15e;
+  font-variant-numeric: tabular-nums;
+}
+.oi-side .sy-hero {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+}
+.oi-side .sy-fullname {
+  font-size: 11.5px;
+  color: #d6e2f0;
+  text-align: center;
+  padding: 4px 2px;
+}
+.oi-side .sy-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 10px;
+  font-size: 10.5px;
+  overflow-y: auto;
+}
+.oi-side .sy-col.wide { grid-column: 1 / -1; }
+.oi-side .sy-stats > div > div { display: flex; justify-content: space-between; gap: 6px; }
+.oi-side .sy-stats span { color: #8fa2ba; }
+.oi-side .sy-stats b { color: #d6e2f0; font-weight: 600; }
+
+/* ---- Trade Center: Nova's one-list commodity board ---- */
+.panel.wide.trade-center { width: min(860px, 94vw); }
+.tc-head,
+.tc-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 70px 90px;
+  gap: 8px;
+  padding: 3px 10px;
+  font-size: 13px;
+  align-items: baseline;
+}
+.tc-head {
+  color: #8fa2ba;
+  border-bottom: 1px solid #2a3a52;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
+.tc-list {
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+  padding: 6px 0;
+  min-height: 200px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.tc-row { cursor: pointer; color: #d6e2f0; }
+/* a commodity this world doesn't deal in still holds its slot, as in Nova */
+.tc-row.blank { height: 22px; cursor: default; }
+.tc-row:not(.blank):hover { background: rgba(40, 60, 95, 0.35); }
+.tc-row.sel { background: var(--ev-list-hilite, #7a1220); color: var(--ev-list-text, #fff); }
+.tc-row.sel .tc-level, .tc-row.sel .tc-price { color: #fff; }
+.tc-held, .tc-price { text-align: right; font-variant-numeric: tabular-nums; }
+.tc-level { color: #b9a15e; }
+.tc-info,
+.tc-note {
+  background: #05080f;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #c9d4e0;
+  min-height: 34px;
+}
+
+/* chär opening sequence: full-bleed stills before a new pilot takes over */
+#intro-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#intro-ui.hidden { display: none; }
+.intro-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: intro-fade 0.6s ease-out;
+}
+.intro-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.intro-text {
+  max-width: 640px;
+  padding: 32px;
+  color: #d8e4f2;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.intro-text p { margin: 0 0 1em; }
+@keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }

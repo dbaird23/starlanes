@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Extracted EV Nova game data.
+#
+# Everything under public/nova/ is decoded straight out of the retail game's
+# .rez files — sprite sheets, PICTs, sounds and the title music are Ambrosia
+# Software's assets, not ours. Regenerate them from a copy of the game you own:
+#
+#   node scripts/extract-nova.mjs    "<path to EV Nova/Nova Files>"
+#   node scripts/extract-sprites.mjs "<path to EV Nova/Nova Files>"
+#   node scripts/extract-picts.mjs   "<path to EV Nova/Nova Files>"
+#   node scripts/extract-sounds.mjs  "<path to EV Nova/Nova Files>"
+public/nova/
+
+# macOS
+.DS_Store

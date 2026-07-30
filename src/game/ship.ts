@@ -1,0 +1,284 @@
+import {
+  SHAN_ANIM_PARTS,
+  SHAN_ANIM_SEQUENCE,
+  SHAN_BANKS,
+  SHAN_STOP_ANIM_DISABLED,
+  SHAN_UNFOLD_FIRING,
+  type ShipSprite,
+} from "../engine/sprites";
+import type { StockWeapon, Vec2 } from "../types";
+
+export interface ShipStats {
+  turnRate: number; // rad/s
+  accel: number; // px/s^2
+  maxSpeed: number; // px/s
+}
+
+export const SPARROW: ShipStats = { turnRate: 2.7, accel: 190, maxSpeed: 250 };
+export const MULE: ShipStats = { turnRate: 1.6, accel: 120, maxSpeed: 180 };
+
+export class Ship {
+  pos: Vec2 = { x: 0, y: 0 };
+  vel: Vec2 = { x: 0, y: 0 };
+  angle = -Math.PI / 2;
+  thrusting = false;
+  stats: ShipStats;
+  sprite: ShipSprite | null = null;
+  /** the shïp type this hull is, for stats the engine looks up by id */
+  typeId: string | null = null;
+
+  /** which way the ship is turning this frame: -1 left, +1 right, 0 straight */
+  turning: -1 | 0 | 1 = 0;
+  /**
+   * Position within the hull's extra sprite sets, in sets. Sequence hulls run
+   * it round in a loop; folding hulls run it up and back down.
+   */
+  animTime = 0;
+  /** whether a folding hull should be extending its parts rather than stowing them */
+  unfolding = true;
+
+  shield = 30;
+  maxShield = 30;
+  armor = 30;
+  maxArmor = 30;
+  shieldRechPerSec = 1;
+  armorRechPerSec = 0;
+  /** below this fraction of armor the ship goes dead in space */
+  disableAt = 0.33;
+  disabled = false;
+  /** ion charge: at capacity the ship is nearly immobilised */
+  ion = 0;
+  maxIon = 100;
+  ionDissipatePerSec = 15;
+
+  get ionized(): boolean {
+    return this.ion >= this.maxIon;
+  }
+
+  get radius(): number {
+    return this.sprite ? Math.max(this.sprite.w, this.sprite.h) / 2 : 12;
+  }
+
+  initDefense(shield: number, armor: number, rechPerSec: number, disableAt = 0.33): void {
+    this.shield = this.maxShield = shield;
+    this.armor = this.maxArmor = armor;
+    this.shieldRechPerSec = rechPerSec;
+    this.disableAt = disableAt;
+    this.disabled = false;
+  }
+
+  /** Ion charge bleeds away over time. */
+  dissipateIon(dt: number): void {
+    if (this.ion > 0) this.ion = Math.max(0, this.ion - this.ionDissipatePerSec * dt);
+  }
+
+  rechargeShields(dt: number): void {
+    if (this.shield < this.maxShield) {
+      this.shield = Math.min(this.maxShield, this.shield + this.shieldRechPerSec * dt);
+    }
+    // armor only regenerates if something aboard repairs it
+    if (this.armorRechPerSec > 0 && this.armor < this.maxArmor && this.armor > 0) {
+      this.armor = Math.min(this.maxArmor, this.armor + this.armorRechPerSec * dt);
+      if (this.disabled && this.armor > this.maxArmor * this.disableAt) this.disabled = false;
+    }
+  }
+
+  /**
+   * EV damage rule: shields soak a hit, and armour only suffers once they are
+   * gone. Crucially the overflow carries through — a shot that collapses the
+   * last sliver of shielding still lands most of its punch on the hull, or a
+   * ship with any shield regeneration at all could never be worn down.
+   * Weapons with no shield damage (armour-piercing) bypass shields entirely.
+   */
+  takeHit(shieldDmg: number, armorDmg: number): void {
+    let armorShare = armorDmg;
+    if (shieldDmg > 0 && this.shield > 0) {
+      if (this.shield >= shieldDmg) {
+        this.shield -= shieldDmg;
+        return; // absorbed outright
+      }
+      armorShare = armorDmg * ((shieldDmg - this.shield) / shieldDmg);
+      this.shield = 0;
+    }
+    if (armorShare <= 0) return;
+    this.armor -= armorShare;
+    // crippled rather than killed: EV disables a ship before destroying it
+    if (!this.disabled && this.armor > 0 && this.armor <= this.maxArmor * this.disableAt) {
+      this.disabled = true;
+    }
+  }
+
+  get destroyed(): boolean {
+    return this.armor <= 0;
+  }
+
+  constructor(stats: ShipStats) {
+    this.stats = stats;
+  }
+
+  get speed(): number {
+    return Math.hypot(this.vel.x, this.vel.y);
+  }
+
+  /**
+   * Advance the hull's own animation. shän hulls carry their extra frames as
+   * whole extra rotations stacked in one sheet, and Flags says what they are
+   * for: a sequence that free-runs, or parts that fold and unfold.
+   */
+  advanceAnimation(dt: number): void {
+    const s = this.sprite;
+    if (!s || s.sets <= 1) return;
+    // 0x0010: a disabled ship's animation freezes wherever it stopped
+    if (this.disabled && s.flags & SHAN_STOP_ANIM_DISABLED) return;
+    // AnimDelay is in 30ths of a second per frame; 0 means one frame a tick
+    const step = s.animDelay > 0 ? (dt * 30) / s.animDelay : dt * 30;
+    if (s.flags & SHAN_ANIM_SEQUENCE) {
+      this.animTime = (this.animTime + step) % s.sets;
+    } else if (s.flags & (SHAN_ANIM_PARTS | SHAN_UNFOLD_FIRING)) {
+      const dir = this.unfolding ? 1 : -1;
+      this.animTime = Math.max(0, Math.min(s.sets - 1, this.animTime + dir * step));
+    }
+  }
+
+  /**
+   * Which sprite set to draw. Banking wins over the animation flags: the Bible
+   * makes the first four Flags mutually exclusive, and says the one legal
+   * combination (0x0001 with 0x0002) is still a banking ship.
+   */
+  get spriteSet(): number {
+    const s = this.sprite;
+    if (!s || s.sets <= 1) return 0;
+    // set 1 is bank-left, set 2 bank-right; our angle grows clockwise
+    if (s.flags & SHAN_BANKS) return this.turning < 0 ? 1 : this.turning > 0 ? 2 : 0;
+    return Math.min(s.sets - 1, Math.floor(this.animTime));
+  }
+
+  update(dt: number, turn: -1 | 0 | 1, thrust: boolean): void {
+    this.angle += turn * this.stats.turnRate * dt;
+    this.turning = turn;
+    this.thrusting = thrust;
+    if (thrust) {
+      this.vel.x += Math.cos(this.angle) * this.stats.accel * dt;
+      this.vel.y += Math.sin(this.angle) * this.stats.accel * dt;
+      const sp = this.speed;
+      if (sp > this.stats.maxSpeed) {
+        const k = this.stats.maxSpeed / sp;
+        this.vel.x *= k;
+        this.vel.y *= k;
+      }
+    }
+    this.pos.x += this.vel.x * dt;
+    this.pos.y += this.vel.y * dt;
+  }
+
+  /** Turn toward a world-space heading; returns true when roughly facing it. */
+  steerToward(dt: number, targetAngle: number): boolean {
+    let diff = targetAngle - this.angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    const step = this.stats.turnRate * dt;
+    if (Math.abs(diff) <= step) {
+      this.angle = targetAngle;
+      this.turning = 0;
+      return true;
+    }
+    this.angle += Math.sign(diff) * step;
+    this.turning = diff < 0 ? -1 : 1;
+    return Math.abs(diff) < 0.12;
+  }
+}
+
+export type NpcPhase = "toPlanet" | "leaving";
+
+/**
+ * Standing orders for the ships flying with you. "defend" keeps them on your
+ * wing and lets them engage whatever threatens you; "attack" sends them at your
+ * current target; "hold" pins them to a spot they will defend but not leave.
+ */
+export type EscortOrder = "defend" | "attack" | "hold";
+
+export class NpcShip extends Ship {
+  phase: NpcPhase = "toPlanet";
+  target: Vec2 = { x: 0, y: 0 };
+  done = false;
+  hostile = false;
+  fireCooldown = 0;
+  govtId = -1;
+  aiType = 1;
+  /** düde class this ship was drawn from — its InfoTypes drive hail replies */
+  dudeId: number | null = null;
+  /**
+   * The weapons this particular ship flies with, when they differ from its
+   * hull's standard load — a përs captain's own loadout. Null means use the
+   * ship type's stock weapons.
+   */
+  weapons: StockWeapon[] | null = null;
+  /** the ship's own name, for named captains */
+  shipName: string | null = null;
+  /** mïsn id if this is a mission special ship */
+  missionMisnId: number | null = null;
+  /** a fighter launched from the player's bays */
+  ally = false;
+  /**
+   * Which half of its government's speech bank this pilot uses. Nova splits
+   * the even-sized banks into two voices, so this is rolled once and kept —
+   * an escort that answers in one voice shouldn't report the kill in another.
+   */
+  voiceParity: 0 | 1 = Math.random() < 0.5 ? 0 : 1;
+  /** spob id this ship is defending, if it launched from a besieged world */
+  defenderOf: string | null = null;
+  /** this hull's AI can cloak, and whether it currently is */
+  canCloak = false;
+  cloaked = false;
+  /** the bay this fighter came from, and whether it's been called home */
+  bayWeapId: string | null = null;
+  recalling = false;
+  /** a ship the player is contracted to protect */
+  escorting = false;
+  /** hired to fly with the player, and its standing order */
+  hired = false;
+  order: EscortOrder = "defend";
+  /** where a "hold position" order pinned it */
+  holdAt: Vec2 | null = null;
+  /** përs id if this is a named captain */
+  personId: number | null = null;
+  /** already plundered — you only get the cargo once */
+  boarded = false;
+  /** credits aboard, for boarding */
+  booty = 0;
+  bootyFlags = 0;
+
+  constructor(stats: ShipStats = MULE) {
+    super(stats);
+  }
+
+  updateAi(dt: number): void {
+    const dx = this.target.x - this.pos.x;
+    const dy = this.target.y - this.pos.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (this.phase === "toPlanet" && dist < 60 && this.speed < 260) {
+      this.done = true; // "landed"
+      return;
+    }
+    if (this.phase === "leaving" && dist < 120) {
+      this.done = true; // "jumped out"
+      return;
+    }
+
+    // steer toward target, braking as we approach a planet
+    const targetAngle = Math.atan2(dy, dx);
+    const near = this.phase === "toPlanet" && dist < 500;
+    let thrust = false;
+    if (near && this.speed > Math.max(40, dist * 0.4)) {
+      // flip and burn to slow down
+      const brakeAngle = Math.atan2(-this.vel.y, -this.vel.x);
+      const facing = this.steerToward(dt, brakeAngle);
+      thrust = facing;
+    } else {
+      const facing = this.steerToward(dt, targetAngle);
+      thrust = facing;
+    }
+    this.update(dt, 0, thrust);
+  }
+}
