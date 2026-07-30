@@ -81,10 +81,33 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
-`intf` status-bar rects (StatusBkgnd is read but **deliberately not drawn** —
-see the note in `renderHud`; the sidebar paints its own outlined boxes on a
-flat panel, and only the plate art is dropped, not the rects) · `colr` emblem
-position · `outf`
+**The flight sidebar is DOM, not canvas** (`src/ui/hud.ts` + the `.hud-*` block
+in `style.css`). It implements Claude Design 2a, "Deep Glass · Orbital", from
+the *EV Nova Sidebar Redesigns* project. Layered gradients, a dashed target
+frame, glow shadows and two webfonts are a stylesheet in CSS and a few hundred
+fragile lines in canvas 2D, and the landed screens were already HTML. The one
+per-frame thing — the scanner's moving contacts — is a small nested `<canvas>`.
+
+Consequences worth knowing:
+
+- **ïntf StatusBkgnd and the ïntf rects no longer position anything.** The
+  plate was already deliberately undrawn; the rects cannot express this layout,
+  so the arrangement is the design's. The resource still supplies *colours*
+  (ShieldColor/ArmorColor/FuelFull/FuelPartial, BrightRadar/DimRadar), and
+  gövt Color still tints the government name, so a plug-in restyles the panel
+  even though it can no longer move things.
+- **Fonts are self-hosted** in `public/fonts` (Chakra Petch, JetBrains Mono,
+  latin subset only, 134 KB) rather than pulled from Google — the game reads
+  everything else locally and should not need the network to look right.
+- `HUD_W` in `ui/hud.ts` is the single source of the sidebar width; `game.ts`
+  takes `SIDEBAR_W` from it so the reserved canvas and the panel cannot drift.
+- The HUD reads private Game state through small accessors (`hudClock`,
+  `hasIff`, `cloakBits`, …) rather than those fields being made public.
+- On a window shorter than 830px the key hints are dropped and the scanner
+  clamps down by `vh`; the radar scales off the smaller half-dimension so a
+  letterboxed scope stays circular.
+
+Earlier passes: `colr` emblem position · `outf`
 flags/DispWeight/OnPurchase/OnSell · `govt` legal model
 (CrimeTol/ScanFine/\*Penalty/InitialRec/MaxOdds), replacing a hardcoded
 reputation formula and a name-matching hostility regex · `char` template

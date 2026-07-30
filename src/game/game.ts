@@ -16,7 +16,6 @@ import {
   BOOMS,
   NEBULAE,
   nebulaPict,
-  targetPict,
   ROID_SPRITES,
   ROIDS,
   STR_LISTS,
@@ -66,13 +65,12 @@ import {
   getPict,
   rotationFrame,
   spriteFrame,
-  tintedShipSilhouette,
   weaponExitPoint,
   SHAN_HIDE_LIGHTS_DISABLED,
   SHAN_UNFOLD_FIRING,
 } from "../engine/sprites";
 import { applySet, evalTest } from "./bits";
-import { formatDate, formatDateShort } from "./calendar";
+import { formatDate } from "./calendar";
 import { runCrons } from "./crons";
 import { runOopses } from "./oops";
 import {
@@ -120,7 +118,6 @@ import {
   cloakShieldDrain,
   CLOAK_BREAKS_ON_DAMAGE,
   CLOAK_DROPS_SHIELDS,
-  CLOAK_VISIBLE_ON_RADAR,
   ammoCapped,
   inherentCombatGovt,
   applyReload,
@@ -156,7 +153,6 @@ import type {
   ActiveMission,
   CharTemplate,
   FleetType,
-  InterfaceRect,
   MissionType,
   RankType,
   PersonType,
@@ -168,6 +164,7 @@ import type {
 } from "../types";
 import { HailUi } from "../ui/hail";
 import { PlunderUi } from "../ui/plunder";
+import { HUD_W, HudUi } from "../ui/hud";
 import type { CaptureResult, PlunderHold } from "../ui/plunder";
 import { LandedUi } from "../ui/landed";
 import { NpcShip, SPARROW, Ship, type EscortOrder } from "./ship";
@@ -304,7 +301,7 @@ function cargoLabel(cargoId: string): string {
   return COMMODITIES.find((c) => c.id === cargoId)?.name ?? cargoId;
 }
 
-const SIDEBAR_W = 208;
+const SIDEBAR_W = HUD_W;
 
 /** audio key for the hyperdrive spool-up, so the jump can cut it short */
 const JUMP_SND_KEY = "jump:warp";
@@ -313,8 +310,6 @@ const JUMP_SND_KEY = "jump:warp";
  * its indicators inside x 0-192, ending with the cargo readout at y 552, and
  * the whole thing is scaled onto SIDEBAR_W at draw time.
  */
-const INTF_W = 194;
-const INTF_H = 767;
 
 /** A gate ring is shut until a pilot opens it, and shuts again behind them. */
 type GatePhase = "opening" | "open" | "closing";
@@ -365,6 +360,7 @@ export class Game {
   private landedUi: LandedUi;
   private introUi = new IntroUi();
   private plunderUi = new PlunderUi();
+  private hudUi = new HudUi();
   private infoUi = new InfoUi();
   private hailUi: HailUi;
 
@@ -763,6 +759,30 @@ export class Game {
     this.mode = "menu";
     this.pilotId = null;
     this.onMenu?.();
+  }
+
+  /*
+   * What the status sidebar needs to read. It lives in ../ui/hud and is DOM,
+   * so it reaches in from outside rather than drawing from in here; these keep
+   * the underlying state private instead of widening it wholesale.
+   */
+  get hudClock(): number {
+    return this.time;
+  }
+  get hasDensityScanner(): boolean {
+    return this.gear.densityScanner;
+  }
+  get hasIff(): boolean {
+    return this.gear.iff;
+  }
+  get cloakBits(): number {
+    return this.cloakFlags;
+  }
+  get isAfterburning(): boolean {
+    return this.afterburning;
+  }
+  get afterburnerFuel(): number {
+    return this.afterburnerBurn;
   }
 
   get system(): SystemDef {
@@ -5088,6 +5108,9 @@ export class Game {
     ctx.fillStyle = "#000005";
     ctx.fillRect(0, 0, w, h);
 
+    // the sidebar is DOM, so it is shown and hidden rather than not painted
+    this.hudUi.setVisible(this.mode === "flight" || this.mode === "map");
+
     if (this.mode === "landed") return; // overlay covers screen
 
     if (this.mode === "menu") {
@@ -5114,7 +5137,7 @@ export class Game {
       ctx.globalAlpha = 1;
     }
     this.renderMessages(ctx, h);
-    this.renderHud(ctx, w, h);
+    this.hudUi.update(this);
 
     if (this.jumpFlash > 0) {
       ctx.fillStyle = `rgba(200,220,255,${this.jumpFlash * 1.6})`;
@@ -5400,403 +5423,6 @@ export class Game {
 
 
   // ---------------- HUD ----------------
-
-  private renderHud(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    const x = w - SIDEBAR_W;
-
-    /*
-     * Nova authors every status bar against its StatusBkgnd plate — PICT 700
-     * and up, 194x767 — and puts the position of each indicator in the ïntf
-     * resource. Scaling that plate onto the real sidebar and placing the rects
-     * in the same space means the radar, the bars and the target display land
-     * where the data says rather than where a stack of magic numbers happened
-     * to put them, and a govt that swaps in a different ïntf and plate gets its
-     * own status bar for free.
-     */
-    const S = Math.min(SIDEBAR_W / INTF_W, h / INTF_H);
-
-    /*
-     * ïntf StatusBkgnd names a plate (PICT 700 and up, 194x767) that draws the
-     * bezel around every readout and the icons beside the bars. It is
-     * deliberately not drawn: its moulded-metal console reads as chrome around
-     * the game rather than part of it, so the sidebar paints its own outlined
-     * boxes on a flat panel instead. Everything positional still comes from the
-     * resource — the rects below, and with them a govt's own layout — so only
-     * the decoration is gone, not the data.
-     */
-    ctx.fillStyle = "#0b1220";
-    ctx.fillRect(x, 0, SIDEBAR_W, h);
-    ctx.strokeStyle = "#2c3e58";
-    ctx.beginPath();
-    ctx.moveTo(x + 0.5, 0);
-    ctx.lineTo(x + 0.5, h);
-    ctx.stroke();
-    const px = (r: InterfaceRect) => ({
-      x: x + (SIDEBAR_W - INTF_W * S) / 2 + r.x * S,
-      y: r.y * S,
-      w: r.w * S,
-      h: r.h * S,
-    });
-    /** Nova: a rect with no area means that indicator isn't drawn. */
-    const shown = (r: InterfaceRect) => r.w > 0 && r.h > 0;
-    const font = (size: number, weight = "") =>
-      `${weight} ${(size * S).toFixed(1)}px ${INTERFACE.statusFont}, Helvetica, Arial, sans-serif`.trim();
-
-    const rx = px(INTERFACE.cargoArea).x;
-    const innerW = INTERFACE.cargoArea.w * S;
-
-    // ---- radar ----
-    const radar = px(INTERFACE.radarArea);
-    const range = 2400;
-    const cx = radar.x + radar.w / 2;
-    const cy = radar.y + radar.h / 2;
-    const toRadar = (wx: number, wy: number) => ({
-      x: cx + ((wx - this.ship.pos.x) / range) * (radar.w / 2),
-      y: cy + ((wy - this.ship.pos.y) / range) * (radar.h / 2),
-    });
-    if (shown(INTERFACE.radarArea)) {
-    ctx.fillStyle = "#050a14";
-    ctx.strokeStyle = "#2a3a52";
-    ctx.lineWidth = 1;
-    roundRect(ctx, radar.x, radar.y, radar.w, radar.h, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(radar.x, radar.y, radar.w, radar.h);
-    ctx.clip();
-    for (const p of this.system.planets) {
-      const pt = toRadar(p.pos.x, p.pos.y);
-      ctx.fillStyle = "#7fa8d9";
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (this.gear.densityScanner) {
-      // only a density scanner paints rocks on the radar
-      for (const a of this.asteroids) {
-        const pt = toRadar(a.x, a.y);
-        ctx.fillStyle = "rgba(150,140,120,0.55)";
-        ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
-      }
-    }
-    /*
-     * Interference is the system's sensor static, 0 clear to 100 blackout.
-     * It scatters contacts on the radar and, past a point, drops them
-     * altogether — which is what makes the deep Polaris systems (Vellos reads
-     * 80) feel blind. The scatter is keyed to the contact so a blip jitters in
-     * place rather than strobing across the scope every frame.
-     */
-    const murk = this.system.interference / 100;
-    for (const npc of this.npcs) {
-      if (npc.cloaked && (this.gear.cloakScanner & 0x0001) === 0) continue;
-      if (murk > 0) {
-        // a contact fades in and out of the static rather than vanishing
-        const blink = Math.sin(this.time * 3 + npc.pos.x * 0.01) * 0.5 + 0.5;
-        if (blink < murk * 0.8) continue;
-      }
-      const pt = toRadar(npc.pos.x, npc.pos.y);
-      if (murk > 0) {
-        pt.x += Math.sin(this.time + npc.pos.y * 0.02) * murk * 6;
-        pt.y += Math.cos(this.time + npc.pos.x * 0.02) * murk * 6;
-      }
-      // without an IFF unit every contact looks the same on radar
-      /*
-       * ïntf BrightRadar/DimRadar are the status bar's own two radar colours.
-       * Nova draws a contact bright and its trailing blip dim; without an IFF
-       * unit every contact is the same anonymous bright dot.
-       */
-      ctx.fillStyle = !this.gear.iff
-        ? INTERFACE.brightRadar
-        : npc.ally ? "#6fce8a" : npc.hostile ? "#e06a5a" : "#d9c97f";
-      if (npc.disabled) ctx.fillStyle = INTERFACE.dimRadar;
-      ctx.fillRect(pt.x - 1.5, pt.y - 1.5, 3, 3);
-      if (npc === this.targetNpc) {
-        ctx.strokeStyle = "#ffffff";
-        ctx.strokeRect(pt.x - 3.5, pt.y - 3.5, 7, 7);
-      }
-    }
-    if (!this.cloaked || (this.cloakFlags & CLOAK_VISIBLE_ON_RADAR) !== 0) {
-      ctx.fillStyle = this.cloaked ? "#7fa0c8" : "#ffffff";
-      ctx.fillRect(cx - 1.5, cy - 1.5, 3, 3);
-    }
-    ctx.restore();
-    }
-
-    // ---- system name ----
-    // Nova has no rect for this, so it goes on the one line the data leaves
-    // between the radar and the first bar — which is tight, hence subtitle
-    // size for both halves and a baseline pinned just above the shield bar.
-    const nameY = INTERFACE.shieldArea.y * S - 4 * S;
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#e8eef6";
-    ctx.font = font(INTERFACE.subtitleSize, "600");
-    const govtW = this.system.govtName
-      ? ctx.measureText(this.system.govtName).width + 8 * S
-      : 0;
-    ctx.fillText(fitText(ctx, this.system.name, innerW - govtW), rx, nameY);
-    if (this.system.govtName) {
-      ctx.font = font(INTERFACE.subtitleSize);
-      ctx.fillStyle = "#7d90aa";
-      ctx.textAlign = "right";
-      ctx.fillText(this.system.govtName, rx + innerW, nameY);
-      ctx.textAlign = "left";
-    }
-
-    /*
-     * Shield / armor / fuel. Nova's rects start at x 35 of 192, leaving the
-     * strip to their left for the label, and a bar taller than it is wide is
-     * meant to fill bottom-up rather than left-to-right (Nova Bible).
-     */
-    const bar = (label: string, area: InterfaceRect, frac: number, color: string) => {
-      if (!shown(area)) return;
-      const r = px(area);
-      const f = Math.max(0, Math.min(1, frac));
-      ctx.fillStyle = "#101a2c";
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.fillStyle = color;
-      if (r.h > r.w) ctx.fillRect(r.x, r.y + r.h * (1 - f), r.w, r.h * f);
-      else ctx.fillRect(r.x, r.y, r.w * f, r.h);
-      // Nova's own plate named these bars with icons in the strip to their
-      // left; there are only ~27 of 192 units there, not enough for a word, so
-      // the label rides inside the bar instead.
-      ctx.strokeStyle = "#2a3a52";
-      ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-      ctx.font = font(INTERFACE.subtitleSize - 1.5);
-      ctx.fillStyle = "#dfe8f2";
-      ctx.textAlign = "left";
-      ctx.fillText(label, r.x + 4 * S, r.y + r.h - 1.5 * S);
-    };
-    bar("Shield", INTERFACE.shieldArea,
-      this.ship.maxShield ? this.ship.shield / this.ship.maxShield : 0, INTERFACE.shieldColor);
-    bar("Armor", INTERFACE.armorArea,
-      this.ship.maxArmor ? this.ship.armor / this.ship.maxArmor : 0, INTERFACE.armorColor);
-    /*
-     * ïntf FuelFull/FuelPartial: Nova fills the bar to the last *whole* jump in
-     * the full colour and shows the part-jump remainder in the dimmer one, so
-     * you can see at a glance whether you actually have a jump in the tank.
-     */
-    const fuelFrac = this.player.maxFuelJumps
-      ? this.player.fuelJumps / this.player.maxFuelJumps
-      : 0;
-    const wholeFrac = this.player.maxFuelJumps
-      ? Math.floor(this.player.fuelJumps) / this.player.maxFuelJumps
-      : 0;
-    if (fuelFrac > wholeFrac) {
-      bar("Fuel", INTERFACE.fuelArea, fuelFrac, INTERFACE.fuelPartial);
-    }
-    bar("Fuel", INTERFACE.fuelArea, wholeFrac,
-      this.afterburning ? "#ffd479" : INTERFACE.fuelFull);
-    // Ion has no rect of its own — it borrows the fuel bar's shape and sits in
-    // the gap before the nav display, and only while you are actually ionized.
-    if (this.ship.ion > 0) {
-      const gap = INTERFACE.navArea.y - (INTERFACE.fuelArea.y + INTERFACE.fuelArea.h);
-      if (gap >= INTERFACE.fuelArea.h) {
-        bar("Ion", { ...INTERFACE.fuelArea, y: INTERFACE.fuelArea.y + INTERFACE.fuelArea.h + 3 },
-          this.ship.ion / this.ship.maxIon, this.ship.ionized ? "#e0d060" : "#9a90d0");
-      }
-    }
-
-    // ---- Stellar Navigation ----
-    const nav = px(INTERFACE.navArea);
-    if (shown(INTERFACE.navArea)) {
-    ctx.fillStyle = "#070d18";
-    ctx.strokeStyle = "#2a3a52";
-    roundRect(ctx, nav.x, nav.y, nav.w, nav.h, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.textAlign = "center";
-    // a plotted hyperspace course takes the panel over; otherwise it shows
-    // whichever world you have selected, and reads "Nav System Off" with neither
-    const navTitle = this.routeDest
-      ? "Hyperspace"
-      : this.targetPlanet
-        ? "Stellar Navigation"
-        : "Nav System Off";
-    const navValue = this.routeDest
-      ? getSystem(this.routeDest).name
-      : this.targetPlanet
-        ? this.targetPlanet.name
-        : "";
-    ctx.font = font(INTERFACE.subtitleSize);
-    ctx.fillStyle = navValue ? INTERFACE.dimText : "#6a7d94";
-    ctx.fillText(
-      navTitle,
-      nav.x + nav.w / 2,
-      navValue ? nav.y + nav.h * 0.38 : nav.y + nav.h * 0.62,
-    );
-    if (navValue) {
-      ctx.font = font(INTERFACE.statFontSize, "600");
-      ctx.fillStyle = INTERFACE.brightText;
-      ctx.fillText(fitText(ctx, navValue, nav.w - 8), nav.x + nav.w / 2, nav.y + nav.h * 0.82);
-    }
-    ctx.textAlign = "left";
-    }
-
-    // ---- secondary weapon ----
-    const secondary = this.selectedSecondary();
-    const weap = px(INTERFACE.weapArea);
-    if (shown(INTERFACE.weapArea)) {
-    ctx.fillStyle = "#070d18";
-    ctx.strokeStyle = "#2a3a52";
-    roundRect(ctx, weap.x, weap.y, weap.w, weap.h, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.textAlign = "center";
-    ctx.font = font(INTERFACE.subtitleSize);
-    ctx.fillStyle = secondary ? INTERFACE.brightText : INTERFACE.dimText;
-    ctx.fillText(
-      fitText(
-        ctx,
-        secondary
-          ? `${secondary.weap.name.split(";")[0]} (${this.player.ammo[secondary.weap.id] ?? 0})`
-          : "No Secondary Weapon",
-        weap.w - 8,
-      ),
-      weap.x + weap.w / 2,
-      weap.y + weap.h * 0.75,
-    );
-    ctx.textAlign = "left";
-    }
-
-    // ---- target box ----
-    const targ = px(INTERFACE.targArea);
-    const boxH = targ.h;
-    if (shown(INTERFACE.targArea)) {
-    ctx.fillStyle = "#070d18";
-    ctx.strokeStyle = "#2a3a52";
-    roundRect(ctx, targ.x, targ.y, targ.w, targ.h, 4);
-    ctx.fill();
-    ctx.stroke();
-    if (this.targetNpc) {
-      const t = this.targetNpc;
-      const type = t.typeId ? SHIPS[t.typeId] : undefined;
-      const [, subtitle] = (type?.name ?? "").split(";");
-
-      ctx.textAlign = "center";
-      ctx.font = font(INTERFACE.statFontSize, "600");
-      ctx.fillStyle = t.hostile ? "#e08a7a" : t.personId !== null ? "#d9c37a" : "#d6e2f0";
-      ctx.fillText(this.shipLabel(t), targ.x + targ.w / 2, targ.y + 15 * S);
-      if (subtitle) {
-        ctx.font = font(INTERFACE.subtitleSize - 0.5);
-        ctx.fillStyle = "#8fa2ba";
-        ctx.fillText(subtitle.trim(), targ.x + targ.w / 2, targ.y + 27 * S);
-      }
-
-      // Nova ships a red silhouette per hull as PICT 3000 + id - 128; only
-      // fall back to tinting the sprite when a hull has none.
-      const tpic = t.typeId ? targetPict(t.typeId) : null;
-      const timg = tpic ? getPict(tpic.file) : null;
-      if (timg) {
-        const k = Math.min((targ.w - 20) / tpic!.w, (boxH - 46) / tpic!.h, 1);
-        ctx.drawImage(
-          timg,
-          rx + (targ.w - tpic!.w * k) / 2,
-          targ.y + 30 * S + (boxH - 46 - tpic!.h * k) / 2,
-          tpic!.w * k,
-          tpic!.h * k,
-        );
-      } else if (t.sprite) {
-        const sil = tintedShipSilhouette(t.sprite, "#c02020", targ.w - 24, boxH - 48);
-        if (sil) ctx.drawImage(sil, rx + (targ.w - sil.width) / 2, targ.y + 30 * S);
-      }
-
-      ctx.font = font(INTERFACE.subtitleSize);
-      const status = t.disabled
-        ? "Disabled"
-        : `Shield: ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`;
-      ctx.textAlign = "left";
-      ctx.fillStyle = t.disabled ? "#e08a7a" : "#8fa2ba";
-      ctx.fillText(status, targ.x + 8, targ.y + targ.h - 8);
-      ctx.textAlign = "right";
-      ctx.fillStyle = t.hostile ? "#e08a7a" : "#8fa2ba";
-      // the two labels share one line, and a long government ("Association of
-      // Free Traders") used to print straight through the shield readout
-      const affil =
-        t.disabled && t.boarded ? "Plundered" : t.disabled ? "Derelict" : this.govtLabel(t.govtId);
-      const room = targ.w - 24 - ctx.measureText(status).width;
-      ctx.fillText(fitText(ctx, affil, room), targ.x + targ.w - 8, targ.y + targ.h - 8);
-      ctx.textAlign = "left";
-    } else {
-      ctx.font = font(INTERFACE.subtitleSize + 1);
-      ctx.fillStyle = "#4a5c74";
-      ctx.textAlign = "center";
-      ctx.fillText("No Target", targ.x + targ.w / 2, targ.y + targ.h / 2 + 4);
-      ctx.textAlign = "left";
-    }
-    }
-
-    /*
-     * Weapons and the cargo readout share CargoArea. Nova's rect is only tall
-     * enough for the manifest, so the block starts where the data says and is
-     * allowed to run on down the empty part of the panel below it.
-     */
-    let y = px(INTERFACE.cargoArea).y;
-    const lineH = 14 * S;
-
-    // ---- weapons ----
-    ctx.font = font(INTERFACE.subtitleSize);
-    for (const slot of this.weaponSlots.slice(0, 4)) {
-      const sec = isSecondary(slot.weap);
-      const ammo = sec ? ` ×${this.player.ammo[slot.weap.id] ?? 0}` : "";
-      ctx.fillStyle = slot.cooldown > 0 ? "#5a6c84" : "#b8c8dc";
-      const wl = `${slot.weap.name.split(";")[0]}${slot.count > 1 ? ` ×${slot.count}` : ""}${ammo}`;
-      ctx.fillText(fitText(ctx, wl, innerW - 24), rx, y);
-      ctx.fillStyle = sec ? "#c9a86a" : "#6a8ab0";
-      ctx.textAlign = "right";
-      ctx.fillText(sec ? "2nd" : "pri", rx + innerW, y);
-      ctx.textAlign = "left";
-      y += lineH;
-    }
-    y += 6 * S;
-
-    // ---- info lines ----
-    ctx.font = font(INTERFACE.statFontSize);
-    const info = (label: string, value: string, color = "#c9d4e0") => {
-      ctx.fillStyle = "#9fb2c8";
-      ctx.fillText(label, rx, y);
-      ctx.fillStyle = color;
-      ctx.textAlign = "right";
-      ctx.fillText(value, rx + innerW, y);
-      ctx.textAlign = "left";
-      y += 18 * S;
-    };
-    // Nova's cargo readout: a line per commodity held, then free space, any
-    // special mission cargo, and credits
-    // STR# 4002 is Nova's own cargo-abbreviation list
-    const abbrev = STR_LISTS["4002"] ?? [];
-    for (const [i, c] of COMMODITIES.entries()) {
-      const held = this.player.cargo[c.id] ?? 0;
-      if (held > 0) info(`${abbrev[i] ?? c.name}:`, String(held));
-    }
-    // jünk goods have no abbreviation of their own, so they go by name
-    for (const [key, held] of Object.entries(this.player.cargo)) {
-      const junk = junkFromCargoKey(key);
-      if (junk && held > 0) info(`${junk.name}:`, String(held));
-    }
-    info("Free:", String(Math.max(0, this.player.cargoCap - this.cargoUsed())));
-    const special = this.player.activeMissions.find((a) => a.cargoLoaded && a.cargoName);
-    if (special) info("Special:", special.cargoName!, "#c9a86a");
-    info("Credits:", this.player.credits.toLocaleString(), "#ffd479");
-    info("Date:", formatDateShort(this.player.date), "#9fb2c8");
-
-    // ---- controls ----
-    ctx.fillStyle = "#4e6078";
-    ctx.font = font(INTERFACE.subtitleSize);
-    const hints = [
-      this.afterburnerBurn > 0 ? "↑↓←→ fly   Z burn" : "↑↓←→ fly",
-      "Space fire   ^Ctrl secondary   W select",
-      "` target   R closest   Y hail   B board",
-      this.cloakFlags > 0 ? "L land   C recall   U cloak" : "L land   C recall",
-      "J jump   M map   Esc menu",
-    ];
-    const hintsH = (hints.length - 1) * 14 * S;
-    let hy = h - 12 - hintsH;
-    for (const hint of hints) {
-      ctx.fillText(fitText(ctx, hint, innerW), rx, hy);
-      hy += 14 * S;
-    }
-  }
 
   private renderMessages(ctx: CanvasRenderingContext2D, h: number): void {
     ctx.font = "13px Helvetica, Arial, sans-serif";
@@ -6195,13 +5821,6 @@ export class Game {
 }
 
 /** Shorten `text` with an ellipsis until it fits `max` pixels at the current font. */
-function fitText(ctx: CanvasRenderingContext2D, text: string, max: number): string {
-  if (max <= 0) return "";
-  if (ctx.measureText(text).width <= max) return text;
-  let cut = text;
-  while (cut.length > 1 && ctx.measureText(cut + "…").width > max) cut = cut.slice(0, -1);
-  return cut + "…";
-}
 
 function roundRect(
   ctx: CanvasRenderingContext2D,

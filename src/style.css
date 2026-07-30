@@ -1,3 +1,5 @@
+@import "/fonts/fonts.css";
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -16,6 +18,259 @@ html, body {
 }
 
 .hidden { display: none !important; }
+
+/* ===========================================================================
+   Flight status sidebar — design 2a, "Deep Glass · Orbital".
+   Tokens are the design's own; see src/ui/hud.ts for why this is DOM.
+   =========================================================================== */
+
+:root {
+  --hud-w: 268px;
+  --hud-teal: #5fd4e0;
+  --hud-teal-lt: #9df0f7;
+  --hud-ink: #dbe6ea;
+  --hud-gold: #ffd27a;
+  --hud-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --hud-sans: "Chakra Petch", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#hud-ui {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: var(--hud-w);
+  height: 100%;
+  padding: 10px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.hud-card {
+  height: 100%;
+  overflow: hidden;
+  padding: 12px;
+  border-radius: 18px;
+  background: linear-gradient(#101821 0%, #0a0f15 40%, #070b10 100%);
+  border: 1px solid rgba(120, 170, 200, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--hud-sans);
+  color: var(--hud-ink);
+}
+
+/* ---- scanner ---- */
+.hud-scan {
+  position: relative;
+  flex: none;
+  /*
+   * Square at full height, but the panel has to fit a laptop too: the scanner
+   * is the one block with slack in it, so it gives up height first rather than
+   * the readouts below being pushed off the bottom. The radar maps world
+   * coordinates off the smaller half-dimension, so a letterboxed scope stays
+   * circular instead of stretching.
+   */
+  height: clamp(148px, 23vh, 244px);
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid rgba(95, 212, 224, 0.16);
+  background:
+    radial-gradient(120px 90px at 78% 12%, rgba(95, 212, 224, 0.16), transparent 70%),
+    radial-gradient(160px 140px at 12% 82%, rgba(120, 90, 200, 0.2), transparent 72%),
+    radial-gradient(circle at 50% 50%, #0b1220 0%, #04070c 78%);
+}
+.hud-scan-c { display: block; width: 100%; height: 100%; }
+.hud-scan-tag {
+  position: absolute; left: 10px; top: 9px;
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--hud-mono); font-size: 8.5px; letter-spacing: 0.16em;
+  color: rgba(219, 230, 234, 0.55);
+}
+.hud-scan-tag i {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--hud-teal); box-shadow: 0 0 8px var(--hud-teal);
+}
+.hud-scan-sys {
+  position: absolute; right: 10px; bottom: 8px;
+  font-family: var(--hud-mono); font-size: 8.5px; letter-spacing: 0.16em;
+  color: rgba(219, 230, 234, 0.4);
+}
+
+/* ---- pilot / government ---- */
+.hud-who { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.hud-pilot {
+  font-size: 17px; font-weight: 600; letter-spacing: 0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hud-govt {
+  font-family: var(--hud-mono); font-size: 9.5px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--hud-teal); flex: none;
+}
+
+/* ---- gauges ---- */
+.hud-gauges { display: flex; flex-direction: column; gap: 7px; }
+.hud-gauge-head {
+  display: flex; justify-content: space-between;
+  font-family: var(--hud-mono); font-size: 9px; letter-spacing: 0.14em;
+  color: rgba(219, 230, 234, 0.5); margin-bottom: 4px;
+}
+.hud-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); }
+.hud-bar > div { height: 6px; border-radius: 3px; transition: width 0.12s linear; }
+.hud-bar-shield {
+  background: linear-gradient(90deg, var(--hud-teal), var(--hud-teal-lt));
+  box-shadow: 0 0 10px rgba(95, 212, 224, 0.5);
+}
+.hud-bar-armor { background: linear-gradient(90deg, #c7d8de, #f0f6f8); }
+.hud-bar-ion { background: linear-gradient(90deg, #7a6fc0, #9a90d0); }
+.hud-bar-ionized {
+  background: linear-gradient(90deg, #c0b040, #e0d060);
+  box-shadow: 0 0 10px rgba(224, 208, 96, 0.5);
+}
+.hud-fuel { display: flex; gap: 4px; }
+.hud-fuel i { flex: 1; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); }
+.hud-fuel i.on { background: #8fa9c9; }
+.hud-fuel i.part { background: rgba(143, 169, 201, 0.4); }
+.hud-fuel i.burn { background: var(--hud-gold); }
+
+/* ---- hyperspace / nav ---- */
+.hud-nav {
+  padding: 9px 12px; border-radius: 12px;
+  background: linear-gradient(rgba(95, 212, 224, 0.1), rgba(95, 212, 224, 0.04));
+  border: 1px solid rgba(95, 212, 224, 0.18);
+  display: flex; align-items: center; gap: 10px;
+}
+.hud-nav-ring {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+  border: 2px solid var(--hud-teal); box-shadow: 0 0 10px rgba(95, 212, 224, 0.6);
+}
+.hud-nav-kind {
+  font-family: var(--hud-mono); font-size: 9px; letter-spacing: 0.16em;
+  color: rgba(95, 212, 224, 0.8);
+}
+.hud-nav-value {
+  font-size: 21px; font-weight: 600; line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* no course and no world selected: the panel goes cold */
+.hud-nav.off {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+.hud-nav.off .hud-nav-ring {
+  border-color: rgba(219, 230, 234, 0.25); box-shadow: none;
+}
+.hud-nav.off .hud-nav-kind { color: rgba(219, 230, 234, 0.4); }
+.hud-nav.off .hud-nav-value { color: rgba(219, 230, 234, 0.4); font-size: 17px; }
+
+/* ---- weapons ---- */
+.hud-weapons { display: flex; flex-direction: column; gap: 5px; }
+.hud-weap {
+  padding: 8px 11px; border-radius: 11px; background: rgba(255, 255, 255, 0.05);
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.hud-weap.empty { background: rgba(255, 255, 255, 0.025); }
+.hud-weap-name {
+  font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hud-weap.empty .hud-weap-name { color: rgba(219, 230, 234, 0.45); }
+.hud-weap.cooling .hud-weap-name { color: rgba(219, 230, 234, 0.5); }
+.hud-pill {
+  font-family: var(--hud-mono); font-size: 8.5px; letter-spacing: 0.14em; flex: none;
+  color: var(--hud-teal); border: 1px solid rgba(95, 212, 224, 0.35);
+  border-radius: 4px; padding: 1px 5px;
+}
+.hud-pill.sec { color: var(--hud-gold); border-color: rgba(255, 210, 122, 0.35); }
+.hud-pill.dim { color: rgba(219, 230, 234, 0.3); border-color: rgba(255, 255, 255, 0.1); }
+
+/* ---- target ---- */
+.hud-target {
+  flex: 1 1 auto; min-height: 72px;
+  padding: 8px 10px; border-radius: 12px;
+  background: radial-gradient(circle at 50% 50%, rgba(95, 212, 224, 0.05), rgba(0, 0, 0, 0.45) 70%);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex; flex-direction: column; gap: 4px; overflow: hidden;
+}
+.hud-target.empty { align-items: center; justify-content: center; gap: 6px; }
+.hud-targ-ring {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid rgba(219, 230, 234, 0.22); position: relative;
+}
+.hud-targ-ring i {
+  position: absolute; left: 50%; top: 50%; width: 3px; height: 3px;
+  margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: rgba(219, 230, 234, 0.3);
+}
+.hud-targ-none {
+  font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(219, 230, 234, 0.35);
+}
+.hud-targ-head {
+  font-size: 14px; font-weight: 600; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hud-targ-head.hostile { color: #e08a7a; }
+.hud-targ-head.named { color: #d9c37a; }
+.hud-targ-sub {
+  font-family: var(--hud-mono); font-size: 8.5px; letter-spacing: 0.12em;
+  text-align: center; color: rgba(219, 230, 234, 0.45);
+}
+/*
+ * Nova's target PICTs are a red silhouette on an opaque black plate, meant to
+ * be blitted into a black cut-out. Screen-blending drops the black against the
+ * panel instead of stamping a hard rectangle over the gradient.
+ */
+.hud-targ-art {
+  flex: 1 1 auto; min-height: 0;
+  background: center/contain no-repeat;
+  mix-blend-mode: screen;
+}
+.hud-targ-foot {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-family: var(--hud-mono); font-size: 8.5px; letter-spacing: 0.08em;
+  color: rgba(219, 230, 234, 0.5);
+}
+.hud-targ-foot .bad { color: #e08a7a; }
+.hud-targ-foot span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- ledger ---- */
+.hud-ledger {
+  flex: none; padding: 9px 11px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  display: flex; flex-direction: column; gap: 5px;
+}
+.hud-led-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.hud-led-k {
+  font-family: var(--hud-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(219, 230, 234, 0.45);
+}
+.hud-led-v {
+  font-family: var(--hud-mono); font-size: 15px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hud-led-v.credits { font-size: 16px; color: var(--hud-gold); }
+.hud-led-v.date { font-size: 13px; color: rgba(219, 230, 234, 0.75); }
+.hud-led-v.special { font-size: 12px; color: #c9a86a; }
+
+/* ---- key hints ---- */
+.hud-hints {
+  flex: none; margin-top: 2px; padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px 10px;
+  font-family: var(--hud-mono); font-size: 8.5px; letter-spacing: 0.06em;
+  color: rgba(219, 230, 234, 0.3);
+}
+
+/*
+ * A short window drops the least essential block rather than overflowing. The
+ * key hints are a learning aid and the only thing here that is not live state.
+ */
+@media (max-height: 830px) {
+  .hud-hints { display: none; }
+}
+@media (max-height: 600px) {
+  .hud-ledger { gap: 3px; }
+  .hud-weap { padding: 6px 11px; }
+}
 
 /* ---- Landed / spaceport overlay ---- */
 #landed-ui {
