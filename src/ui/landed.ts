@@ -15,6 +15,7 @@ import {
   SHIP_SPRITES,
   SHIPS,
   shipyardPict,
+  shipInfoPict,
   SPOB_INDEX,
 } from "../data/universe";
 import type { Game, GateDestination } from "../game/game";
@@ -161,6 +162,21 @@ export class LandedUi {
       if (typing) return;
       // anything this handler acts on must not reach the game loop as well
       const handled = (): void => this.game.swallowKey(e.code);
+      /*
+       * The shipyard's Info dialog is modal: Esc closes it, and nothing else
+       * reaches the counter underneath — otherwise Esc would leave the
+       * shipyard from behind an open dialog, and S/O/T would switch counters
+       * while it was still up.
+       */
+      if (this.shipInfoOpen) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          handled();
+          this.shipInfoOpen = false;
+          this.render();
+        }
+        return;
+      }
       if (this.planet && e.code === "Escape" && ESC_CLOSES.has(this.view)) {
         e.preventDefault();
         handled();
@@ -398,6 +414,8 @@ export class LandedUi {
 
   private render(): void {
     if (!this.planet || !this.system) return;
+    // the Info dialog belongs to the shipyard; anything that leaves closes it
+    if (this.view !== "shipyard") this.shipInfoOpen = false;
     if (this.view === "spaceport") this.renderSpaceport();
     else if (this.view === "trade") this.renderTrade();
     else if (this.view === "shipyard") this.renderShipyard();
@@ -1344,6 +1362,8 @@ export class LandedUi {
   private selectedGood: string | null = null;
   private tradeNote = "";
   private selectedShip: string | null = null;
+  /** whether the shipyard's Info dialog is up over the showroom */
+  private shipInfoOpen = false;
   private selectedOutfit: string | null = null;
   /** keeps the shop list where the user left it across re-renders */
   private shopScroll = 0;
@@ -1374,15 +1394,15 @@ export class LandedUi {
     const tradeIn = current ? Math.floor(current.cost * 0.25) : 0;
     /*
      * Trading down pays out. A hull worth less than a quarter of the one you
-     * are flying used to read a flat "0 cr", which looks like broken data when
+     * are flying would read a flat "0 cr", which looks like broken data when
      * most of the lot says it at once — a captured Leviathan does that to 69
      * of the 85 purchasable hulls. Show the change instead.
      */
-    const priceLabel = (net: number) =>
+    const netLabel = (net: number) =>
       net > 0
         ? `${net.toLocaleString()} cr`
         : net < 0
-          ? `+${(-net).toLocaleString()} cr`
+          ? `${(-net).toLocaleString()} cr back`
           : "free";
 
     // BuyRandom is the percent chance this hull is on the lot on a given
@@ -1407,7 +1427,6 @@ export class LandedUi {
     const cells = available
       .map((id) => {
         const s = SHIPS[id];
-        const price = this.shopPrice(s.cost) - tradeIn;
         const pict = shipyardPict(id);
         // ShortName splits on "\n"; Nova draws a line starting with a
         // non-alphanumeric character in grey, which is how "- used -" reads
@@ -1423,9 +1442,6 @@ export class LandedUi {
             pict ? `<img src="${asset(`nova/picts/${pict.file}`)}" alt="">` : ""
           }</div>
           <div class="oi-name">${label}</div>
-          <div class="oi-price">${
-            id === g.player.shipId ? "your ship" : priceLabel(price)
-          }</div>
         </div>`;
       })
       .join("");
@@ -1433,11 +1449,13 @@ export class LandedUi {
     let desc = '<p class="menu-empty">Nothing for sale here.</p>';
     let side = "";
     let buy = '<button class="evbtn" disabled>Buy</button>';
+    let info = '<button class="evbtn" disabled>Info</button>';
     if (this.selectedShip) {
       const s = SHIPS[this.selectedShip];
       const pict = shipyardPict(this.selectedShip);
       const sprite = SHIP_SPRITES[this.selectedShip];
-      const price = this.shopPrice(s.cost) - tradeIn;
+      const listPrice = this.shopPrice(s.cost);
+      const price = listPrice - tradeIn;
       const isCurrent = this.selectedShip === g.player.shipId;
       const canBuy = !isCurrent && g.player.credits >= price;
       const [name] = s.name.split(";");
@@ -1450,43 +1468,22 @@ export class LandedUi {
               background-size:${sprite.frames * 100}% 100%"></div>`
           : '<div class="sy-hero placeholder"></div>';
 
-      const weapons = s.stockWeapons.length
-        ? s.stockWeapons
-            .map((w) => {
-              const wp = WEAPONS[String(w.id)];
-              return `${w.count} ${wp ? wp.name.split(";")[0] : `Weapon ${w.id}`}`;
-            })
-            .join("<br>")
-        : "None";
-
-      const col = (rows: [string, string][]) =>
-        rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
-
+      /*
+       * Nova's own price block, in Nova's own order: what the hull lists at,
+       * what your current one is worth against it, the difference, and what
+       * you are carrying. It sits under the picture on the right rather than
+       * being repeated in every grid cell.
+       */
       side = `
         ${hero}
         <div class="sy-fullname">${escapeHtml(fullName)}</div>
-        <div class="sy-stats">
-          <div class="sy-col">${col([
-            ["Speed:", String(s.rawSpeed)],
-            ["Accel:", LandedUi.rate(s.rawAccel, [150, 300, 450, 700])],
-            ["Turn:", LandedUi.rate(s.rawTurn, [15, 25, 35, 55])],
-            ["Shields:", String(s.shield)],
-            ["Armor:", String(s.armor)],
-            ["Guns:", s.maxGuns > 0 ? `Maximum of ${s.maxGuns}` : "None"],
-            ["Turrets:", s.maxTurrets > 0 ? `Maximum of ${s.maxTurrets}` : "None"],
-          ])}</div>
-          <div class="sy-col">${col([
-            ["Space:", `${s.freeMass} tons`],
-            ["Cargo:", `${s.cargo} tons`],
-            ["Energy:", `${s.fuelJumps} jumps`],
-            ["Length:", `${s.length} m`],
-            ["Mass:", `${s.mass} tons`],
-            ["Crew:", String(s.crew)],
-          ])}</div>
-          <div class="sy-col wide">
-            <div class="sy-weap-head">Standard Weapons:</div>
-            <div class="sy-weap">${weapons}</div>
-          </div>
+        <div class="sy-prices">
+          <div><span>Ship Price:</span><b>${listPrice.toLocaleString()} cr</b></div>
+          <div><span>Trade-In:</span><b>${tradeIn.toLocaleString()} cr</b></div>
+          <div class="gap"><span>Final Price:</span><b>${
+            isCurrent ? "&mdash;" : netLabel(price)
+          }</b></div>
+          <div class="gap"><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
         </div>`;
       desc = `<div class="oi-desc">${resolveNovaText(s.desc, g.player.bits)}</div>`;
       buy = `<button class="evbtn" id="btn-buy-ship" ${canBuy ? "" : "disabled"}>${
@@ -1496,6 +1493,7 @@ export class LandedUi {
             ? `Trade — ${(-price).toLocaleString()} cr back`
             : `Buy — ${price.toLocaleString()} cr`
       }</button>`;
+      info = '<button class="evbtn" id="btn-ship-info">Info</button>';
     }
 
     this.root.innerHTML = `
@@ -1511,10 +1509,12 @@ export class LandedUi {
           <button class="oi-arrow" id="oi-up">&#9650;</button>
           <button class="oi-arrow" id="oi-down">&#9660;</button>
           <span class="oi-spacer"></span>
+          ${info}
           ${buy}
           <button class="evbtn primary" id="btn-back">${btnLabel(4, "Done")}</button>
         </div>
-      </div>`;
+      </div>
+      ${this.shipInfoDialog()}`;
 
     const list = this.root.querySelector<HTMLElement>(".oi-grid")!;
     list.scrollTop = this.shopScroll;
@@ -1541,6 +1541,87 @@ export class LandedUi {
       if (!result.ok && result.reason) alert(result.reason);
       this.render();
     });
+    this.root.querySelector("#btn-ship-info")?.addEventListener("click", () => {
+      this.shopScroll = list.scrollTop;
+      this.shipInfoOpen = true;
+      this.render();
+    });
+    this.root.querySelector("#sy-info-done")?.addEventListener("click", () => {
+      this.shipInfoOpen = false;
+      this.render();
+    });
+  }
+
+  /**
+   * The shipyard's Info dialog. Nova puts the hull's full specification behind
+   * an Info button rather than crowding it into the showroom, and backs it with
+   * a 600x400 render of the ship in space (PICT 20000 + shipID) instead of the
+   * grey-card shot the lot uses. Returns "" unless the dialog is open, so the
+   * shipyard's own markup carries it and one render() draws both.
+   */
+  private shipInfoDialog(): string {
+    if (!this.shipInfoOpen || !this.selectedShip) return "";
+    const s = SHIPS[this.selectedShip];
+    const [name] = s.name.split(";");
+    const fullName = s.longName || name;
+
+    // The Kestrel and the Escape Pod have no 20000-series render; they fall
+    // back to the showroom shot rather than showing an empty frame.
+    const pict = shipInfoPict(this.selectedShip) ?? shipyardPict(this.selectedShip);
+    const hero = pict
+      ? `<img class="sy-info-hero" src="${asset(`nova/picts/${pict.file}`)}" alt="${escapeHtml(name)}">`
+      : '<div class="sy-info-hero placeholder"></div>';
+
+    const weapons = s.stockWeapons.length
+      ? s.stockWeapons
+          .map((w) => {
+            const wp = WEAPONS[String(w.id)];
+            return escapeHtml(`${w.count} ${wp ? wp.name.split(";")[0] : `Weapon ${w.id}`}`);
+          })
+          .join("<br>")
+      : "None";
+
+    const col = (rows: [string, string][]) =>
+      rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
+
+    // shïp Subtitle — "Class A" on a Starbridge; empty on most hulls
+    const subtitle = s.subtitle?.trim();
+
+    return `
+      <div class="sy-info-back">
+        <div class="panel sy-info">
+          ${hero}
+          <div class="sy-info-name">${escapeHtml(fullName)}${
+            subtitle ? `<span class="sy-info-sub">${escapeHtml(subtitle)}</span>` : ""
+          }</div>
+          <div class="sy-stats">
+            <div class="sy-col">${col([
+              ["Speed:", String(s.rawSpeed)],
+              ["Accel:", LandedUi.rate(s.rawAccel, [150, 300, 450, 700])],
+              ["Turn:", LandedUi.rate(s.rawTurn, [15, 25, 35, 55])],
+              ["Shields:", String(s.shield)],
+              ["Armor:", String(s.armor)],
+              ["Guns:", s.maxGuns > 0 ? `Maximum of ${s.maxGuns}` : "None"],
+              ["Turrets:", s.maxTurrets > 0 ? `Maximum of ${s.maxTurrets}` : "None"],
+            ])}</div>
+            <div class="sy-col">${col([
+              ["Space:", `${s.freeMass} tons`],
+              ["Cargo:", `${s.cargo} tons`],
+              ["Energy:", `${s.fuelJumps} jumps`],
+              ["Length:", `${s.length} m`],
+              ["Mass:", `${s.mass} tons`],
+              ["Crew:", String(s.crew)],
+            ])}</div>
+            <div class="sy-col">
+              <div class="sy-weap-head">Standard Weapons:</div>
+              <div class="sy-weap">${weapons}</div>
+            </div>
+          </div>
+          <div class="btnrow">
+            <button class="evbtn primary" id="sy-info-done">${btnLabel(4, "Done")}</button>
+          </div>
+        </div>
+      </div>`;
   }
 
   /**

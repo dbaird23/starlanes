@@ -499,6 +499,7 @@ export let SHIPYARD_PICTS: Record<string, PictInfo> = {};
 export let OUTFIT_PICTS: Record<string, PictInfo> = {};
 export let UI_PICTS: Record<string, PictInfo> = {};
 export let TARGET_PICTS: Record<string, PictInfo> = {};
+export let SHIPINFO_PICTS: Record<string, PictInfo> = {};
 export let NEBU_PICTS: Record<string, PictInfo> = {};
 let govtRelations = new Map<
   number,
@@ -554,10 +555,35 @@ export function personPict(personId: number | null): PictInfo | null {
   return pictId > 0 ? (UI_PICTS[String(pictId)] ?? null) : null;
 }
 
+/**
+ * The full-bleed 600x400 hull render Nova puts behind the shipyard's Info
+ * dialog: the same hull as the 5000-series showroom shot, but posed against a
+ * planet or a nebula instead of a grey card. PICT 20000 + shipID, keyed on the
+ * base hull for the same reason the showroom shot is — one picture per rlëD,
+ * shared by every ship type drawing from it.
+ *
+ * Nova files one of the 63 wrongly. The Rebel IDA Frigate is ship 412, but its
+ * picture — which names itself, and shows an IDA Frigate in rebel green — sits
+ * at 20381, where ship 381 is a Vell-os Dart that already has its own at
+ * 20173. A by-name fallback recovers it, the same trick outfitPict uses for
+ * variants, and here it rescues exactly the three Rebel IDA Frigate hulls and
+ * nothing else. The Kestrel and the Escape Pod have no picture at all; the
+ * caller falls back to the showroom shot.
+ */
+export function shipInfoPict(shipId: string): PictInfo | null {
+  const direct = SHIPINFO_PICTS[String(20000 + pictShipId(shipId))];
+  if (direct) return direct;
+  const name = SHIPS[shipId]?.name;
+  if (!name) return null;
+  return shipInfoPictsByName.get(normPictName(name)) ?? null;
+}
+
 /** Outfit pictures indexed by their own resource name, for the variant lookup. */
 let outfitPictsByName = new Map<string, PictInfo>();
+/** The same index over the info-dialog renders, for the misfiled one. */
+let shipInfoPictsByName = new Map<string, PictInfo>();
 
-function normOutfitName(name: string): string {
+function normPictName(name: string): string {
   return name
     .split(";")[0]
     .toLowerCase()
@@ -578,7 +604,7 @@ export function outfitPict(outfId: string): PictInfo | null {
   if (direct) return direct;
   const name = OUTFITS[outfId]?.name;
   if (!name) return null;
-  const want = normOutfitName(name);
+  const want = normPictName(name);
   const exact = outfitPictsByName.get(want);
   if (exact) return exact;
   for (const [pictName, pic] of outfitPictsByName) {
@@ -815,6 +841,7 @@ export async function loadUniverse(): Promise<void> {
       ui?: Record<string, PictInfo>;
       nebu?: Record<string, PictInfo>;
       target?: Record<string, PictInfo>;
+      shipinfo?: Record<string, PictInfo>;
     };
     landingPicts = picts.land ?? {};
     SHIPYARD_PICTS = picts.shipyard ?? {};
@@ -823,12 +850,19 @@ export async function loadUniverse(): Promise<void> {
     outfitPictsByName = new Map();
     for (const pic of Object.values(OUTFIT_PICTS)) {
       if (!pic.name) continue;
-      const key = normOutfitName(pic.name);
+      const key = normPictName(pic.name);
       if (!outfitPictsByName.has(key)) outfitPictsByName.set(key, pic);
     }
     UI_PICTS = picts.ui ?? {};
     NEBU_PICTS = picts.nebu ?? {};
     TARGET_PICTS = picts.target ?? {};
+    SHIPINFO_PICTS = picts.shipinfo ?? {};
+    shipInfoPictsByName = new Map();
+    for (const pic of Object.values(SHIPINFO_PICTS)) {
+      if (!pic.name) continue;
+      const key = normPictName(pic.name);
+      if (!shipInfoPictsByName.has(key)) shipInfoPictsByName.set(key, pic);
+    }
   }
   if (spriteResp.ok) {
     const manifest = (await spriteResp.json()) as SpriteManifest;

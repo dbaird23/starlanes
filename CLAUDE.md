@@ -116,6 +116,25 @@ the calendar) · `cron` news (IndNewsStr/NewsGovt/GovtNewsStr) · `spob` ambient
 sound · hull default outfits made sellable · `syst` Visibility variant
 selection · the bar/holovid/gamble/hire-escort screens.
 
+**PICT 20000 + shipID — the shipyard's Info dialog, and the pictures behind
+it.** A whole PICT range was going unextracted: 63 full-bleed 600x400 renders
+of each hull in space, one per rlëD exactly like the 5000-series showroom shot
+and the 3000-series target silhouette, and every one naming itself in its
+resource name ("Shuttle" at 20128, "Rebel Lightning" at 20274). The Bible's
+reserved-ID table does not list them. They now back a shipyard **Info** dialog,
+which is where the hull's full specification lives — Nova puts it behind a
+button rather than in the showroom, so the right-hand column is the picture and
+the price block (Ship Price / Trade-In / Final Price / You Have) and the grid
+cells carry no price at all. Esc closes the dialog and nothing else reaches the
+counter under it.
+
+Nova files one of the 63 wrongly: the Rebel IDA Frigate is ship 412, but its
+picture — an IDA Frigate in rebel green, named for itself — sits at 20381,
+where ship 381 is a Vell-os Dart that already has its own at 20173. A by-name
+fallback recovers it (the trick `outfitPict` already uses for variants) and
+rescues exactly those three hulls and nothing else. The Kestrel and the Escape
+Pod have no render at all; the dialog falls back to the showroom shot.
+
 **`shan`** — banking (158 hulls), sequence and folding animation, running
 lights with all three BlinkModes, and weapon exit points (Gun/Turret/Guided/
 Beam × 4 mounts, with Up/Dn perspective compression and Z offsets). Shots and
