@@ -1041,13 +1041,22 @@ export class Game {
       - outfitBonuses(this.player.outfits).mass;
   }
 
-  /** Buy a ship at the shipyard. Trade-in credits the old hull at 25%. */
+  /**
+   * Buy a ship at the shipyard. Trade-in credits the old hull at 25%.
+   *
+   * The net was clamped at zero, so trading down handed the yard the
+   * difference: a captured Leviathan (12,000,000, so 3,000,000 in trade)
+   * bought a 10,000-credit Shuttle for "free" and the other 2,990,000
+   * vanished. A negative price is change owed, and 69 of the 85 purchasable
+   * hulls sit below a Leviathan's trade-in, so this is most of the lot once
+   * you are flying a capital ship.
+   */
   buyShip(shipId: string): { ok: boolean; reason?: string } {
     const type = SHIPS[shipId];
     const current = SHIPS[this.player.shipId];
     if (!type) return { ok: false, reason: "Unknown ship class." };
     const tradeIn = current ? Math.floor(current.cost * 0.25) : 0;
-    const price = Math.max(0, type.cost - tradeIn);
+    const price = type.cost - tradeIn;
     if (this.player.credits < price) {
       return { ok: false, reason: "You cannot afford this ship." };
     }

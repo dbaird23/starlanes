@@ -1371,6 +1371,18 @@ export class LandedUi {
     const g = this.game;
     const current = SHIPS[g.player.shipId];
     const tradeIn = current ? Math.floor(current.cost * 0.25) : 0;
+    /*
+     * Trading down pays out. A hull worth less than a quarter of the one you
+     * are flying used to read a flat "0 cr", which looks like broken data when
+     * most of the lot says it at once — a captured Leviathan does that to 69
+     * of the 85 purchasable hulls. Show the change instead.
+     */
+    const priceLabel = (net: number) =>
+      net > 0
+        ? `${net.toLocaleString()} cr`
+        : net < 0
+          ? `+${(-net).toLocaleString()} cr`
+          : "free";
 
     // BuyRandom is the percent chance this hull is on the lot on a given
     // day; 0 means never, which is what keeps Nova's AI-only variants and
@@ -1394,7 +1406,7 @@ export class LandedUi {
     const cells = available
       .map((id) => {
         const s = SHIPS[id];
-        const price = Math.max(0, this.shopPrice(s.cost) - tradeIn);
+        const price = this.shopPrice(s.cost) - tradeIn;
         const pict = shipyardPict(id);
         // ShortName splits on "\n"; Nova draws a line starting with a
         // non-alphanumeric character in grey, which is how "- used -" reads
@@ -1411,7 +1423,7 @@ export class LandedUi {
           }</div>
           <div class="oi-name">${label}</div>
           <div class="oi-price">${
-            id === g.player.shipId ? "your ship" : `${price.toLocaleString()} cr`
+            id === g.player.shipId ? "your ship" : priceLabel(price)
           }</div>
         </div>`;
       })
@@ -1424,7 +1436,7 @@ export class LandedUi {
       const s = SHIPS[this.selectedShip];
       const pict = shipyardPict(this.selectedShip);
       const sprite = SHIP_SPRITES[this.selectedShip];
-      const price = Math.max(0, this.shopPrice(s.cost) - tradeIn);
+      const price = this.shopPrice(s.cost) - tradeIn;
       const isCurrent = this.selectedShip === g.player.shipId;
       const canBuy = !isCurrent && g.player.credits >= price;
       const [name] = s.name.split(";");
@@ -1477,7 +1489,11 @@ export class LandedUi {
         </div>`;
       desc = `<div class="oi-desc">${resolveNovaText(s.desc, g.player.bits)}</div>`;
       buy = `<button class="evbtn" id="btn-buy-ship" ${canBuy ? "" : "disabled"}>${
-        isCurrent ? "Your ship" : `Buy — ${price.toLocaleString()} cr`
+        isCurrent
+          ? "Your ship"
+          : price < 0
+            ? `Trade — ${(-price).toLocaleString()} cr back`
+            : `Buy — ${price.toLocaleString()} cr`
       }</button>`;
     }
 
