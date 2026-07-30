@@ -34,12 +34,18 @@ export const HUD_W = 268;
 
 /** Decorative starfield, fixed so it doesn't crawl between frames. */
 const STARS: [number, number, number, string][] = [
-  [0.14, 0.11, 2, "#dff2f7"], [0.28, 0.24, 1, "#a8c4cf"],
-  [0.44, 0.08, 2, "#ffffff"], [0.63, 0.19, 1, "#c7d8de"],
-  [0.82, 0.33, 2, "#eaf4f7"], [0.09, 0.46, 1, "#b9ccd4"],
-  [0.36, 0.57, 2, "#f3fafc"], [0.71, 0.52, 1, "#a8c4cf"],
-  [0.22, 0.71, 2, "#dff2f7"], [0.56, 0.78, 1, "#c7d8de"],
-  [0.88, 0.69, 2, "#ffffff"], [0.48, 0.90, 1, "#a8c4cf"],
+  [0.14, 0.11, 2, "#dff2f7"],
+  [0.28, 0.24, 1, "#a8c4cf"],
+  [0.44, 0.08, 2, "#ffffff"],
+  [0.63, 0.19, 1, "#c7d8de"],
+  [0.82, 0.33, 2, "#eaf4f7"],
+  [0.09, 0.46, 1, "#b9ccd4"],
+  [0.36, 0.57, 2, "#f3fafc"],
+  [0.71, 0.52, 1, "#a8c4cf"],
+  [0.22, 0.71, 2, "#dff2f7"],
+  [0.56, 0.78, 1, "#c7d8de"],
+  [0.88, 0.69, 2, "#ffffff"],
+  [0.48, 0.9, 1, "#a8c4cf"],
 ];
 
 const RADAR_RANGE = 2400;
@@ -68,6 +74,7 @@ export class HudUi {
   private target!: HTMLElement;
   private ledger!: HTMLElement;
   private hints!: HTMLElement;
+  private speedBadge!: HTMLElement;
 
   private ledgerRows: LedgerRow[] = [];
   private lastHints = "";
@@ -79,10 +86,13 @@ export class HudUi {
 
   setVisible(on: boolean): void {
     this.root.classList.toggle("hidden", !on);
+    // badge is a fixed child of #hud-ui; hide with the panel
+    if (!on) this.speedBadge.classList.add("hidden");
   }
 
   private build(): void {
     this.root.innerHTML = `
+      <div class="speed-badge hidden" title="Caps Lock — double game speed (polarity in Preferences)">2×</div>
       <div class="hud-card">
         <div class="hud-scan">
           <canvas class="hud-scan-c"></canvas>
@@ -114,7 +124,8 @@ export class HudUi {
         <div class="hud-hints"></div>
       </div>`;
 
-    const q = <T extends HTMLElement>(sel: string) => this.root.querySelector<T>(sel)!;
+    const q = <T extends HTMLElement>(sel: string) =>
+      this.root.querySelector<T>(sel)!;
     this.scan = q<HTMLCanvasElement>(".hud-scan-c");
     this.scanCtx = this.scan.getContext("2d")!;
     this.scanRange = q(".hud-scan-range");
@@ -129,10 +140,12 @@ export class HudUi {
     this.target = q(".hud-target");
     this.ledger = q(".hud-ledger");
     this.hints = q(".hud-hints");
+    this.speedBadge = q(".speed-badge");
   }
 
   /** Called once a frame while in flight. */
   update(g: Game): void {
+    this.speedBadge.classList.toggle("hidden", g.timeScale <= 1);
     this.drawScanner(g);
     this.drawIdentity(g);
     this.drawGauges(g);
@@ -151,7 +164,10 @@ export class HudUi {
     const w = box.clientWidth;
     const h = box.clientHeight;
     if (!w || !h) return;
-    if (box.width !== Math.round(w * dpr) || box.height !== Math.round(h * dpr)) {
+    if (
+      box.width !== Math.round(w * dpr) ||
+      box.height !== Math.round(h * dpr)
+    ) {
       box.width = Math.round(w * dpr);
       box.height = Math.round(h * dpr);
     }
@@ -301,7 +317,13 @@ export class HudUi {
     const segs: string[] = [];
     for (let i = 0; i < max; i++) {
       const cls =
-        i < whole ? (g.isAfterburning ? "on burn" : "on") : i === whole && part > 0.02 ? "part" : "";
+        i < whole
+          ? g.isAfterburning
+            ? "on burn"
+            : "on"
+          : i === whole && part > 0.02
+            ? "part"
+            : "";
       segs.push(`<i class="${cls}"></i>`);
     }
     rows.push(
@@ -313,7 +335,14 @@ export class HudUi {
 
     if (g.ship.ion > 0) {
       const f = g.ship.ion / g.ship.maxIon;
-      rows.push(barRow("ION", pct(f), g.ship.ionized ? "hud-bar-ionized" : "hud-bar-ion", f));
+      rows.push(
+        barRow(
+          "ION",
+          pct(f),
+          g.ship.ionized ? "hud-bar-ionized" : "hud-bar-ion",
+          f,
+        ),
+      );
     }
 
     setHtml(this.gauges, rows.join(""));
@@ -323,7 +352,11 @@ export class HudUi {
 
   private drawNav(g: Game): void {
     const dest = g.routeDest ? getSystem(g.routeDest).name : null;
-    const kind = dest ? "HYPERSPACE" : g.targetPlanet ? "STELLAR NAV" : "NAV SYSTEM";
+    const kind = dest
+      ? "HYPERSPACE"
+      : g.targetPlanet
+        ? "STELLAR NAV"
+        : "NAV SYSTEM";
     const value = dest ?? g.targetPlanet?.name ?? "Offline";
     this.navBox.classList.toggle("off", !dest && !g.targetPlanet);
     setText(this.navKind, kind);
@@ -379,7 +412,11 @@ export class HudUi {
       ? "Disabled"
       : `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`;
     const affil =
-      t.disabled && t.boarded ? "Plundered" : t.disabled ? "Derelict" : g.govtLabel(t.govtId);
+      t.disabled && t.boarded
+        ? "Plundered"
+        : t.disabled
+          ? "Derelict"
+          : g.govtLabel(t.govtId);
 
     setHtml(
       this.target,
@@ -426,8 +463,14 @@ export class HudUi {
       const junk = junkFromCargoKey(key);
       if (junk && held > 0) rows.push([junk.name, String(held), ""]);
     }
-    rows.push(["FREE", String(Math.max(0, g.player.cargoCap - g.cargoUsed())), ""]);
-    const special = g.player.activeMissions.find((a) => a.cargoLoaded && a.cargoName);
+    rows.push([
+      "FREE",
+      String(Math.max(0, g.player.cargoCap - g.cargoUsed())),
+      "",
+    ]);
+    const special = g.player.activeMissions.find(
+      (a) => a.cargoLoaded && a.cargoName,
+    );
     if (special) rows.push(["SPECIAL", special.cargoName!, "special"]);
     rows.push(["CREDITS", g.player.credits.toLocaleString(), "credits"]);
     rows.push(["DATE", formatDateShort(g.player.date), "date"]);
@@ -468,8 +511,11 @@ export class HudUi {
       ["L land", g.cloakBits > 0 ? "U cloak" : "C recall"],
       ["J jump", "M map"],
       ["W select", "Esc menu"],
+      ["Caps 2×", ""],
     ];
-    const html = keys.map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join("");
+    const html = keys
+      .map(([a, b]) => `<span>${a}</span><span>${b}</span>`)
+      .join("");
     if (html !== this.lastHints) {
       this.lastHints = html;
       this.hints.innerHTML = html;
@@ -483,7 +529,12 @@ function pct(f: number): string {
   return `${Math.round(Math.max(0, Math.min(1, f)) * 100)}%`;
 }
 
-function barRow(label: string, right: string, cls: string, frac: number): string {
+function barRow(
+  label: string,
+  right: string,
+  cls: string,
+  frac: number,
+): string {
   const w = `${Math.max(0, Math.min(1, frac)) * 100}%`;
   return `<div class="hud-gauge">
     <div class="hud-gauge-head"><span>${label}</span><span>${right}</span></div>
@@ -504,6 +555,8 @@ function esc(s: string): string {
   return s.replace(
     /[&<>"']/g,
     (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ] as string,
   );
 }

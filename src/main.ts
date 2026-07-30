@@ -18,7 +18,9 @@ async function boot(): Promise<void> {
   migrateLegacySave();
 
   const game = new Game(canvas);
-  const menu = new MainMenu((pilotId, strict) => game.startPilot(pilotId, strict));
+  const menu = new MainMenu((pilotId, strict) =>
+    game.startPilot(pilotId, strict),
+  );
   game.onMenu = () => menu.show();
   menu.show();
 
@@ -29,9 +31,12 @@ async function boot(): Promise<void> {
 
   let last = performance.now();
   function frame(now: number): void {
-    const dt = Math.min((now - last) / 1000, 0.05);
+    // Cap the wall-clock step first so a hitch can't blow physics, then apply
+    // Nova's Caps Lock 2× clock (game.timeScale) so the sim races while the
+    // display still paints once per real frame.
+    const raw = Math.min((now - last) / 1000, 0.05);
     last = now;
-    game.update(dt);
+    game.update(raw * game.timeScale);
     game.render();
     requestAnimationFrame(frame);
   }

@@ -72,6 +72,29 @@ body {
   z-index: 5;
 }
 
+/*
+ * Caps Lock 2× — Nova put a "2X" glyph in the top-left of the play window.
+ * Fixed to the viewport so it sits over the canvas, not inside the sidebar.
+ */
+#hud-ui .speed-badge {
+  position: fixed;
+  left: max(12px, env(safe-area-inset-left));
+  top: max(12px, env(safe-area-inset-top));
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 210, 122, 0.55);
+  background: rgba(12, 16, 24, 0.78);
+  color: var(--hud-gold);
+  font:
+    700 13px var(--hud-mono),
+    ui-monospace,
+    monospace;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 8px rgba(255, 210, 122, 0.45);
+  pointer-events: none;
+  z-index: 6;
+}
+
 .hud-card {
   height: 100%;
   overflow: hidden;
@@ -976,6 +999,20 @@ td.actions button:disabled {
   font-size: 12px;
   color: #9fb0c6;
   margin-bottom: 14px;
+}
+.ttl-fieldset {
+  margin: 0 0 14px;
+  padding: 10px 12px 2px;
+  border: 1px solid #2b3d56;
+  border-radius: 6px;
+}
+.ttl-fieldset legend {
+  padding: 0 6px;
+  font-size: 12px;
+  color: #cfd8e3;
+}
+.ttl-fieldset .ttl-check {
+  margin-bottom: 10px;
 }
 .ttl-splash {
   display: block;

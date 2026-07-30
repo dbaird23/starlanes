@@ -24,6 +24,11 @@ import {
   listPilots,
   loadPilot,
 } from "../game/pilots";
+import {
+  capsLockFastWhen,
+  setCapsLockFastWhen,
+  type CapsLockFastWhen,
+} from "../settings";
 
 /**
  * The title screen, rebuilt on Nova's own artwork. PICT 8000 is the 1024x768
@@ -569,14 +574,37 @@ export class MainMenu {
       ["Eject (escape pod)", "Alt-X"],
       ["Self-destruct", "Shift-Q"],
       ["Return to title screen", "Esc"],
+      ["Double game speed", "Caps Lock"],
     ];
-    this.modal(`
+    const fastWhen = capsLockFastWhen();
+    const m = this.modal(`
       <h2>Preferences</h2>
+      <fieldset class="ttl-fieldset">
+        <legend>Caps Lock 2× speed</legend>
+        <p class="menu-hint">Caps Lock always toggles double game speed. Choose which lock state is fast.</p>
+        <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="on"${
+          fastWhen === "on" ? " checked" : ""
+        }> Fast when Caps Lock is <strong>on</strong>
+          <span class="menu-hint"> — Nova default</span></label>
+        <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="off"${
+          fastWhen === "off" ? " checked" : ""
+        }> Fast when Caps Lock is <strong>off</strong>
+          <span class="menu-hint"> — if you leave Caps Lock on for typing</span></label>
+      </fieldset>
       <p class="menu-hint">Nova's original bindings, with the arrow keys for flight.</p>
       <table class="keytable">${keys
         .map(([k, v]) => `<tr><td>${k}</td><td><kbd>${v}</kbd></td></tr>`)
         .join("")}</table>
       <div class="btnrow"><button class="evbtn primary" data-close>Done</button></div>`);
+    for (const radio of m.querySelectorAll<HTMLInputElement>(
+      'input[name="pref-caps-fast"]',
+    )) {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        const when = radio.value as CapsLockFastWhen;
+        if (when === "on" || when === "off") setCapsLockFastWhen(when);
+      });
+    }
   }
 
   private about(): void {

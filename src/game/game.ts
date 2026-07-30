@@ -152,6 +152,7 @@ import {
   type WeaponSlot,
 } from "./combat";
 import { Input } from "../engine/input";
+import { simFastForCapsLock } from "../settings";
 import { InfoUi, type InfoRow } from "../ui/info";
 import { drawStarfield } from "../engine/starfield";
 import type {
@@ -391,6 +392,14 @@ export class Game {
   player: PlayerState;
   pilotId: string | null = null;
   pilotName = "Captain";
+  /**
+   * Simulation clock multiplier. Caps Lock always toggles 2×; Preferences
+   * only choose which lock state is fast (on or off). The frame loop
+   * multiplies dt by this so physics, AI and cooldowns all race.
+   */
+  get timeScale(): number {
+    return simFastForCapsLock(this.input.capsLock) ? 2 : 1;
+  }
   /** set by main.ts to reopen the title menu */
   onMenu: (() => void) | null = null;
   ship = new Ship(SPARROW);
