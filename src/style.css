@@ -21,6 +21,34 @@ body {
 }
 
 /*
+ * Subtle scrollbars — thin, low-contrast, track transparent. Native chrome is
+ * loud on dark panels (outfit grid, mission list, trade table, dialogs).
+ * Firefox: thin + two-value color. WebKit: 5px thumb that brightens on hover.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 198, 220, 0.2) transparent;
+}
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(180, 198, 220, 0.16);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 198, 220, 0.36);
+}
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(180, 198, 220, 0.5);
+}
+
+/*
  * Full-screen shells that should fill the viewport under safe-area padding.
  * Do not include the centred dialogs (#info-ui, #hail-ui, #plunder-ui): those
  * position with left/top 50% + translate(-50%,-50%), and inset:0 plus that
