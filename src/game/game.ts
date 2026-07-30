@@ -5405,30 +5405,23 @@ export class Game {
      * own status bar for free.
      */
     const S = Math.min(SIDEBAR_W / INTF_W, h / INTF_H);
-    const plate = UI_PICTS[String(INTERFACE.statusBkgnd)];
-    const plateImg = plate ? getPict(plate.file) : null;
-    /*
-     * The plate is not just a backdrop: it draws the bezel around every
-     * readout and the shield/armor/fuel icons beside the bars. So when it is
-     * there, the boxes and labels this used to paint would only cover it up —
-     * the dynamic content goes straight into the cut-outs instead. The
-     * hand-drawn chrome stays as the fallback for a missing plate.
-     */
-    const chrome = !plateImg;
 
-    // panel background: the plate itself, over a flat fill for whatever it
-    // doesn't reach (a short window crops it, a tall one leaves a gap below)
+    /*
+     * ïntf StatusBkgnd names a plate (PICT 700 and up, 194x767) that draws the
+     * bezel around every readout and the icons beside the bars. It is
+     * deliberately not drawn: its moulded-metal console reads as chrome around
+     * the game rather than part of it, so the sidebar paints its own outlined
+     * boxes on a flat panel instead. Everything positional still comes from the
+     * resource — the rects below, and with them a govt's own layout — so only
+     * the decoration is gone, not the data.
+     */
     ctx.fillStyle = "#0b1220";
     ctx.fillRect(x, 0, SIDEBAR_W, h);
-    if (plateImg) {
-      ctx.drawImage(plateImg, x + (SIDEBAR_W - INTF_W * S) / 2, 0, INTF_W * S, INTF_H * S);
-    } else {
-      ctx.strokeStyle = "#2c3e58";
-      ctx.beginPath();
-      ctx.moveTo(x + 0.5, 0);
-      ctx.lineTo(x + 0.5, h);
-      ctx.stroke();
-    }
+    ctx.strokeStyle = "#2c3e58";
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, 0);
+    ctx.lineTo(x + 0.5, h);
+    ctx.stroke();
     const px = (r: InterfaceRect) => ({
       x: x + (SIDEBAR_W - INTF_W * S) / 2 + r.x * S,
       y: r.y * S,
@@ -5453,14 +5446,12 @@ export class Game {
       y: cy + ((wy - this.ship.pos.y) / range) * (radar.h / 2),
     });
     if (shown(INTERFACE.radarArea)) {
-    if (chrome) {
-      ctx.fillStyle = "#050a14";
-      ctx.strokeStyle = "#2a3a52";
-      ctx.lineWidth = 1;
-      roundRect(ctx, radar.x, radar.y, radar.w, radar.h, 4);
-      ctx.fill();
-      ctx.stroke();
-    }
+    ctx.fillStyle = "#050a14";
+    ctx.strokeStyle = "#2a3a52";
+    ctx.lineWidth = 1;
+    roundRect(ctx, radar.x, radar.y, radar.w, radar.h, 4);
+    ctx.fill();
+    ctx.stroke();
     ctx.save();
     ctx.beginPath();
     ctx.rect(radar.x, radar.y, radar.w, radar.h);
@@ -5527,9 +5518,7 @@ export class Game {
     // Nova has no rect for this, so it goes on the one line the data leaves
     // between the radar and the first bar — which is tight, hence subtitle
     // size for both halves and a baseline pinned just above the shield bar.
-    const nameY = chrome
-      ? INTERFACE.shieldArea.y * S - 4 * S
-      : radar.y + radar.h - 5 * S; // inside the radar cut-out, on black
+    const nameY = INTERFACE.shieldArea.y * S - 4 * S;
     ctx.textAlign = "left";
     ctx.fillStyle = "#e8eef6";
     ctx.font = font(INTERFACE.subtitleSize, "600");
@@ -5554,24 +5543,20 @@ export class Game {
       if (!shown(area)) return;
       const r = px(area);
       const f = Math.max(0, Math.min(1, frac));
-      if (chrome) {
-        ctx.fillStyle = "#101a2c";
-        ctx.fillRect(r.x, r.y, r.w, r.h);
-      }
+      ctx.fillStyle = "#101a2c";
+      ctx.fillRect(r.x, r.y, r.w, r.h);
       ctx.fillStyle = color;
       if (r.h > r.w) ctx.fillRect(r.x, r.y + r.h * (1 - f), r.w, r.h * f);
       else ctx.fillRect(r.x, r.y, r.w * f, r.h);
-      if (chrome) {
-        // Nova's own plate names these bars with icons in the strip to their
-        // left; without it there are only ~27 of 192 units there, not enough
-        // for a word, so the label rides inside the bar instead.
-        ctx.strokeStyle = "#2a3a52";
-        ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
-        ctx.font = font(INTERFACE.subtitleSize - 1.5);
-        ctx.fillStyle = "#dfe8f2";
-        ctx.textAlign = "left";
-        ctx.fillText(label, r.x + 4 * S, r.y + r.h - 1.5 * S);
-      }
+      // Nova's own plate named these bars with icons in the strip to their
+      // left; there are only ~27 of 192 units there, not enough for a word, so
+      // the label rides inside the bar instead.
+      ctx.strokeStyle = "#2a3a52";
+      ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+      ctx.font = font(INTERFACE.subtitleSize - 1.5);
+      ctx.fillStyle = "#dfe8f2";
+      ctx.textAlign = "left";
+      ctx.fillText(label, r.x + 4 * S, r.y + r.h - 1.5 * S);
     };
     bar("Shield", INTERFACE.shieldArea,
       this.ship.maxShield ? this.ship.shield / this.ship.maxShield : 0, INTERFACE.shieldColor);
@@ -5606,13 +5591,11 @@ export class Game {
     // ---- Stellar Navigation ----
     const nav = px(INTERFACE.navArea);
     if (shown(INTERFACE.navArea)) {
-    if (chrome) {
-      ctx.fillStyle = "#070d18";
-      ctx.strokeStyle = "#2a3a52";
-      roundRect(ctx, nav.x, nav.y, nav.w, nav.h, 4);
-      ctx.fill();
-      ctx.stroke();
-    }
+    ctx.fillStyle = "#070d18";
+    ctx.strokeStyle = "#2a3a52";
+    roundRect(ctx, nav.x, nav.y, nav.w, nav.h, 4);
+    ctx.fill();
+    ctx.stroke();
     ctx.textAlign = "center";
     // a plotted hyperspace course takes the panel over; otherwise it shows
     // whichever world you have selected, and reads "Nav System Off" with neither
@@ -5645,13 +5628,11 @@ export class Game {
     const secondary = this.selectedSecondary();
     const weap = px(INTERFACE.weapArea);
     if (shown(INTERFACE.weapArea)) {
-    if (chrome) {
-      ctx.fillStyle = "#070d18";
-      ctx.strokeStyle = "#2a3a52";
-      roundRect(ctx, weap.x, weap.y, weap.w, weap.h, 4);
-      ctx.fill();
-      ctx.stroke();
-    }
+    ctx.fillStyle = "#070d18";
+    ctx.strokeStyle = "#2a3a52";
+    roundRect(ctx, weap.x, weap.y, weap.w, weap.h, 4);
+    ctx.fill();
+    ctx.stroke();
     ctx.textAlign = "center";
     ctx.font = font(INTERFACE.subtitleSize);
     ctx.fillStyle = secondary ? INTERFACE.brightText : INTERFACE.dimText;
@@ -5673,13 +5654,11 @@ export class Game {
     const targ = px(INTERFACE.targArea);
     const boxH = targ.h;
     if (shown(INTERFACE.targArea)) {
-    if (chrome) {
-      ctx.fillStyle = "#070d18";
-      ctx.strokeStyle = "#2a3a52";
-      roundRect(ctx, targ.x, targ.y, targ.w, targ.h, 4);
-      ctx.fill();
-      ctx.stroke();
-    }
+    ctx.fillStyle = "#070d18";
+    ctx.strokeStyle = "#2a3a52";
+    roundRect(ctx, targ.x, targ.y, targ.w, targ.h, 4);
+    ctx.fill();
+    ctx.stroke();
     if (this.targetNpc) {
       const t = this.targetNpc;
       const type = t.typeId ? SHIPS[t.typeId] : undefined;
@@ -5793,8 +5772,7 @@ export class Game {
     info("Date:", formatDateShort(this.player.date), "#9fb2c8");
 
     // ---- controls ----
-    // over the plate's own chrome the old near-black grey vanished
-    ctx.fillStyle = chrome ? "#4e6078" : INTERFACE.dimText;
+    ctx.fillStyle = "#4e6078";
     ctx.font = font(INTERFACE.subtitleSize);
     const hints = [
       this.afterburnerBurn > 0 ? "↑↓←→ fly   Z burn" : "↑↓←→ fly",
@@ -5803,25 +5781,8 @@ export class Game {
       this.cloakFlags > 0 ? "L land   C recall   U cloak" : "L land   C recall",
       "J jump   M map   Esc menu",
     ];
-    /*
-     * The plate's lower section is solid chrome and the plate is nearly as tall
-     * as the window, so there is nowhere below it to put these. They get a dark
-     * strip of their own over that chrome, which reads as part of the console
-     * rather than as text spilled across it.
-     */
     const hintsH = (hints.length - 1) * 14 * S;
     let hy = h - 12 - hintsH;
-    if (plateImg) {
-      ctx.fillStyle = "#060a12";
-      ctx.fillRect(x, hy - 16 * S, SIDEBAR_W, h - hy + 16 * S);
-      ctx.strokeStyle = "#2a3a52";
-      ctx.beginPath();
-      ctx.moveTo(x, hy - 16 * S + 0.5);
-      ctx.lineTo(x + SIDEBAR_W, hy - 16 * S + 0.5);
-      ctx.stroke();
-    }
-    // the strip's own fill was still current, which drew the hints in it
-    ctx.fillStyle = chrome ? "#4e6078" : INTERFACE.dimText;
     for (const hint of hints) {
       ctx.fillText(fitText(ctx, hint, innerW), rx, hy);
       hy += 14 * S;

@@ -81,7 +81,10 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
-`intf` status-bar rects + StatusBkgnd · `colr` emblem position · `outf`
+`intf` status-bar rects (StatusBkgnd is read but **deliberately not drawn** —
+see the note in `renderHud`; the sidebar paints its own outlined boxes on a
+flat panel, and only the plate art is dropped, not the rects) · `colr` emblem
+position · `outf`
 flags/DispWeight/OnPurchase/OnSell · `govt` legal model
 (CrimeTol/ScanFine/\*Penalty/InitialRec/MaxOdds), replacing a hardcoded
 reputation formula and a name-matching hostility regex · `char` template
