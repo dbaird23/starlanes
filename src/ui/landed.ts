@@ -357,8 +357,8 @@ export class LandedUi {
   /**
    * Keyboard navigation for landed menus. Lists answer Up/Down; icon grids
    * also take Left/Right so you move cell-by-cell the way the mouse does.
-   * Returns true when the key was consumed (including at a list edge, so the
-   * browser does not scroll the page instead).
+   * Movement wraps at the ends (top↔bottom, first↔last cell in a row/column).
+   * Returns true when the key was consumed so the browser does not scroll.
    */
   private handleMenuNav(code: string): boolean {
     const up = code === "ArrowUp";
@@ -488,12 +488,14 @@ export class LandedUi {
           );
         }
         if (dx !== 0) {
-          if (dx > 0 && inLeft >= 0 && rightIds.length) {
+          // hop columns; wrap so Left on the left column (and Right on the
+          // right) still crosses, matching vertical list wrap
+          if (inLeft >= 0 && rightIds.length) {
             this.selectedPort = rightIds[Math.min(inLeft, rightIds.length - 1)];
             this.render();
             return true;
           }
-          if (dx < 0 && inRight >= 0 && leftIds.length) {
+          if (inRight >= 0 && leftIds.length) {
             this.selectedPort = leftIds[Math.min(inRight, leftIds.length - 1)];
             this.render();
             return true;
@@ -506,7 +508,7 @@ export class LandedUi {
         if (dx !== 0) return false;
         const n = this.root.querySelectorAll(".ship-card[data-row]").length;
         if (n === 0) return false;
-        const next = Math.max(0, Math.min(n - 1, this.selectedGate + dy));
+        const next = (((this.selectedGate + dy) % n) + n) % n;
         if (next === this.selectedGate) return true;
         this.selectedGate = next;
         this.render();
@@ -515,7 +517,7 @@ export class LandedUi {
       case "gamble": {
         if (this.gambleResult || dy !== 0) return false;
         const cur = this.gamblePick ?? 0;
-        const next = Math.max(0, Math.min(3, cur + dx));
+        const next = (((cur + dx) % 4) + 4) % 4;
         if (this.gamblePick === next && this.gamblePick !== null) return true;
         this.gamblePick = next;
         this.gambleResult = null;
@@ -646,7 +648,8 @@ export class LandedUi {
     if (!ids.length || delta === 0) return false;
     let idx = current != null ? ids.indexOf(current) : 0;
     if (idx < 0) idx = 0;
-    const next = Math.max(0, Math.min(ids.length - 1, idx + delta));
+    // wrap: Up on the first item lands on the last, Down on the last → first
+    const next = (((idx + delta) % ids.length) + ids.length) % ids.length;
     if (ids[next] === current) return true;
     apply(ids[next]);
     this.render();
@@ -670,22 +673,21 @@ export class LandedUi {
     const row = Math.floor(idx / cols);
     let next = idx;
     if (dx !== 0) {
-      const nc = col + dx;
-      if (nc < 0 || nc >= cols) return true;
-      const candidate = row * cols + nc;
-      if (candidate >= ids.length) return true;
-      next = candidate;
+      // wrap within this row (last row may be shorter than cols)
+      const rowStart = row * cols;
+      const rowLen = Math.min(cols, ids.length - rowStart);
+      const colInRow = idx - rowStart;
+      const nextCol = (((colInRow + dx) % rowLen) + rowLen) % rowLen;
+      next = rowStart + nextCol;
     } else {
-      const nr = row + dy;
-      if (nr < 0) return true;
-      const candidate = nr * cols + col;
-      if (candidate >= ids.length) {
-        const last = ids.length - 1;
-        if (nr > Math.floor(last / cols)) return true;
-        next = last;
-      } else {
-        next = candidate;
-      }
+      // wrap within this column top↔bottom
+      const colItems: number[] = [];
+      for (let i = col; i < ids.length; i += cols) colItems.push(i);
+      let pos = colItems.indexOf(idx);
+      if (pos < 0) pos = 0;
+      const nextPos =
+        (((pos + dy) % colItems.length) + colItems.length) % colItems.length;
+      next = colItems[nextPos];
     }
     if (ids[next] === current) return true;
     // keep the grid scrolled where the player left it before we rebuild HTML
@@ -2168,7 +2170,8 @@ export class LandedUi {
 
     // The Kestrel and the Escape Pod have no 20000-series render; they fall
     // back to the showroom shot rather than showing an empty frame.
-    const pict = shipInfoPict(this.selectedShip) ?? shipyardPict(this.selectedShip);
+    const pict =
+      shipInfoPict(this.selectedShip) ?? shipyardPict(this.selectedShip);
     const hero = pict
       ? `<img class="sy-info-hero" src="${asset(`nova/picts/${pict.file}`)}" alt="${escapeHtml(name)}">`
       : '<div class="sy-info-hero placeholder"></div>';
@@ -2177,7 +2180,9 @@ export class LandedUi {
       ? s.stockWeapons
           .map((w) => {
             const wp = WEAPONS[String(w.id)];
-            return escapeHtml(`${w.count} ${wp ? wp.name.split(";")[0] : `Weapon ${w.id}`}`);
+            return escapeHtml(
+              `${w.count} ${wp ? wp.name.split(";")[0] : `Weapon ${w.id}`}`,
+            );
           })
           .join("<br>")
       : "None";
@@ -2193,7 +2198,9 @@ export class LandedUi {
         <div class="panel sy-info">
           ${hero}
           <div class="sy-info-name">${escapeHtml(fullName)}${
-            subtitle ? `<span class="sy-info-sub">${escapeHtml(subtitle)}</span>` : ""
+            subtitle
+              ? `<span class="sy-info-sub">${escapeHtml(subtitle)}</span>`
+              : ""
           }</div>
           <div class="sy-stats">
             <div class="sy-col">${col([
@@ -2203,7 +2210,10 @@ export class LandedUi {
               ["Shields:", String(s.shield)],
               ["Armor:", String(s.armor)],
               ["Guns:", s.maxGuns > 0 ? `Maximum of ${s.maxGuns}` : "None"],
-              ["Turrets:", s.maxTurrets > 0 ? `Maximum of ${s.maxTurrets}` : "None"],
+              [
+                "Turrets:",
+                s.maxTurrets > 0 ? `Maximum of ${s.maxTurrets}` : "None",
+              ],
             ])}</div>
             <div class="sy-col">${col([
               ["Space:", `${s.freeMass} tons`],
