@@ -85,6 +85,23 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**Hypergates / wormholes (Bible-aligned transit).** Selecting a working
+hypergate (L cycle or click) starts the ring open animation; landing on it
+when slow enough opens the **normal galaxy map** as a destination chooser —
+same fog of war, gold link lines only to that gate's HyperLink systems, arrow
+**Tab** cycles links (highlight only — map does not pan), Enter/Travel jumps.
+Transit is **instant** (no fuel, no calendar day) after a short hull bleach:
+ships fade to white on enter and recolour from white on exit (`gateFlash` on
+`Ship`; ~0.38s in / ~0.55s out). You emerge at the **centre** of the far gate
+moving outward slightly faster than landing speed, so you must brake to dock
+again; the far ring is open and immediately closes (L re-opens). Wormholes have
+no chooser: land → random far end (unlinked pool or HyperLinks). CustPicID
+drives the open/working frame split; CustSndID is emerge angle in Nova degrees
+(0 = up, clockwise). Stock rings share one orientation, so a missing/invalid
+CustSndID exits at ~4:00 (120°) rather than a random bearing. gövt Flags2
+0x0020/0x0040/0x0080 steer NPC leave-via-gate/wormhole vs edge jump. NPCs
+leaving via a gate get the same enter bleach before they leave the board.
+
 **Hyperspace jump sequence is Nova's full entry, not a charge timer.**
 `JumpSequence` in `game.ts` runs three phases: **braking** (face retro and burn
 until nearly stopped), **turning** (point at the destination system on the
@@ -111,10 +128,10 @@ feel-tuned (~1.7s / mult, overspeed ≥ max(cruise×4.5, 950)×mult); retune in
 **Landed menus take arrow keys.** In `landed.ts`, Up/Down (and Left/Right on
 grids and the two-column spaceport) step the selection; Enter activates
 Accept / Buy / Hire / the focused port button. Covers spaceport, trade, BBS,
-shipyard (3-col), outfitter and hire hall (4-col), bar actions, gamble
-racers, and hypergate destinations. Letter shortcuts (B/N/T/S/O/I/R/L) and
-Esc-to-back are unchanged. Keys the handler acts on must still call
-`game.swallowKey`.
+shipyard (3-col), outfitter and hire hall (4-col), bar actions, and gamble
+racers. Hypergate destinations use the canvas map chooser (Tab cycles links;
+see hypergate note above). Letter shortcuts (B/N/T/S/O/I/R/L) and Esc-to-back
+are unchanged. Keys the handler acts on must still call `game.swallowKey`.
 
 **Landing / mission dialogs** (`events`, `offer`): Enter fires the affirmative
 (`data-modal-default` — Accept / Continue); Esc fires the negative

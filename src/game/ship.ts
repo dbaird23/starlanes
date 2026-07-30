@@ -50,6 +50,11 @@ export class Ship {
   ion = 0;
   maxIon = 100;
   ionDissipatePerSec = 15;
+  /**
+   * Gate transit bleach: 0 = normal hull, 1 = solid white silhouette.
+   * Enter ramps 0→1 before the ship leaves; exit starts at 1 and falls to 0.
+   */
+  gateFlash = 0;
 
   get ionized(): boolean {
     return this.ion >= this.maxIon;
@@ -59,7 +64,12 @@ export class Ship {
     return this.sprite ? Math.max(this.sprite.w, this.sprite.h) / 2 : 12;
   }
 
-  initDefense(shield: number, armor: number, rechPerSec: number, disableAt = 0.33): void {
+  initDefense(
+    shield: number,
+    armor: number,
+    rechPerSec: number,
+    disableAt = 0.33,
+  ): void {
     this.shield = this.maxShield = shield;
     this.armor = this.maxArmor = armor;
     this.shieldRechPerSec = rechPerSec;
@@ -69,17 +79,29 @@ export class Ship {
 
   /** Ion charge bleeds away over time. */
   dissipateIon(dt: number): void {
-    if (this.ion > 0) this.ion = Math.max(0, this.ion - this.ionDissipatePerSec * dt);
+    if (this.ion > 0)
+      this.ion = Math.max(0, this.ion - this.ionDissipatePerSec * dt);
   }
 
   rechargeShields(dt: number): void {
     if (this.shield < this.maxShield) {
-      this.shield = Math.min(this.maxShield, this.shield + this.shieldRechPerSec * dt);
+      this.shield = Math.min(
+        this.maxShield,
+        this.shield + this.shieldRechPerSec * dt,
+      );
     }
     // armor only regenerates if something aboard repairs it
-    if (this.armorRechPerSec > 0 && this.armor < this.maxArmor && this.armor > 0) {
-      this.armor = Math.min(this.maxArmor, this.armor + this.armorRechPerSec * dt);
-      if (this.disabled && this.armor > this.maxArmor * this.disableAt) this.disabled = false;
+    if (
+      this.armorRechPerSec > 0 &&
+      this.armor < this.maxArmor &&
+      this.armor > 0
+    ) {
+      this.armor = Math.min(
+        this.maxArmor,
+        this.armor + this.armorRechPerSec * dt,
+      );
+      if (this.disabled && this.armor > this.maxArmor * this.disableAt)
+        this.disabled = false;
     }
   }
 
@@ -103,7 +125,11 @@ export class Ship {
     if (armorShare <= 0) return;
     this.armor -= armorShare;
     // crippled rather than killed: EV disables a ship before destroying it
-    if (!this.disabled && this.armor > 0 && this.armor <= this.maxArmor * this.disableAt) {
+    if (
+      !this.disabled &&
+      this.armor > 0 &&
+      this.armor <= this.maxArmor * this.disableAt
+    ) {
       this.disabled = true;
     }
   }
@@ -136,7 +162,10 @@ export class Ship {
       this.animTime = (this.animTime + step) % s.sets;
     } else if (s.flags & (SHAN_ANIM_PARTS | SHAN_UNFOLD_FIRING)) {
       const dir = this.unfolding ? 1 : -1;
-      this.animTime = Math.max(0, Math.min(s.sets - 1, this.animTime + dir * step));
+      this.animTime = Math.max(
+        0,
+        Math.min(s.sets - 1, this.animTime + dir * step),
+      );
     }
   }
 
@@ -149,7 +178,8 @@ export class Ship {
     const s = this.sprite;
     if (!s || s.sets <= 1) return 0;
     // set 1 is bank-left, set 2 bank-right; our angle grows clockwise
-    if (s.flags & SHAN_BANKS) return this.turning < 0 ? 1 : this.turning > 0 ? 2 : 0;
+    if (s.flags & SHAN_BANKS)
+      return this.turning < 0 ? 1 : this.turning > 0 ? 2 : 0;
     return Math.min(s.sets - 1, Math.floor(this.animTime));
   }
 
@@ -283,7 +313,11 @@ export class NpcShip extends Ship {
      * of speed, which for a big stellar was still well inside the surface and
      * fast enough to be a crash — and it deleted the ship outright.
      */
-    if (this.phase === "toPlanet" && dist < this.targetRadius + 12 && this.speed < 90) {
+    if (
+      this.phase === "toPlanet" &&
+      dist < this.targetRadius + 12 &&
+      this.speed < 90
+    ) {
       this.landing = true;
       this.vel = { x: 0, y: 0 };
       return;
@@ -309,7 +343,10 @@ export class NpcShip extends Ship {
        * from the ship's own bearing makes the ring the only stable place to
        * be, and dropping the lead while out of position sends it straight in.
        */
-      const bearing = Math.atan2(this.pos.y - this.target.y, this.pos.x - this.target.x);
+      const bearing = Math.atan2(
+        this.pos.y - this.target.y,
+        this.pos.x - this.target.x,
+      );
       const lead = Math.abs(dist - ring) > 100 ? 0 : this.orbitDir * 0.6;
       this.orbitAngle = bearing + lead;
       const want = {
@@ -317,7 +354,10 @@ export class NpcShip extends Ship {
         y: this.target.y + Math.sin(this.orbitAngle) * ring,
       };
       const gap = Math.hypot(want.x - this.pos.x, want.y - this.pos.y);
-      const facing = this.steerToward(dt, Math.atan2(want.y - this.pos.y, want.x - this.pos.x));
+      const facing = this.steerToward(
+        dt,
+        Math.atan2(want.y - this.pos.y, want.x - this.pos.x),
+      );
       this.update(dt, 0, facing && gap > 40);
       return;
     }

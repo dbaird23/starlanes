@@ -257,36 +257,20 @@ the barely-provoked are the ones who listen.
 
 ## Hypergates and wormholes
 
-Gates are stellars flagged in the data (`Flags2` 0x1000 / 0x2000), and landing on one
-opens a destination chooser instead of a spaceport. Hypergates list their real
-`HyperLink` network — 35 gates wired to each other across the galaxy — and travel is
-instant and free of fuel. Wormholes (24 of them) drop you somewhere far away without
-telling you where first.
+Gates are stellars flagged in the data (`Flags2` 0x1000 / 0x2000). **Selecting** a working
+hypergate (L cycle or click) starts the ring open animation; **landing** on it when you are
+close and slow enough opens the normal galaxy map as a destination chooser — same fog of
+war, with gold lines only to that gate's `HyperLink` systems. Tab cycles linked
+destinations (highlight only; the map does not pan); Enter or Travel jumps. Transit is
+instant (no fuel, no calendar day). You
+emerge at the centre of the far gate moving slightly too fast to re-dock without braking;
+the far ring is open and immediately starts closing (L selects it again to re-open).
 
-**The ring opens for you, not on a timer.** Of the 65 stellar graphics Nova ships, exactly
-two animate, and they animate differently — which the sheets themselves say. The
-hypergate's 42 frames climb from a dark, closed ring (627 opaque pixels) to a bright open
-one (3398) and plateau there: a one-shot opening, not a loop. The wormhole's 32 frames hold
-flat brightness and the last frame is identical to the first: a seamless cycle. Every other
-stellar is a single still.
-
-So a hypergate sits shut. Press **L** beside one and the ring powers up, and only when it
-is fully open does the destination chart appear. It holds open while you choose, and shuts
-again if you back out or fly off — and shuts behind you when you come out the far end. A
-wormhole has no ring to open, so it simply turns, always, and you fly straight in.
-
-Not every gate answers. The data splits them cleanly: 19 working gates carry Nova's
-can-land bit and belong to govt 183, named "Hypergate"; the other 16 drop that bit, have no
-government at all, and wear a separate sprite the resource calls "Broken Hypergate". The
-dead ones stay dark however long you sit in front of them — which is what the storyline
-means when a Rebel technician offers you "the parts of it that work, that is".
-
-Nova has no artwork for a gate dialog — its interface pictures name a Spaceport, a Bar, a
-Map, a Trade floor and so on, and nothing for a gate — so the chooser plots the network
-instead of only listing it: every linked system at its real galaxy-map position, joined to
-the gate you're standing on, hoverable against the list and clickable to travel. Ends you
-have not visited are drawn dimmer but still named, because a hypergate posts its own
-network. A wormhole gets a blank chart, since it does not tell you where it goes.
+Wormholes have no chooser: land and you are thrown to a random far end (another unlinked
+wormhole, or one of the HyperLinks if any). Of the 65 stellar graphics, two animate: the
+hypergate's 42 frames open on demand (CustPicID splits open vs working); the wormhole's 32
+loop always. 19 working gates are landable under govt 183 "Hypergate"; 16 broken ones stay
+dark. NPCs honour gövt Flags2 prefer-gate / prefer-wormhole / no-gates when leaving a system.
 
 ## Escorts
 

@@ -176,6 +176,8 @@ interface RawSpob {
   ambientLoop: boolean;
   flags2: number;
   hyperLinks: number[];
+  /** CustSndID as emerge degrees when this is a gate; absent on older extracts */
+  emergeAngle?: number | null;
   tribute: number;
   defDude: number;
   defCount: number;
@@ -785,6 +787,25 @@ function makePlanet(sp: RawSpob, descs: Record<string, string>): PlanetDef {
     isHypergate: ((sp.flags2 ?? 0) & 0x1000) !== 0,
     isWormhole: ((sp.flags2 ?? 0) & 0x2000) !== 0,
     hyperLinks: (sp.hyperLinks ?? []).map(String),
+    emergeAngle:
+      typeof sp.emergeAngle === "number" &&
+      sp.emergeAngle >= 0 &&
+      sp.emergeAngle <= 359
+        ? sp.emergeAngle
+        : null,
+    /*
+     * Bible: CustPicID on animated hypergates is the open→working split.
+     * 0 means halfway; stock working gates use 37 of 42 frames. Non-gates
+     * and broken rings leave it null so the drawer holds the last frame.
+     */
+    gateAnimSplit: (() => {
+      const isHg = ((sp.flags2 ?? 0) & 0x1000) !== 0;
+      if (!isHg) return null;
+      const pic = sp.landingPict;
+      if (pic === 0) return 0; // "first half / second half" sentinel
+      if (pic > 0 && pic < 128) return pic;
+      return null;
+    })(),
     prices: decodePrices(sp.flags),
   };
 }

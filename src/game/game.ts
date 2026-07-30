@@ -73,6 +73,7 @@ import {
   weaponExitPoint,
   SHAN_HIDE_LIGHTS_DISABLED,
   SHAN_UNFOLD_FIRING,
+  type ShipSprite,
 } from "../engine/sprites";
 import { applySet, evalTest } from "./bits";
 import { formatDate } from "./calendar";
@@ -247,7 +248,23 @@ const BRIEFING_ARROW = "#5ada54";
 
 const LAND_DIST = 2.4; // multiples of planet radius (from surface-ish)
 const LAND_SPEED = 130;
+/** Leave a gate slightly too fast to re-dock without braking. */
+const GATE_EMERGE_SPEED = LAND_SPEED + 20;
+/**
+ * Default exit bearing when CustSndID does not pin one (Bible: "any other
+ * value" → random). Stock rings all share the same art, open at ~4:00 on
+ * the clock, so a fixed bearing matches the sprite better than a roll.
+ * Degrees are Nova's: 0 = up, clockwise (120° ≈ 4:00).
+ */
+const GATE_EMERGE_DEG = 120;
+/** Seconds to bleach white on gate entry / recolour on exit. */
+const GATE_ENTER_FLASH = 0.38;
+const GATE_EXIT_FLASH = 0.55;
 const REFUEL_COST_PER_JUMP = 150;
+/** gövt Flags2: ships of this govt don't use hypergates / prefer gates / prefer wormholes */
+const GOVT_NO_HYPERGATES = 0x0020;
+const GOVT_PREFER_HYPERGATES = 0x0040;
+const GOVT_PREFER_WORMHOLES = 0x0080;
 
 /**
  * A template's opening legal record. Nova sets the given status in that
@@ -456,15 +473,29 @@ export class Game {
   /** the autopilot has the stick (Q) */
   private autopilot = false;
   /**
-   * Hypergate rings, by spöb id. A gate sits closed and only runs its 42-frame
-   * sequence when someone opens it, holding on the last frame until it is used
-   * or the pilot backs out.
+   * Hypergate rings, by spöb id. Selecting a working gate starts the open
+   * sequence; landing on it opens the destination map. After transit the far
+   * ring is open and immediately closes.
    */
   private gateAnim = new Map<string, { phase: GatePhase; frame: number }>();
-  /** the gate the player is currently opening, if any */
+  /** gate we landed on while it was still opening — show chooser when open */
   private gateDocking: PlanetDef | null = null;
+  /**
+   * Source hypergate while the destination map is up. Null for a normal
+   * hyperspace map. Esc / Done cancels without travelling.
+   */
+  private gateChooser: PlanetDef | null = null;
+  /**
+   * Dest spöb id while the player is bleaching white into a gate. Null once
+   * the enter flash finishes and transit applies. Exit flash is just
+   * ship.gateFlash decaying on the far side.
+   */
+  private pendingGateDest: string | null = null;
   private jump: JumpSequence | null = null;
   private jumpFlash = 0;
+  /** Offscreen buffer for the solid-white hull silhouette during gateFlash. */
+  private gateFlashBuf: HTMLCanvasElement | null = null;
+  private gateFlashCtx: CanvasRenderingContext2D | null = null;
 
   private messages: Message[] = [];
   private pendingMissionEvents: MissionEvent[] = [];
@@ -637,64 +668,95 @@ export class Game {
   }
 
   /**
-   * Destinations reachable from a gate: explicit links, or any far wormhole.
-   * Each carries its system's map position so the gate panel can plot the
-   * network rather than just list it.
+   * Destinations reachable from a hypergate's HyperLink list. Wormholes are
+   * not listed — the Bible dumps you at a random far end with no choice.
    */
   gateDestinations(gate: PlanetDef): GateDestination[] {
-    const describe = (spobId: string): GateDestination | null => {
-      const entry = SPOBS.get(spobId);
-      if (!entry) return null;
-      let systemName = "unknown space";
-      let mapPos: Vec2 | null = null;
-      let explored = false;
-      try {
-        const sys = getSystem(entry.systemId);
-        systemName = sys.name;
-        mapPos = sys.mapPos;
-        explored = this.player.explored.includes(entry.systemId);
-      } catch {
-        /* orphaned spob */
-      }
-      return { spobId, name: entry.planet.name, systemName, mapPos, explored };
+    return gate.hyperLinks
+      .map((spobId) => this.describeGateDest(spobId))
+      .filter((d): d is GateDestination => d !== null);
+  }
+
+  private describeGateDest(spobId: string): GateDestination | null {
+    const entry = SPOBS.get(spobId);
+    if (!entry) return null;
+    let systemName = "unknown space";
+    let mapPos: Vec2 | null = null;
+    let explored = false;
+    try {
+      const sys = getSystem(entry.systemId);
+      systemName = sys.name;
+      mapPos = sys.mapPos;
+      explored = this.player.explored.includes(entry.systemId);
+    } catch {
+      /* orphaned spob */
+    }
+    return {
+      spobId,
+      name: entry.planet.name,
+      systemName,
+      mapPos,
+      explored,
     };
-    if (gate.hyperLinks.length > 0) {
-      return gate.hyperLinks
-        .map(describe)
-        .filter((d): d is GateDestination => d !== null);
+  }
+
+  /** System ids that are valid travel targets from the open gate chooser. */
+  private gateChooserSystemIds(): string[] {
+    if (!this.gateChooser) return [];
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    for (const d of this.gateDestinations(this.gateChooser)) {
+      const entry = SPOBS.get(d.spobId);
+      if (!entry || seen.has(entry.systemId)) continue;
+      seen.add(entry.systemId);
+      ids.push(entry.systemId);
     }
-    if (gate.isWormhole) {
-      // an unlinked wormhole dumps you at another unlinked wormhole
-      const others = [...SPOBS.values()].filter(
-        (e) =>
-          e.planet.isWormhole &&
-          e.planet.hyperLinks.length === 0 &&
-          e.planet.id !== gate.id,
-      );
-      if (others.length === 0) return [];
-      const pick = others[Math.floor(Math.random() * others.length)];
-      const d = describe(pick.planet.id);
-      return d ? [d] : [];
-    }
-    return [];
+    return ids;
   }
 
   /**
-   * Whether this gate will answer at all. The data splits them cleanly: the 19
-   * working gates carry Nova's can-land bit and belong to govt 183, "Hypergate";
-   * the 16 dead ones drop that bit, have no government, and wear a different
-   * sprite the resources call "Broken Hypergate". Only the working ones open.
+   * Bible wormhole rules: linked → random among HyperLinks; fully unlinked →
+   * random among other unlinked wormholes. Picked once at transit time.
+   */
+  private pickWormholeDest(gate: PlanetDef): string | null {
+    if (gate.hyperLinks.length > 0) {
+      const opts = gate.hyperLinks.filter((id) => SPOBS.has(id));
+      if (!opts.length) return null;
+      return opts[Math.floor(Math.random() * opts.length)];
+    }
+    const others = [...SPOBS.values()].filter(
+      (e) =>
+        e.planet.isWormhole &&
+        e.planet.hyperLinks.length === 0 &&
+        e.planet.id !== gate.id,
+    );
+    if (!others.length) return null;
+    return others[Math.floor(Math.random() * others.length)].planet.id;
+  }
+
+  /**
+   * Whether this gate will answer at all. Working hypergates carry the
+   * can-land bit; broken ones do not. Wormholes always answer if landable.
    */
   gateIsWorking(gate: PlanetDef): boolean {
     return gate.isWormhole || gate.landable;
   }
 
   /**
-   * Which frame of an animated stellar to draw. The two behave differently and
-   * the sheets say so: the hypergate's 42 frames climb from a dark closed ring
-   * to a bright open one and stay there, so it is a one-shot driven by whoever
-   * opened it; the wormhole's 32 loop seamlessly — flat brightness, last frame
-   * identical to the first — so it simply turns, always.
+   * Frame where opening finishes and the "working" loop begins (Bible
+   * CustPicID). Defaults to the last frame when unset.
+   */
+  private gateOpenEnd(planet: PlanetDef): number {
+    const last = Math.max(0, (planet.spriteFrames || 1) - 1);
+    const split = planet.gateAnimSplit;
+    if (split === null || split === undefined) return last;
+    if (split === 0) return Math.floor((last + 1) / 2);
+    return Math.max(0, Math.min(last, split));
+  }
+
+  /**
+   * Which frame of an animated stellar to draw. Wormholes always loop;
+   * hypergates only run while selected/opening/closing.
    */
   gateFrame(planet: PlanetDef): number {
     if (planet.spriteFrames <= 1) return 0;
@@ -704,111 +766,224 @@ export class Game {
     return this.gateAnim.get(planet.id)?.frame ?? 0;
   }
 
-  /** Begin the opening sequence. The chooser waits until the ring is fully open. */
-  private openGate(gate: PlanetDef): void {
-    this.gateDocking = gate;
+  /**
+   * Start (or resume) opening a working hypergate. Selection and NPC
+   * approach both use this; landing opens the destination map once ready.
+   * `silent` skips the player "powering up" line (AI traffic still plays the
+   * ring sound so you can hear someone using the gate).
+   */
+  private beginOpenGate(gate: PlanetDef, silent = false): void {
+    if (!gate.isHypergate || !this.gateIsWorking(gate)) return;
     const state = this.gateAnim.get(gate.id);
-    // if it is already open, don't replay the sequence
-    if (state?.phase === "open") {
-      this.showGatePanel(gate);
-      return;
-    }
-    this.gateAnim.set(gate.id, { phase: "opening", frame: state?.frame ?? 0 });
-    playSnd(153, 0.35);
-    this.message(`${gate.name} acknowledges. The ring is powering up...`);
+    if (state?.phase === "open" || state?.phase === "opening") return;
+    const frame = state?.frame ?? 0;
+    this.gateAnim.set(gate.id, { phase: "opening", frame });
+    playSnd(153, silent ? 0.22 : 0.35);
+    if (!silent)
+      this.message(`${gate.name} acknowledges. The ring is powering up...`);
   }
 
-  /** Let the ring shut again — the pilot backed out, or has gone through. */
+  /**
+   * An NPC on final approach to a working hypergate starts the ring so it is
+   * opening (or open) by the time they touch down.
+   */
+  private maybeOpenGateForNpc(npc: NpcShip): void {
+    if (npc.phase !== "toPlanet" || !npc.targetPlanetId) return;
+    const pad = this.system.planets.find((p) => p.id === npc.targetPlanetId);
+    if (!pad?.isHypergate || !this.gateIsWorking(pad)) return;
+    const dist = Math.hypot(pad.pos.x - npc.pos.x, pad.pos.y - npc.pos.y);
+    if (dist < pad.radius + 420) this.beginOpenGate(pad, true);
+  }
+
+  /** True if the player is still using this ring (select, dock, chooser, or enter flash). */
+  private playerUsingGate(gateId: string): boolean {
+    return (
+      this.targetPlanet?.id === gateId ||
+      this.gateDocking?.id === gateId ||
+      this.gateChooser?.id === gateId ||
+      // mid bleach-in: keep the ring open until transit applies
+      this.pendingGateDest != null
+    );
+  }
+
+  /** Let the ring shut — backed out of the chooser, flew off, or just arrived. */
   private closeGate(gateId: string): void {
     const state = this.gateAnim.get(gateId);
-    if (state) state.phase = "closing";
+    if (state && state.phase !== "closing") state.phase = "closing";
     if (this.gateDocking?.id === gateId) this.gateDocking = null;
   }
 
-  private showGatePanel(gate: PlanetDef): void {
-    this.mode = "landed";
+  /**
+   * Destination map for a hypergate. Same fog of war as the normal map; only
+   * HyperLink systems are selectable, with link lines drawn to them.
+   */
+  private openGateChooser(gate: PlanetDef): void {
+    this.gateChooser = gate;
+    this.gateDocking = null;
+    this.player.landedOn = null;
+    this.landedUi.hide();
+    this.mode = "map";
+    this.mapReturn = "flight";
+    this.mapPreview = [];
+    this.mapCenter = { ...this.system.mapPos };
+    const links = this.gateChooserSystemIds();
+    this.mapSelected = links[0] ?? this.system.id;
     this.projectiles = [];
     this.targetNpc = null;
-    this.landedUi.showGate(gate, this.system);
+    this.autopilot = false;
   }
 
-  /** Run the gate rings forward, and hand over to the chooser once one is open. */
+  /** Run gate rings; finish pending landings once the ring is open. */
   private updateGates(dt: number): void {
     const step = STELLAR_FPS * dt;
     for (const [id, state] of [...this.gateAnim]) {
-      const planet = this.system.planets.find((p) => p.id === id);
-      const last = (planet?.spriteFrames ?? 1) - 1;
+      const planet =
+        this.system.planets.find((p) => p.id === id) ??
+        (this.gateChooser?.id === id ? this.gateChooser : null);
+      if (!planet) {
+        this.gateAnim.delete(id);
+        continue;
+      }
+      const openEnd = this.gateOpenEnd(planet);
+      const last = Math.max(0, (planet.spriteFrames || 1) - 1);
       if (state.phase === "opening") {
-        state.frame = Math.min(last, state.frame + step);
-        if (state.frame >= last) {
+        state.frame = Math.min(openEnd, state.frame + step);
+        if (state.frame >= openEnd) {
           state.phase = "open";
-          // the ring is open: now show the pilot where it goes
-          if (this.gateDocking?.id === id && this.mode === "flight") {
-            this.showGatePanel(this.gateDocking);
+          state.frame = openEnd;
+          if (
+            this.gateDocking?.id === id &&
+            (this.mode === "flight" || this.mode === "landed")
+          ) {
+            this.openGateChooser(this.gateDocking);
           }
+        }
+      } else if (state.phase === "open") {
+        // Bible "working" loop: frames from the split through the end
+        if (last > openEnd) {
+          state.frame += step;
+          if (state.frame > last) state.frame = openEnd;
+        } else {
+          state.frame = openEnd;
         }
       } else if (state.phase === "closing") {
         state.frame -= step;
         if (state.frame <= 0) this.gateAnim.delete(id);
       }
     }
-    // fly away from a gate you were opening and it loses interest
-    if (this.gateDocking && this.mode === "flight") {
+    // fly away from a gate you had selected / were docking and it powers down
+    if (this.mode === "flight" && this.targetPlanet?.isHypergate) {
+      const g = this.targetPlanet;
       const d = Math.hypot(
-        this.gateDocking.pos.x - this.ship.pos.x,
-        this.gateDocking.pos.y - this.ship.pos.y,
+        g.pos.x - this.ship.pos.x,
+        g.pos.y - this.ship.pos.y,
       );
-      if (d > this.gateDocking.radius * LAND_DIST + 260) {
-        this.message(`${this.gateDocking.name} powers down.`);
-        this.closeGate(this.gateDocking.id);
+      if (d > g.radius * LAND_DIST + 400) {
+        const st = this.gateAnim.get(g.id);
+        if (st && st.phase !== "closing") {
+          this.message(`${g.name} powers down.`);
+          this.closeGate(g.id);
+        }
+      }
+    }
+    if (this.gateDocking && this.mode === "flight") {
+      const g = this.gateDocking;
+      const d = Math.hypot(
+        g.pos.x - this.ship.pos.x,
+        g.pos.y - this.ship.pos.y,
+      );
+      if (d > g.radius * LAND_DIST + 260) {
+        this.message(`${g.name} powers down.`);
+        this.closeGate(g.id);
       }
     }
   }
 
-  /** Travel through a gate to the far end. Costs no fuel — that's the point. */
+  /**
+   * Start (or complete) gate/wormhole travel. The hull bleaches white, then
+   * transit is instant — no fuel, no calendar day — and the far side recolours
+   * from white. Emerge at the far ring's centre, moving slightly too fast to
+   * re-dock without braking.
+   */
   useGate(destSpobId: string): void {
+    if (!SPOBS.get(destSpobId)) {
+      this.message("The gate hums, then falls silent. Nothing happens.");
+      return;
+    }
+    if (this.pendingGateDest) return;
+    // close any chooser / landed panel and freeze on the ring while we bleach
+    this.gateChooser = null;
+    this.gateDocking = null;
+    this.landedUi.hide();
+    this.jump = null;
+    stopSustained(JUMP_SND_KEY);
+    this.mode = "flight";
+    this.ship.vel = { x: 0, y: 0 };
+    this.ship.thrusting = false;
+    this.ship.gateFlash = 0;
+    this.pendingGateDest = destSpobId;
+  }
+
+  /** Apply the actual system swap once the enter flash has finished. */
+  private applyGateTransit(destSpobId: string): void {
     const entry = SPOBS.get(destSpobId);
     if (!entry) {
       this.message("The gate hums, then falls silent. Nothing happens.");
+      this.ship.gateFlash = 0;
       return;
     }
     this.player.systemId = entry.systemId;
     this.markExplored(entry.systemId);
-    this.advanceDays(1);
     this.player.landedOn = null;
     const dest = entry.planet;
-    // emerge alongside the far gate, drifting clear of it
-    const ang = Math.random() * Math.PI * 2;
-    const r = dest.radius + 120;
-    this.ship.pos = {
-      x: dest.pos.x + Math.cos(ang) * r,
-      y: dest.pos.y + Math.sin(ang) * r,
-    };
+    // CustSndID is Nova degrees (0 = up, clockwise). Our ship angle is
+    // 0 = +x, clockwise — subtract 90° so velocity matches the ring art.
+    const novaDeg =
+      dest.emergeAngle != null &&
+      dest.emergeAngle >= 0 &&
+      dest.emergeAngle <= 359
+        ? dest.emergeAngle
+        : GATE_EMERGE_DEG;
+    const ang = ((novaDeg - 90) * Math.PI) / 180;
+    // centre of the far gate, already under way outward
+    this.ship.pos = { x: dest.pos.x, y: dest.pos.y };
     this.ship.angle = ang;
-    this.ship.vel = { x: Math.cos(ang) * 60, y: Math.sin(ang) * 60 };
+    this.ship.vel = {
+      x: Math.cos(ang) * GATE_EMERGE_SPEED,
+      y: Math.sin(ang) * GATE_EMERGE_SPEED,
+    };
+    // solid white on arrival; decays over GATE_EXIT_FLASH
+    this.ship.gateFlash = 1;
     this.mode = "flight";
+    this.gateChooser = null;
     this.landedUi.hide();
     this.npcs = [];
     this.dockedNpcs = [];
     this.projectiles = [];
     this.explosions = [];
     this.targetNpc = null;
+    // don't leave the far ring selected — you just left it and are braking away
+    this.targetPlanet = null;
     this.route = [];
     this.routeDest = null;
-    // the gate you left is a system behind you; the one you came out of shuts
+    this.autopilot = false;
+    // far ring is open and immediately starts closing; L re-opens it
     this.gateAnim.clear();
     this.gateDocking = null;
-    this.gateAnim.set(dest.id, {
-      phase: "closing",
-      frame: Math.max(0, (dest.spriteFrames || 1) - 1),
-    });
+    if (dest.isHypergate && dest.spriteFrames > 1) {
+      this.gateAnim.set(dest.id, {
+        phase: "closing",
+        frame: this.gateOpenEnd(dest),
+      });
+    }
     this.populateNpcs();
     this.spawnMissionShips();
-    this.jumpFlash = 0.5;
     playSnd(153, 0.5);
     this.save();
     this.message(
-      `You emerge from ${dest.name} in the ${getSystem(entry.systemId).name} system.`,
+      dest.isWormhole
+        ? `The wormhole flings you into the ${this.system.name} system.`
+        : `You emerge from ${dest.name} in the ${this.system.name} system.`,
     );
   }
 
@@ -901,6 +1076,8 @@ export class Game {
    * point of looking is that the destination may be somewhere unfamiliar.
    */
   openMap(previewSpobs: string[] = []): void {
+    // don't clobber an open hypergate destination chart
+    if (this.gateChooser) return;
     this.mapReturn = this.mode === "map" ? this.mapReturn : this.mode;
     this.mapPreview = previewSpobs
       .map((id) => SPOB_INDEX.get(id)?.systemId)
@@ -932,6 +1109,16 @@ export class Game {
 
   /** Leave the map, back to wherever it was opened from. */
   closeMap(): void {
+    if (this.gateChooser) {
+      // backing out of the gate chart shuts the ring
+      this.closeGate(this.gateChooser.id);
+      this.gateChooser = null;
+      this.gateDocking = null;
+      this.mapPreview = [];
+      this.mode = "flight";
+      this.mapReturn = "flight";
+      return;
+    }
     this.mapPreview = [];
     this.mode = this.mapReturn === "landed" ? "landed" : "flight";
     if (this.mode === "landed") this.landedUi.resume();
@@ -1214,13 +1401,17 @@ export class Game {
     }
 
     if (this.mode === "landed") {
-      // a gate ring stays open behind the chooser while you pick a destination
       this.updateGates(dt);
       this.input.endFrame();
       return; // DOM UI handles everything
     }
 
-    if (this.mode === "flight" && this.input.consume("Escape") && !this.jump) {
+    if (
+      this.mode === "flight" &&
+      this.input.consume("Escape") &&
+      !this.jump &&
+      !this.pendingGateDest
+    ) {
       // an open info panel takes Esc first, before it means "leave the game"
       if (this.infoUi.open) {
         this.infoUi.close();
@@ -1234,10 +1425,12 @@ export class Game {
 
     if (this.input.consume("KeyM")) {
       if (this.mode === "map") this.closeMap();
-      else this.openMap();
+      else if (this.mode === "flight") this.openMap();
     }
-    if (this.mode === "map" && this.input.consume("Escape")) {
-      this.closeMap();
+    if (this.mode === "map") {
+      this.updateGates(dt);
+      this.updateGateChooserKeys();
+      if (this.input.consume("Escape")) this.closeMap();
     }
 
     // flight controls (also run under the map, EV-style time keeps passing? No — pause under map)
@@ -1248,8 +1441,69 @@ export class Game {
     this.input.endFrame();
   }
 
+  /** Tab cycles linked gate systems (Shift-Tab reverse); map stays put. Enter travels. */
+  private updateGateChooserKeys(): void {
+    if (!this.gateChooser) return;
+    const links = this.gateChooserSystemIds();
+    if (!links.length) return;
+    let idx = links.indexOf(this.mapSelected ?? "");
+    if (idx < 0) idx = 0;
+    if (this.input.consume("Tab")) {
+      idx = this.input.shiftDown
+        ? (idx - 1 + links.length) % links.length
+        : (idx + 1) % links.length;
+      // highlight only — do not pan the chart
+      this.mapSelected = links[idx];
+    }
+    if (this.input.consume("Enter") || this.input.consume("NumpadEnter")) {
+      this.travelGateToSelected();
+    }
+  }
+
+  /** Resolve the chooser selection to a HyperLink spöb and transit. */
+  private travelGateToSelected(): void {
+    if (!this.gateChooser || !this.mapSelected) return;
+    const dest = this.gateDestinations(this.gateChooser).find((d) => {
+      const e = SPOBS.get(d.spobId);
+      return e?.systemId === this.mapSelected;
+    });
+    if (!dest) {
+      this.message("That system is not on this gate's network.");
+      return;
+    }
+    this.useGate(dest.spobId);
+  }
+
   private updateFlight(dt: number): void {
     const sys = this.system;
+
+    /*
+     * Gate enter flash: hull bleaches white on the pad, then transit. Controls
+     * are locked so you stay centred on the ring.
+     */
+    if (this.pendingGateDest) {
+      this.ship.vel = { x: 0, y: 0 };
+      this.ship.thrusting = false;
+      this.ship.gateFlash = Math.min(
+        1,
+        this.ship.gateFlash + dt / GATE_ENTER_FLASH,
+      );
+      this.updateGates(dt);
+      if (this.ship.gateFlash >= 1) {
+        const dest = this.pendingGateDest;
+        this.pendingGateDest = null;
+        this.applyGateTransit(dest);
+      }
+      return;
+    }
+
+    // exit flash: recolour from white after emerging
+    if (this.ship.gateFlash > 0) {
+      this.ship.gateFlash = Math.max(
+        0,
+        this.ship.gateFlash - dt / GATE_EXIT_FLASH,
+      );
+    }
 
     if (this.jump) {
       this.updateJumpSequence(dt);
@@ -1421,7 +1675,8 @@ export class Game {
       else if (npc.aiType === 3 || npc.aiType === 4)
         this.updateWarshipAi(npc, dt);
       else npc.updateAi(dt);
-      if (npc.landing) this.dockNpc(npc);
+      this.maybeOpenGateForNpc(npc);
+      if (npc.landing) this.dockNpc(npc, dt);
     }
     this.updateDockedNpcs(dt);
     this.npcs = this.npcs.filter((n) => !n.done);
@@ -4601,15 +4856,36 @@ export class Game {
         Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
     );
     const idx = this.targetPlanet ? byDist.indexOf(this.targetPlanet) : -1;
-    this.targetPlanet = byDist[(idx + 1) % byDist.length];
+    this.setTargetPlanet(byDist[(idx + 1) % byDist.length]);
+  }
+
+  /**
+   * Target a stellar. Selecting a working hypergate starts its open sequence;
+   * landing (when close and slow) is what opens the destination chart.
+   */
+  private setTargetPlanet(planet: PlanetDef | null): void {
+    const prev = this.targetPlanet;
+    this.targetPlanet = planet;
     this.targetNpc = null;
+    if (
+      prev &&
+      prev.isHypergate &&
+      prev.id !== planet?.id &&
+      this.gateDocking?.id !== prev.id
+    ) {
+      this.closeGate(prev.id);
+    }
+    if (!planet) return;
+    if (planet.isHypergate && this.gateIsWorking(planet)) {
+      this.beginOpenGate(planet);
+    }
     const dist = Math.round(
       Math.hypot(
-        this.targetPlanet.pos.x - this.ship.pos.x,
-        this.targetPlanet.pos.y - this.ship.pos.y,
+        planet.pos.x - this.ship.pos.x,
+        planet.pos.y - this.ship.pos.y,
       ),
     );
-    this.message(`Target: ${this.targetPlanet.name} (${dist} away).`);
+    this.message(`Target: ${planet.name} (${dist} away).`);
   }
 
   private tryLand(chosen?: PlanetDef): void {
@@ -4675,10 +4951,23 @@ export class Game {
     this.ship.vel = { x: 0, y: 0 };
     this.hailUi.close();
     if (isGate) {
-      // gates aren't ports. A hypergate's ring has to open first; a wormhole is
-      // a hole in space that is always open, so you just fly into it.
-      if (planet.isWormhole) this.showGatePanel(planet);
-      else this.openGate(planet);
+      // Wormhole: Bible teleports you with no chooser. Hypergate: destination
+      // map once the ring is open (select already started the open sequence).
+      if (planet.isWormhole) {
+        const destId = this.pickWormholeDest(planet);
+        if (!destId) {
+          this.message("The wormhole churns, but goes nowhere.");
+          return;
+        }
+        this.useGate(destId);
+        return;
+      }
+      this.gateDocking = planet;
+      this.beginOpenGate(planet);
+      const st = this.gateAnim.get(planet.id);
+      if (st?.phase === "open") this.openGateChooser(planet);
+      else
+        this.message(`${planet.name} is still powering up. Hold position...`);
       return;
     }
 
@@ -5619,6 +5908,35 @@ export class Game {
   }
 
   /**
+   * gövt Flags2 travel preferences for leaving a system: don't use hypergates
+   * (0x0020), prefer hypergates (0x0040), prefer wormholes (0x0080).
+   */
+  private npcLeaveViaGate(npc: NpcShip, sys: SystemDef): PlanetDef | null {
+    const f2 = npc.govtId >= 128 ? (GOVT_FLAGS2[String(npc.govtId)] ?? 0) : 0;
+    const noGates = (f2 & GOVT_NO_HYPERGATES) !== 0;
+    const preferGates = (f2 & GOVT_PREFER_HYPERGATES) !== 0;
+    const preferWh = (f2 & GOVT_PREFER_WORMHOLES) !== 0;
+    if (!preferGates && !preferWh) return null;
+    const gates = sys.planets.filter(
+      (p) => p.isHypergate && this.gateIsWorking(p) && !noGates,
+    );
+    const holes = sys.planets.filter(
+      (p) => p.isWormhole && this.gateIsWorking(p),
+    );
+    if (preferGates && gates.length) {
+      return gates[Math.floor(Math.random() * gates.length)];
+    }
+    if (preferWh && holes.length) {
+      return holes[Math.floor(Math.random() * holes.length)];
+    }
+    // prefer-gates with no working gate, but wormholes allowed
+    if (preferGates && !noGates && holes.length && preferWh) {
+      return holes[Math.floor(Math.random() * holes.length)];
+    }
+    return null;
+  }
+
+  /**
    * Give a ship the errand its düde AIType says it is on. The Bible is
    * specific about who goes where: only "1 - Wimpy Trader" and "2 - Brave
    * Trader" visit planets, "3 - Warship ... jumps out if there aren't any"
@@ -5626,6 +5944,9 @@ export class Game {
    * can't find any". Every spawn used to roll a flat 70% chance of flying at a
    * random stellar whatever it was, so warships and interceptors made for the
    * nearest world and evaporated on touching it.
+   *
+   * When a ship is leaving, gövt Flags2 may send it at a hypergate or wormhole
+   * instead of flying to the system edge.
    */
   private setNpcErrand(
     npc: NpcShip,
@@ -5645,6 +5966,14 @@ export class Game {
         npc.pos.y - pick.pos.y,
         npc.pos.x - pick.pos.x,
       );
+      return;
+    }
+    const via = this.npcLeaveViaGate(npc, sys);
+    if (via) {
+      npc.phase = "toPlanet";
+      npc.targetPlanetId = via.id;
+      npc.targetRadius = via.radius;
+      npc.target = { x: via.pos.x, y: via.pos.y };
       return;
     }
     const outAng = Math.random() * Math.PI * 2;
@@ -5668,7 +5997,37 @@ export class Game {
   }[] = [];
 
   /** Take a ship that has just set down off the board. */
-  private dockNpc(npc: NpcShip): void {
+  private dockNpc(npc: NpcShip, dt = 1 / 30): void {
+    // a gate/wormhole transit: bleach white, then leave rather than berth
+    const pad = this.system.planets.find((p) => p.id === npc.targetPlanetId);
+    if (pad && (pad.isHypergate || pad.isWormhole)) {
+      if (pad.isHypergate) {
+        // hold on the pad until the ring is open, then vanish into it
+        this.beginOpenGate(pad, true);
+        const st = this.gateAnim.get(pad.id);
+        const ready =
+          pad.spriteFrames <= 1 ||
+          st?.phase === "open" ||
+          (st != null && st.frame >= this.gateOpenEnd(pad));
+        if (!ready) {
+          npc.vel = { x: 0, y: 0 };
+          npc.landing = true;
+          return;
+        }
+      }
+      // same white-out the player gets, then drop them off the board
+      npc.vel = { x: 0, y: 0 };
+      npc.landing = true;
+      npc.gateFlash = Math.min(1, npc.gateFlash + dt / GATE_ENTER_FLASH);
+      if (npc.gateFlash < 1) return;
+      if (pad.isHypergate && !this.playerUsingGate(pad.id)) {
+        this.closeGate(pad.id);
+      }
+      npc.landing = false;
+      npc.done = true;
+      if (this.targetNpc === npc) this.targetNpc = null;
+      return;
+    }
     npc.landing = false;
     npc.done = true; // removed from this.npcs by the usual sweep
     if (this.targetNpc === npc) this.targetNpc = null;
@@ -5746,15 +6105,7 @@ export class Game {
       }
     }
     if (bestPlanet) {
-      this.targetPlanet = bestPlanet.planet;
-      this.targetNpc = null;
-      const dist = Math.round(
-        Math.hypot(
-          bestPlanet.planet.pos.x - this.ship.pos.x,
-          bestPlanet.planet.pos.y - this.ship.pos.y,
-        ),
-      );
-      this.message(`Target: ${bestPlanet.planet.name} (${dist} away).`);
+      this.setTargetPlanet(bestPlanet.planet);
       return;
     }
 
@@ -5771,7 +6122,7 @@ export class Game {
       return;
     }
     if (this.targetPlanet || this.targetNpc) {
-      this.targetPlanet = null;
+      this.setTargetPlanet(null);
       this.targetNpc = null;
     }
   }
@@ -5800,6 +6151,19 @@ export class Game {
       if (d < 14 && (!best || d < best.d)) best = { id: node.id, d };
     }
     if (best) {
+      if (this.gateChooser) {
+        const allowed = this.gateChooserSystemIds();
+        if (!allowed.includes(best.id)) {
+          this.message("Only linked hypergate systems can be selected.");
+          return;
+        }
+        if (this.mapSelected === best.id) {
+          this.travelGateToSelected();
+          return;
+        }
+        this.mapSelected = best.id;
+        return;
+      }
       this.mapSelected = best.id;
       this.setDestination(best.id);
     }
@@ -5807,6 +6171,12 @@ export class Game {
 
   private onMapButton(id: string): void {
     switch (id) {
+      case "travel":
+        this.travelGateToSelected();
+        break;
+      case "cancel-gate":
+        this.closeMap();
+        break;
       case "borders":
         this.mapBorders = !this.mapBorders;
         break;
@@ -6169,6 +6539,7 @@ export class Game {
     const set = ship.spriteSet;
     // the caller dims a cloaked ship; the additive layers have to fade with it
     const baseAlpha = ctx.globalAlpha;
+    const flash = Math.min(1, Math.max(0, ship.gateFlash));
     ctx.save();
     ctx.translate(ship.pos.x, ship.pos.y);
     const glow = shipTypeId ? GLOW_SPRITES[shipTypeId] : undefined;
@@ -6178,12 +6549,27 @@ export class Game {
     if (!drewHull) {
       ctx.save();
       ctx.rotate(angle);
-      if (thrusting) drawThrustFlame(ctx, sprite ? sprite.w / 2 : 13);
+      if (thrusting && flash < 0.85)
+        drawThrustFlame(ctx, sprite ? sprite.w / 2 : 13);
       if (isPlayer) drawPlayerShip(ctx, false);
       else drawNpcShip(ctx, false);
+      // flat white wash over the procedural stand-in hull
+      if (flash > 0) {
+        ctx.globalAlpha = baseAlpha * flash;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = baseAlpha;
+      }
       ctx.restore();
       ctx.restore();
       return;
+    }
+
+    // solid-white silhouette on top of the coloured hull (enter/exit gate flash)
+    if (flash > 0 && sprite) {
+      this.drawGateFlashOverlay(ctx, sprite, angle, set, baseAlpha * flash);
     }
 
     /*
@@ -6191,9 +6577,11 @@ export class Game {
      * own BlinkMode pattern, independent of the engines. 92 of Nova's hulls
      * have one. Flags 0x0040 puts them out when the ship is disabled, which is
      * the visual cue that a hulk is dead rather than merely drifting.
+     * Suppressed while fully bleached so the white silhouette stays clean.
      */
     const light = shipTypeId ? LIGHT_SPRITES[shipTypeId] : undefined;
     if (
+      flash < 0.85 &&
       light &&
       sprite &&
       !(ship.disabled && sprite.flags & SHAN_HIDE_LIGHTS_DISABLED)
@@ -6202,7 +6590,7 @@ export class Game {
       if (intensity > 0) {
         const prev = ctx.globalCompositeOperation;
         ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = baseAlpha * intensity;
+        ctx.globalAlpha = baseAlpha * intensity * (1 - flash);
         drawSheetFrame(
           ctx,
           light,
@@ -6215,13 +6603,14 @@ export class Game {
       }
     }
 
-    if (thrusting) {
+    if (thrusting && flash < 0.85) {
       if (glow) {
         // Nova's own engine-glow sprite, additively blended over the hull
         const prev = ctx.globalCompositeOperation;
         ctx.globalCompositeOperation = "lighter";
         // the glow flickers between full and slightly dimmed, as in the original
-        ctx.globalAlpha = baseAlpha * (0.75 + Math.random() * 0.25);
+        ctx.globalAlpha =
+          baseAlpha * (0.75 + Math.random() * 0.25) * (1 - flash);
         drawSheetFrame(
           ctx,
           glow,
@@ -6239,6 +6628,46 @@ export class Game {
       }
     }
     ctx.restore();
+  }
+
+  /**
+   * Paint a solid-white copy of the hull sprite (alpha = how far into the
+   * gate flash we are). Built via source-in on a small offscreen buffer so
+   * only the opaque ship pixels bleach.
+   */
+  private drawGateFlashOverlay(
+    ctx: CanvasRenderingContext2D,
+    sprite: ShipSprite,
+    angle: number,
+    set: number,
+    alpha: number,
+  ): void {
+    if (alpha <= 0) return;
+    const w = sprite.w;
+    const h = sprite.h;
+    if (
+      !this.gateFlashBuf ||
+      !this.gateFlashCtx ||
+      this.gateFlashBuf.width < w ||
+      this.gateFlashBuf.height < h
+    ) {
+      this.gateFlashBuf = document.createElement("canvas");
+      this.gateFlashBuf.width = Math.max(w, 64);
+      this.gateFlashBuf.height = Math.max(h, 64);
+      this.gateFlashCtx = this.gateFlashBuf.getContext("2d");
+      if (!this.gateFlashCtx) return;
+    }
+    const fctx = this.gateFlashCtx;
+    fctx.clearRect(0, 0, w, h);
+    if (!drawShipSprite(fctx, sprite, w / 2, h / 2, angle, set)) return;
+    fctx.globalCompositeOperation = "source-in";
+    fctx.fillStyle = "#ffffff";
+    fctx.fillRect(0, 0, w, h);
+    fctx.globalCompositeOperation = "source-over";
+    const prev = ctx.globalAlpha;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(this.gateFlashBuf, 0, 0, w, h, -w / 2, -h / 2, w, h);
+    ctx.globalAlpha = prev;
   }
 
   // ---------------- HUD ----------------
@@ -6363,7 +6792,8 @@ export class Game {
       ctx.restore();
     }
 
-    // links
+    // links (normal hyperlanes) — still drawn under a gate chart so the map
+    // reads like the real one; gate network lines are overlaid below
     ctx.strokeStyle = "rgba(90,120,160,0.38)";
     ctx.lineWidth = 1;
     const drawn = new Set<string>();
@@ -6384,8 +6814,32 @@ export class Game {
     }
     ctx.stroke();
 
-    // route highlight
-    if (this.route.length > 0) {
+    // hypergate network from the gate you're on (chooser only).
+    // Tab cycles selection; the selected link is drawn brighter/thicker.
+    const gateLinkIds = this.gateChooser
+      ? this.gateChooserSystemIds()
+      : ([] as string[]);
+    if (this.gateChooser && gateLinkIds.length) {
+      const here = toScreen(this.system.mapPos.x, this.system.mapPos.y);
+      for (const id of gateLinkIds) {
+        const other = getSystem(id);
+        const b = toScreen(other.mapPos.x, other.mapPos.y);
+        const sel = id === this.mapSelected;
+        ctx.strokeStyle = sel
+          ? "rgba(255, 230, 140, 0.98)"
+          : "rgba(255, 200, 90, 0.4)";
+        ctx.lineWidth = sel ? 3 : 1.5;
+        ctx.setLineDash(sel ? [] : [5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(here.x, here.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    // route highlight (hyperspace plot only — not the gate chart)
+    if (!this.gateChooser && this.route.length > 0) {
       ctx.strokeStyle = "rgba(130,220,150,0.9)";
       ctx.lineWidth = 2.5;
       let prev = this.system;
@@ -6465,8 +6919,10 @@ export class Game {
        * shows — a marked dot floating in uncharted space.
        */
       const isMission = missionSystems.get(sys.id);
-      if (!explored && !adjacent && !isMission) continue;
-      if (!explored) {
+      const isGateLinkEarly = gateLinkIds.includes(sys.id);
+      // gate network posts its own ends: linked systems appear even uncharted
+      if (!explored && !adjacent && !isMission && !isGateLinkEarly) continue;
+      if (!explored && !isGateLinkEarly) {
         ctx.fillStyle = "rgba(120,135,155,0.5)";
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
@@ -6475,9 +6931,33 @@ export class Game {
         this.mapNodes.push({ id: sys.id, x: pt.x, y: pt.y });
         continue;
       }
+      if (!explored && isGateLinkEarly) {
+        // dim unvisited gate end, still selectable
+        this.mapNodes.push({ id: sys.id, x: pt.x, y: pt.y });
+        const isGateSel =
+          this.gateChooser != null && sys.id === this.mapSelected;
+        ctx.fillStyle = isGateSel ? "#ffd27a" : "rgba(224, 168, 74, 0.55)";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isGateSel ? 5 : 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = isGateSel ? "#ffe6a8" : "rgba(255, 200, 90, 0.55)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        if (isMission) missionArrow(pt, 3.5, isMission);
+        ctx.font = isGateSel
+          ? "600 12px Helvetica, Arial, sans-serif"
+          : "11px Helvetica, Arial, sans-serif";
+        ctx.fillStyle = isGateSel ? "#ffe6a8" : "rgba(255, 210, 122, 0.75)";
+        ctx.fillText(sys.name, pt.x, pt.y + 18);
+        continue;
+      }
       this.mapNodes.push({ id: sys.id, x: pt.x, y: pt.y });
       const isCurrent = sys.id === this.player.systemId;
-      const isDest = sys.id === this.routeDest;
+      const isDest = !this.gateChooser && sys.id === this.routeDest;
+      const isGateLink = gateLinkIds.includes(sys.id);
+      const isGateSel = this.gateChooser != null && sys.id === this.mapSelected;
       /*
        * Only an inhabited world counts as somewhere to land here. An
        * uninhabited rock ignores MinStatus and will always take you, but Nova
@@ -6486,7 +6966,7 @@ export class Game {
        * original map, while Rigel is red on the strength of Rigel III alone.
        */
       const inhabited = sys.planets.some((p) => p.landable && !p.uninhabited);
-      const r = isCurrent ? 6 : inhabited ? 4.5 : 3;
+      const r = isCurrent || isGateSel ? 6 : inhabited || isGateLink ? 4.5 : 3;
       /*
        * Nova's three map colours. A system with somewhere to land is painted
        * in its government's own gövt Color; one that will not clear you to
@@ -6502,34 +6982,55 @@ export class Game {
           (p) =>
             p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
         );
-      ctx.fillStyle = !inhabited
-        ? "#4a5666"
-        : welcome
-          ? systemGovtColor(sys)
-          : "#c85028";
+      ctx.fillStyle = isGateLink
+        ? isGateSel
+          ? "#ffd27a"
+          : "#e0a84a"
+        : !inhabited
+          ? "#4a5666"
+          : welcome
+            ? systemGovtColor(sys)
+            : "#c85028";
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
       ctx.fill();
-      if (isCurrent || isDest) {
-        ctx.strokeStyle = isCurrent ? "#ffffff" : "#8be09b";
-        ctx.lineWidth = 1.5;
+      if (isCurrent || isDest || isGateSel || isGateLink) {
+        ctx.strokeStyle = isGateSel
+          ? "#ffe6a8"
+          : isGateLink
+            ? "rgba(255, 200, 90, 0.7)"
+            : isCurrent
+              ? "#ffffff"
+              : "#8be09b";
+        ctx.lineWidth = isGateSel ? 2 : 1.5;
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, isGateLink || isGateSel ? 11 : 10, 0, Math.PI * 2);
         ctx.stroke();
       }
       if (isMission) missionArrow(pt, r, isMission);
       const nearCursor =
         Math.hypot(pt.x - this.mouse.x, pt.y - this.mouse.y) < 42;
-      if (labelAll || isCurrent || isDest || nearCursor) {
+      if (
+        labelAll ||
+        isCurrent ||
+        isDest ||
+        isGateSel ||
+        isGateLink ||
+        nearCursor
+      ) {
         ctx.font =
-          isCurrent || isDest
+          isCurrent || isDest || isGateSel
             ? "600 12px Helvetica, Arial, sans-serif"
             : "11px Helvetica, Arial, sans-serif";
         ctx.fillStyle = isCurrent
           ? "#ffffff"
-          : isDest
-            ? "#a8e0b2"
-            : "rgba(190,205,225,0.82)";
+          : isGateSel
+            ? "#ffe6a8"
+            : isGateLink
+              ? "#ffd27a"
+              : isDest
+                ? "#a8e0b2"
+                : "rgba(190,205,225,0.82)";
         ctx.fillText(sys.name, pt.x, pt.y + 18);
       }
     }
@@ -6575,23 +7076,57 @@ export class Game {
       ty += 15;
     };
 
-    label("Destination System:");
-    value(sel.name, "#e8eef6");
-    ty += 6;
-    label("Government:");
-    value(sel.govtName ?? "Independent");
-    ty += 6;
-    label("Legal Status:");
-    const rec = getRecord(this.player, sel.govtId);
-    value(
-      rec === 0 ? "No Record" : rec > 0 ? `Good (${rec})` : `Criminal (${rec})`,
-      rec < 0 ? "#e08a7a" : rec > 0 ? "#a8d9b0" : "#8fa2ba",
-    );
-    ty += 6;
+    if (this.gateChooser) {
+      label("Hypergate:");
+      value(this.gateChooser.name, "#ffd27a");
+      ty += 4;
+      label("From System:");
+      value(this.system.name, "#e8eef6");
+      ty += 6;
+      label("Travel To:");
+      const gateOk = this.gateChooserSystemIds().includes(sel.id);
+      value(sel.name, gateOk ? "#ffe6a8" : "#8fa2ba");
+      ty += 4;
+      if (gateOk) {
+        const dest = this.gateDestinations(this.gateChooser).find((d) => {
+          const e = SPOBS.get(d.spobId);
+          return e?.systemId === sel.id;
+        });
+        if (dest) {
+          label("Far Gate:");
+          value(dest.name);
+        }
+      } else {
+        label("Status:");
+        value("Not on this network", "#62748c");
+      }
+      ty += 8;
+      label("Controls:");
+      value("Tab cycle links", "#9fb0c6");
+      value("Enter travel · Esc leave", "#9fb0c6");
+    } else {
+      label("Destination System:");
+      value(sel.name, "#e8eef6");
+      ty += 6;
+      label("Government:");
+      value(sel.govtName ?? "Independent");
+      ty += 6;
+      label("Legal Status:");
+      const rec = getRecord(this.player, sel.govtId);
+      value(
+        rec === 0
+          ? "No Record"
+          : rec > 0
+            ? `Good (${rec})`
+            : `Criminal (${rec})`,
+        rec < 0 ? "#e08a7a" : rec > 0 ? "#a8d9b0" : "#8fa2ba",
+      );
+      ty += 6;
+    }
 
     const explored = this.isExplored(sel.id);
     const ports = sel.planets.filter((p) => p.landable);
-    if (explored && ports.length) {
+    if (!this.gateChooser && explored && ports.length) {
       const goods = new Set<string>();
       const services = new Set<string>();
       for (const p of ports) {
@@ -6609,7 +7144,7 @@ export class Game {
       label("Services:");
       if (services.size === 0) value("None", "#62748c");
       for (const sv of services) value(sv);
-    } else if (!explored) {
+    } else if (!this.gateChooser && !explored) {
       label("Status:");
       value("Uncharted", "#62748c");
     }
@@ -6646,25 +7181,41 @@ export class Game {
 
     // button bar
     this.mapButtons = [];
-    const buttons: { id: string; label: string; w: number }[] = [
-      {
-        id: "borders",
-        label: this.mapBorders ? "Hide Borders" : "Show Borders",
-        w: 98,
-      },
-      { id: "clear", label: "Clear Route", w: 88 },
-      { id: "find", label: "Find", w: 60 },
-      { id: "zoomout", label: "–", w: 26 },
-      { id: "zoomin", label: "+", w: 26 },
-      { id: "done", label: "Done", w: 74 },
-    ];
+    const buttons: { id: string; label: string; w: number }[] = this.gateChooser
+      ? [
+          { id: "travel", label: "Travel", w: 80 },
+          { id: "cancel-gate", label: "Leave Gate", w: 96 },
+          { id: "zoomout", label: "–", w: 26 },
+          { id: "zoomin", label: "+", w: 26 },
+          {
+            id: "borders",
+            label: this.mapBorders ? "Hide Borders" : "Show Borders",
+            w: 98,
+          },
+        ]
+      : [
+          {
+            id: "borders",
+            label: this.mapBorders ? "Hide Borders" : "Show Borders",
+            w: 98,
+          },
+          { id: "clear", label: "Clear Route", w: 88 },
+          { id: "find", label: "Find", w: 60 },
+          { id: "zoomout", label: "–", w: 26 },
+          { id: "zoomin", label: "+", w: 26 },
+          { id: "done", label: "Done", w: 74 },
+        ];
     const gap = 8;
-    const totalW = buttons.reduce((a, b) => a + b.w + gap, -gap);
     let bx = 20;
     const by = h - barH - 6;
-    void totalW;
     for (const b of buttons) {
-      const disabled = b.id === "clear" && this.route.length === 0;
+      const canTravel =
+        b.id !== "travel" ||
+        (this.mapSelected != null &&
+          this.gateChooserSystemIds().includes(this.mapSelected));
+      const disabled =
+        (b.id === "clear" && this.route.length === 0) ||
+        (b.id === "travel" && !canTravel);
       ctx.fillStyle = disabled ? "#3a1010" : "#6e1010";
       ctx.strokeStyle = "#7d1a1a";
       roundRect(ctx, bx, by, b.w, 24, 11);

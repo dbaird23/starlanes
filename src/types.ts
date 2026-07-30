@@ -60,6 +60,17 @@ export interface PlanetDef {
   isWormhole: boolean;
   /** spob ids this gate connects to (empty wormhole list = random) */
   hyperLinks: string[];
+  /**
+   * CustSndID when this is a gate/wormhole: exit bearing in Nova degrees
+   * (0 = up, clockwise, 0–359). null → stock default (~4:00 / 120°), which
+   * matches the shared ring art; plug-ins can still pin any angle.
+   */
+  emergeAngle: number | null;
+  /**
+   * CustPicID transition frame between opening/closing and the "working"
+   * loop on an animated hypergate. null → open through the last frame.
+   */
+  gateAnimSplit: number | null;
   /** price level per commodity id; missing means this commodity is not traded here */
   prices: Partial<Record<string, PriceLevel>>;
 }

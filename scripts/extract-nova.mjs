@@ -181,7 +181,8 @@ function decodePers(res) {
     const weapId = d.readInt16BE(12 + i * 2);
     const count = d.readInt16BE(20 + i * 2);
     const ammo = d.readInt16BE(28 + i * 2);
-    if (weapId >= 128 && count !== 0) loadout.push({ id: weapId, count, ammo: Math.max(0, ammo) });
+    if (weapId >= 128 && count !== 0)
+      loadout.push({ id: weapId, count, ammo: Math.max(0, ammo) });
   }
   return {
     id: res.id,
@@ -265,6 +266,12 @@ function decodeSpob(res) {
     id: res.id,
     name: res.name,
     ambientSnd: !isGate && custSnd >= 128 ? custSnd : null,
+    /*
+     * Bible: on hypergates/wormholes CustSndID is the emerge angle (0–359,
+     * 0 = up, clockwise), not ambience. Any other value leaves it null so
+     * the game uses the stock ring orientation (~4:00) rather than a roll.
+     */
+    emergeAngle: isGate && custSnd >= 0 && custSnd <= 359 ? custSnd : null,
     /** Flags2 0x0010: hold the ambience on a loop instead of playing it once. */
     ambientLoop: (flags2 & 0x0010) !== 0,
     x: d.readInt16BE(0),
@@ -305,9 +312,9 @@ function decodeSpob(res) {
     landingPict: d.readInt16BE(24),
     // Flags2 @32: 0x1000 hypergate, 0x2000 wormhole; HyperLink1-8 @36
     flags2,
-    hyperLinks: Array.from({ length: 8 }, (_, i) => d.readInt16BE(36 + i * 2)).filter(
-      (v) => v >= 128,
-    ),
+    hyperLinks: Array.from({ length: 8 }, (_, i) =>
+      d.readInt16BE(36 + i * 2),
+    ).filter((v) => v >= 128),
     // planetary defenses, and the bits set when the player takes or frees it
     defDude: d.readInt16BE(28),
     defCount: d.readInt16BE(30),
@@ -323,7 +330,8 @@ function decodeShip(res) {
     const weapId = d.readInt16BE(18 + i * 2);
     const count = d.readInt16BE(26 + i * 2);
     const ammo = d.readInt16BE(34 + i * 2);
-    if (weapId >= 128 && count > 0) stockWeapons.push({ id: weapId, count, ammo: Math.max(0, ammo) });
+    if (weapId >= 128 && count > 0)
+      stockWeapons.push({ id: weapId, count, ammo: Math.max(0, ammo) });
   }
   // DefaultItems @1734 / ItemCount @1750: the oütf items a hull comes with when
   // you buy or capture one — reactors, expansions, escape pods and the like.
@@ -548,14 +556,20 @@ function decodeChar(res) {
     name: res.name,
     cash: d.readInt32BE(0),
     shipType: d.readInt16BE(4),
-    systems: [6, 8, 10, 12].map((o) => d.readInt16BE(o)).filter((v) => v >= 128),
+    systems: [6, 8, 10, 12]
+      .map((o) => d.readInt16BE(o))
+      .filter((v) => v >= 128),
     // Govt1-4 @14 with Status1-4 @22: the legal record this pilot opens with
     // in each government's space (and the negative of it in their enemies').
     records: pair(14, 22),
     kills: d.readInt16BE(30),
     // the opening sequence: up to four PICTs, each with its own dwell time
-    introPicts: [32, 34, 36, 38].map((o) => d.readInt16BE(o)).filter((v) => v >= 128),
-    pictDelays: [40, 42, 44, 46].map((o) => d.readInt16BE(o)).filter((v) => v > 0),
+    introPicts: [32, 34, 36, 38]
+      .map((o) => d.readInt16BE(o))
+      .filter((v) => v >= 128),
+    pictDelays: [40, 42, 44, 46]
+      .map((o) => d.readInt16BE(o))
+      .filter((v) => v > 0),
     introTextId: d.readInt16BE(48),
     /** control bits set the moment this pilot is created */
     onStart: cstr(d, 50, 255),
@@ -574,7 +588,8 @@ function decodeChar(res) {
  */
 function decodeIntf(res) {
   const d = res.data;
-  const col = (o) => `#${(d.readUInt32BE(o) & 0xffffff).toString(16).padStart(6, "0")}`;
+  const col = (o) =>
+    `#${(d.readUInt32BE(o) & 0xffffff).toString(16).padStart(6, "0")}`;
   // Each *Area is a Mac Rect: top, left, bottom, right as four int16. Nova's
   // own bars all sit inside x 8-184, i.e. a 192-wide panel with 8px margins.
   const rect = (o) => ({
@@ -684,7 +699,8 @@ function decodeFleet(res) {
     const type = d.readInt16BE(2 + i * 2);
     const min = d.readInt16BE(10 + i * 2);
     const max = d.readInt16BE(18 + i * 2);
-    if (type >= 128 && max > 0) escorts.push({ id: type, min: Math.max(0, min), max });
+    if (type >= 128 && max > 0)
+      escorts.push({ id: type, min: Math.max(0, min), max });
   }
   return {
     id: res.id,
@@ -892,76 +908,81 @@ const systs = all.filter((r) => r.type === "sÿst").map(decodeSyst);
 const spobs = all.filter((r) => r.type === "spöb").map(decodeSpob);
 const readGovtGroup = (d, base) =>
   [0, 2, 4, 6].map((o) => d.readInt16BE(base + o)).filter((v) => v !== -1);
-const govts = all.filter((r) => r.type === "gövt").map((r) => ({
-  id: r.id,
-  name: r.name,
-  // VoiceType @0: which bank of escort speech this govt's ships use (snd
-  // 1000 + type*100). -1 is mute — which is exactly what the Wraith, Krypt
-  // and Hyperioid read, none of them being things that talk. Values 1000-1007
-  // and 2000-2007 force the odd or even half of a bank; Nova uses that to
-  // pick the male or female takes.
-  voiceType: r.data.readInt16BE(0),
-  // Flags @2 / Flags2 @4. Confirmed on the comms rules: Flags2 0x0001 ("the
-  // request assistance / beg for mercy button is disabled and the govt is not
-  // talkative") and 0x0008 ("don't respond with greetings when hailed") are
-  // set on exactly the Wraith and the Krypt, the two things in Nova that
-  // famously never answer a hail.
-  flags: r.data.readUInt16BE(2),
-  flags2: r.data.readUInt16BE(4),
-  /*
-   * The legal model, in the Bible's own order behind Flags2. Every one lands
-   * where it should: the penalties sit in a -1..40 band ("the amount of
-   * evilness a player gains"), InitialRec in -5..10, MaxOdds up to 1000.
-   */
-  /*
-   * ScanMask @50: the 16-bit mask a government scans for. It is the only
-   * sparse bit field in the struct, and it interlocks with the identically
-   * shaped masks on oütf and jünk to produce exactly the right contraband:
-   * the Federation (0x8000) bans fighter bays and bio-weapons, the Auroran
-   * Empire (0x4000) EMP torpedoes and Monkdillo Shells, the Polaris (0x2000)
-   * adds the Wraith Cannon, the Krypt (0x0020) care only about the Ancient
-   * Vell-os Sculpture, and the Pirates (0x0800) confiscate nearly every
-   * valuable cargo in the game. 55 of the 68 governments scan for something.
-   */
-  scanMask: r.data.readUInt16BE(50),
-  crimeTol: r.data.readInt16BE(6),
-  scanFine: r.data.readInt16BE(8),
-  smugPenalty: r.data.readInt16BE(10),
-  disabPenalty: r.data.readInt16BE(12),
-  boardPenalty: r.data.readInt16BE(14),
-  killPenalty: r.data.readInt16BE(16),
-  shootPenalty: r.data.readInt16BE(18),
-  initialRec: r.data.readInt16BE(20),
-  maxOdds: r.data.readInt16BE(22),
-  // CommName @68: the short name Nova shows for this govt's ships in the
-  // comms panel — "Fed." for the Federation, "Trader" for the Civvies.
-  commName: cstr(r.data, 68, 64).trim(),
-  classes: readGovtGroup(r.data, 24),
-  allies: readGovtGroup(r.data, 32),
-  enemies: readGovtGroup(r.data, 40),
-  /*
-   * Color @164 and ShipColor @168, both 00RRGGBB. The offset is confirmed by
-   * the data naming itself: every one of the eight Federation resources reads
-   * #2c2caf, all five Aurorans #cf0c0c, both Polaris #7c1c7c, the Vell-os
-   * #c3c310 and the Rebellion #2baa2b — sixteen name-groups, each internally
-   * identical, which no other 4-byte window in the struct manages. It also
-   * lands immediately before Interface @172, already verified.
-   * 16 governments read #000000, the Bible's "unused". ShipColor is 0 on all
-   * 68, so it is recorded but nothing paints a hull with it.
-   */
-  color: r.data.readUInt32BE(164),
-  shipColor: r.data.readUInt32BE(168),
-  // Interface @172: the ïntf this government's own ships fly behind. Offset
-  // found by elimination and unambiguous once read — Federation lands on 130
-  // "Federation Status bar", Polaris on 129, Pirate on 133, Vell-os on 134,
-  // and the Auroran families all share the Auroran bar. Under 128 means the
-  // default. 48 of the 68 governments name one.
-  interfaceId: Math.max(128, r.data.readInt16BE(172)),
-  // NewsPic @174: the backdrop of the holovid news window on this govt's
-  // worlds. Federation reads 9001 "Hyper News Network", Polaris 9002; under
-  // 128 means the generic independent backdrop, PICT 9000.
-  newsPic: (() => { const v = r.data.readInt16BE(174); return v >= 128 ? v : 9000; })(),
-}));
+const govts = all
+  .filter((r) => r.type === "gövt")
+  .map((r) => ({
+    id: r.id,
+    name: r.name,
+    // VoiceType @0: which bank of escort speech this govt's ships use (snd
+    // 1000 + type*100). -1 is mute — which is exactly what the Wraith, Krypt
+    // and Hyperioid read, none of them being things that talk. Values 1000-1007
+    // and 2000-2007 force the odd or even half of a bank; Nova uses that to
+    // pick the male or female takes.
+    voiceType: r.data.readInt16BE(0),
+    // Flags @2 / Flags2 @4. Confirmed on the comms rules: Flags2 0x0001 ("the
+    // request assistance / beg for mercy button is disabled and the govt is not
+    // talkative") and 0x0008 ("don't respond with greetings when hailed") are
+    // set on exactly the Wraith and the Krypt, the two things in Nova that
+    // famously never answer a hail.
+    flags: r.data.readUInt16BE(2),
+    flags2: r.data.readUInt16BE(4),
+    /*
+     * The legal model, in the Bible's own order behind Flags2. Every one lands
+     * where it should: the penalties sit in a -1..40 band ("the amount of
+     * evilness a player gains"), InitialRec in -5..10, MaxOdds up to 1000.
+     */
+    /*
+     * ScanMask @50: the 16-bit mask a government scans for. It is the only
+     * sparse bit field in the struct, and it interlocks with the identically
+     * shaped masks on oütf and jünk to produce exactly the right contraband:
+     * the Federation (0x8000) bans fighter bays and bio-weapons, the Auroran
+     * Empire (0x4000) EMP torpedoes and Monkdillo Shells, the Polaris (0x2000)
+     * adds the Wraith Cannon, the Krypt (0x0020) care only about the Ancient
+     * Vell-os Sculpture, and the Pirates (0x0800) confiscate nearly every
+     * valuable cargo in the game. 55 of the 68 governments scan for something.
+     */
+    scanMask: r.data.readUInt16BE(50),
+    crimeTol: r.data.readInt16BE(6),
+    scanFine: r.data.readInt16BE(8),
+    smugPenalty: r.data.readInt16BE(10),
+    disabPenalty: r.data.readInt16BE(12),
+    boardPenalty: r.data.readInt16BE(14),
+    killPenalty: r.data.readInt16BE(16),
+    shootPenalty: r.data.readInt16BE(18),
+    initialRec: r.data.readInt16BE(20),
+    maxOdds: r.data.readInt16BE(22),
+    // CommName @68: the short name Nova shows for this govt's ships in the
+    // comms panel — "Fed." for the Federation, "Trader" for the Civvies.
+    commName: cstr(r.data, 68, 64).trim(),
+    classes: readGovtGroup(r.data, 24),
+    allies: readGovtGroup(r.data, 32),
+    enemies: readGovtGroup(r.data, 40),
+    /*
+     * Color @164 and ShipColor @168, both 00RRGGBB. The offset is confirmed by
+     * the data naming itself: every one of the eight Federation resources reads
+     * #2c2caf, all five Aurorans #cf0c0c, both Polaris #7c1c7c, the Vell-os
+     * #c3c310 and the Rebellion #2baa2b — sixteen name-groups, each internally
+     * identical, which no other 4-byte window in the struct manages. It also
+     * lands immediately before Interface @172, already verified.
+     * 16 governments read #000000, the Bible's "unused". ShipColor is 0 on all
+     * 68, so it is recorded but nothing paints a hull with it.
+     */
+    color: r.data.readUInt32BE(164),
+    shipColor: r.data.readUInt32BE(168),
+    // Interface @172: the ïntf this government's own ships fly behind. Offset
+    // found by elimination and unambiguous once read — Federation lands on 130
+    // "Federation Status bar", Polaris on 129, Pirate on 133, Vell-os on 134,
+    // and the Auroran families all share the Auroran bar. Under 128 means the
+    // default. 48 of the 68 governments name one.
+    interfaceId: Math.max(128, r.data.readInt16BE(172)),
+    // NewsPic @174: the backdrop of the holovid news window on this govt's
+    // worlds. Federation reads 9001 "Hyper News Network", Polaris 9002; under
+    // 128 means the generic independent backdrop, PICT 9000.
+    newsPic: (() => {
+      const v = r.data.readInt16BE(174);
+      return v >= 128 ? v : 9000;
+    })(),
+  }));
 // keep every dësc — missions reference IDs all over the 4000-30000 range
 const descs = {};
 for (const r of all) {
@@ -1072,8 +1093,10 @@ function decodeColr(res) {
     gridLine: col(90),
     gridSelection: col(86),
     progressBar: {
-      top: d.readInt16BE(94), left: d.readInt16BE(96),
-      bottom: d.readInt16BE(98), right: d.readInt16BE(100),
+      top: d.readInt16BE(94),
+      left: d.readInt16BE(96),
+      bottom: d.readInt16BE(98),
+      right: d.readInt16BE(100),
     },
     progBright: col(102),
     progDim: col(106),
@@ -1108,11 +1131,24 @@ const strLists = {};
 // Wraith 138 -> 7010 "Wraith").
 const govtHailLists = Array.from({ length: 43 }, (_, i) => 7000 + i);
 // crön news banks: every STR# a NewsGovt or IndNewsStr field points at
-const cronNewsLists = [...new Set(crons.flatMap((c) => [c.indNewsStr, ...c.govtNewsStrs]))].filter(
-  (id) => id > 0,
-);
+const cronNewsLists = [
+  ...new Set(crons.flatMap((c) => [c.indNewsStr, ...c.govtNewsStrs])),
+].filter((id) => id > 0);
 // 1000 is the message-buoy bank a sÿst's Message field indexes into.
-for (const id of [134, 138, 150, 1000, 4000, 4002, 7100, 7101, 8100, 8101, ...govtHailLists, ...cronNewsLists]) {
+for (const id of [
+  134,
+  138,
+  150,
+  1000,
+  4000,
+  4002,
+  7100,
+  7101,
+  8100,
+  8101,
+  ...govtHailLists,
+  ...cronNewsLists,
+]) {
   const res = byTypeId.get(`STR#:${id}`);
   if (res) strLists[id] = decodeStrList(res.data);
 }
@@ -1144,17 +1180,31 @@ function visibleAtStart(expr) {
   const peek = () => tokens[i];
   const parseOr = () => {
     let v = parseAnd();
-    while (peek() === "|") { i++; v = parseAnd() || v; }
+    while (peek() === "|") {
+      i++;
+      v = parseAnd() || v;
+    }
     return v;
   };
   const parseAnd = () => {
     let v = parseUnary();
-    while (peek() === "&") { i++; v = parseUnary() && v; }
+    while (peek() === "&") {
+      i++;
+      v = parseUnary() && v;
+    }
     return v;
   };
   const parseUnary = () => {
-    if (peek() === "!") { i++; return !parseUnary(); }
-    if (peek() === "(") { i++; const v = parseOr(); if (peek() === ")") i++; return v; }
+    if (peek() === "!") {
+      i++;
+      return !parseUnary();
+    }
+    if (peek() === "(") {
+      i++;
+      const v = parseOr();
+      if (peek() === ")") i++;
+      return v;
+    }
     i++;
     return false; // every control bit is clear at the start of a new game
   };
@@ -1198,11 +1248,13 @@ for (const [name, variants] of keptByName) {
     continue;
   }
   keptByName.set(name, live[0]);
-  for (const s of variants) if (s.id !== live[0].id) alias.set(s.id, live[0].id);
+  for (const s of variants)
+    if (s.id !== live[0].id) alias.set(s.id, live[0].id);
 }
 const systems = [...keptByName.values()];
 const systemIds = new Set(systems.map((s) => s.id));
-if (hidden.length) console.log(`Hidden at game start (story-gated): ${hidden.join("; ")}`);
+if (hidden.length)
+  console.log(`Hidden at game start (story-gated): ${hidden.join("; ")}`);
 for (const s of systems) {
   s.links = [...new Set(s.links.map((l) => alias.get(l) ?? l))].filter((l) =>
     systemIds.has(l),
@@ -1211,11 +1263,34 @@ for (const s of systems) {
 
 const galaxy = {
   colr,
-  systems, spobs, govts, descs, ships, weapons, outfits, missions, junks, dudes,
-  persons, strLists, chars, roids, interfaces, crons, fleets, ranks,
-  booms, oopses, nebulae,
+  systems,
+  spobs,
+  govts,
+  descs,
+  ships,
+  weapons,
+  outfits,
+  missions,
+  junks,
+  dudes,
+  persons,
+  strLists,
+  chars,
+  roids,
+  interfaces,
+  crons,
+  fleets,
+  ranks,
+  booms,
+  oopses,
+  nebulae,
 };
-const outDir = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "nova");
+const outDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "public",
+  "nova",
+);
 mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, "galaxy.json"), JSON.stringify(galaxy));
 
@@ -1228,7 +1303,10 @@ console.log(
     `Descs: ${Object.keys(descs).length}, Persons: ${persons.length}, ` +
     `Quotes: ${(strLists[7100] ?? []).length}/${(strLists[7101] ?? []).length}`,
 );
-console.log("Sample person:", JSON.stringify(persons.find((p) => p.linkMission >= 128)));
+console.log(
+  "Sample person:",
+  JSON.stringify(persons.find((p) => p.linkMission >= 128)),
+);
 console.log("Start template:", JSON.stringify(chars[0]));
 console.log("Interface:", JSON.stringify(interfaces[0]));
 console.log(`Crons: ${crons.length}; sample:`, JSON.stringify(crons[0]));
@@ -1240,18 +1318,38 @@ console.log(`Nebulae: ${nebulae.length};`, JSON.stringify(nebulae[0]));
 console.log(`Booms: ${booms.length};`, JSON.stringify(booms[0]));
 console.log(`Oops: ${oopses.length};`, JSON.stringify(oopses[0]));
 console.log(`Nebulae: ${nebulae.length};`, JSON.stringify(nebulae[0]));
-console.log(`Asteroid types: ${roids.length}; systems with fields: ${systems.filter((s) => s.asteroids > 0).length}`);
+console.log(
+  `Asteroid types: ${roids.length}; systems with fields: ${systems.filter((s) => s.asteroids > 0).length}`,
+);
 const m129 = missions.find((m) => m.id === 129);
 console.log("misn 129 onAccept (expect b511):", JSON.stringify(m129?.onAccept));
 const delivery = missions.find((m) => m.id === 128);
-console.log("misn 128:", JSON.stringify({ availStel: delivery.availStel, loc: delivery.availLoc, pay: delivery.pay, cargo: [delivery.cargoType, delivery.cargoQty], travel: delivery.travelStel, ret: delivery.returnStel }));
+console.log(
+  "misn 128:",
+  JSON.stringify({
+    availStel: delivery.availStel,
+    loc: delivery.availLoc,
+    pay: delivery.pay,
+    cargo: [delivery.cargoType, delivery.cargoQty],
+    travel: delivery.travelStel,
+    ret: delivery.returnStel,
+  }),
+);
 const shuttleShip = ships.find((s) => s.id === 128);
 console.log("Shuttle stock weapons:", JSON.stringify(shuttleShip.stockWeapons));
 console.log(
   "Sample weapon:",
-  JSON.stringify(weapons.find((w) => w.id === shuttleShip.stockWeapons[0]?.id) ?? weapons[0]),
+  JSON.stringify(
+    weapons.find((w) => w.id === shuttleShip.stockWeapons[0]?.id) ?? weapons[0],
+  ),
 );
-console.log("Sample systems:", systems.slice(0, 8).map((s) => s.name).join(", "));
+console.log(
+  "Sample systems:",
+  systems
+    .slice(0, 8)
+    .map((s) => s.name)
+    .join(", "),
+);
 const earth = spobs.find((p) => p.name === "Earth");
 console.log("Earth:", JSON.stringify(earth));
 if (earth) console.log("Earth desc:", (descs[earth.id] ?? "").slice(0, 120));
