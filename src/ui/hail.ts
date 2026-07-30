@@ -1,3 +1,4 @@
+import { asset } from "../asset";
 import {
   GOVT_COMM_NAMES,
   SHIPS,
@@ -74,14 +75,18 @@ export class HailUi {
     let pict: PictInfo | null = null;
     if (p) {
       className = `${p.name} (traffic control)`;
-      status = { text: p.uninhabited ? "Unmanned" : "Standing by", tone: "plain" };
+      status = {
+        text: p.uninhabited ? "Unmanned" : "Standing by",
+        tone: "plain",
+      };
     } else {
       const type = t!.typeId ? SHIPS[t!.typeId] : undefined;
       const hull = type?.name.split(";")[0] ?? "Unknown ship";
       // gövt CommName is the short label Nova puts beside the hull here —
       // "Trader" for the Civvies, "Fed." for the Federation — not the full
       // government name the target display uses.
-      const comm = t!.govtId >= 128 ? (GOVT_COMM_NAMES[String(t!.govtId)] ?? "") : "";
+      const comm =
+        t!.govtId >= 128 ? (GOVT_COMM_NAMES[String(t!.govtId)] ?? "") : "";
       const govt = comm || this.game.govtLabel(t!.govtId);
       className = govt ? `${hull} (${govt})` : hull;
       // a named captain's ship answers under its own name — the Night-Master
@@ -105,7 +110,10 @@ export class HailUi {
           </div>
           <div class="comms-opts">
             ${options
-              .map((o, i) => `<button class="portbtn" data-opt="${i}">${o.label}</button>`)
+              .map(
+                (o, i) =>
+                  `<button class="portbtn" data-opt="${i}">${o.label}</button>`,
+              )
               .join("")}
             <button class="portbtn" id="hail-close">Close Channel</button>
           </div>
@@ -113,13 +121,15 @@ export class HailUi {
         <div class="comms-pic">
           ${
             pict
-              ? `<img src="/nova/picts/${pict.file}" alt="${escapeHtml(title)}">`
+              ? `<img src="${asset(`nova/picts/${pict.file}`)}" alt="${escapeHtml(title)}">`
               : `<div class="comms-noPic">${escapeHtml(title)}</div>`
           }
         </div>
       </div>`;
 
-    this.root.querySelector("#hail-close")!.addEventListener("click", () => this.close());
+    this.root
+      .querySelector("#hail-close")!
+      .addEventListener("click", () => this.close());
     this.root.querySelectorAll("button[data-opt]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const idx = parseInt((btn as HTMLButtonElement).dataset.opt!, 10);

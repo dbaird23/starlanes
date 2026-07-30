@@ -1,5 +1,19 @@
-import { playMusic, playSnd, preloadCoreSnds, SND, stopMusic } from "../engine/audio";
-import { COLR, MENU_SPRITES, SHIPS, UI_PICTS, getSystem, targetPict } from "../data/universe";
+import { asset } from "../asset";
+import {
+  playMusic,
+  playSnd,
+  preloadCoreSnds,
+  SND,
+  stopMusic,
+} from "../engine/audio";
+import {
+  COLR,
+  MENU_SPRITES,
+  SHIPS,
+  UI_PICTS,
+  getSystem,
+  targetPict,
+} from "../data/universe";
 import { formatDate } from "../game/calendar";
 import { ratingName } from "../game/reputation";
 import {
@@ -41,7 +55,14 @@ const INTRO_PAGES = ["8200", "8201", "8202"];
  * plug-in that moves the menu around works. The literals below are kept only
  * as the fallback for a scenario with no cölr.
  */
-const LOGO: Overlay = { pict: "8010", x: 191, y: 162, w: 654, h: 209, frames: 7 };
+const LOGO: Overlay = {
+  pict: "8010",
+  x: 191,
+  y: 162,
+  w: 654,
+  h: 209,
+  frames: 7,
+};
 
 /**
  * The three pieces down the middle are not a loop: frame 0 has the buttons'
@@ -56,7 +77,10 @@ const COLUMN: Overlay[] = [
 ];
 
 /** Overlay positions, overridden by cölr when the universe has loaded. */
-function laidOut(o: Overlay, at: { x: number; y: number } | undefined): Overlay {
+function laidOut(
+  o: Overlay,
+  at: { x: number; y: number } | undefined,
+): Overlay {
   return at ? { ...o, x: at.x, y: at.y } : o;
 }
 const logoOverlay = (): Overlay => laidOut(LOGO, COLR?.logo);
@@ -156,8 +180,11 @@ export class MainMenu {
    */
   private step(): void {
     this.frame++;
-    const logo = this.root.querySelector<HTMLElement>(`[data-ov="${LOGO.pict}"]`);
-    if (logo) logo.style.backgroundPositionY = `${-(this.frame % LOGO.frames) * LOGO.h}px`;
+    const logo = this.root.querySelector<HTMLElement>(
+      `[data-ov="${LOGO.pict}"]`,
+    );
+    if (logo)
+      logo.style.backgroundPositionY = `${-(this.frame % LOGO.frames) * LOGO.h}px`;
 
     if (this.reveal >= REVEAL_FRAMES) return;
     this.reveal++;
@@ -178,7 +205,7 @@ export class MainMenu {
     if (!spr) return "";
     return `<div class="ttl-emblem" id="ttl-emblem" style="
       left:${emblemPos().x}px; top:${emblemPos().y}px; width:${spr.w}px; height:${spr.h}px;
-      background-image:url('/nova/sprites/${spr.file}');
+      background-image:url('${asset(`nova/sprites/${spr.file}`)}');
       background-position-x:${-EMBLEM_IDLE_FRAME * spr.w}px"></div>`;
   }
 
@@ -195,7 +222,7 @@ export class MainMenu {
     if (!pic) return "";
     return `<div class="menu-ov" data-ov="${ov.pict}" style="
       left:${ov.x}px; top:${ov.y}px; width:${ov.w}px; height:${ov.h}px;
-      background-image:url('/nova/picts/${pic.file}')"></div>`;
+      background-image:url('${asset(`nova/picts/${pic.file}`)}')"></div>`;
   }
 
   /** The red readout the original prints along the bottom of the title screen. */
@@ -221,7 +248,7 @@ export class MainMenu {
     const tpic = targetPict(state.shipId);
     const silhouette = tpic
       ? `<div class="ttl-ship" style="
-          background-image:url('/nova/picts/${tpic.file}');
+          background-image:url('${asset(`nova/picts/${tpic.file}`)}');
           width:${tpic.w}px; height:${tpic.h}px;
           margin-left:${-tpic.w / 2}px; margin-top:${-tpic.h / 2}px"></div>`
       : "";
@@ -248,15 +275,17 @@ export class MainMenu {
       const at = buttonPos(b);
       return `<button class="ttl-btn" data-menu="${b.id}" data-emblem="${b.emblem}" title="${b.id}" style="
         left:${at.x}px; top:${at.y}px; width:${spr.w}px; height:${spr.h}px;
-        background-image:url('/nova/sprites/${spr.file}');
+        background-image:url('${asset(`nova/sprites/${spr.file}`)}');
         --hover-x:${-spr.w}px"></button>`;
     }).join("");
 
     this.root.innerHTML = `
       <div class="ttl-stage${this.reveal >= REVEAL_FRAMES ? " ready" : ""}"
-        ${bg ? `style="background-image:url('/nova/picts/${bg.file}')"` : ""}>
+        ${bg ? `style="background-image:url('${asset(`nova/picts/${bg.file}`)}')"` : ""}>
         ${this.overlayHtml(logoOverlay())}
-        ${columnOverlays().map((ov) => this.overlayHtml(ov)).join("")}
+        ${columnOverlays()
+          .map((ov) => this.overlayHtml(ov))
+          .join("")}
         ${this.emblemHtml()}
         ${buttons}
         ${this.pilotPanel()}
@@ -267,18 +296,24 @@ export class MainMenu {
     this.fitStage();
     window.addEventListener("resize", this.fitStage);
 
-    this.root.querySelectorAll<HTMLButtonElement>("button[data-menu]").forEach((btn) => {
-      btn.addEventListener("click", () => this.onMenu(btn.dataset.menu!));
-      // snd 600/601 are Nova's own "Menu button down"/"up" plate clicks
-      btn.addEventListener("pointerdown", () => playSnd(SND.MENU_DOWN, 0.5));
-      btn.addEventListener("pointerup", () => playSnd(SND.MENU_UP, 0.5));
-      // rolling over a button shows its icon in the middle of the emblem
-      const frame = Number(btn.dataset.emblem);
-      btn.addEventListener("mouseenter", () => this.setEmblemFrame(frame));
-      btn.addEventListener("focus", () => this.setEmblemFrame(frame));
-      btn.addEventListener("mouseleave", () => this.setEmblemFrame(EMBLEM_IDLE_FRAME));
-      btn.addEventListener("blur", () => this.setEmblemFrame(EMBLEM_IDLE_FRAME));
-    });
+    this.root
+      .querySelectorAll<HTMLButtonElement>("button[data-menu]")
+      .forEach((btn) => {
+        btn.addEventListener("click", () => this.onMenu(btn.dataset.menu!));
+        // snd 600/601 are Nova's own "Menu button down"/"up" plate clicks
+        btn.addEventListener("pointerdown", () => playSnd(SND.MENU_DOWN, 0.5));
+        btn.addEventListener("pointerup", () => playSnd(SND.MENU_UP, 0.5));
+        // rolling over a button shows its icon in the middle of the emblem
+        const frame = Number(btn.dataset.emblem);
+        btn.addEventListener("mouseenter", () => this.setEmblemFrame(frame));
+        btn.addEventListener("focus", () => this.setEmblemFrame(frame));
+        btn.addEventListener("mouseleave", () =>
+          this.setEmblemFrame(EMBLEM_IDLE_FRAME),
+        );
+        btn.addEventListener("blur", () =>
+          this.setEmblemFrame(EMBLEM_IDLE_FRAME),
+        );
+      });
     this.root.querySelector("#pilot-file")!.addEventListener("change", (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -297,7 +332,10 @@ export class MainMenu {
   private fitStage = (): void => {
     const stage = this.root.querySelector<HTMLElement>(".ttl-stage");
     if (!stage) return;
-    const k = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+    const k = Math.min(
+      window.innerWidth / STAGE_W,
+      window.innerHeight / STAGE_H,
+    );
     stage.style.transform = `scale(${k})`;
   };
 
@@ -389,7 +427,7 @@ export class MainMenu {
     const draw = () => {
       const pic = pages[page];
       this.root.innerHTML = `
-        <div class="ttl-stage intro" style="background-image:url('/nova/picts/${pic.file}')">
+        <div class="ttl-stage intro" style="background-image:url('${asset(`nova/picts/${pic.file}`)}')">
           <div class="intro-foot">
             <span>${page + 1} / ${pages.length}</span>
             <span class="intro-hint">click or press space to continue · esc to skip</span>
@@ -432,7 +470,9 @@ export class MainMenu {
     const pilots = listPilots();
     const rows = pilots
       .map(
-        (p) => `<div class="pilot-row${p.id === this.selected ? " sel" : ""}" data-pick="${p.id}">
+        (
+          p,
+        ) => `<div class="pilot-row${p.id === this.selected ? " sel" : ""}" data-pick="${p.id}">
           <div class="pilot-info">
             <div class="pilot-name">${p.name}</div>
             <div class="pilot-desc">${describeShort(p.id)}</div>
@@ -476,7 +516,9 @@ export class MainMenu {
         e.stopPropagation();
         const data = exportPilot(btn.dataset.export!);
         if (!data) return;
-        const url = URL.createObjectURL(new Blob([data.json], { type: "application/json" }));
+        const url = URL.createObjectURL(
+          new Blob([data.json], { type: "application/json" }),
+        );
         const a = document.createElement("a");
         a.href = url;
         a.download = data.filename;
@@ -541,7 +583,7 @@ export class MainMenu {
     const splash = UI_PICTS["131"];
     this.modal(`
       <h2>About</h2>
-      ${splash ? `<img class="ttl-splash" src="/nova/picts/${splash.file}" alt="Escape Velocity Nova">` : ""}
+      ${splash ? `<img class="ttl-splash" src="${asset(`nova/picts/${splash.file}`)}" alt="Escape Velocity Nova">` : ""}
       <p>A clean-room engine that reads your own copy of EV Nova's data files —
         systems, ships, outfits, missions, sprites and sounds all come straight
         out of the <code>.rez</code> resources on disk. Nothing is bundled.</p>

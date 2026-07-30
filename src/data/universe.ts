@@ -1,5 +1,11 @@
+import { asset } from "../asset";
 import { setCalendar } from "../game/calendar";
-import type { SheetSprite, ShipSprite, SpriteManifest, StellarSprite } from "../engine/sprites";
+import type {
+  SheetSprite,
+  ShipSprite,
+  SpriteManifest,
+  StellarSprite,
+} from "../engine/sprites";
 import type {
   ColrDef,
   CharTemplate,
@@ -75,7 +81,11 @@ const F_BAR = 0x40;
  * Nova Bible: Maneuver 10 ≈ 30°/sec; Speed/Accel 300 is "average".
  * Speed/accel factors are calibrated for playfeel at our world scale.
  */
-export function convertShipStats(raw: { speed: number; accel: number; turn: number }): {
+export function convertShipStats(raw: {
+  speed: number;
+  accel: number;
+  turn: number;
+}): {
   maxSpeed: number;
   accel: number;
   turnRate: number;
@@ -109,16 +119,27 @@ interface RawSystem {
 }
 
 interface RawColr {
-  buttonUp: number; buttonDown: number; buttonGrey: number;
-  menuFont: string; menuFontSize: number;
-  menuBright: number; menuDim: number;
-  gridLine: number; gridSelection: number;
+  buttonUp: number;
+  buttonDown: number;
+  buttonGrey: number;
+  menuFont: string;
+  menuFontSize: number;
+  menuBright: number;
+  menuDim: number;
+  gridLine: number;
+  gridSelection: number;
   progressBar: { top: number; left: number; bottom: number; right: number };
-  progBright: number; progDim: number; progOutline: number;
+  progBright: number;
+  progDim: number;
+  progOutline: number;
   buttons: { x: number; y: number }[];
-  floatingMap: number; listText: number; listBkgnd: number;
-  listHilite: number; escortHilite: number;
-  buttonFont: string; buttonFontSize: number;
+  floatingMap: number;
+  listText: number;
+  listBkgnd: number;
+  listHilite: number;
+  escortHilite: number;
+  buttonFont: string;
+  buttonFontSize: number;
   logo: { x: number; y: number };
   rollover: { x: number; y: number };
   slides: { x: number; y: number }[];
@@ -360,8 +381,12 @@ let DEFAULT_INTERFACE: InterfaceDef | null = null;
 
 /** Point the status bar at a government's ïntf, or back to the default. */
 export function setInterfaceForGovt(govtId: number | null): void {
-  const wanted = govtId !== null ? GOVTS[String(govtId)]?.interfaceId : undefined;
-  const found = wanted !== undefined ? ALL_INTERFACES.find((i) => i.id === wanted) : undefined;
+  const wanted =
+    govtId !== null ? GOVTS[String(govtId)]?.interfaceId : undefined;
+  const found =
+    wanted !== undefined
+      ? ALL_INTERFACES.find((i) => i.id === wanted)
+      : undefined;
   if (found) INTERFACE = found;
   else if (DEFAULT_INTERFACE) INTERFACE = DEFAULT_INTERFACE;
 }
@@ -373,19 +398,28 @@ export function setInterfaceForGovt(govtId: number | null): void {
 export let COLR: ColrDef | null = null;
 
 export let INTERFACE: InterfaceDef = {
-  id: 128, name: "Default",
-  brightText: "#ffffff", dimText: "#888888",
+  id: 128,
+  name: "Default",
+  brightText: "#ffffff",
+  dimText: "#888888",
   radarArea: { x: 8, y: 8, w: 176, h: 176 },
-  brightRadar: "#ffffff", dimRadar: "#808080",
-  shieldArea: { x: 35, y: 199, w: 149, h: 7 }, shieldColor: "#bd0000",
-  armorArea: { x: 35, y: 216, w: 149, h: 7 }, armorColor: "#a6a6a6",
+  brightRadar: "#ffffff",
+  dimRadar: "#808080",
+  shieldArea: { x: 35, y: 199, w: 149, h: 7 },
+  shieldColor: "#bd0000",
+  armorArea: { x: 35, y: 216, w: 149, h: 7 },
+  armorColor: "#a6a6a6",
   fuelArea: { x: 35, y: 234, w: 149, h: 7 },
-  fuelFull: "#4c5c6f", fuelPartial: "#28333f",
+  fuelFull: "#4c5c6f",
+  fuelPartial: "#28333f",
   navArea: { x: 8, y: 254, w: 176, h: 32 },
   weapArea: { x: 8, y: 300, w: 176, h: 15 },
   targArea: { x: 8, y: 330, w: 176, h: 112 },
   cargoArea: { x: 8, y: 458, w: 176, h: 94 },
-  statusFont: "Geneva", statFontSize: 12, subtitleSize: 10, statusBkgnd: 700,
+  statusFont: "Geneva",
+  statFontSize: 12,
+  subtitleSize: 10,
+  statusBkgnd: 700,
 };
 export let ROID_SPRITES: Record<string, SheetSprite> = {};
 /** EV Nova's own targeting reticle (spïn 650) */
@@ -434,7 +468,9 @@ function boomFromExplodType(explodType: number): number | null {
 }
 
 /** The röid YieldType encoding: 0-5 a commodity, 1000+n the nth jünk. */
-export function roidYield(yieldType: number): { commodity: number } | { junk: JunkType } | null {
+export function roidYield(
+  yieldType: number,
+): { commodity: number } | { junk: JunkType } | null {
   if (yieldType >= 0 && yieldType <= 5) return { commodity: yieldType };
   if (yieldType >= 1000) {
     const junk = JUNKS[String(128 + (yieldType - 1000))];
@@ -443,7 +479,10 @@ export function roidYield(yieldType: number): { commodity: number } | { junk: Ju
   return null;
 }
 /** spob id -> {planet, systemId} for every spob placed in the visible galaxy */
-export let SPOB_INDEX = new Map<string, { planet: PlanetDef; systemId: string }>();
+export let SPOB_INDEX = new Map<
+  string,
+  { planet: PlanetDef; systemId: string }
+>();
 /** spob govt ids (raw), for mission availability checks */
 export let SPOB_GOVT = new Map<string, number>();
 export interface PictInfo {
@@ -461,7 +500,10 @@ export let OUTFIT_PICTS: Record<string, PictInfo> = {};
 export let UI_PICTS: Record<string, PictInfo> = {};
 export let TARGET_PICTS: Record<string, PictInfo> = {};
 export let NEBU_PICTS: Record<string, PictInfo> = {};
-let govtRelations = new Map<number, { classes: number[]; allies: number[]; enemies: number[] }>();
+let govtRelations = new Map<
+  number,
+  { classes: number[]; allies: number[]; enemies: number[] }
+>();
 export let ALL_GOVT_IDS: number[] = [];
 export let GOVT_NAMES: Record<string, string> = {};
 /** gövt Flags / Flags2, and the short CommName shown in the comms panel. */
@@ -592,8 +634,16 @@ export function govtClassmate(a: number, b: number): boolean {
 }
 
 const PLANET_PALETTE = [
-  "#5f9e57", "#4b9db8", "#b06a44", "#7d8fd1", "#a89078",
-  "#9aa7b8", "#c2a35a", "#6da58a", "#a06e9a", "#8fb0c9",
+  "#5f9e57",
+  "#4b9db8",
+  "#b06a44",
+  "#7d8fd1",
+  "#a89078",
+  "#9aa7b8",
+  "#c2a35a",
+  "#6da58a",
+  "#a06e9a",
+  "#8fb0c9",
 ];
 
 /** Unowned space, and governments that set no Color of their own. */
@@ -633,7 +683,8 @@ export function landingGovtId(planet: PlanetDef, systemGovtId: number): number {
  */
 export function landingAllowed(planet: PlanetDef, record: number): boolean {
   if (!planet.landable) return false;
-  if (planet.uninhabited || planet.minStatus === MIN_STATUS_IGNORED) return true;
+  if (planet.uninhabited || planet.minStatus === MIN_STATUS_IGNORED)
+    return true;
   if (planet.minStatus === MIN_STATUS_NEVER) return false;
   return record >= planet.minStatus;
 }
@@ -668,8 +719,9 @@ function makePlanet(sp: RawSpob, descs: Record<string, string>): PlanetDef {
   const stellar = stellarSprites[String(1000 + sp.graphic)];
   // custom landscape if set, else the default landscape for this stellar type
   const pict =
-    (sp.landingPict >= 128 ? landingPicts[String(sp.landingPict)] : undefined) ??
-    landingPicts[String(10000 + sp.graphic)];
+    (sp.landingPict >= 128
+      ? landingPicts[String(sp.landingPict)]
+      : undefined) ?? landingPicts[String(10000 + sp.graphic)];
   return {
     id: String(sp.id),
     name: sp.name,
@@ -729,7 +781,10 @@ function cleanNovaText(s: string): string {
  * happen at display time, since the same description reads differently once
  * the story moves on.
  */
-export function resolveNovaText(s: string, bits: Record<string, boolean>): string {
+export function resolveNovaText(
+  s: string,
+  bits: Record<string, boolean>,
+): string {
   return s.replace(
     /\{(!?)b(\d+)\s*"((?:[^"\\]|\\.)*)"(?:\s*"((?:[^"\\]|\\.)*)")?\}/g,
     (_m, neg: string, num: string, yes: string, no: string | undefined) => {
@@ -746,9 +801,9 @@ function unescapeNova(s: string): string {
 
 export async function loadUniverse(): Promise<void> {
   const [resp, spriteResp, pictResp] = await Promise.all([
-    fetch("/nova/galaxy.json"),
-    fetch("/nova/sprites.json"),
-    fetch("/nova/picts.json"),
+    fetch(asset("nova/galaxy.json")),
+    fetch(asset("nova/sprites.json")),
+    fetch(asset("nova/picts.json")),
   ]);
   if (!resp.ok) throw new Error(`failed to load galaxy.json: ${resp.status}`);
   const raw = (await resp.json()) as RawGalaxy;
@@ -1016,14 +1071,20 @@ export async function loadUniverse(): Promise<void> {
     const c = raw.colr;
     COLR = {
       ...c,
-      buttonUp: rgbHex(c.buttonUp), buttonDown: rgbHex(c.buttonDown),
+      buttonUp: rgbHex(c.buttonUp),
+      buttonDown: rgbHex(c.buttonDown),
       buttonGrey: rgbHex(c.buttonGrey),
-      menuBright: rgbHex(c.menuBright), menuDim: rgbHex(c.menuDim),
-      gridLine: rgbHex(c.gridLine), gridSelection: rgbHex(c.gridSelection),
-      progBright: rgbHex(c.progBright), progDim: rgbHex(c.progDim),
+      menuBright: rgbHex(c.menuBright),
+      menuDim: rgbHex(c.menuDim),
+      gridLine: rgbHex(c.gridLine),
+      gridSelection: rgbHex(c.gridSelection),
+      progBright: rgbHex(c.progBright),
+      progDim: rgbHex(c.progDim),
       progOutline: rgbHex(c.progOutline),
-      floatingMap: rgbHex(c.floatingMap), listText: rgbHex(c.listText),
-      listBkgnd: rgbHex(c.listBkgnd), listHilite: rgbHex(c.listHilite),
+      floatingMap: rgbHex(c.floatingMap),
+      listText: rgbHex(c.listText),
+      listBkgnd: rgbHex(c.listBkgnd),
+      listHilite: rgbHex(c.listHilite),
       escortHilite: rgbHex(c.escortHilite),
     };
     /*
@@ -1076,7 +1137,8 @@ export async function loadUniverse(): Promise<void> {
   // Starting conditions come from the chär resource, not from a guess
   // chär Flags 0x0001 marks the default template; lowest ID wins a tie
   const templates = (raw.chars ?? []).slice().sort((a, b) => a.id - b.id);
-  START_TEMPLATE = templates.find((c) => (c.flags & 0x0001) !== 0) ?? templates[0] ?? null;
+  START_TEMPLATE =
+    templates.find((c) => (c.flags & 0x0001) !== 0) ?? templates[0] ?? null;
   if (START_TEMPLATE) setCalendar(START_TEMPLATE);
   const startCandidates = (START_TEMPLATE?.systems ?? [])
     .map(String)
@@ -1093,7 +1155,9 @@ export function systemGovtColor(sys: SystemDef): string {
    */
   const raw = govtRgb(sys.govtId);
   if (raw === 0) return NEUTRAL_GOVT_COLOR;
-  const r = (raw >> 16) & 0xff, g = (raw >> 8) & 0xff, b = raw & 0xff;
+  const r = (raw >> 16) & 0xff,
+    g = (raw >> 8) & 0xff,
+    b = raw & 0xff;
   const peak = Math.max(r, g, b);
   if (peak >= 128) return rgbHex(raw);
   const lift = 128 / Math.max(1, peak);

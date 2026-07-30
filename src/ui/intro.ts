@@ -7,6 +7,7 @@
  * early. IntroTextID is a dësc shown after the pictures; the shipped ".Trader"
  * template sets it to -1 and runs three PICTs at 45 seconds each.
  */
+import { asset } from "../asset";
 import { getPict } from "../engine/sprites";
 import type { PictInfo } from "../data/universe";
 
@@ -56,9 +57,9 @@ export class IntroUi {
     const item = this.queue.shift();
     if (!item) return this.finish();
     this.root.innerHTML = item.pict
-      ? `<div class="intro-stage"><img src="/nova/picts/${item.pict.file}" alt=""></div>`
-      : `<div class="intro-stage"><div class="intro-text">${item.text!
-          .split("\n")
+      ? `<div class="intro-stage"><img src="${asset(`nova/picts/${item.pict.file}`)}" alt=""></div>`
+      : `<div class="intro-stage"><div class="intro-text">${item
+          .text!.split("\n")
           .map((line) => `<p>${line}</p>`)
           .join("")}</div></div>`;
     // preloading the next picture keeps the cut from flashing white

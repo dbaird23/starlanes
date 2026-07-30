@@ -1,5 +1,7 @@
 /** Lazy-loading cache for extracted Nova sprite PNGs. */
 
+import { asset } from "../asset";
+
 const cache = new Map<string, HTMLImageElement>();
 
 /** Returns the image if loaded, else kicks off loading and returns null. */
@@ -7,7 +9,7 @@ export function getSprite(file: string): HTMLImageElement | null {
   let img = cache.get(file);
   if (!img) {
     img = new Image();
-    img.src = `/nova/sprites/${file}`;
+    img.src = asset(`nova/sprites/${file}`);
     cache.set(file, img);
   }
   return img.complete && img.naturalWidth > 0 ? img : null;
@@ -19,7 +21,7 @@ export function getPict(file: string): HTMLImageElement | null {
   let img = cache.get(key);
   if (!img) {
     img = new Image();
-    img.src = `/nova/picts/${file}`;
+    img.src = asset(`nova/picts/${file}`);
     cache.set(key, img);
   }
   return img.complete && img.naturalWidth > 0 ? img : null;
@@ -207,7 +209,11 @@ export function spriteFrame(
  * `seed` desynchronises mode 3 between ships so a squadron doesn't flicker in
  * lockstep, and keeps each ship's own flicker stable frame to frame.
  */
-export function blinkIntensity(sprite: ShipSprite, t: number, seed: string): number {
+export function blinkIntensity(
+  sprite: ShipSprite,
+  t: number,
+  seed: string,
+): number {
   const [a, b, c, d] = sprite.blink;
   const f = t * 30; // BlinkVals are counted in frames
   switch (sprite.blinkMode) {
@@ -228,7 +234,8 @@ export function blinkIntensity(sprite: ShipSprite, t: number, seed: string): num
       const upF = span / Math.max(0.01, b / 100);
       const dnF = span / Math.max(0.01, d / 100);
       const at = f % (upF + dnF);
-      const level = at < upF ? min + at * (b / 100) : max - (at - upF) * (d / 100);
+      const level =
+        at < upF ? min + at * (b / 100) : max - (at - upF) * (d / 100);
       return level / 32;
     }
     case 3: {
@@ -236,7 +243,8 @@ export function blinkIntensity(sprite: ShipSprite, t: number, seed: string): num
       const max = Math.max(min, b);
       const step = Math.floor(f / Math.max(1, c));
       let h = step * 2654435761;
-      for (let i = 0; i < seed.length; i++) h = (h ^ seed.charCodeAt(i)) * 16777619;
+      for (let i = 0; i < seed.length; i++)
+        h = (h ^ seed.charCodeAt(i)) * 16777619;
       const r = ((h >>> 8) & 0xffff) / 0xffff;
       return (min + r * (max - min)) / 32;
     }
@@ -263,7 +271,8 @@ export function weaponExitPoint(
   angle: number,
 ): { x: number; y: number } {
   // ExitType -1 means the weapon fires from the centre of the ship.
-  if (!sprite || exitType < 0 || exitType >= sprite.exits.length) return { x: 0, y: 0 };
+  if (!sprite || exitType < 0 || exitType >= sprite.exits.length)
+    return { x: 0, y: 0 };
   const e = sprite.exits[exitType];
   const i = mount % 4;
   // Sprite space: +x right, +y "forward" (towards the nose). Our world has +y

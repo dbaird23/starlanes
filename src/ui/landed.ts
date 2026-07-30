@@ -1,3 +1,4 @@
+import { asset } from "../asset";
 import {
   resolveNovaText,
   COMMODITIES,
@@ -767,7 +768,7 @@ export class LandedUi {
         // separator in the data is a literal backslash-n, not a newline
         const [, tag] = (s.shortName ?? "").split("\\n");
         return `<div class="oi-cell${id === this.selectedHire ? " sel" : ""}" data-id="${id}">
-          <div class="oi-icon">${pic ? `<img src="/nova/picts/${pic.file}" alt="">` : ""}</div>
+          <div class="oi-icon">${pic ? `<img src="${asset(`nova/picts/${pic.file}`)}" alt="">` : ""}</div>
           <div class="oi-name">${escapeHtml(s.name.split(";")[0])}${
             tag ? `<span class="oi-sub">${escapeHtml(tag.trim())}</span>` : ""
           }</div>
@@ -791,7 +792,7 @@ export class LandedUi {
       }</div>`;
       side = `${
         pic
-          ? `<div class="oi-hero"><img src="/nova/picts/${pic.file}" alt=""></div>`
+          ? `<div class="oi-hero"><img src="${asset(`nova/picts/${pic.file}`)}" alt=""></div>`
           : '<div class="oi-hero placeholder"></div>'
       }
         <div class="oi-info">
@@ -902,7 +903,7 @@ export class LandedUi {
       ? `Most of the patrons here fly under ${sys.govtName} colors.`
       : "Nobody here seems to fly under anyone's colors.";
     const hero = p.landingPictFile
-      ? `<div class="land-hero dim" style="background-image:url('/nova/picts/${p.landingPictFile}')"></div>`
+      ? `<div class="land-hero dim" style="background-image:url('${asset(`nova/picts/${p.landingPictFile}`)}')"></div>`
       : "";
     const missionRows = this.barMissions.map((m) => this.missionRow(m, "bar")).join("");
     this.root.innerHTML = `
@@ -966,7 +967,7 @@ export class LandedUi {
       <div class="panel">
         <h1>Holovid<span class="sys">${p.name}</span></h1>
         ${this.statusBar()}
-        ${pic ? `<div class="holovid-pic"><img src="/nova/picts/${pic.file}" alt=""></div>` : ""}
+        ${pic ? `<div class="holovid-pic"><img src="${asset(`nova/picts/${pic.file}`)}" alt=""></div>` : ""}
         <div class="holovid-feed">
           ${items.map((t) => `<p class="desc">${escapeHtml(t)}</p>`).join("")}
         </div>
@@ -1004,7 +1005,7 @@ export class LandedUi {
         const state = result ? (i === result.winner ? "won" : "idle") : i === picked ? "picked" : "idle";
         const pic = racer(i, state);
         return `<button class="race-cell${i === picked ? " sel" : ""}" data-racer="${i}" ${result ? "disabled" : ""}>
-          ${pic ? `<img src="/nova/picts/${pic.file}" alt="${RACER_NAMES[i]}">` : RACER_NAMES[i]}
+          ${pic ? `<img src="${asset(`nova/picts/${pic.file}`)}" alt="${RACER_NAMES[i]}">` : RACER_NAMES[i]}
           <span>${RACER_NAMES[i]}</span>
         </button>`;
       })
@@ -1033,7 +1034,7 @@ export class LandedUi {
       <div class="panel">
         <h1>Galaxy Racing Network<span class="sys">${p.name}</span></h1>
         ${this.statusBar()}
-        <div class="race-stage"${bg ? ` style="background-image:url('/nova/picts/${bg.file}')"` : ""}>
+        <div class="race-stage"${bg ? ` style="background-image:url('${asset(`nova/picts/${bg.file}`)}')"` : ""}>
           <p class="race-banner">${escapeHtml(banner)}</p>
           <div class="race-grid">${cells}</div>
         </div>
@@ -1110,7 +1111,7 @@ export class LandedUi {
         : `Refuel (${fuelCost.toLocaleString()} cr)`;
 
     const hero = p.landingPictFile
-      ? `<div class="land-hero" style="background-image:url('/nova/picts/${p.landingPictFile}')"></div>`
+      ? `<div class="land-hero" style="background-image:url('${asset(`nova/picts/${p.landingPictFile}`)}')"></div>`
       : "";
     // Nova puts the services down either side of the description: bar, board
     // and exchange on the left, the two shops on the right, Leave beneath.
@@ -1419,7 +1420,7 @@ export class LandedUi {
           .join("");
         return `<div class="oi-cell${id === this.selectedShip ? " sel" : ""}" data-id="${id}">
           <div class="oi-icon">${
-            pict ? `<img src="/nova/picts/${pict.file}" alt="">` : ""
+            pict ? `<img src="${asset(`nova/picts/${pict.file}`)}" alt="">` : ""
           }</div>
           <div class="oi-name">${label}</div>
           <div class="oi-price">${
@@ -1443,9 +1444,9 @@ export class LandedUi {
       const fullName = s.longName || name;
 
       const hero = pict
-        ? `<img class="sy-hero" src="/nova/picts/${pict.file}" alt="${name}">`
+        ? `<img class="sy-hero" src="${asset(`nova/picts/${pict.file}`)}" alt="${name}">`
         : sprite
-          ? `<div class="sy-hero sprite" style="background-image:url('/nova/sprites/${sprite.file}');
+          ? `<div class="sy-hero sprite" style="background-image:url('${asset(`nova/sprites/${sprite.file}`)}');
               background-size:${sprite.frames * 100}% 100%"></div>`
           : '<div class="sy-hero placeholder"></div>';
 
@@ -1616,7 +1617,7 @@ export class LandedUi {
         return `<div class="oi-cell${id === this.selectedOutfit ? " sel" : ""}" data-id="${id}">
           ${owned > 0 ? `<span class="oi-qty">${owned}</span>` : ""}
           <div class="oi-icon">${
-            pict ? `<img src="/nova/picts/${pict.file}" alt="">` : ""
+            pict ? `<img src="${asset(`nova/picts/${pict.file}`)}" alt="">` : ""
           }</div>
           <div class="oi-name">${name}</div>
         </div>`;
@@ -1647,7 +1648,7 @@ export class LandedUi {
 
       desc = `<div class="oi-desc">${resolveNovaText(o.desc, g.player.bits)}</div>`;
       hero = pict
-        ? `<img class="oi-hero" src="/nova/picts/${pict.file}" alt="${name}">`
+        ? `<img class="oi-hero" src="${asset(`nova/picts/${pict.file}`)}" alt="${name}">`
         : `<div class="oi-hero placeholder">${name}</div>`;
 
       // Nova's own wording for why a purchase is blocked

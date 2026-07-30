@@ -1,5 +1,7 @@
 /** Web Audio playback for extracted Nova 'snd ' resources + title music. */
 
+import { asset } from "../asset";
+
 /**
  * The snd ids we call by name, taken from the resource names in
  * Nova Sounds.rez. Nova numbers them in families: 128-130 hyperspace,
@@ -40,13 +42,27 @@ export const SND = {
  * scenario gets male and female pilots out of one bank.
  */
 const VOICE_TAKES: Record<number, number> = {
-  1000: 7, 1010: 5, 1020: 3, // 0 civilian / independent
-  1100: 7, 1110: 5, 1120: 5, // 1 Federation
-  1200: 9, 1210: 5, 1220: 3, // 2 Rebellion
-  1300: 5, 1310: 3, 1320: 5, // 3 Polaris
-  1400: 8, 1410: 8, 1420: 8, // 4 Auroran
-  1500: 8, 1510: 8, 1520: 8, // 5 Pirate
-  1600: 8, 1610: 8, 1620: 8, // 6 Wild Geese
+  1000: 7,
+  1010: 5,
+  1020: 3, // 0 civilian / independent
+  1100: 7,
+  1110: 5,
+  1120: 5, // 1 Federation
+  1200: 9,
+  1210: 5,
+  1220: 3, // 2 Rebellion
+  1300: 5,
+  1310: 3,
+  1320: 5, // 3 Polaris
+  1400: 8,
+  1410: 8,
+  1420: 8, // 4 Auroran
+  1500: 8,
+  1510: 8,
+  1520: 8, // 5 Pirate
+  1600: 8,
+  1610: 8,
+  1620: 8, // 6 Wild Geese
 };
 
 /** Which line an escort is saying. The numbers are the Bible's bank offsets. */
@@ -61,14 +77,23 @@ export type VoiceKind = (typeof VOICE)[keyof typeof VOICE];
  * what Nova gives the Wraith, the Krypt and the Hyperioid.
  */
 /** Split a VoiceType into its bank number and any forced half. */
-function readVoiceType(voiceType: number): { type: number; forced: 0 | 1 | null } | null {
-  if (voiceType >= 2000 && voiceType <= 2007) return { type: voiceType - 2000, forced: 0 };
-  if (voiceType >= 1000 && voiceType <= 1007) return { type: voiceType - 1000, forced: 1 };
-  if (voiceType >= 0 && voiceType <= 7) return { type: voiceType, forced: null };
+function readVoiceType(
+  voiceType: number,
+): { type: number; forced: 0 | 1 | null } | null {
+  if (voiceType >= 2000 && voiceType <= 2007)
+    return { type: voiceType - 2000, forced: 0 };
+  if (voiceType >= 1000 && voiceType <= 1007)
+    return { type: voiceType - 1000, forced: 1 };
+  if (voiceType >= 0 && voiceType <= 7)
+    return { type: voiceType, forced: null };
   return null; // -1, or something a plug-in invented
 }
 
-export function voiceSnd(voiceType: number, kind: VoiceKind, parity: 0 | 1): number | null {
+export function voiceSnd(
+  voiceType: number,
+  kind: VoiceKind,
+  parity: 0 | 1,
+): number | null {
   const vt = readVoiceType(voiceType);
   if (!vt) return null;
   const bank = 1000 + vt.type * 100 + kind;
@@ -120,7 +145,8 @@ try {
     muted?: boolean;
   } | null;
   if (saved) {
-    if (typeof saved.volume === "number") masterVolume = Math.max(0, Math.min(1, saved.volume));
+    if (typeof saved.volume === "number")
+      masterVolume = Math.max(0, Math.min(1, saved.volume));
     if (typeof saved.muted === "boolean") muted = saved.muted;
   }
 } catch {
@@ -129,7 +155,10 @@ try {
 
 function persist(): void {
   try {
-    localStorage.setItem(VOL_KEY, JSON.stringify({ volume: masterVolume, muted }));
+    localStorage.setItem(
+      VOL_KEY,
+      JSON.stringify({ volume: masterVolume, muted }),
+    );
   } catch {
     /* private mode: volume just won't survive a reload */
   }
@@ -192,14 +221,16 @@ export function isMuted(): boolean {
 
 export function setVolume(v: number): void {
   masterVolume = Math.max(0, Math.min(1, v));
-  if (master && ctx) master.gain.setTargetAtTime(effectiveVolume(), ctx.currentTime, 0.01);
+  if (master && ctx)
+    master.gain.setTargetAtTime(effectiveVolume(), ctx.currentTime, 0.01);
   applyMusicVolume();
   persist();
 }
 
 export function setMuted(m: boolean): void {
   muted = m;
-  if (master && ctx) master.gain.setTargetAtTime(effectiveVolume(), ctx.currentTime, 0.01);
+  if (master && ctx)
+    master.gain.setTargetAtTime(effectiveVolume(), ctx.currentTime, 0.01);
   applyMusicVolume();
   persist();
 }
@@ -216,8 +247,10 @@ function fetchSnd(sndId: number): Promise<AudioBuffer | null> {
   if (pending) return pending;
   const ac = audioCtx();
   if (!ac) return Promise.resolve(null);
-  const p = fetch(`/nova/sounds/snd-${sndId}.wav`)
-    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`snd ${sndId}: 404`))))
+  const p = fetch(asset(`nova/sounds/snd-${sndId}.wav`))
+    .then((r) =>
+      r.ok ? r.arrayBuffer() : Promise.reject(new Error(`snd ${sndId}: 404`)),
+    )
     .then((ab) => ac.decodeAudioData(ab))
     .then((buf) => {
       buffers.set(sndId, buf);
@@ -248,12 +281,27 @@ export function preloadSnds(ids: Iterable<number | null | undefined>): void {
 /** The interface and system sounds that fire often enough to be worth eager loading. */
 export function preloadCoreSnds(): void {
   preloadSnds([
-    SND.WARP_IN, SND.WARP_OUT,
-    SND.BEEP1, SND.BEEP2, SND.BEEP3, SND.BEEP4, SND.BEEP5,
-    SND.RED_ALERT, SND.KLAXON, SND.EJECT,
-    SND.CLOAK_OFF, SND.CLOAK_ON, SND.AIRLOCK,
-    SND.MENU_DOWN, SND.MENU_UP, SND.MENU_START, SND.MENU_END,
-    300, 301, 302, 303,
+    SND.WARP_IN,
+    SND.WARP_OUT,
+    SND.BEEP1,
+    SND.BEEP2,
+    SND.BEEP3,
+    SND.BEEP4,
+    SND.BEEP5,
+    SND.RED_ALERT,
+    SND.KLAXON,
+    SND.EJECT,
+    SND.CLOAK_OFF,
+    SND.CLOAK_ON,
+    SND.AIRLOCK,
+    SND.MENU_DOWN,
+    SND.MENU_UP,
+    SND.MENU_START,
+    SND.MENU_END,
+    300,
+    301,
+    302,
+    303,
   ]);
 }
 
@@ -264,7 +312,12 @@ export interface PlayOpts {
   attenuation?: number;
 }
 
-function startSource(sndId: number, buf: AudioBuffer, volume: number, opts?: PlayOpts): void {
+function startSource(
+  sndId: number,
+  buf: AudioBuffer,
+  volume: number,
+  opts?: PlayOpts,
+): void {
   const ac = ctx;
   if (!ac || !master || ac.state !== "running") return;
 
@@ -281,7 +334,11 @@ function startSource(sndId: number, buf: AudioBuffer, volume: number, opts?: Pla
 
   let tail: AudioNode = gain;
   const pan = opts?.pan;
-  if (pan !== undefined && pan !== 0 && typeof ac.createStereoPanner === "function") {
+  if (
+    pan !== undefined &&
+    pan !== 0 &&
+    typeof ac.createStereoPanner === "function"
+  ) {
     const panner = ac.createStereoPanner();
     panner.pan.value = Math.max(-1, Math.min(1, pan));
     gain.connect(panner);
@@ -316,7 +373,8 @@ export function playSnd(sndId: number, volume = 0.5, opts?: PlayOpts): void {
   }
   const deadline = performance.now() + 350;
   void fetchSnd(sndId).then((buf) => {
-    if (buf && performance.now() <= deadline) startSource(sndId, buf, volume, opts);
+    if (buf && performance.now() <= deadline)
+      startSource(sndId, buf, volume, opts);
   });
 }
 
@@ -328,11 +386,18 @@ export function playSnd(sndId: number, volume = 0.5, opts?: PlayOpts): void {
 const AUDIBLE_NEAR = 350;
 const AUDIBLE_FAR = 2600;
 
-export function playSndAt(sndId: number, volume: number, dx: number, dy: number): void {
+export function playSndAt(
+  sndId: number,
+  volume: number,
+  dx: number,
+  dy: number,
+): void {
   const dist = Math.hypot(dx, dy);
   if (dist >= AUDIBLE_FAR) return;
   const atten =
-    dist <= AUDIBLE_NEAR ? 1 : 1 - (dist - AUDIBLE_NEAR) / (AUDIBLE_FAR - AUDIBLE_NEAR);
+    dist <= AUDIBLE_NEAR
+      ? 1
+      : 1 - (dist - AUDIBLE_NEAR) / (AUDIBLE_FAR - AUDIBLE_NEAR);
   playSnd(sndId, volume, {
     pan: Math.max(-1, Math.min(1, dx / 900)) * 0.7,
     attenuation: atten * atten,
@@ -365,7 +430,12 @@ let sustainToken = 0;
  * and out, because a four-second ambience or a beam hum that snaps on and off
  * at full amplitude clicks audibly.
  */
-export function startSustained(key: string, sndId: number, loop: boolean, volume: number): void {
+export function startSustained(
+  key: string,
+  sndId: number,
+  loop: boolean,
+  volume: number,
+): void {
   // already playing this, or still fetching it — asking again must not restart it
   if (sustained.get(key)?.sndId === sndId) return;
   stopSustained(key);
@@ -397,7 +467,10 @@ export function startSustained(key: string, sndId: number, loop: boolean, volume
   };
   const cached = buffers.get(sndId);
   if (cached) start(cached);
-  else void fetchSnd(sndId).then((buf) => (buf ? start(buf) : sustained.delete(key)));
+  else
+    void fetchSnd(sndId).then((buf) =>
+      buf ? start(buf) : sustained.delete(key),
+    );
 }
 
 export function stopSustained(key: string): void {
@@ -471,7 +544,7 @@ export function playMusic(): void {
   if (musicMuted()) return;
   musicWanted = true;
   if (!musicEl) {
-    musicEl = new Audio("/nova/music.mp3");
+    musicEl = new Audio(asset("nova/music.mp3"));
     musicEl.loop = true;
   }
   applyMusicVolume();

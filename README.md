@@ -9,7 +9,18 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:5173.
+Then open **http://localhost:5173**.
+
+### Play online (PWA)
+
+A live version is deployed to GitHub Pages at https://calebbaird.github.io/starlanes/ (or your fork's equivalent).
+
+It is a **Progressive Web App**:
+- Install it to your home screen / dock for a native-like experience.
+- Works offline after the first visit (all sprites, sounds, music, and galaxy data are cached).
+- Auto-updates when a new version is pushed.
+
+Click the install icon in the address bar (Chrome/Edge) or use the browser's "Install" menu.
 
 ## Importing the EV Nova data
 
@@ -381,3 +392,5 @@ strings — so the two are not interchangeable.
   (`stellar` -1/-2), and the `Q`/`T`/`Y` ncb ops. The `X` op is still unimplemented — it
   appears only in the tutorial missions and its operands don't line up with their
   destinations, so its meaning can't be recovered from the data alone.
+
+**PWA + GitHub Pages deployment is now complete** (see "Play online" above).
