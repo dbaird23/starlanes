@@ -87,7 +87,8 @@ export function applyReload(slot: WeaponSlot): void {
   }
   // Flags 0x0040: all barrels fire together, so the budget is not multiplied.
   const budget =
-    slot.weap.burstCount * (slot.weap.simultaneous ? 1 : Math.max(1, slot.count));
+    slot.weap.burstCount *
+    (slot.weap.simultaneous ? 1 : Math.max(1, slot.count));
   if (slot.burstLeft <= 0) slot.burstLeft = budget;
   slot.burstLeft--;
   slot.cooldown =
@@ -150,7 +151,12 @@ export function isFighterBay(weap: WeaponType): boolean {
 
 /** Turret-style weapons swivel to the selected target. */
 export function isTurret(weap: WeaponType): boolean {
-  return weap.guidance === 3 || weap.guidance === 4 || weap.guidance === 7 || weap.guidance === 8;
+  return (
+    weap.guidance === 3 ||
+    weap.guidance === 4 ||
+    weap.guidance === 7 ||
+    weap.guidance === 8
+  );
 }
 
 export function isPrimary(weap: WeaponType): boolean {
@@ -237,8 +243,10 @@ export function buildLoadout(
  * take neither — they are limited by ammo and free mass instead.
  */
 export function mountKind(guidance: number): "gun" | "turret" | null {
-  if (guidance === 3 || guidance === 4 || guidance === 9 || guidance === 10) return "turret";
-  if (guidance === -1 || guidance === 0 || guidance === 7 || guidance === 8) return "gun";
+  if (guidance === 3 || guidance === 4 || guidance === 9 || guidance === 10)
+    return "turret";
+  if (guidance === -1 || guidance === 0 || guidance === 7 || guidance === 8)
+    return "gun";
   return null;
 }
 
@@ -302,7 +310,10 @@ export function hullOutfitMass(shipId: string): number {
 }
 
 /** Add a hull's own outfits into an owned-outfit map, in place. */
-export function grantHullOutfits(shipId: string, outfits: Record<string, number>): void {
+export function grantHullOutfits(
+  shipId: string,
+  outfits: Record<string, number>,
+): void {
   for (const [outfId, n] of Object.entries(hullOutfits(shipId))) {
     outfits[outfId] = (outfits[outfId] ?? 0) + n;
   }
@@ -347,7 +358,11 @@ export function mountLimits(
  * per instance of the weapon, so two of the same bay carry twice as many; 0
  * means the weapon sets no limit of its own and the outfit's Max governs.
  */
-export function ammoCapped(weapId: string, rounds: number, instances = 1): number {
+export function ammoCapped(
+  weapId: string,
+  rounds: number,
+  instances = 1,
+): number {
   const weap = WEAPONS[weapId];
   if (!weap || weap.maxAmmo <= 0) return rounds;
   return Math.min(rounds, weap.maxAmmo * Math.max(1, instances));
@@ -372,7 +387,10 @@ export function inherentCombatGovt(shipId: string | null): number {
  * a captain can fly a stock hull stripped of its cannon and carrying something
  * better instead.
  */
-export function personLoadout(person: PersonType, type: ShipType): StockWeapon[] {
+export function personLoadout(
+  person: PersonType,
+  type: ShipType,
+): StockWeapon[] {
   if (!person.loadout.length) return type.stockWeapons;
   const merged = type.stockWeapons.map((w) => ({ ...w }));
   for (const extra of person.loadout) {
@@ -425,6 +443,7 @@ export interface OutfitBonuses {
   densityScanner: boolean;
   iff: boolean;
   autoRefuel: boolean;
+  /** ModType 37: enter hyperspace without the retro-brake (same as shïp Flags2 0x0020) */
   fastJump: boolean;
   inertialDamper: boolean;
   repairSystem: boolean;
@@ -462,15 +481,37 @@ export interface OutfitBonuses {
  */
 export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
   const b: OutfitBonuses = {
-    cargo: 0, shield: 0, armor: 0, mass: 0,
-    accel: 0, speed: 0, turn: 0,
-    shieldRech: 0, armorRech: 0, fuel: 0, afterburner: 0,
-    cloak: 0, fuelScoop: 0, miningScoop: false,
-    escapePod: false, densityScanner: false, iff: false, autoRefuel: false,
-    fastJump: false, inertialDamper: false, repairSystem: false,
-    hyperSpeed: 0, jumpDist: 0, marines: 0, jamming: [0, 0, 0, 0],
-    cloakScanner: 0, reinfInhibit: [], ionDissipate: 0, ionCapacity: 0,
-    maxGuns: 0, maxTurrets: 0,
+    cargo: 0,
+    shield: 0,
+    armor: 0,
+    mass: 0,
+    accel: 0,
+    speed: 0,
+    turn: 0,
+    shieldRech: 0,
+    armorRech: 0,
+    fuel: 0,
+    afterburner: 0,
+    cloak: 0,
+    fuelScoop: 0,
+    miningScoop: false,
+    escapePod: false,
+    densityScanner: false,
+    iff: false,
+    autoRefuel: false,
+    fastJump: false,
+    inertialDamper: false,
+    repairSystem: false,
+    hyperSpeed: 0,
+    jumpDist: 0,
+    marines: 0,
+    jamming: [0, 0, 0, 0],
+    cloakScanner: 0,
+    reinfInhibit: [],
+    ionDissipate: 0,
+    ionCapacity: 0,
+    maxGuns: 0,
+    maxTurrets: 0,
   };
   for (const [outfId, owned] of Object.entries(outfits)) {
     const outf = OUTFITS[outfId];
@@ -479,43 +520,104 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
     for (const mod of outf.mods) {
       const v = mod.val * owned;
       switch (mod.type) {
-        case 2: b.cargo += v; break;
-        case 4: b.shield += v; break;
-        case 5: b.shieldRech += (v / 1000) * 30; break;
-        case 6: b.armor += v; break;
-        case 7: b.accel += v; break;
-        case 8: b.speed += v; break;
+        case 2:
+          b.cargo += v;
+          break;
+        case 4:
+          b.shield += v;
+          break;
+        case 5:
+          b.shieldRech += (v / 1000) * 30;
+          break;
+        case 6:
+          b.armor += v;
+          break;
+        case 7:
+          b.accel += v;
+          break;
+        case 8:
+          b.speed += v;
+          break;
         // outfit turn units are ten times finer than the hull's Maneuver field
-        case 9: b.turn += v / 10; break;
-        case 12: b.fuel += v / 100; break;
-        case 15: b.afterburner = Math.max(b.afterburner, mod.val); break;
+        case 9:
+          b.turn += v / 10;
+          break;
+        case 12:
+          b.fuel += v / 100;
+          break;
+        case 15:
+          b.afterburner = Math.max(b.afterburner, mod.val);
+          break;
         // 17: cloak flags; 18: frames per unit of fuel (negative = fuel sucking)
-        case 17: b.cloak |= mod.val; break;
-        case 18: if (mod.val !== 0) b.fuelScoop += (30 / mod.val) * owned; break;
-        case 29: b.armorRech += (v / 1000) * 30; break;
-        case 11: b.escapePod = true; break;
-        case 13: b.densityScanner = true; break;
-        case 14: b.iff = true; break;
-        case 19: b.autoRefuel = true; break;
-        case 22: b.hyperSpeed += mod.val; break;
-        case 23: b.jumpDist += v; break;
-        case 25: b.marines += v; break;
-        case 31: b.miningScoop = true; break;
-        case 33: case 34: case 35: case 36:
+        case 17:
+          b.cloak |= mod.val;
+          break;
+        case 18:
+          if (mod.val !== 0) b.fuelScoop += (30 / mod.val) * owned;
+          break;
+        case 29:
+          b.armorRech += (v / 1000) * 30;
+          break;
+        case 11:
+          b.escapePod = true;
+          break;
+        case 13:
+          b.densityScanner = true;
+          break;
+        case 14:
+          b.iff = true;
+          break;
+        case 19:
+          b.autoRefuel = true;
+          break;
+        case 22:
+          b.hyperSpeed += mod.val;
+          break;
+        case 23:
+          b.jumpDist += v;
+          break;
+        case 25:
+          b.marines += v;
+          break;
+        case 31:
+          b.miningScoop = true;
+          break;
+        case 33:
+        case 34:
+        case 35:
+        case 36:
           b.jamming[mod.type - 33] += v;
           break;
         // 16 (maps) is not a ship stat — it charts systems when acquired,
         // and is applied in Game.chartFromOutfit rather than here.
-        case 30: b.cloakScanner |= mod.val; break;
+        case 30:
+          b.cloakScanner |= mod.val;
+          break;
         // 39: 100 = one ion point per frame; 40: extra ion capacity
-        case 39: b.ionDissipate += (v / 100) * 30; break;
-        case 40: b.ionCapacity += v; break;
-        case 44: b.reinfInhibit.push(mod.val); break;
-        case 45: b.maxGuns += v; break;
-        case 46: b.maxTurrets += v; break;
-        case 37: b.fastJump = true; break;
-        case 38: b.inertialDamper = true; break;
-        case 49: b.repairSystem = true; break;
+        case 39:
+          b.ionDissipate += (v / 100) * 30;
+          break;
+        case 40:
+          b.ionCapacity += v;
+          break;
+        case 44:
+          b.reinfInhibit.push(mod.val);
+          break;
+        case 45:
+          b.maxGuns += v;
+          break;
+        case 46:
+          b.maxTurrets += v;
+          break;
+        case 37:
+          b.fastJump = true;
+          break;
+        case 38:
+          b.inertialDamper = true;
+          break;
+        case 49:
+          b.repairSystem = true;
+          break;
       }
     }
   }
@@ -577,15 +679,28 @@ export function fireWeapon(
     if (weap.flags3 & W3_NEAREST_MOUNT && target) {
       let best = Infinity;
       for (let m = 0; m < 4; m++) {
-        const e = weaponExitPoint(shooter.sprite, weap.exitType, m, shooter.angle);
+        const e = weaponExitPoint(
+          shooter.sprite,
+          weap.exitType,
+          m,
+          shooter.angle,
+        );
         const d = Math.hypot(
           shooter.pos.x + e.x - target.pos.x,
           shooter.pos.y + e.y - target.pos.y,
         );
-        if (d < best) { best = d; mount = m; }
+        if (d < best) {
+          best = d;
+          mount = m;
+        }
       }
     }
-    const exit = weaponExitPoint(shooter.sprite, weap.exitType, mount, shooter.angle);
+    const exit = weaponExitPoint(
+      shooter.sprite,
+      weap.exitType,
+      mount,
+      shooter.angle,
+    );
     // Fall back to the nose when the hull declares no mount for this class.
     const from =
       exit.x === 0 && exit.y === 0
@@ -636,7 +751,10 @@ export const SEEKER_CONFUSED_BY_INTERFERENCE = 0x0008;
  * Only weapons whose Seeker says they are confused by interference care —
  * which is the Radar Missile and the EW Missile, not the IR Missile.
  */
-export function interferenceBreaksLock(weap: WeaponType, interference: number): number {
+export function interferenceBreaksLock(
+  weap: WeaponType,
+  interference: number,
+): number {
   if (!(weap.seeker & SEEKER_CONFUSED_BY_INTERFERENCE)) return 0;
   return Math.min(0.9, interference / 100);
 }

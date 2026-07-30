@@ -18,7 +18,12 @@ import {
   SPOB_INDEX,
 } from "../data/universe";
 import type { Game, GateDestination } from "../game/game";
-import { MAX_ESCORTS, escortHireFee, escortSellValue, escortWage } from "../game/game";
+import {
+  MAX_ESCORTS,
+  escortHireFee,
+  escortSellValue,
+  escortWage,
+} from "../game/game";
 import { JUNKS, junkCargoKey } from "../data/universe";
 import {
   availableMissions,
@@ -31,7 +36,12 @@ import {
 } from "../game/missions";
 import { MISSIONS, WEAPONS, getSystem } from "../data/universe";
 import { playAmbient, stopAmbient } from "../engine/audio";
-import type { ActiveMission, MissionType, PlanetDef, SystemDef } from "../types";
+import type {
+  ActiveMission,
+  MissionType,
+  PlanetDef,
+  SystemDef,
+} from "../types";
 import { oopsPriceDelta, oopsesAt } from "../game/oops";
 import { evalTest } from "../game/bits";
 import { formatDate } from "../game/calendar";
@@ -58,13 +68,33 @@ const PORT_KEYS: Record<string, View> = {
  * planet from those, which is Nova's own behaviour and predates this.
  */
 const ESC_CLOSES = new Set<View>([
-  "bar", "bbs", "trade", "outfitter", "shipyard", "log",
+  "bar",
+  "bbs",
+  "trade",
+  "outfitter",
+  "shipyard",
+  "log",
 ]);
 
 /** The screens those keys work from: the counters, not the modal panels. */
 const PORT_KEY_VIEWS = new Set<View>([
-  "spaceport", "trade", "shipyard", "outfitter", "bar", "bbs", "log", "escorts",
+  "spaceport",
+  "trade",
+  "shipyard",
+  "outfitter",
+  "bar",
+  "bbs",
+  "log",
+  "escorts",
 ]);
+
+/**
+ * Landing-event / mission-offer dialogs. Enter fires the affirmative (or the
+ * sole) button; Esc fires the negative when there is one, otherwise the same
+ * sole dismiss. The Bible never names these keys — it only paints button art —
+ * but this is the classic Mac/EV dialog contract.
+ */
+const MODAL_VIEWS = new Set<View>(["events", "offer"]);
 
 type View =
   | "spaceport"
@@ -146,11 +176,26 @@ export class LandedUi {
   private selectedHire: string | null = null;
   private hireScroll = 0;
   private gamblePick: number | null = null;
-  private gambleResult: { winner: number; won: boolean; stake: number; payout: number } | null = null;
+  private gambleResult: {
+    winner: number;
+    won: boolean;
+    stake: number;
+    payout: number;
+  } | null = null;
   private barMissions: MissionType[] = [];
   private spaceportOffers: MissionType[] = [];
-  private pendingOffer: { m: MissionType; active: ActiveMission; back: View } | null = null;
+  private pendingOffer: {
+    m: MissionType;
+    active: ActiveMission;
+    back: View;
+  } | null = null;
   private shipOfferFrom: string | null = null;
+  /** focused spaceport service button id (e.g. "btn-bar") for arrow-key nav */
+  private selectedPort: string | null = null;
+  /** focused hypergate destination index */
+  private selectedGate = 0;
+  /** focused bar action button id */
+  private selectedBar: string | null = null;
 
   constructor(game: Game) {
     this.game = game;
@@ -161,6 +206,12 @@ export class LandedUi {
       if (typing) return;
       // anything this handler acts on must not reach the game loop as well
       const handled = (): void => this.game.swallowKey(e.code);
+      // mission / landing dialogs take Enter and Esc before counter shortcuts
+      if (this.handleModalKeys(e.code)) {
+        e.preventDefault();
+        handled();
+        return;
+      }
       if (this.planet && e.code === "Escape" && ESC_CLOSES.has(this.view)) {
         e.preventDefault();
         handled();
@@ -217,8 +268,434 @@ export class LandedUi {
               : undefined;
         if (sel) this.showOnMap(sel);
         else this.game.openMap();
+        return;
+      }
+      // Arrow keys step through the current menu's list or grid; Enter acts on
+      // the selection (Accept / Buy / Hire / open the focused port button, …).
+      if (this.planet && this.handleMenuNav(e.code)) {
+        e.preventDefault();
+        handled();
       }
     });
+  }
+
+  /**
+   * Enter / Esc on landing-event and mission-offer dialogs. Marks and clicks
+   * the buttons tagged in the markup (`data-modal-default` / `data-modal-cancel`).
+   */
+  private handleModalKeys(code: string): boolean {
+    if (!MODAL_VIEWS.has(this.view)) return false;
+    if (code !== "Enter" && code !== "Escape") return false;
+
+    const def = this.modalDefaultButton();
+    const cancel = this.modalCancelButton();
+
+    if (code === "Enter") {
+      // only the affirmative — never fire Decline via Enter (Esc is for that)
+      if (def && !def.disabled) {
+        def.click();
+        return true;
+      }
+      return false;
+    }
+
+    // Escape: negative when present, else the same button as Enter (Continue)
+    const esc = cancel ?? def;
+    if (esc && !esc.disabled) {
+      esc.click();
+      return true;
+    }
+    return false;
+  }
+
+  /** Affirmative / sole action: Accept, Continue, … */
+  private modalDefaultButton(): HTMLButtonElement | null {
+    return this.root.querySelector<HTMLButtonElement>("[data-modal-default]");
+  }
+
+  /**
+   * Negative action: Refuse / Decline. Absent on one-button dialogs and on
+   * can't-refuse offers that still fit (Esc then does nothing harmful — it
+   * will not Accept).
+   */
+  private modalCancelButton(): HTMLButtonElement | null {
+    return this.root.querySelector<HTMLButtonElement>("[data-modal-cancel]");
+  }
+
+  /**
+   * Paint keyboard focus on the dialog's default button. If Accept is disabled
+   * (cargo won't fit) but Decline is present, highlight Decline so Esc's target
+   * is visible — Enter still will not fire it.
+   */
+  private markModalFocus(): void {
+    this.root
+      .querySelectorAll(".evbtn.sel")
+      .forEach((b) => b.classList.remove("sel"));
+    const def = this.modalDefaultButton();
+    const cancel = this.modalCancelButton();
+    const focus = def && !def.disabled ? def : (cancel ?? def);
+    focus?.classList.add("sel");
+  }
+
+  /**
+   * Keyboard navigation for landed menus. Lists answer Up/Down; icon grids
+   * also take Left/Right so you move cell-by-cell the way the mouse does.
+   * Returns true when the key was consumed (including at a list edge, so the
+   * browser does not scroll the page instead).
+   */
+  private handleMenuNav(code: string): boolean {
+    const up = code === "ArrowUp";
+    const down = code === "ArrowDown";
+    const left = code === "ArrowLeft";
+    const right = code === "ArrowRight";
+    const enter = code === "Enter";
+    if (!up && !down && !left && !right && !enter) return false;
+
+    if (enter) return this.activateSelection();
+
+    const dy = up ? -1 : down ? 1 : 0;
+    const dx = left ? -1 : right ? 1 : 0;
+
+    switch (this.view) {
+      case "trade": {
+        if (dx !== 0) return false;
+        const ids = [
+          ...this.root.querySelectorAll<HTMLElement>(".tc-row[data-id]"),
+        ].map((el) => el.dataset.id!);
+        return this.stepLinear(
+          ids,
+          this.selectedGood,
+          (id) => {
+            this.selectedGood = id;
+            this.tradeNote = "";
+          },
+          dy,
+        );
+      }
+      case "bbs": {
+        if (dx !== 0) return false;
+        const ids = this.bbsMissions.map((m) => String(m.id));
+        const cur =
+          this.selectedMisn != null ? String(this.selectedMisn) : null;
+        return this.stepLinear(
+          ids,
+          cur,
+          (id) => {
+            const list = this.root.querySelector<HTMLElement>(".misn-list");
+            if (list) this.misnScroll = list.scrollTop;
+            this.selectedMisn = parseInt(id, 10);
+          },
+          dy,
+          () =>
+            this.scrollSelInto(".misn-list", ".misn-item.sel", (t) => {
+              this.misnScroll = t;
+            }),
+        );
+      }
+      case "shipyard": {
+        const ids = [
+          ...this.root.querySelectorAll<HTMLElement>(".oi-cell[data-id]"),
+        ].map((el) => el.dataset.id!);
+        return this.stepGrid(
+          ids,
+          this.selectedShip,
+          (id) => {
+            this.selectedShip = id;
+          },
+          3,
+          dx,
+          dy,
+          "shop",
+        );
+      }
+      case "outfitter": {
+        const ids = [
+          ...this.root.querySelectorAll<HTMLElement>(".oi-cell[data-id]"),
+        ].map((el) => el.dataset.id!);
+        return this.stepGrid(
+          ids,
+          this.selectedOutfit,
+          (id) => {
+            this.selectedOutfit = id;
+          },
+          4,
+          dx,
+          dy,
+          "shop",
+        );
+      }
+      case "escorts": {
+        const ids = [
+          ...this.root.querySelectorAll<HTMLElement>(".oi-cell[data-id]"),
+        ].map((el) => el.dataset.id!);
+        return this.stepGrid(
+          ids,
+          this.selectedHire,
+          (id) => {
+            this.selectedHire = id;
+          },
+          4,
+          dx,
+          dy,
+          "hire",
+        );
+      }
+      case "spaceport": {
+        const ids = this.portButtonIds();
+        if (!ids.length) return false;
+        // two columns of services — Up/Down move within a column, Left/Right
+        // hop to the same slot on the other side
+        const leftIds = ids.filter((id) =>
+          ["btn-bar", "btn-bbs", "btn-trade", "btn-log"].includes(id),
+        );
+        const rightIds = ids.filter((id) =>
+          [
+            "btn-shipyard",
+            "btn-outfitter",
+            "btn-refuel",
+            "btn-depart",
+          ].includes(id),
+        );
+        const inLeft = leftIds.indexOf(this.selectedPort ?? "");
+        const inRight = rightIds.indexOf(this.selectedPort ?? "");
+        if (dy !== 0) {
+          const col = inLeft >= 0 ? leftIds : inRight >= 0 ? rightIds : leftIds;
+          const idx = inLeft >= 0 ? inLeft : inRight >= 0 ? inRight : 0;
+          return this.stepLinear(
+            col,
+            col[idx] ?? null,
+            (id) => {
+              this.selectedPort = id;
+            },
+            dy,
+          );
+        }
+        if (dx !== 0) {
+          if (dx > 0 && inLeft >= 0 && rightIds.length) {
+            this.selectedPort = rightIds[Math.min(inLeft, rightIds.length - 1)];
+            this.render();
+            return true;
+          }
+          if (dx < 0 && inRight >= 0 && leftIds.length) {
+            this.selectedPort = leftIds[Math.min(inRight, leftIds.length - 1)];
+            this.render();
+            return true;
+          }
+          return true;
+        }
+        return false;
+      }
+      case "gate": {
+        if (dx !== 0) return false;
+        const n = this.root.querySelectorAll(".ship-card[data-row]").length;
+        if (n === 0) return false;
+        const next = Math.max(0, Math.min(n - 1, this.selectedGate + dy));
+        if (next === this.selectedGate) return true;
+        this.selectedGate = next;
+        this.render();
+        return true;
+      }
+      case "gamble": {
+        if (this.gambleResult || dy !== 0) return false;
+        const cur = this.gamblePick ?? 0;
+        const next = Math.max(0, Math.min(3, cur + dx));
+        if (this.gamblePick === next && this.gamblePick !== null) return true;
+        this.gamblePick = next;
+        this.gambleResult = null;
+        this.render();
+        return true;
+      }
+      case "bar": {
+        if (dy !== 0) return false;
+        const ids = [
+          "btn-hire",
+          "btn-gamble",
+          "btn-holovid",
+          "btn-back",
+        ].filter((id) => this.root.querySelector(`#${id}`));
+        return this.stepLinear(
+          ids,
+          this.selectedBar,
+          (id) => {
+            this.selectedBar = id;
+          },
+          dx,
+        );
+      }
+      default:
+        return false;
+    }
+  }
+
+  /** Enter on the focused item — same as clicking Accept / Buy / the port button. */
+  private activateSelection(): boolean {
+    switch (this.view) {
+      case "bbs": {
+        const btn =
+          this.root.querySelector<HTMLButtonElement>("#btn-bbs-accept");
+        if (btn && !btn.disabled) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "shipyard": {
+        const btn = this.root.querySelector<HTMLButtonElement>("#btn-buy-ship");
+        if (btn && !btn.disabled) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "outfitter": {
+        const btn =
+          this.root.querySelector<HTMLButtonElement>("#btn-buy-outfit");
+        if (btn && !btn.disabled) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "escorts": {
+        const btn = this.root.querySelector<HTMLButtonElement>("#btn-hire-sel");
+        if (btn && !btn.disabled) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "trade": {
+        const btn = this.root.querySelector<HTMLButtonElement>("#tc-buy");
+        if (btn && !btn.disabled) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "spaceport": {
+        if (!this.selectedPort) return false;
+        const btn = this.root.querySelector<HTMLButtonElement>(
+          `#${this.selectedPort}`,
+        );
+        if (btn && !btn.disabled) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "gate": {
+        const btn = this.root.querySelector<HTMLButtonElement>(
+          `button[data-gate="${this.selectedGate}"]`,
+        );
+        if (btn) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      case "bar": {
+        if (!this.selectedBar) return false;
+        const btn = this.root.querySelector<HTMLButtonElement>(
+          `#${this.selectedBar}`,
+        );
+        if (btn) {
+          btn.click();
+          return true;
+        }
+        return false;
+      }
+      default:
+        return false;
+    }
+  }
+
+  private portButtonIds(): string[] {
+    return [
+      ...this.root.querySelectorAll<HTMLButtonElement>(
+        ".portbtn:not(:disabled)",
+      ),
+    ]
+      .map((b) => b.id)
+      .filter(Boolean);
+  }
+
+  private stepLinear(
+    ids: string[],
+    current: string | null,
+    apply: (id: string) => void,
+    delta: number,
+    after?: () => void,
+  ): boolean {
+    if (!ids.length || delta === 0) return false;
+    let idx = current != null ? ids.indexOf(current) : 0;
+    if (idx < 0) idx = 0;
+    const next = Math.max(0, Math.min(ids.length - 1, idx + delta));
+    if (ids[next] === current) return true;
+    apply(ids[next]);
+    this.render();
+    after?.();
+    return true;
+  }
+
+  private stepGrid(
+    ids: string[],
+    current: string | null,
+    apply: (id: string) => void,
+    cols: number,
+    dx: number,
+    dy: number,
+    scroll: "shop" | "hire",
+  ): boolean {
+    if (!ids.length || (dx === 0 && dy === 0)) return false;
+    let idx = current != null ? ids.indexOf(current) : 0;
+    if (idx < 0) idx = 0;
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    let next = idx;
+    if (dx !== 0) {
+      const nc = col + dx;
+      if (nc < 0 || nc >= cols) return true;
+      const candidate = row * cols + nc;
+      if (candidate >= ids.length) return true;
+      next = candidate;
+    } else {
+      const nr = row + dy;
+      if (nr < 0) return true;
+      const candidate = nr * cols + col;
+      if (candidate >= ids.length) {
+        const last = ids.length - 1;
+        if (nr > Math.floor(last / cols)) return true;
+        next = last;
+      } else {
+        next = candidate;
+      }
+    }
+    if (ids[next] === current) return true;
+    // keep the grid scrolled where the player left it before we rebuild HTML
+    const gridNow = this.root.querySelector<HTMLElement>(".oi-grid");
+    if (gridNow) {
+      if (scroll === "shop") this.shopScroll = gridNow.scrollTop;
+      else this.hireScroll = gridNow.scrollTop;
+    }
+    apply(ids[next]);
+    this.render();
+    this.scrollSelInto(".oi-grid", ".oi-cell.sel", (t) => {
+      if (scroll === "shop") this.shopScroll = t;
+      else this.hireScroll = t;
+    });
+    return true;
+  }
+
+  private scrollSelInto(
+    containerSel: string,
+    itemSel: string,
+    store: (scrollTop: number) => void,
+  ): void {
+    const container = this.root.querySelector<HTMLElement>(containerSel);
+    const item = this.root.querySelector<HTMLElement>(itemSel);
+    if (!container || !item) return;
+    item.scrollIntoView({ block: "nearest" });
+    store(container.scrollTop);
   }
 
   /**
@@ -253,8 +730,12 @@ export class LandedUi {
     this.events = this.game.collectLandingEvents(planet.id);
     this.game.save();
     this.offers.clear();
-    this.bbsMissions = planet.uninhabited ? [] : availableMissions(planet, 0, this.game.player);
-    this.barMissions = planet.bar ? availableMissions(planet, 1, this.game.player) : [];
+    this.bbsMissions = planet.uninhabited
+      ? []
+      : availableMissions(planet, 0, this.game.player);
+    this.barMissions = planet.bar
+      ? availableMissions(planet, 1, this.game.player)
+      : [];
     this.spaceportOffers = planet.uninhabited
       ? []
       : availableMissions(planet, 3, this.game.player);
@@ -291,6 +772,7 @@ export class LandedUi {
     this.bbsMissions = [];
     this.barMissions = [];
     this.spaceportOffers = [];
+    this.selectedGate = 0;
     this.view = "gate";
     this.root.classList.remove("hidden");
     this.render();
@@ -304,9 +786,14 @@ export class LandedUi {
     const blurb = p.isWormhole
       ? "Space folds in on itself here. There is no telling exactly where you will surface — only that it will be a long way from here."
       : "The gate ring powers up as you approach, waiting for a destination lock. Transit is instantaneous and costs no fuel.";
+    if (this.selectedGate >= dests.length)
+      this.selectedGate = Math.max(0, dests.length - 1);
     const rows = dests
       .map(
-        (d, i) => `<div class="ship-card" data-row="${i}">
+        (
+          d,
+          i,
+        ) => `<div class="ship-card${i === this.selectedGate ? " hot" : ""}" data-row="${i}">
           <div class="ship-info">
             <div class="ship-name">${p.isWormhole ? "Somewhere far away" : escapeHtml(d.name)}</div>
             <div class="ship-stats">${p.isWormhole ? "Destination unknown" : `${escapeHtml(d.systemName)} system`}</div>
@@ -328,28 +815,39 @@ export class LandedUi {
         </div>
       </div>`;
 
-    // hovering a row lights its star, and clicking the star travels there
-    const rowEls = [...this.root.querySelectorAll<HTMLElement>(".ship-card[data-row]")];
+    // keyboard selection and hover light the matching star on the mini-map
+    const rowEls = [
+      ...this.root.querySelectorAll<HTMLElement>(".ship-card[data-row]"),
+    ];
     const starEls = [...this.root.querySelectorAll<SVGElement>("[data-star]")];
-    const highlight = (i: number | null) => {
+    const highlight = (i: number) => {
       rowEls.forEach((el, n) => el.classList.toggle("hot", n === i));
-      starEls.forEach((el) => el.classList.toggle("hot", el.dataset.star === String(i)));
+      starEls.forEach((el) =>
+        el.classList.toggle("hot", el.dataset.star === String(i)),
+      );
     };
+    highlight(this.selectedGate);
     rowEls.forEach((el, i) => {
-      el.addEventListener("mouseenter", () => highlight(i));
-      el.addEventListener("mouseleave", () => highlight(null));
+      el.addEventListener("mouseenter", () => {
+        this.selectedGate = i;
+        highlight(i);
+      });
     });
     starEls.forEach((el) => {
       const i = parseInt(el.dataset.star!, 10);
-      el.addEventListener("mouseenter", () => highlight(i));
-      el.addEventListener("mouseleave", () => highlight(null));
+      el.addEventListener("mouseenter", () => {
+        this.selectedGate = i;
+        highlight(i);
+      });
       el.addEventListener("click", () => {
         const dest = dests[i];
         if (dest) this.game.useGate(dest.spobId);
       });
     });
 
-    this.root.querySelector("#btn-leave-gate")!.addEventListener("click", () => this.game.depart());
+    this.root
+      .querySelector("#btn-leave-gate")!
+      .addEventListener("click", () => this.game.depart());
     this.root.querySelectorAll("button[data-gate]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const idx = parseInt((btn as HTMLButtonElement).dataset.gate!, 10);
@@ -430,9 +928,10 @@ export class LandedUi {
         ${this.statusBar()}
         <p class="desc">${ev.text.replace(/\n/g, "</p><p class='desc'>")}</p>
         <div class="btnrow">
-          <button class="evbtn primary" id="btn-continue">Continue</button>
+          <button class="evbtn primary" id="btn-continue" data-modal-default>Continue</button>
         </div>
       </div>`;
+    this.markModalFocus();
     this.root.querySelector("#btn-continue")!.addEventListener("click", () => {
       this.events.shift();
       this.render();
@@ -447,7 +946,13 @@ export class LandedUi {
       return;
     }
     const { m, active, back } = offer;
-    const text = substituteTags(offerText(m), m, active, this.game.pilotName, this.game.rankTags());
+    const text = substituteTags(
+      offerText(m),
+      m,
+      active,
+      this.game.pilotName,
+      this.game.rankTags(),
+    );
     const cantRefuse = (m.flags & 0x0004) !== 0;
     const freeSpace = this.game.player.cargoCap - this.game.cargoUsed();
     const fits = !active.cargoLoaded || active.cargoQty <= freeSpace;
@@ -462,12 +967,13 @@ export class LandedUi {
         ${active.cargoQty > 0 && active.cargoName ? `<p class="hint">Cargo: ${active.cargoQty}t of ${active.cargoName}${m.timeLimit > 0 ? ` · Time limit: ${m.timeLimit} days` : ""}</p>` : m.timeLimit > 0 ? `<p class="hint">Time limit: ${m.timeLimit} days</p>` : ""}
         ${noSpaceNote}
         <div class="btnrow">
-          <button class="evbtn primary" id="btn-accept" ${fits ? "" : "disabled"}>Accept</button>
-          ${!cantRefuse ? '<button class="evbtn" id="btn-refuse">Refuse</button>' : ""}
-          ${cantRefuse && !fits ? '<button class="evbtn" id="btn-decline">Decline</button>' : ""}
+          <button class="evbtn primary" id="btn-accept" data-modal-default ${fits ? "" : "disabled"}>Accept</button>
+          ${!cantRefuse ? '<button class="evbtn" id="btn-refuse" data-modal-cancel>Refuse</button>' : ""}
+          ${cantRefuse && !fits ? '<button class="evbtn" id="btn-decline" data-modal-cancel>Decline</button>' : ""}
           <button class="evbtn" id="btn-offer-map">Map</button>
         </div>
       </div>`;
+    this.markModalFocus();
 
     const done = () => {
       this.pendingOffer = null;
@@ -496,7 +1002,13 @@ export class LandedUi {
       if (brief) {
         this.events.push({
           title: escapeHtml(active.name),
-          text: substituteTags(brief, m, active, this.game.pilotName, this.game.rankTags()),
+          text: substituteTags(
+            brief,
+            m,
+            active,
+            this.game.pilotName,
+            this.game.rankTags(),
+          ),
         });
         this.pendingOffer = null;
         this.view = "events";
@@ -511,8 +1023,12 @@ export class LandedUi {
     });
     // can't-refuse mission that doesn't fit: back out without OnRefuse
     // consequences, as if it had never been offered
-    this.root.querySelector("#btn-decline")?.addEventListener("click", () => done());
-    this.root.querySelector("#btn-offer-map")?.addEventListener("click", () => this.showOnMap(m));
+    this.root
+      .querySelector("#btn-decline")
+      ?.addEventListener("click", () => done());
+    this.root
+      .querySelector("#btn-offer-map")
+      ?.addEventListener("click", () => this.showOnMap(m));
   }
 
   /**
@@ -577,7 +1093,9 @@ export class LandedUi {
 
     const rows = list
       .map(
-        (m) => `<div class="misn-item${m.id === this.selectedMisn ? " sel" : ""}"
+        (
+          m,
+        ) => `<div class="misn-item${m.id === this.selectedMisn ? " sel" : ""}"
           data-misn="${m.id}">${escapeHtml(this.offerFor(m).name)}</div>`,
       )
       .join("");
@@ -587,7 +1105,11 @@ export class LandedUi {
     if (sel) {
       const active = this.offerFor(sel);
       const text = substituteTags(
-        offerText(sel), sel, active, g.pilotName, g.rankTags(),
+        offerText(sel),
+        sel,
+        active,
+        g.pilotName,
+        g.rankTags(),
       );
       const freeSpace = g.player.cargoCap - this.game.cargoUsed();
       const fits = !active.cargoLoaded || active.cargoQty <= freeSpace;
@@ -639,9 +1161,11 @@ export class LandedUi {
       this.misnScroll = 0;
       this.render();
     });
-    this.root.querySelector("#btn-bbs-accept")?.addEventListener("click", () => {
-      if (sel) this.takeMission(sel, "bbs");
-    });
+    this.root
+      .querySelector("#btn-bbs-accept")
+      ?.addEventListener("click", () => {
+        if (sel) this.takeMission(sel, "bbs");
+      });
     this.root.querySelector("#btn-bbs-map")?.addEventListener("click", () => {
       if (sel) this.showOnMap(sel);
     });
@@ -663,7 +1187,13 @@ export class LandedUi {
     if (brief) {
       this.events.push({
         title: escapeHtml(active.name),
-        text: substituteTags(brief, m, active, this.game.pilotName, this.game.rankTags()),
+        text: substituteTags(
+          brief,
+          m,
+          active,
+          this.game.pilotName,
+          this.game.rankTags(),
+        ),
       });
       this.pendingOffer = null;
       this.view = "events";
@@ -684,7 +1214,9 @@ export class LandedUi {
           ? `${entry.planet.name}, ${safeSystemName(entry.systemId)}`
           : "wherever the job ends";
         const daysLeft =
-          a.timeLimit > 0 ? `${Math.max(0, a.timeLimit - (g.player.date - a.acceptedDay))} days left` : "";
+          a.timeLimit > 0
+            ? `${Math.max(0, a.timeLimit - (g.player.date - a.acceptedDay))} days left`
+            : "";
         /*
          * QuickBrief is the dësc Nova shows when you ask a mission for its
          * briefing — a one-line restatement of the job ("Take <CQ> tons of
@@ -747,7 +1279,8 @@ export class LandedUi {
     const forHire = SHIP_ORDER.filter((id) => {
       const s = SHIPS[id];
       const techOk =
-        s.techLevel > 0 && (s.techLevel <= p.techLevel || p.specialTechs.includes(s.techLevel));
+        s.techLevel > 0 &&
+        (s.techLevel <= p.techLevel || p.specialTechs.includes(s.techLevel));
       if (!techOk || s.cost <= 0 || s.hireRandom <= 0) return false;
       return evalTest(s.avail, g.player.bits, testContext(g.player));
     });
@@ -788,7 +1321,9 @@ export class LandedUi {
       const pilot = DESCS[String(14000 + Number(this.selectedHire) - 128)];
       const pic = shipyardPict(this.selectedHire);
       desc = `<div class="oi-desc">${
-        pilot ? resolveNovaText(pilot, g.player.bits) : escapeHtml(s.name.split(";")[0])
+        pilot
+          ? resolveNovaText(pilot, g.player.bits)
+          : escapeHtml(s.name.split(";")[0])
       }</div>`;
       side = `${
         pic
@@ -831,7 +1366,8 @@ export class LandedUi {
         ${this.statusBar()}
         <div class="oi-body">
           <div class="oi-grid">${
-            cells || '<p class="menu-empty">No pilots are looking for work today.</p>'
+            cells ||
+            '<p class="menu-empty">No pilots are looking for work today.</p>'
           }</div>
           ${desc}
           <div class="oi-side">${side}</div>
@@ -879,7 +1415,9 @@ export class LandedUi {
     });
     this.root.querySelectorAll("button[data-dismiss]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        this.game.dismissEscort(parseInt((btn as HTMLButtonElement).dataset.dismiss!, 10));
+        this.game.dismissEscort(
+          parseInt((btn as HTMLButtonElement).dataset.dismiss!, 10),
+        );
         this.render();
       });
     });
@@ -905,7 +1443,24 @@ export class LandedUi {
     const hero = p.landingPictFile
       ? `<div class="land-hero dim" style="background-image:url('${asset(`nova/picts/${p.landingPictFile}`)}')"></div>`
       : "";
-    const missionRows = this.barMissions.map((m) => this.missionRow(m, "bar")).join("");
+    const missionRows = this.barMissions
+      .map((m) => this.missionRow(m, "bar"))
+      .join("");
+    const barBtns: [string, string][] = [
+      ["btn-hire", btnLabel(12, "Hire Escort")],
+      ["btn-gamble", btnLabel(10, "Gamble")],
+      ["btn-holovid", btnLabel(11, "Holovid")],
+      ["btn-back", btnLabel(0, "Leave")],
+    ];
+    if (!this.selectedBar || !barBtns.some(([id]) => id === this.selectedBar)) {
+      this.selectedBar = barBtns[0][0];
+    }
+    const barBtnHtml = barBtns
+      .map(
+        ([id, label]) =>
+          `<button class="evbtn${id === this.selectedBar ? " sel" : ""}" id="${id}">${label}</button>`,
+      )
+      .join("");
     this.root.innerHTML = `
       <div class="panel">
         ${hero}
@@ -914,10 +1469,7 @@ export class LandedUi {
         <p class="desc">${line}</p>
         ${barDesc ? "" : `<p class="desc">${govtLine}</p>`}
         <div class="btnrow">
-          <button class="evbtn" id="btn-hire">${btnLabel(12, "Hire Escort")}</button>
-          <button class="evbtn" id="btn-gamble">${btnLabel(10, "Gamble")}</button>
-          <button class="evbtn" id="btn-holovid">${btnLabel(11, "Holovid")}</button>
-          <button class="evbtn" id="btn-back">${btnLabel(0, "Leave")}</button>
+          ${barBtnHtml}
         </div>
         ${missionRows ? `<div class="ship-list">${missionRows}</div>` : ""}
       </div>`;
@@ -942,7 +1494,8 @@ export class LandedUi {
   private renderHolovid(): void {
     const p = this.planet!;
     const govtId = SPOB_GOVT.get(p.id) ?? -1;
-    const picId = govtId >= 128 ? (GOVT_NEWS_PICS[String(govtId)] ?? 9000) : 9000;
+    const picId =
+      govtId >= 128 ? (GOVT_NEWS_PICS[String(govtId)] ?? 9000) : 9000;
     const pic = UI_PICTS[String(picId)] ?? UI_PICTS["9000"];
     /*
      * A local advert (STR# 8100), then whatever the crön events running right
@@ -1002,7 +1555,13 @@ export class LandedUi {
 
     const cells = [0, 1, 2, 3]
       .map((i) => {
-        const state = result ? (i === result.winner ? "won" : "idle") : i === picked ? "picked" : "idle";
+        const state = result
+          ? i === result.winner
+            ? "won"
+            : "idle"
+          : i === picked
+            ? "picked"
+            : "idle";
         const pic = racer(i, state);
         return `<button class="race-cell${i === picked ? " sel" : ""}" data-racer="${i}" ${result ? "disabled" : ""}>
           ${pic ? `<img src="${asset(`nova/picts/${pic.file}`)}" alt="${RACER_NAMES[i]}">` : RACER_NAMES[i]}
@@ -1017,18 +1576,25 @@ export class LandedUi {
         ? `${btnLabel(369, "Your winnings")}: ${result.payout.toLocaleString()} cr — ${RACER_NAMES[result.winner]} takes it.`
         : `${RACER_NAMES[result.winner]} takes it. You lose ${result.stake.toLocaleString()} cr.`;
     } else if (picked === null) {
-      banner = "You're tuned to GRN, Galaxy Racing Network! Choose your color for the next race.";
+      banner =
+        "You're tuned to GRN, Galaxy Racing Network! Choose your color for the next race.";
     } else if (!stakes.length) {
-      banner = STR_LISTS["2002"]?.[360] ?? "Sorry, you don't have enough credits to bet today.";
+      banner =
+        STR_LISTS["2002"]?.[360] ??
+        "Sorry, you don't have enough credits to bet today.";
     } else {
       banner = `${RACER_NAMES[picked]} it is. ${STR_LISTS["2002"]?.[371] ?? "Amount to bet:"}`;
     }
 
-    const betRow = !result && picked !== null && stakes.length
-      ? stakes
-          .map((v) => `<button class="evbtn" data-bet="${v}">${btnLabel(v === 1000 ? 13 : 14, `Bet ${v}`)}</button>`)
-          .join("")
-      : "";
+    const betRow =
+      !result && picked !== null && stakes.length
+        ? stakes
+            .map(
+              (v) =>
+                `<button class="evbtn" data-bet="${v}">${btnLabel(v === 1000 ? 13 : 14, `Bet ${v}`)}</button>`,
+            )
+            .join("")
+        : "";
 
     this.root.innerHTML = `
       <div class="panel">
@@ -1090,9 +1656,8 @@ export class LandedUi {
     const rank = local ?? best;
     if (!rank) return "";
     const mult = this.game.priceMultiplier(govtId);
-    const note = local && mult !== 1
-      ? ` — prices here at ${Math.round(mult * 100)}%`
-      : "";
+    const note =
+      local && mult !== 1 ? ` — prices here at ${Math.round(mult * 100)}%` : "";
     return `<p class="hint">Known here as <b>${rank.convName || rank.name}</b>${note}.</p>`;
   }
 
@@ -1101,7 +1666,8 @@ export class LandedUi {
     const sys = this.system!;
     const g = this.game;
     const fuelCost = g.refuelCost();
-    const canRefuel = fuelCost > 0 && g.player.credits >= fuelCost && !p.uninhabited;
+    const canRefuel =
+      fuelCost > 0 && g.player.credits >= fuelCost && !p.uninhabited;
 
     const govt = sys.govtName ? ` · ${sys.govtName}` : "";
     const refuelLabel = p.uninhabited
@@ -1116,28 +1682,31 @@ export class LandedUi {
     // Nova puts the services down either side of the description: bar, board
     // and exchange on the left, the two shops on the right, Leave beneath.
     // each counter names its key in the tooltip; the handler is in the ctor
+    const portBtn = (
+      id: string,
+      title: string,
+      label: string,
+      disabled = false,
+    ) =>
+      `<button class="portbtn${this.selectedPort === id ? " sel" : ""}" id="${id}" title="${title}"${
+        disabled ? " disabled" : ""
+      }>${label}</button>`;
     const left = [
-      p.bar ? '<button class="portbtn" id="btn-bar" title="Bar (B)">Bar</button>' : "",
-      p.uninhabited
-        ? ""
-        : '<button class="portbtn" id="btn-bbs" title="Mission BBS (N)">Mission BBS</button>',
+      p.bar ? portBtn("btn-bar", "Bar (B)", "Bar") : "",
+      p.uninhabited ? "" : portBtn("btn-bbs", "Mission BBS (N)", "Mission BBS"),
       p.exchange
-        ? '<button class="portbtn" id="btn-trade" title="Trade Center (T)">Trade Center</button>'
+        ? portBtn("btn-trade", "Trade Center (T)", "Trade Center")
         : "",
       g.player.activeMissions.length > 0
-        ? '<button class="portbtn" id="btn-log" title="Mission Log (I)">Mission Log</button>'
+        ? portBtn("btn-log", "Mission Log (I)", "Mission Log")
         : "",
     ].join("");
     const right = [
-      p.shipyard
-        ? '<button class="portbtn" id="btn-shipyard" title="Shipyard (S)">Shipyard</button>'
-        : "",
-      p.outfitter
-        ? '<button class="portbtn" id="btn-outfitter" title="Outfitter (O)">Outfitter</button>'
-        : "",
-      `<button class="portbtn" id="btn-refuel" title="Refuel (R)" ${canRefuel ? "" : "disabled"}>${refuelLabel}</button>`,
+      p.shipyard ? portBtn("btn-shipyard", "Shipyard (S)", "Shipyard") : "",
+      p.outfitter ? portBtn("btn-outfitter", "Outfitter (O)", "Outfitter") : "",
+      portBtn("btn-refuel", "Refuel (R)", refuelLabel, !canRefuel),
       '<span class="port-gap"></span>',
-      '<button class="portbtn" id="btn-depart" title="Leave (L)">Leave</button>',
+      portBtn("btn-depart", "Leave (L)", "Leave"),
     ].join("");
 
     this.root.innerHTML = `
@@ -1153,6 +1722,17 @@ export class LandedUi {
         </div>
         ${this.rankLine()}
       </div>`;
+
+    // keep arrow focus on a live button after refuel or when a service is missing
+    const live = this.portButtonIds();
+    if (!this.selectedPort || !live.includes(this.selectedPort)) {
+      this.selectedPort = live[0] ?? null;
+      if (this.selectedPort) {
+        this.root.querySelectorAll(".portbtn").forEach((b) => {
+          b.classList.toggle("sel", b.id === this.selectedPort);
+        });
+      }
+    }
 
     this.root.querySelector("#btn-trade")?.addEventListener("click", () => {
       this.view = "trade";
@@ -1186,7 +1766,9 @@ export class LandedUi {
       this.game.refuel();
       this.render();
     });
-    this.root.querySelector("#btn-depart")!.addEventListener("click", () => this.game.depart());
+    this.root
+      .querySelector("#btn-depart")!
+      .addEventListener("click", () => this.game.depart());
   }
 
   /**
@@ -1246,8 +1828,10 @@ export class LandedUi {
        * all, so an unparseable one is treated as no gate rather than silently
        * locking the trade.
        */
-      const sells = j.soldAt.includes(spobId) && evalTest(j.buyOn, g.player.bits);
-      const buys = j.boughtAt.includes(spobId) && evalTest(j.sellOn, g.player.bits);
+      const sells =
+        j.soldAt.includes(spobId) && evalTest(j.buyOn, g.player.bits);
+      const buys =
+        j.boughtAt.includes(spobId) && evalTest(j.sellOn, g.player.bits);
       if (!sells && !buys) continue;
       const key = junkCargoKey(j.id);
       const have = g.player.cargo[key] ?? 0;
@@ -1284,7 +1868,9 @@ export class LandedUi {
 
     // Nova prints the öops resource's own name so you know why prices moved
     const running = oopsesAt(g.player, p.id);
-    const note = running.length ? running.map((o) => o.def.name).join(". ") + "." : "";
+    const note = running.length
+      ? running.map((o) => o.def.name).join(". ") + "."
+      : "";
 
     this.root.innerHTML = `
       <div class="panel wide trade-center">
@@ -1307,19 +1893,25 @@ export class LandedUi {
         </div>
       </div>`;
 
-    this.root.querySelectorAll<HTMLElement>(".tc-row[data-id]").forEach((row) => {
-      row.addEventListener("click", () => {
-        this.selectedGood = row.dataset.id!;
-        this.tradeNote = "";
-        this.render();
+    this.root
+      .querySelectorAll<HTMLElement>(".tc-row[data-id]")
+      .forEach((row) => {
+        row.addEventListener("click", () => {
+          this.selectedGood = row.dataset.id!;
+          this.tradeNote = "";
+          this.render();
+        });
       });
-    });
     const trade = (dir: "buy" | "sell") => {
       if (!sel) return;
-      const most = dir === "buy"
-        ? Math.min(space, Math.floor(g.player.credits / sel.price))
-        : sel.have;
-      const asked = prompt(`${STR_LISTS["2002"]?.[370] ?? "Enter quantity:"} (max ${most})`, String(most));
+      const most =
+        dir === "buy"
+          ? Math.min(space, Math.floor(g.player.credits / sel.price))
+          : sel.have;
+      const asked = prompt(
+        `${STR_LISTS["2002"]?.[370] ?? "Enter quantity:"} (max ${most})`,
+        String(most),
+      );
       if (asked === null) return;
       const qty = Math.max(0, Math.min(most, parseInt(asked, 10) || 0));
       if (qty <= 0) return;
@@ -1332,8 +1924,12 @@ export class LandedUi {
         : "";
       this.render();
     };
-    this.root.querySelector("#tc-buy")?.addEventListener("click", () => trade("buy"));
-    this.root.querySelector("#tc-sell")?.addEventListener("click", () => trade("sell"));
+    this.root
+      .querySelector("#tc-buy")
+      ?.addEventListener("click", () => trade("buy"));
+    this.root
+      .querySelector("#tc-sell")
+      ?.addEventListener("click", () => trade("sell"));
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.tradeNote = "";
       this.view = "spaceport";
@@ -1363,7 +1959,8 @@ export class LandedUi {
    */
   private static rate(value: number, bands: number[]): string {
     const words = ["Poor", "Fair", "Average", "Good", "Excellent"];
-    for (let i = 0; i < bands.length; i++) if (value < bands[i]) return words[i];
+    for (let i = 0; i < bands.length; i++)
+      if (value < bands[i]) return words[i];
     return words[words.length - 1];
   }
 
@@ -1394,9 +1991,11 @@ export class LandedUi {
     const available = SHIP_ORDER.filter((id) => {
       const s = SHIPS[id];
       const techOk =
-        s.techLevel > 0 && (s.techLevel <= p.techLevel || p.specialTechs.includes(s.techLevel));
+        s.techLevel > 0 &&
+        (s.techLevel <= p.techLevel || p.specialTechs.includes(s.techLevel));
       if (!techOk || s.cost <= 0 || s.buyRandom <= 0) return false;
-      if (!evalTest(s.avail, g.player.bits, testContext(g.player))) return false;
+      if (!evalTest(s.avail, g.player.bits, testContext(g.player)))
+        return false;
       if (id === g.player.shipId) return true; // your own hull is always listed
       return dailyRoll(`${p.id}|${id}|${day}`) * 100 < s.buyRandom;
     });
@@ -1460,7 +2059,9 @@ export class LandedUi {
         : "None";
 
       const col = (rows: [string, string][]) =>
-        rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
+        rows
+          .map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`)
+          .join("");
 
       side = `
         ${hero}
@@ -1473,7 +2074,10 @@ export class LandedUi {
             ["Shields:", String(s.shield)],
             ["Armor:", String(s.armor)],
             ["Guns:", s.maxGuns > 0 ? `Maximum of ${s.maxGuns}` : "None"],
-            ["Turrets:", s.maxTurrets > 0 ? `Maximum of ${s.maxTurrets}` : "None"],
+            [
+              "Turrets:",
+              s.maxTurrets > 0 ? `Maximum of ${s.maxTurrets}` : "None",
+            ],
           ])}</div>
           <div class="sy-col">${col([
             ["Space:", `${s.freeMass} tons`],
@@ -1563,13 +2167,15 @@ export class LandedUi {
     const inStock = OUTFIT_ORDER.filter((id) => {
       const o = OUTFITS[id];
       const techOk =
-        o.techLevel > 0 && (o.techLevel <= p.techLevel || p.specialTechs.includes(o.techLevel));
+        o.techLevel > 0 &&
+        (o.techLevel <= p.techLevel || p.specialTechs.includes(o.techLevel));
       if (!techOk || o.cost <= 0) return false;
       const owned = (g.player.outfits[id] ?? 0) > 0;
       const availOk = evalTest(o.avail, g.player.bits, testContext(g.player));
       // 0x4000 hides an item until its Availability comes true; without that
       // flag Nova still lists it, just refuses to sell it (handled at buy time).
-      if ((o.flags & OUTF_HIDE_UNLESS_AVAIL) !== 0 && !availOk && !owned) return false;
+      if ((o.flags & OUTF_HIDE_UNLESS_AVAIL) !== 0 && !availOk && !owned)
+        return false;
       // 0x0100 does the same against the Require bits, which we don't model —
       // so those items stay hidden unless already owned.
       if ((o.flags & OUTF_HIDE_UNLESS_REQUIRE) !== 0 && !owned) return false;
@@ -1600,7 +2206,8 @@ export class LandedUi {
       const o = OUTFITS[id];
       for (const key of maskedWeights) {
         const [w, maskerId] = key.split(":");
-        if (Number(w) === o.displayWeight && Number(id) > Number(maskerId)) return false;
+        if (Number(w) === o.displayWeight && Number(id) > Number(maskerId))
+          return false;
       }
       return true;
     });
@@ -1718,17 +2325,21 @@ export class LandedUi {
       this.shopScroll = 0;
       this.render();
     });
-    this.root.querySelector("#btn-buy-outfit")?.addEventListener("click", () => {
-      this.shopScroll = grid.scrollTop;
-      const result = this.game.buyOutfit(this.selectedOutfit!);
-      if (!result.ok && result.reason) alert(result.reason);
-      this.render();
-    });
-    this.root.querySelector("#btn-sell-outfit")?.addEventListener("click", () => {
-      this.shopScroll = grid.scrollTop;
-      this.game.sellOutfit(this.selectedOutfit!);
-      this.render();
-    });
+    this.root
+      .querySelector("#btn-buy-outfit")
+      ?.addEventListener("click", () => {
+        this.shopScroll = grid.scrollTop;
+        const result = this.game.buyOutfit(this.selectedOutfit!);
+        if (!result.ok && result.reason) alert(result.reason);
+        this.render();
+      });
+    this.root
+      .querySelector("#btn-sell-outfit")
+      ?.addEventListener("click", () => {
+        this.shopScroll = grid.scrollTop;
+        this.game.sellOutfit(this.selectedOutfit!);
+        this.render();
+      });
   }
 }
 
@@ -1754,11 +2365,17 @@ function mountRow(g: Game): string {
  * positions and draws a line to each. A wormhole gets a blank chart instead:
  * you are not told where it goes until you have been.
  */
-function gateMap(here: SystemDef, dests: GateDestination[], wormhole: boolean): string {
+function gateMap(
+  here: SystemDef,
+  dests: GateDestination[],
+  wormhole: boolean,
+): string {
   const points = dests.filter((d) => d.mapPos !== null);
   if (wormhole || points.length === 0) {
     return `<div class="gatemap empty">${
-      wormhole ? "No destination lock. The far end is anyone's guess." : "No charted connections."
+      wormhole
+        ? "No destination lock. The far end is anyone's guess."
+        : "No charted connections."
     }</div>`;
   }
 
@@ -1772,14 +2389,20 @@ function gateMap(here: SystemDef, dests: GateDestination[], wormhole: boolean): 
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
   // keep the galaxy's aspect ratio so the network isn't stretched into nonsense
-  const scale = Math.min((W - PAD * 2) / Math.max(1, maxX - minX), (H - PAD * 2) / Math.max(1, maxY - minY));
+  const scale = Math.min(
+    (W - PAD * 2) / Math.max(1, maxX - minX),
+    (H - PAD * 2) / Math.max(1, maxY - minY),
+  );
   const cx = (x: number) => W / 2 + (x - (minX + maxX) / 2) * scale;
   const cy = (y: number) => H / 2 + (y - (minY + maxY) / 2) * scale;
 
   const hx = cx(here.mapPos.x);
   const hy = cy(here.mapPos.y);
   const lines = points
-    .map((d) => `<line x1="${hx}" y1="${hy}" x2="${cx(d.mapPos!.x)}" y2="${cy(d.mapPos!.y)}" class="gm-link"/>`)
+    .map(
+      (d) =>
+        `<line x1="${hx}" y1="${hy}" x2="${cx(d.mapPos!.x)}" y2="${cy(d.mapPos!.y)}" class="gm-link"/>`,
+    )
     .join("");
   const stars = points
     .map((d) => {
@@ -1811,10 +2434,7 @@ function gateMap(here: SystemDef, dests: GateDestination[], wormhole: boolean): 
 
 /** Mission and world names come from the data files; never trust them as markup. */
 function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**

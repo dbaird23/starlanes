@@ -30,7 +30,11 @@ images, so per-type naming quadrupled the output.
 
 The authoritative format spec is at
 `/Applications/EV Nova/Tools/Original Documentation/Nova Bible.txt`.
-It is non-UTF8, so **grep needs `-a`**.
+It is non-UTF8, so **grep needs `-a`**. When that path is missing, the same
+prose is mirrored at
+https://andrews05.github.io/evstuff/guides/evnbible.html — useful for reading,
+but still verify offsets against extracted game data / raw rez. The Bible's
+field order is not always struct order.
 
 **Always verify field offsets empirically before trusting the doc.** Its prose
 is stale in places (it says "twelve fields" for weapons and "SpecialTech (x8)"
@@ -80,6 +84,52 @@ An audit found roughly a third of the Bible's documented fields unread. Work is
 proceeding resource by resource.
 
 ### Recently completed — don't redo
+
+**Hyperspace jump sequence is Nova's full entry, not a charge timer.**
+`JumpSequence` in `game.ts` runs three phases: **braking** (face retro and burn
+until nearly stopped), **turning** (point at the destination system on the
+map), **burning** (accelerate well past cruise so the ship streaks across the
+current system), then the white flash and arrival. The Bible does not narrate
+the beat, but it does name the controls:
+
+- shïp **Flags** `0x0001` / `0x0002` / `0x0004` — slow / semi-fast / fast
+  jumping at 75% / 125% / 150% (scales burn duration and top speed, not the
+  calendar day cost; ModType 22 still owns days/jump).
+- shïp **Flags2 `0x0020`** and oütf **ModType 37** — "jump without slowing
+  down"; skip the retro phase (Vell-os, several cloaking variants, etc.).
+  Inertialess hulls and an already-slow ship also skip braking.
+- The no-jump zone (ModType 23 / radius 1000 about the origin) still gates
+  *when* you may start the sequence; it does not replace it.
+- The warp-up sound starts only on the **burn** phase (`beginJumpBurn`), not
+  during braking or aligning.
+
+Do not collapse this back into "turn toward dest and wait N seconds at cruise
+speed" — that was the old behaviour and reads wrong in play. Burn numbers are
+feel-tuned (~1.7s / mult, overspeed ≥ max(cruise×4.5, 950)×mult); retune in
+`startJump` if a reference build disagrees, do not invent new phases.
+
+**Landed menus take arrow keys.** In `landed.ts`, Up/Down (and Left/Right on
+grids and the two-column spaceport) step the selection; Enter activates
+Accept / Buy / Hire / the focused port button. Covers spaceport, trade, BBS,
+shipyard (3-col), outfitter and hire hall (4-col), bar actions, gamble
+racers, and hypergate destinations. Letter shortcuts (B/N/T/S/O/I/R/L) and
+Esc-to-back are unchanged. Keys the handler acts on must still call
+`game.swallowKey`.
+
+**Landing / mission dialogs** (`events`, `offer`): Enter fires the affirmative
+(`data-modal-default` — Accept / Continue); Esc fires the negative
+(`data-modal-cancel` — Refuse / Decline) or the sole Continue. The Bible never
+names these keys. Can't-refuse offers have no cancel; Esc must not Accept.
+I in flight opens `InfoUi`; I while landed opens the spaceport Mission Log
+(inert with no active missions) — do not route landed I through
+`openMissionInfo`.
+
+**In-flight info panels (I / P / Alt-K) must not sit in the full-viewport
+force rule.** A PWA pass put `#info-ui`, `#hail-ui` and `#plunder-ui` under
+`inset: 0 !important` with `width/height: 100vw/100vh`. Those dialogs centre
+with `left/top: 50%` + `translate(-50%,-50%)`, so the combo shoved them
+off-screen and the I mission log looked dead. Only `#game`, `#landed-ui`,
+`#menu-ui` and `#intro-ui` belong in that force rule.
 
 **The flight sidebar is DOM, not canvas** (`src/ui/hud.ts` + the `.hud-*` block
 in `style.css`). It implements Claude Design 2a, "Deep Glass · Orbital", from
@@ -296,6 +346,8 @@ radius 1000 about the origin, not a skirt around each stellar — though 318 of
 the 344 placed stellars sit inside it, which is why it reads from the cockpit
 as being too close to the planet. Arrival is at 1700, safely outside. The
 autopilot flies out of the zone before jumping rather than asking every frame.
+Once outside, the jump sequence itself is the three-phase entry described
+under "Recently completed" (brake → align → high-speed burn → flash).
 
 **Capturing a ship asks what you want done with her.** A successful boarding
 silently swapped your hull for the prize and threw your own ship away. Nova
@@ -426,8 +478,18 @@ happened to live there.
 
 ### Queue, roughly by size
 
-1. `pers` ActiveOn/HailPict/loadout/Salary
-3. `roid` particle/fragment fields
-4. `spob` Fee (landing fees), `misn` DatePostInc, `junk` BuyOn/SellOn
-5. the rest of `colr` (fonts, grid and list colours)
-6. the cross-cutting Contribute/Require and ScanMask systems, absent everywhere
+Most of the earlier queue (pers loadout/HailPict, roid fragments, spob Fee /
+misn DatePostInc / junk BuyOn+SellOn, colr, ScanMask) is done — see above.
+Still open or only half-landed:
+
+1. **NPC gunnery** — fire all primaries/turrets properly; fire secondaries.
+2. **shän WeapImageID / WeapDecay** — weapon-glow render once units are pinned
+   against a reference build.
+3. **shïp escort upgrade UI** — UpgradeTo / EscUpgrdCost are extracted; no
+   screen uses them yet. Subtitle / Flags3 / EscortType also unread in UI.
+4. **Contribute / Require** — still cross-cutting and incomplete vs the Bible
+   (ScanMask is live; the rest of the bit-mask gates are not fully wired).
+5. **sÿst @110-140** — still unidentified (~32 bytes); does not block play.
+6. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
+   (and density-scanner blip size); we still advance a flat
+   `max(1, 1 + hyperSpeed)` and ignore Mass for travel time.

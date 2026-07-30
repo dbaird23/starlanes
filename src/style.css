@@ -20,14 +20,17 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* Ensure the canvas and UI overlays fill the true viewport even with safe-area insets */
+/*
+ * Full-screen shells that should fill the viewport under safe-area padding.
+ * Do not include the centred dialogs (#info-ui, #hail-ui, #plunder-ui): those
+ * position with left/top 50% + translate(-50%,-50%), and inset:0 plus that
+ * transform shoves the whole panel off-screen — which is why I/P/Alt-K looked
+ * like dead keys after the PWA pass.
+ */
 #game,
 #landed-ui,
 #menu-ui,
-#intro-ui,
-#hail-ui,
-#plunder-ui,
-#info-ui {
+#intro-ui {
   width: 100vw !important;
   height: 100vh !important;
   inset: 0 !important;
@@ -634,6 +637,12 @@ button.evbtn:active {
 button.evbtn.primary {
   border-color: #7ba7d9;
   color: #eaf3ff;
+}
+/* keyboard focus on bar (and similar) action rows */
+button.evbtn.sel {
+  background: linear-gradient(180deg, #3d5680, #2a3f5e);
+  border-color: #9bb8dc;
+  box-shadow: 0 0 0 1px rgba(155, 184, 220, 0.45);
 }
 
 /* trade table */
@@ -1469,6 +1478,12 @@ td.actions button:disabled {
 }
 .portbtn:hover:not(:disabled) {
   background: linear-gradient(180deg, #c02020, #4d0a0a);
+}
+.portbtn.sel:not(:disabled) {
+  background: linear-gradient(180deg, #c02020, #4d0a0a);
+  box-shadow:
+    0 0 0 1px #ffdede,
+    0 0 10px rgba(200, 40, 40, 0.45);
 }
 .portbtn:disabled {
   opacity: 0.45;

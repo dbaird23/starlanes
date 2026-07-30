@@ -11,3 +11,8 @@ dist/
 
 # macOS
 .DS_Store
+
+# Grok-only local project notes (not shared with Claude Code teammates)
+AGENTS.md
+/dev-dist/
+/docs/

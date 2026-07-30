@@ -56,7 +56,12 @@ import {
   junkFromCargoKey,
   roidYield,
 } from "../data/universe";
-import { drawNpcShip, drawPlanet, drawPlayerShip, drawThrustFlame } from "../engine/draw";
+import {
+  drawNpcShip,
+  drawPlanet,
+  drawPlayerShip,
+  drawThrustFlame,
+} from "../engine/draw";
 import { IntroUi } from "../ui/intro";
 import {
   blinkIntensity,
@@ -171,10 +176,25 @@ import { NpcShip, SPARROW, Ship, type EscortOrder } from "./ship";
 
 type Mode = "menu" | "flight" | "map" | "landed";
 
+/**
+ * Hyperspace entry, as Nova plays it (and as the SDA notes spell out):
+ *   1. brake — face retro and burn until nearly stopped, unless the hull or an
+ *      outfit can "jump without slowing down" (shïp Flags2 0x0020 / oütf 37);
+ *   2. turn  — point at the destination system on the map;
+ *   3. burn  — accelerate well past cruise speed toward that heading, so you
+ *      streak across the current system before the white flash and arrival.
+ * shïp Flags 0x0001/2/4 scale the burn (75% / 125% / 150%); the Bible only
+ * names those as "jumping speed", not the calendar travel-time ModType 22.
+ */
 interface JumpSequence {
-  phase: "turning" | "charging";
-  chargeLeft: number;
+  phase: "braking" | "turning" | "burning";
+  /** map bearing of the destination system */
   targetAngle: number;
+  /** seconds left on the high-speed burn */
+  burnLeft: number;
+  /** temporary maxSpeed / accel while burning into hyperspace */
+  burnSpeed: number;
+  burnAccel: number;
 }
 
 interface Message {
@@ -228,7 +248,6 @@ const LAND_DIST = 2.4; // multiples of planet radius (from surface-ish)
 const LAND_SPEED = 130;
 const REFUEL_COST_PER_JUMP = 150;
 
-
 /**
  * A template's opening legal record. Nova sets the given status in that
  * government's space and its allies', and the negative of it among its
@@ -248,7 +267,8 @@ function startingRecords(tmpl: CharTemplate | null): Record<string, number> {
   for (const { govt, status } of tmpl?.records ?? []) {
     if (status === 0) continue;
     for (const other of ALL_GOVT_IDS) {
-      if (other === govt || govtAllied(govt, other)) out[String(other)] = status;
+      if (other === govt || govtAllied(govt, other))
+        out[String(other)] = status;
       else if (govtEnemy(govt, other)) out[String(other)] = -status;
     }
   }
@@ -257,7 +277,8 @@ function startingRecords(tmpl: CharTemplate | null): Record<string, number> {
 function defaultPlayer(): PlayerState {
   // the scenario's own starting template decides ship, cash and where you begin
   const tmpl = START_TEMPLATE;
-  const startShip = tmpl && SHIPS[String(tmpl.shipType)] ? String(tmpl.shipType) : "128";
+  const startShip =
+    tmpl && SHIPS[String(tmpl.shipType)] ? String(tmpl.shipType) : "128";
   return {
     credits: tmpl?.cash ?? 10000,
     fuelJumps: 3,
@@ -350,7 +371,9 @@ export function escortWage(hullCost: number): number {
 export function escortSellValue(shipId: string): number {
   const type = SHIPS[shipId];
   if (!type) return 0;
-  return type.escSellValue > 0 ? type.escSellValue : Math.round(type.cost * 0.1);
+  return type.escSellValue > 0
+    ? type.escSellValue
+    : Math.round(type.cost * 0.1);
 }
 
 export class Game {
@@ -398,8 +421,15 @@ export class Game {
   private fuelScoopRate = 0;
   private hasMiningScoop = false;
   private gear = {
-    escapePod: false, densityScanner: false, iff: false, autoRefuel: false,
-    fastJump: false, inertialDamper: false, hyperSpeed: 0, jumpDist: 0, marines: 0,
+    escapePod: false,
+    densityScanner: false,
+    iff: false,
+    autoRefuel: false,
+    fastJump: false,
+    inertialDamper: false,
+    hyperSpeed: 0,
+    jumpDist: 0,
+    marines: 0,
     jamming: [0, 0, 0, 0] as number[],
     cloakScanner: 0,
     reinfInhibit: [] as number[],
@@ -432,7 +462,13 @@ export class Game {
   private time = 0;
   private mapNodes: { id: string; x: number; y: number }[] = [];
   /** clickable rects for the map's own button bar */
-  private mapButtons: { id: string; x: number; y: number; w: number; h: number }[] = [];
+  private mapButtons: {
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }[] = [];
   /** which system the info panel is describing */
   private mapSelected: string | null = null;
   /**
@@ -480,7 +516,8 @@ export class Game {
       this.mapZoom = Math.min(12, Math.max(0.7, this.mapZoom * k));
     });
     canvas.addEventListener("mousedown", (e) => {
-      if (this.mode === "map") this.drag = { x: e.clientX, y: e.clientY, moved: 0 };
+      if (this.mode === "map")
+        this.drag = { x: e.clientX, y: e.clientY, moved: 0 };
     });
     window.addEventListener("mouseup", () => {
       this.lastDragMoved = this.drag?.moved ?? 0;
@@ -492,14 +529,18 @@ export class Game {
       if (this.drag && this.mode === "map") {
         this.mapCenter.x -= (e.movementX ?? 0) / this.mapScale;
         this.mapCenter.y -= (e.movementY ?? 0) / this.mapScale;
-        this.drag.moved += Math.abs(e.movementX ?? 0) + Math.abs(e.movementY ?? 0);
+        this.drag.moved +=
+          Math.abs(e.movementX ?? 0) + Math.abs(e.movementY ?? 0);
       }
     });
 
     // park the camera over the start system for the menu backdrop
     const home = this.system.planets[0];
     if (home) {
-      this.ship.pos = { x: home.pos.x + home.radius * 2.2, y: home.pos.y + home.radius * 1.4 };
+      this.ship.pos = {
+        x: home.pos.x + home.radius * 2.2,
+        y: home.pos.y + home.radius * 1.4,
+      };
     }
     this.populateNpcs();
   }
@@ -508,7 +549,8 @@ export class Game {
   startPilot(pilotId: string, strict?: boolean): void {
     preloadCoreSnds();
     this.pilotId = pilotId;
-    this.pilotName = listPilots().find((p) => p.id === pilotId)?.name ?? "Captain";
+    this.pilotName =
+      listPilots().find((p) => p.id === pilotId)?.name ?? "Captain";
     const saved = loadPilot(pilotId);
     this.player = { ...defaultPlayer(), ...(saved ?? {}) };
     if (strict !== undefined) this.player.strict = strict;
@@ -541,7 +583,10 @@ export class Game {
       ? sys.planets.find((p) => p.id === this.player.landedOn)
       : sys.planets[0];
     if (home) {
-      this.ship.pos = { x: home.pos.x + home.radius * 2.2, y: home.pos.y + home.radius * 1.4 };
+      this.ship.pos = {
+        x: home.pos.x + home.radius * 2.2,
+        y: home.pos.y + home.radius * 1.4,
+      };
     } else {
       this.ship.pos = { x: 900, y: 600 };
     }
@@ -575,7 +620,9 @@ export class Game {
       this.landedUi.show(home, sys);
     } else {
       this.mode = "flight";
-      this.message(`Welcome to the ${sys.name} system. Press M for the map, L to land.`);
+      this.message(
+        `Welcome to the ${sys.name} system. Press M for the map, L to land.`,
+      );
     }
     this.save();
   }
@@ -610,7 +657,10 @@ export class Game {
     if (gate.isWormhole) {
       // an unlinked wormhole dumps you at another unlinked wormhole
       const others = [...SPOBS.values()].filter(
-        (e) => e.planet.isWormhole && e.planet.hyperLinks.length === 0 && e.planet.id !== gate.id,
+        (e) =>
+          e.planet.isWormhole &&
+          e.planet.hyperLinks.length === 0 &&
+          e.planet.id !== gate.id,
       );
       if (others.length === 0) return [];
       const pick = others[Math.floor(Math.random() * others.length)];
@@ -721,7 +771,10 @@ export class Game {
     // emerge alongside the far gate, drifting clear of it
     const ang = Math.random() * Math.PI * 2;
     const r = dest.radius + 120;
-    this.ship.pos = { x: dest.pos.x + Math.cos(ang) * r, y: dest.pos.y + Math.sin(ang) * r };
+    this.ship.pos = {
+      x: dest.pos.x + Math.cos(ang) * r,
+      y: dest.pos.y + Math.sin(ang) * r,
+    };
     this.ship.angle = ang;
     this.ship.vel = { x: Math.cos(ang) * 60, y: Math.sin(ang) * 60 };
     this.mode = "flight";
@@ -745,7 +798,9 @@ export class Game {
     this.jumpFlash = 0.5;
     playSnd(153, 0.5);
     this.save();
-    this.message(`You emerge from ${dest.name} in the ${getSystem(entry.systemId).name} system.`);
+    this.message(
+      `You emerge from ${dest.name} in the ${getSystem(entry.systemId).name} system.`,
+    );
   }
 
   /** Save and return to the title menu. */
@@ -799,21 +854,30 @@ export class Game {
     runCrons(
       this.player,
       this.bitHandlers(),
-      { outfits: this.player.outfits, explored: this.player.explored, male: true },
+      {
+        outfits: this.player.outfits,
+        explored: this.player.explored,
+        male: true,
+      },
       (cron, phase) => {
         if (phase === "start") this.message(`News: ${cron.name}.`);
       },
     );
     runOopses(
       this.player,
-      { outfits: this.player.outfits, explored: this.player.explored, male: true },
+      {
+        outfits: this.player.outfits,
+        explored: this.player.explored,
+        male: true,
+      },
       days,
     );
   }
 
   /** Note the current system as charted. */
   private markExplored(systemId = this.player.systemId): void {
-    if (!this.player.explored.includes(systemId)) this.player.explored.push(systemId);
+    if (!this.player.explored.includes(systemId))
+      this.player.explored.push(systemId);
   }
 
   isExplored(systemId: string): boolean {
@@ -881,7 +945,9 @@ export class Game {
     for (const mod of outf.mods) if (mod.type === 16) this.applyMap(mod.val);
     const gained = this.player.explored.length - before;
     if (gained > 0 && announce) {
-      this.message(`Chart updated: ${gained} new system${gained === 1 ? "" : "s"}.`);
+      this.message(
+        `Chart updated: ${gained} new system${gained === 1 ? "" : "s"}.`,
+      );
     }
   }
 
@@ -909,7 +975,8 @@ export class Game {
     }
     if (range === -1) {
       for (const sys of SYSTEMS) {
-        if (sys.planets.some((p) => p.landable && !p.uninhabited)) this.markExplored(sys.id);
+        if (sys.planets.some((p) => p.landable && !p.uninhabited))
+          this.markExplored(sys.id);
       }
       return;
     }
@@ -964,7 +1031,10 @@ export class Game {
       (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
     );
     this.recomputeLoadout();
-    this.player.fuelJumps = Math.min(this.player.fuelJumps, this.player.maxFuelJumps);
+    this.player.fuelJumps = Math.min(
+      this.player.fuelJumps,
+      this.player.maxFuelJumps,
+    );
   }
 
   /** Recompute weapons, cargo, defenses and handling from ship class + outfits. */
@@ -990,7 +1060,9 @@ export class Game {
     this.hasMiningScoop = bonus.miningScoop;
     this.ship.maxIon = 100 + bonus.ionCapacity;
     this.ship.ionDissipatePerSec = 15 + bonus.ionDissipate;
-    this.inertialess = bonus.inertialDamper || (SHIPS[this.player.shipId]?.flags2 & 0x0040) !== 0;
+    this.inertialess =
+      bonus.inertialDamper ||
+      (SHIPS[this.player.shipId]?.flags2 & 0x0040) !== 0;
     this.gear = {
       escapePod: bonus.escapePod,
       densityScanner: bonus.densityScanner,
@@ -1006,7 +1078,8 @@ export class Game {
       reinfInhibit: bonus.reinfInhibit,
     };
     // a repair system slowly welds the hull back together
-    if (bonus.repairSystem) this.ship.armorRechPerSec = Math.max(this.ship.armorRechPerSec, 0.5);
+    if (bonus.repairSystem)
+      this.ship.armorRechPerSec = Math.max(this.ship.armorRechPerSec, 0.5);
     if (bonus.cloak === 0) this.cloaked = false;
 
     this.ship.maxShield = type.shield + bonus.shield;
@@ -1033,13 +1106,19 @@ export class Game {
       if (!weap) continue;
       const kind = mountKind(weap.guidance);
       if (kind === "gun" && fitted.guns >= limits.guns) return "gun";
-      if (kind === "turret" && fitted.turrets >= limits.turrets) return "turret";
+      if (kind === "turret" && fitted.turrets >= limits.turrets)
+        return "turret";
     }
     return null;
   }
 
   /** Fitted vs available mounts, for the outfitter's readout. */
-  mountStatus(): { guns: number; turrets: number; maxGuns: number; maxTurrets: number } {
+  mountStatus(): {
+    guns: number;
+    turrets: number;
+    maxGuns: number;
+    maxTurrets: number;
+  } {
     const fitted = countMounts(this.player.shipId, this.player.outfits);
     const limits = mountLimits(this.player.shipId, this.player.outfits);
     return {
@@ -1057,8 +1136,11 @@ export class Game {
     // FreeMass excludes the hull's own stock weapons (Nova Bible), so their
     // mass is added back before the owned outfits — which now include them —
     // are charged against it.
-    return type.freeMass + hullOutfitMass(this.player.shipId)
-      - outfitBonuses(this.player.outfits).mass;
+    return (
+      type.freeMass +
+      hullOutfitMass(this.player.shipId) -
+      outfitBonuses(this.player.outfits).mass
+    );
   }
 
   /**
@@ -1081,7 +1163,10 @@ export class Game {
       return { ok: false, reason: "You cannot afford this ship." };
     }
     if (this.cargoUsed() > type.cargo) {
-      return { ok: false, reason: "Your cargo will not fit in this ship's hold." };
+      return {
+        ok: false,
+        reason: "Your cargo will not fit in this ship's hold.",
+      };
     }
     this.player.credits -= price;
     grantHullOutfits(shipId, this.player.outfits);
@@ -1089,7 +1174,10 @@ export class Game {
     this.player.fuelJumps = type.fuelJumps; // delivered fully fueled
     const stock = stockAmmo(shipId);
     for (const [weapId, count] of Object.entries(stock)) {
-      this.player.ammo[weapId] = ammoCapped(weapId, Math.max(this.player.ammo[weapId] ?? 0, count));
+      this.player.ammo[weapId] = ammoCapped(
+        weapId,
+        Math.max(this.player.ammo[weapId] ?? 0, count),
+      );
     }
     this.save();
     return { ok: true };
@@ -1155,19 +1243,11 @@ export class Game {
     const sys = this.system;
 
     if (this.jump) {
-      // autopilot: face the jump vector, then charge at full burn
-      const facing = this.ship.steerToward(dt, this.jump.targetAngle);
-      if (this.jump.phase === "turning" && facing) {
-        this.jump.phase = "charging";
-        this.message("Hyperdrive charging...");
-      }
-      this.ship.update(dt, 0, this.jump.phase === "charging");
-      if (this.jump.phase === "charging") {
-        this.jump.chargeLeft -= dt;
-        if (this.jump.chargeLeft <= 0) this.executeJump();
-      }
+      this.updateJumpSequence(dt);
     } else {
-      let turn = (this.input.isDown("ArrowLeft") ? -1 : 0) + (this.input.isDown("ArrowRight") ? 1 : 0);
+      let turn =
+        (this.input.isDown("ArrowLeft") ? -1 : 0) +
+        (this.input.isDown("ArrowRight") ? 1 : 0);
       const thrust = this.input.isDown("ArrowUp");
       // Down swings the nose onto the reverse of your course, so a burn slows
       // you; inertialess hulls simply stop instead
@@ -1184,52 +1264,56 @@ export class Game {
           this.message("Autopilot disengaged.");
         }
       } else {
-      if (braking) {
-        if (this.inertialess) {
-          this.ship.vel.x *= Math.max(0, 1 - 2.5 * dt);
-          this.ship.vel.y *= Math.max(0, 1 - 2.5 * dt);
-        } else if (this.ship.speed > 1) {
-          const retro = Math.atan2(-this.ship.vel.y, -this.ship.vel.x);
-          this.ship.steerToward(dt, retro);
-          turn = 0;
+        if (braking) {
+          if (this.inertialess) {
+            this.ship.vel.x *= Math.max(0, 1 - 2.5 * dt);
+            this.ship.vel.y *= Math.max(0, 1 - 2.5 * dt);
+          } else if (this.ship.speed > 1) {
+            const retro = Math.atan2(-this.ship.vel.y, -this.ship.vel.x);
+            this.ship.steerToward(dt, retro);
+            turn = 0;
+          }
         }
-      }
-      // afterburner: hold Z to trade fuel for speed (100 units = 1 jump)
-      this.afterburning =
-        this.afterburnerBurn > 0 &&
-        thrust &&
-        this.input.isDown("KeyZ") &&
-        this.player.fuelJumps > 0.05;
-      if (this.inertialess && !thrust && !braking) {
-        // an inertialess hull holds station the moment you stop pushing
-        this.ship.vel.x *= Math.max(0, 1 - 3 * dt);
-        this.ship.vel.y *= Math.max(0, 1 - 3 * dt);
-      }
-      if (this.ship.ionized) {
-        // ionized: engines barely respond
-        this.ship.vel.x *= Math.max(0, 1 - 1.5 * dt);
-        this.ship.vel.y *= Math.max(0, 1 - 1.5 * dt);
-      }
-      if (this.afterburning) {
-        this.player.fuelJumps = Math.max(0, this.player.fuelJumps - (this.afterburnerBurn / 100) * dt);
-        const boost = 1.5;
-        const base = this.ship.stats;
-        this.ship.stats = {
-          ...base,
-          maxSpeed: base.maxSpeed * boost,
-          accel: base.accel * boost,
-        };
-        this.ship.update(dt, turn as -1 | 0 | 1, thrust);
-        this.ship.stats = base;
-      } else {
-        this.ship.update(dt, turn as -1 | 0 | 1, thrust);
-      }
+        // afterburner: hold Z to trade fuel for speed (100 units = 1 jump)
+        this.afterburning =
+          this.afterburnerBurn > 0 &&
+          thrust &&
+          this.input.isDown("KeyZ") &&
+          this.player.fuelJumps > 0.05;
+        if (this.inertialess && !thrust && !braking) {
+          // an inertialess hull holds station the moment you stop pushing
+          this.ship.vel.x *= Math.max(0, 1 - 3 * dt);
+          this.ship.vel.y *= Math.max(0, 1 - 3 * dt);
+        }
+        if (this.ship.ionized) {
+          // ionized: engines barely respond
+          this.ship.vel.x *= Math.max(0, 1 - 1.5 * dt);
+          this.ship.vel.y *= Math.max(0, 1 - 1.5 * dt);
+        }
+        if (this.afterburning) {
+          this.player.fuelJumps = Math.max(
+            0,
+            this.player.fuelJumps - (this.afterburnerBurn / 100) * dt,
+          );
+          const boost = 1.5;
+          const base = this.ship.stats;
+          this.ship.stats = {
+            ...base,
+            maxSpeed: base.maxSpeed * boost,
+            accel: base.accel * boost,
+          };
+          this.ship.update(dt, turn as -1 | 0 | 1, thrust);
+          this.ship.stats = base;
+        } else {
+          this.ship.update(dt, turn as -1 | 0 | 1, thrust);
+        }
       }
 
       // EV Nova's own bindings, with the arrow keys flying the ship
       if (this.input.consume("KeyL")) this.selectOrLand();
       if (this.input.consume("KeyJ")) this.startJump();
-      if (this.input.consume("Backquote") || this.input.consume("Tab")) this.cycleTarget();
+      if (this.input.consume("Backquote") || this.input.consume("Tab"))
+        this.cycleTarget();
       if (this.input.consume("KeyR")) this.targetClosest();
       if (this.input.consume("KeyY")) this.hailTarget();
       if (this.input.consume("KeyB")) this.tryBoard();
@@ -1253,7 +1337,8 @@ export class Game {
       }
       if (this.input.consume("Backslash")) this.cycleJumpDestination();
       if (this.input.consume("KeyN")) this.navOff();
-      if (this.input.consume("KeyX") && this.input.altDown) this.ejectFromShip();
+      if (this.input.consume("KeyX") && this.input.altDown)
+        this.ejectFromShip();
       // information panels
       if (this.input.consume("KeyP")) this.openPlayerInfo();
       if (this.input.consume("KeyI")) this.openMissionInfo();
@@ -1283,7 +1368,10 @@ export class Game {
     this.updatePendingReinforcement();
     this.updateCloak(dt);
     // fuel scoops top the tanks back up over time
-    if (this.fuelScoopRate > 0 && this.player.fuelJumps < this.player.maxFuelJumps) {
+    if (
+      this.fuelScoopRate > 0 &&
+      this.player.fuelJumps < this.player.maxFuelJumps
+    ) {
       this.player.fuelJumps = Math.min(
         this.player.maxFuelJumps,
         this.player.fuelJumps + (this.fuelScoopRate / 100) * dt,
@@ -1297,7 +1385,8 @@ export class Game {
       this.npcSpawnTimer = 8 + Math.random() * 10;
       if (this.npcs.length < sys.traffic + 1) {
         // now and then a whole formation shows up instead of a single ship
-        if (this.npcs.length < sys.traffic - 1 && Math.random() < 0.15) this.spawnFleet();
+        if (this.npcs.length < sys.traffic - 1 && Math.random() < 0.15)
+          this.spawnFleet();
         else this.spawnNpc();
       }
     }
@@ -1320,13 +1409,17 @@ export class Game {
         npc.angle += 0.25 * dt;
       } else if (npc.ally) this.updateAllyAi(npc, dt);
       else if (npc.hostile) this.updateHostileAi(npc, dt);
-      else if (npc.aiType === 3 || npc.aiType === 4) this.updateWarshipAi(npc, dt);
+      else if (npc.aiType === 3 || npc.aiType === 4)
+        this.updateWarshipAi(npc, dt);
       else npc.updateAi(dt);
       if (npc.landing) this.dockNpc(npc);
     }
     this.updateDockedNpcs(dt);
     this.npcs = this.npcs.filter((n) => !n.done);
-    if (this.targetNpc && (this.targetNpc.done || !this.npcs.includes(this.targetNpc))) {
+    if (
+      this.targetNpc &&
+      (this.targetNpc.done || !this.npcs.includes(this.targetNpc))
+    ) {
       this.targetNpc = null;
     }
 
@@ -1363,7 +1456,9 @@ export class Game {
   }
 
   govtLabel(govtId: number): string {
-    return govtId >= 128 ? (GOVT_NAMES[String(govtId)] ?? "Unaffiliated") : "Independent";
+    return govtId >= 128
+      ? (GOVT_NAMES[String(govtId)] ?? "Unaffiliated")
+      : "Independent";
   }
 
   /** Step the master volume and confirm it with a beep at the new level. */
@@ -1380,9 +1475,12 @@ export class Game {
       return;
     }
     this.cloaked = !this.cloaked;
-    if (this.cloaked && (this.cloakFlags & CLOAK_DROPS_SHIELDS) !== 0) this.ship.shield = 0;
+    if (this.cloaked && (this.cloakFlags & CLOAK_DROPS_SHIELDS) !== 0)
+      this.ship.shield = 0;
     playSnd(this.cloaked ? SND.CLOAK_ON : SND.CLOAK_OFF, 0.4);
-    this.message(this.cloaked ? "Cloaking device engaged." : "Cloaking device disengaged.");
+    this.message(
+      this.cloaked ? "Cloaking device engaged." : "Cloaking device disengaged.",
+    );
   }
 
   /** Cloaks burn fuel and/or shields, and collapse when the tank runs dry. */
@@ -1391,7 +1489,10 @@ export class Game {
     const fuelDrain = cloakFuelDrain(this.cloakFlags);
     const shieldDrain = cloakShieldDrain(this.cloakFlags);
     if (fuelDrain > 0) {
-      this.player.fuelJumps = Math.max(0, this.player.fuelJumps - (fuelDrain / 100) * dt);
+      this.player.fuelJumps = Math.max(
+        0,
+        this.player.fuelJumps - (fuelDrain / 100) * dt,
+      );
       if (this.player.fuelJumps <= 0) {
         this.cloaked = false;
         this.message("Cloaking device fails — out of fuel.");
@@ -1412,7 +1513,10 @@ export class Game {
    * the last digit is ships per wave, the leading digits (less 1 from the
    * first) are the total — so 1082 is four waves of two, eight in all.
    */
-  private defenceFleetSize(planet: PlanetDef): { total: number; perWave: number } {
+  private defenceFleetSize(planet: PlanetDef): {
+    total: number;
+    perWave: number;
+  } {
     const raw = planet.defCount;
     if (raw <= 0) return { total: 0, perWave: 0 };
     if (raw <= 1000) return { total: raw, perWave: Math.min(raw, 4) };
@@ -1423,7 +1527,10 @@ export class Game {
 
   /** Provoke a world's defenders, or claim it once they're gone. */
   private tryDominate(planet: PlanetDef): void {
-    const dist = Math.hypot(planet.pos.x - this.ship.pos.x, planet.pos.y - this.ship.pos.y);
+    const dist = Math.hypot(
+      planet.pos.x - this.ship.pos.x,
+      planet.pos.y - this.ship.pos.y,
+    );
     if (dist > planet.radius * 3 + 400) {
       this.message(`Move closer to ${planet.name} to press the demand.`);
       return;
@@ -1434,7 +1541,9 @@ export class Game {
     }
     if (this.player.dominated.includes(planet.id)) {
       // release it again
-      this.player.dominated = this.player.dominated.filter((id) => id !== planet.id);
+      this.player.dominated = this.player.dominated.filter(
+        (id) => id !== planet.id,
+      );
       applySet(planet.onRelease, this.player.bits, this.bitHandlers());
       this.message(`You release ${planet.name} from tribute.`);
       this.save();
@@ -1447,19 +1556,27 @@ export class Game {
       this.completeDomination(planet);
       return;
     }
-    const alive = this.npcs.filter((n) => n.defenderOf === planet.id && !n.done).length;
+    const alive = this.npcs.filter(
+      (n) => n.defenderOf === planet.id && !n.done,
+    ).length;
     if (remaining <= 0) {
       this.completeDomination(planet);
       return;
     }
     if (alive > 0) {
-      this.message(`${planet.name}'s defenders are still up: ${remaining} left.`);
+      this.message(
+        `${planet.name}'s defenders are still up: ${remaining} left.`,
+      );
       return;
     }
     this.launchDefenders(planet, fleet.perWave, remaining);
   }
 
-  private launchDefenders(planet: PlanetDef, perWave: number, remaining: number): void {
+  private launchDefenders(
+    planet: PlanetDef,
+    perWave: number,
+    remaining: number,
+  ): void {
     const dude = DUDES[String(planet.defDude)];
     const wave = Math.min(perWave, remaining);
     if (!dude || wave <= 0) {
@@ -1472,7 +1589,11 @@ export class Game {
       const typeId = pick && SHIPS[String(pick.id)] ? String(pick.id) : null;
       if (!typeId) continue;
       const type = SHIPS[typeId];
-      const npc = new NpcShip({ turnRate: type.turnRate, accel: type.accel, maxSpeed: type.maxSpeed });
+      const npc = new NpcShip({
+        turnRate: type.turnRate,
+        accel: type.accel,
+        maxSpeed: type.maxSpeed,
+      });
       npc.typeId = typeId;
       npc.govtId = dude.govt >= 128 ? dude.govt : inherentCombatGovt(typeId);
       npc.hostile = true;
@@ -1492,7 +1613,9 @@ export class Game {
       npc.angle = ang;
       this.npcs.push(npc);
     }
-    this.message(`${planet.name} launches its defence fleet — ${remaining} ships remain.`);
+    this.message(
+      `${planet.name} launches its defence fleet — ${remaining} ships remain.`,
+    );
   }
 
   private completeDomination(planet: PlanetDef): void {
@@ -1500,7 +1623,9 @@ export class Game {
     this.domination.delete(planet.id);
     applySet(planet.onDominate, this.player.bits, this.bitHandlers());
     const daily = planet.tribute > 0 ? planet.tribute : planet.techLevel * 1000;
-    this.message(`${planet.name} submits. Tribute: ${daily.toLocaleString()} cr per day.`);
+    this.message(
+      `${planet.name} submits. Tribute: ${daily.toLocaleString()} cr per day.`,
+    );
     playSnd(152, 0.5);
     this.save();
   }
@@ -1563,7 +1688,8 @@ export class Game {
         const other = RANKS[String(id)];
         if (!other || other.govt !== rank.govt) return true;
         if ((other.flags & 0x0008) !== 0) return true; // permanent
-        if ((rank.flags & 0x0010) !== 0 && other.weight > rank.weight) return true;
+        if ((rank.flags & 0x0010) !== 0 && other.weight > rank.weight)
+          return true;
         return false;
       });
     }
@@ -1583,7 +1709,8 @@ export class Game {
   /** Commissions pay a salary, up to their cap. */
   private collectSalary(): void {
     if (this.player.ranks.length === 0) return;
-    const days = Math.floor(this.player.date) - Math.floor(this.player.salaryDay);
+    const days =
+      Math.floor(this.player.date) - Math.floor(this.player.salaryDay);
     if (days <= 0) return;
     this.player.salaryDay = Math.floor(this.player.date);
     let total = 0;
@@ -1600,7 +1727,8 @@ export class Game {
   /** Dominated worlds pay up as the days pass. */
   private collectTribute(): void {
     if (this.player.dominated.length === 0) return;
-    const days = Math.floor(this.player.date) - Math.floor(this.player.tributeDay);
+    const days =
+      Math.floor(this.player.date) - Math.floor(this.player.tributeDay);
     if (days <= 0) return;
     this.player.tributeDay = Math.floor(this.player.date);
     let total = 0;
@@ -1624,15 +1752,23 @@ export class Game {
       return;
     }
     if (!t.disabled) {
-      this.message(`${this.shipLabel(t)} is not disabled — you cannot board it.`);
+      this.message(
+        `${this.shipLabel(t)} is not disabled — you cannot board it.`,
+      );
       return;
     }
-    const dist = Math.hypot(t.pos.x - this.ship.pos.x, t.pos.y - this.ship.pos.y);
+    const dist = Math.hypot(
+      t.pos.x - this.ship.pos.x,
+      t.pos.y - this.ship.pos.y,
+    );
     if (dist > t.radius + this.ship.radius + 60) {
       this.message("Too far away to board. Get closer.");
       return;
     }
-    const rel = Math.hypot(t.vel.x - this.ship.vel.x, t.vel.y - this.ship.vel.y);
+    const rel = Math.hypot(
+      t.vel.x - this.ship.vel.x,
+      t.vel.y - this.ship.vel.y,
+    );
     if (rel > 90) {
       this.message("Matching velocity failed — slow down to board.");
       return;
@@ -1676,7 +1812,8 @@ export class Game {
     // rounds for any ammo weapon you both carry
     for (const slot of this.weaponSlots) {
       if (slot.weap.ammoType < 0) continue;
-      const carried = (t.typeId ? SHIPS[t.typeId]?.stockWeapons : undefined) ?? [];
+      const carried =
+        (t.typeId ? SHIPS[t.typeId]?.stockWeapons : undefined) ?? [];
       if (carried.some((w) => String(w.id) === slot.weap.id)) {
         hold.ammo[slot.weap.id] = 2 + Math.floor(Math.random() * 6);
       }
@@ -1705,14 +1842,21 @@ export class Game {
       const person = t.personId !== null ? PERSONS[String(t.personId)] : null;
       if (!person || person.grantClass <= 0) return null;
       if (Math.random() * 100 >= Math.max(1, person.grantProb)) return null;
-      const pool = Object.values(OUTFITS).filter((o) => o.itemClass === person.grantClass);
+      const pool = Object.values(OUTFITS).filter(
+        (o) => o.itemClass === person.grantClass,
+      );
       if (!pool.length) return null;
       const pick = pool[Math.floor(Math.random() * pool.length)];
       const max = Math.max(1, person.grantCount);
-      const qty = Math.max(1, Math.floor(max / 2 + Math.random() * (max / 2 + 1)));
+      const qty = Math.max(
+        1,
+        Math.floor(max / 2 + Math.random() * (max / 2 + 1)),
+      );
       this.player.outfits[pick.id] = (this.player.outfits[pick.id] ?? 0) + qty;
       this.recomputeLoadout();
-      return qty > 1 ? `${qty} x ${pick.name.split(";")[0]}` : pick.name.split(";")[0];
+      return qty > 1
+        ? `${qty} x ${pick.name.split(";")[0]}`
+        : pick.name.split(";")[0];
     };
 
     const strip = () => {
@@ -1746,12 +1890,19 @@ export class Game {
         if (what === "ammo") {
           const taken: string[] = [];
           for (const [wid, rounds] of Object.entries(hold.ammo)) {
-            this.player.ammo[wid] = ammoCapped(wid, (this.player.ammo[wid] ?? 0) + rounds);
-            taken.push(`${rounds} ${WEAPONS[wid]?.name.split(";")[0] ?? "rounds"}`);
+            this.player.ammo[wid] = ammoCapped(
+              wid,
+              (this.player.ammo[wid] ?? 0) + rounds,
+            );
+            taken.push(
+              `${rounds} ${WEAPONS[wid]?.name.split(";")[0] ?? "rounds"}`,
+            );
             delete hold.ammo[wid];
           }
           strip();
-          return taken.length ? `Took ${taken.join(", ")}.` : "Nothing to take.";
+          return taken.length
+            ? `Took ${taken.join(", ")}.`
+            : "Nothing to take.";
         }
         // cargo: fill what space you have, heaviest hold first
         let space = this.player.cargoCap - this.cargoUsed();
@@ -1763,10 +1914,14 @@ export class Game {
           space -= n;
           if (n >= tons) delete hold.cargo[id];
           else hold.cargo[id] = tons - n;
-          taken.push(`${n}t ${COMMODITIES.find((c) => c.id === id)?.name ?? id}`);
+          taken.push(
+            `${n}t ${COMMODITIES.find((c) => c.id === id)?.name ?? id}`,
+          );
         }
         strip();
-        return taken.length ? `Took ${taken.join(", ")}.` : "No room in your hold.";
+        return taken.length
+          ? `Took ${taken.join(", ")}.`
+          : "No room in your hold.";
       },
       capture: (): CaptureResult => {
         if (odds === null || !t.typeId) return { taken: false, note: "" };
@@ -1797,14 +1952,18 @@ export class Game {
             const outf = OUTFITS[outfId];
             if (outf?.mods.some((m) => m.type === 25) && owned > 0) {
               this.player.outfits[outfId] = owned - 1;
-              if (this.player.outfits[outfId] === 0) delete this.player.outfits[outfId];
+              if (this.player.outfits[outfId] === 0)
+                delete this.player.outfits[outfId];
               break;
             }
           }
           this.recomputeLoadout();
         } else {
           // no platoon to lose: the crew is beaten back bloodied instead
-          this.ship.armor = Math.max(1, this.ship.armor - this.ship.maxArmor * 0.15);
+          this.ship.armor = Math.max(
+            1,
+            this.ship.armor - this.ship.maxArmor * 0.15,
+          );
           note = "Your crew is thrown back off the boarding tube, bloodied.";
         }
         this.message(note);
@@ -1847,7 +2006,8 @@ export class Game {
       const retire = SHIPS[old]?.onRetire;
       if (retire) applySet(retire, this.player.bits, this.bitHandlers());
       const keepOld = room && old !== prize;
-      if (keepOld) this.player.escorts.push({ shipId: old, wage: 0, captured: true });
+      if (keepOld)
+        this.player.escorts.push({ shipId: old, wage: 0, captured: true });
       this.applyShipType(prize);
       this.player.fuelJumps = this.player.maxFuelJumps;
       // the crew you left behind flies her off the pad beside you, so the
@@ -1865,7 +2025,9 @@ export class Game {
       this.spawnPrizeEscort(prize);
       this.message(`The ${this.hullName(prize)} joins your fleet.`);
     } else {
-      this.message(`Your command is full — the ${this.hullName(prize)} is cut loose.`);
+      this.message(
+        `Your command is full — the ${this.hullName(prize)} is cut loose.`,
+      );
       this.pendingPrize = null;
       this.save();
       return;
@@ -1896,8 +2058,12 @@ export class Game {
     const side = this.player.escorts.length % 2 === 0 ? 1 : -1;
     const off = this.ship.radius + 60;
     npc.pos = {
-      x: this.ship.pos.x + Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
-      y: this.ship.pos.y + Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
+      x:
+        this.ship.pos.x +
+        Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
+      y:
+        this.ship.pos.y +
+        Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
     };
     npc.angle = this.ship.angle;
     npc.vel = { ...this.ship.vel };
@@ -1923,13 +2089,17 @@ export class Game {
       const p = PERSONS[String(t.personId)];
       if (p) return p.name;
     }
-    return t.typeId ? (SHIPS[t.typeId]?.name.split(";")[0] ?? "The ship") : "The ship";
+    return t.typeId
+      ? (SHIPS[t.typeId]?.name.split(";")[0] ?? "The ship")
+      : "The ship";
   }
 
   /** Missions whose goal was to disable/board/rescue these ships. */
   private creditBoardGoal(t: NpcShip): void {
     if (t.missionMisnId === null) return;
-    const active = this.player.activeMissions.find((a) => a.misnId === t.missionMisnId);
+    const active = this.player.activeMissions.find(
+      (a) => a.misnId === t.missionMisnId,
+    );
     const m = MISSIONS[String(t.missionMisnId)];
     if (!active || !m || active.shipsDone) return;
     if (m.shipGoal !== 2 && m.shipGoal !== 5) return; // board / rescue
@@ -1942,7 +2112,13 @@ export class Game {
       if (doneText) {
         this.pendingMissionEvents.push({
           title: active.name,
-          text: substituteTags(doneText, m, active, this.pilotName, this.rankTags()),
+          text: substituteTags(
+            doneText,
+            m,
+            active,
+            this.pilotName,
+            this.rankTags(),
+          ),
         });
       }
     }
@@ -1971,7 +2147,10 @@ export class Game {
       this.message("No target selected. Press Tab for ships, L for worlds.");
       return;
     }
-    const dist = Math.hypot(t.pos.x - this.ship.pos.x, t.pos.y - this.ship.pos.y);
+    const dist = Math.hypot(
+      t.pos.x - this.ship.pos.x,
+      t.pos.y - this.ship.pos.y,
+    );
     if (dist > 2400) {
       this.message("Target out of communications range.");
       return;
@@ -1988,7 +2167,11 @@ export class Game {
     playSnd(151, 0.4);
 
     if (p.uninhabited || !p.landable) {
-      this.hailUi.showPlanet(p, `Static. There is nobody on ${p.name} to answer.`, []);
+      this.hailUi.showPlanet(
+        p,
+        `Static. There is nobody on ${p.name} to answer.`,
+        [],
+      );
       return;
     }
     const greeting =
@@ -2002,8 +2185,12 @@ export class Game {
       {
         label: "Request landing clearance",
         action: () => {
-          const dist = Math.hypot(p.pos.x - this.ship.pos.x, p.pos.y - this.ship.pos.y);
-          if (dist > p.radius * LAND_DIST + 60) return `"You're not close enough to dock. Come on in."`;
+          const dist = Math.hypot(
+            p.pos.x - this.ship.pos.x,
+            p.pos.y - this.ship.pos.y,
+          );
+          if (dist > p.radius * LAND_DIST + 60)
+            return `"You're not close enough to dock. Come on in."`;
           this.hailUi.close();
           this.tryLand(p);
           return;
@@ -2039,7 +2226,8 @@ export class Game {
       opts.push({
         label: `Bribe traffic control (${bribe.toLocaleString()} cr)`,
         action: () => {
-          if (this.player.credits < bribe || bribe <= 0) return `"Don't waste our time."`;
+          if (this.player.credits < bribe || bribe <= 0)
+            return `"Don't waste our time."`;
           this.player.credits -= bribe;
           const key = String(govtId);
           this.player.records[key] = (this.player.records[key] ?? 0) + 10;
@@ -2059,7 +2247,9 @@ export class Game {
       // Zero Wing answered with the greeting that follows "All your base are
       // belong to us" instead of the line itself. The lists confirm it: the
       // highest CommQuote in the data is 44 and STR# 7100 holds exactly 44.
-      const quote = person ? STR_LISTS["7100"]?.[person.commQuote - 1] : undefined;
+      const quote = person
+        ? STR_LISTS["7100"]?.[person.commQuote - 1]
+        : undefined;
       if (quote) return `"${quote}"`;
       if (person) return `"${person.name} here. What do you want?"`;
     }
@@ -2093,18 +2283,24 @@ export class Game {
   private greetingInfo(t: NpcShip): string {
     const dude = t.dudeId !== null ? DUDES[String(t.dudeId)] : null;
     const info = dude?.infoTypes ?? 0;
-    const pick = <T,>(a: T[]): T | null => (a.length ? a[Math.floor(Math.random() * a.length)] : null);
+    const pick = <T>(a: T[]): T | null =>
+      a.length ? a[Math.floor(Math.random() * a.length)] : null;
 
     if ((info & 0x1000) !== 0) {
       // a world they have been to lately, and what was cheap or dear there
-      const worlds = this.system.planets.filter((p) => p.exchange && Object.keys(p.prices).length);
+      const worlds = this.system.planets.filter(
+        (p) => p.exchange && Object.keys(p.prices).length,
+      );
       const world = pick(worlds);
       if (world) {
-        const entries = Object.entries(world.prices).filter(([, lvl]) => lvl !== "med");
+        const entries = Object.entries(world.prices).filter(
+          ([, lvl]) => lvl !== "med",
+        );
         const entry = pick(entries);
         if (entry) {
           const [id, level] = entry;
-          const name = COMMODITIES.find((c) => c.id === id)?.name.toLowerCase() ?? id;
+          const name =
+            COMMODITIES.find((c) => c.id === id)?.name.toLowerCase() ?? id;
           return `"The last time I was on ${world.name}, the price of ${name} was really ${
             level === "low" ? "low" : "high"
           }."`;
@@ -2115,7 +2311,8 @@ export class Game {
       const oops = this.player.oopses.find((o) => o.endDay > this.player.date);
       if (oops) {
         const type = OOPSES.find((x) => x.id === oops.id);
-        if (type) return `"Word is there's trouble out at ${type.name}. Steer clear if you can."`;
+        if (type)
+          return `"Word is there's trouble out at ${type.name}. Steer clear if you can."`;
       }
     }
     if ((info & 0xf000) === 0x4000) {
@@ -2164,12 +2361,16 @@ export class Game {
     }
 
     if (t.hostile) {
-      const bribe = Math.min(this.player.credits, 2000 + Math.floor(this.player.credits * 0.1));
+      const bribe = Math.min(
+        this.player.credits,
+        2000 + Math.floor(this.player.credits * 0.1),
+      );
       if (bribe > 0) {
         opts.push({
           label: this.btnLabel(23, "Offer Bribe"),
           action: () => {
-            if (this.player.credits < bribe) return `"Your account's as empty as your threats."`;
+            if (this.player.credits < bribe)
+              return `"Your account's as empty as your threats."`;
             this.player.credits -= bribe;
             t.hostile = false;
             t.phase = "leaving";
@@ -2202,7 +2403,10 @@ export class Game {
     }
 
     if (!noGreeting) {
-      opts.push({ label: this.btnLabel(21, "Greetings"), action: () => this.greetingInfo(t) });
+      opts.push({
+        label: this.btnLabel(21, "Greetings"),
+        action: () => this.greetingInfo(t),
+      });
     }
     if (!untalkative) {
       opts.push({
@@ -2213,9 +2417,13 @@ export class Game {
           }
           const needFuel = this.player.fuelJumps < this.player.maxFuelJumps;
           const hurt = this.ship.armor < this.ship.maxArmor;
-          if (!needFuel && !hurt) return `"You look in good shape to us, Captain. Safe flying."`;
+          if (!needFuel && !hurt)
+            return `"You look in good shape to us, Captain. Safe flying."`;
           if (needFuel) {
-            this.player.fuelJumps = Math.min(this.player.maxFuelJumps, this.player.fuelJumps + 1);
+            this.player.fuelJumps = Math.min(
+              this.player.maxFuelJumps,
+              this.player.fuelJumps + 1,
+            );
           }
           // 0x0010 is Nova's "Roadside Assistance" — these govts patch you up too
           if (hurt && roadsideAssistance) this.ship.armor = this.ship.maxArmor;
@@ -2241,7 +2449,8 @@ export class Game {
       this.input.isDown("Space") &&
       !this.ship.ionized;
     for (const slot of this.weaponSlots) {
-      if (!slot.weap.sndLoop || !slot.weap.sndId || !isPrimary(slot.weap)) continue;
+      if (!slot.weap.sndLoop || !slot.weap.sndId || !isPrimary(slot.weap))
+        continue;
       const key = `weap:${slot.weap.id}`;
       if (firing) startSustained(key, slot.weap.sndId, true, 0.35);
       else stopSustained(key);
@@ -2257,7 +2466,8 @@ export class Game {
         if (!isPrimary(slot.weap) || slot.cooldown > 0) continue;
         applyReload(slot);
         // looped weapons are held by updateFiringLoops instead
-        if (slot.weap.sndId && !slot.weap.sndLoop) playSnd(slot.weap.sndId, 0.35);
+        if (slot.weap.sndId && !slot.weap.sndLoop)
+          playSnd(slot.weap.sndId, 0.35);
         // turrets swivel onto the selected target; everything else fires ahead
         const aim =
           isTurret(slot.weap) && this.targetNpc
@@ -2270,14 +2480,24 @@ export class Game {
           this.fireBeam(this.ship, slot.weap, slot.count, true, aim);
         } else {
           this.projectiles.push(
-            ...fireWeapon(this.ship, slot.weap, slot.count, true, this.targetNpc, aim),
+            ...fireWeapon(
+              this.ship,
+              slot.weap,
+              slot.count,
+              true,
+              this.targetNpc,
+              aim,
+            ),
           );
         }
       }
     }
     // Left Control fires whichever secondary is selected — missiles launch,
     // fighter bays scramble, exactly as EV treats bays as secondary weapons
-    if (this.input.consume("ControlLeft") || this.input.consume("ControlRight")) {
+    if (
+      this.input.consume("ControlLeft") ||
+      this.input.consume("ControlRight")
+    ) {
       const slot = this.selectedSecondary();
       if (!slot) {
         this.message("No secondary weapon selected.");
@@ -2292,7 +2512,8 @@ export class Game {
           }
         } else {
           const ammoLeft = this.player.ammo[slot.weap.id] ?? 0;
-          if (ammoLeft <= 0) this.message(`No ammunition for ${slot.weap.name}.`);
+          if (ammoLeft <= 0)
+            this.message(`No ammunition for ${slot.weap.name}.`);
           else if (slot.weap.guidance === 1 && !this.targetNpc) {
             this.message("Select a target first (`).");
           } else {
@@ -2306,7 +2527,9 @@ export class Game {
             const spends =
               !(slot.weap.flags3 & W3_AMMO_AT_BURST_END) || slot.burstLeft <= 0;
             if (spends) this.player.ammo[slot.weap.id] = ammoLeft - 1;
-            this.projectiles.push(...fireWeapon(this.ship, slot.weap, 1, true, this.targetNpc));
+            this.projectiles.push(
+              ...fireWeapon(this.ship, slot.weap, 1, true, this.targetNpc),
+            );
           }
         }
       }
@@ -2320,7 +2543,9 @@ export class Game {
 
   /** Secondary weapons and fighter bays share the selection, EV-style. */
   private secondarySlots(): WeaponSlot[] {
-    return this.weaponSlots.filter((s) => isSecondary(s.weap) || isFighterBay(s.weap));
+    return this.weaponSlots.filter(
+      (s) => isSecondary(s.weap) || isFighterBay(s.weap),
+    );
   }
 
   selectedSecondary(): WeaponSlot | null {
@@ -2336,7 +2561,9 @@ export class Game {
       return;
     }
     this.secondaryIdx = (this.secondaryIdx + 1) % list.length;
-    this.message(`Secondary: ${list[this.secondaryIdx].weap.name.split(";")[0]}.`);
+    this.message(
+      `Secondary: ${list[this.secondaryIdx].weap.name.split(";")[0]}.`,
+    );
   }
 
   /** Call every launched fighter home. */
@@ -2347,7 +2574,9 @@ export class Game {
       return;
     }
     for (const f of out) f.recalling = true;
-    this.message(`Recalling ${out.length} fighter${out.length === 1 ? "" : "s"}.`);
+    this.message(
+      `Recalling ${out.length} fighter${out.length === 1 ? "" : "s"}.`,
+    );
   }
 
   /** Target the nearest ship (EV's "closest target" key). */
@@ -2356,7 +2585,10 @@ export class Game {
     let bestD = Infinity;
     for (const n of this.npcs) {
       if (!this.canSee(n)) continue;
-      const d = Math.hypot(n.pos.x - this.ship.pos.x, n.pos.y - this.ship.pos.y);
+      const d = Math.hypot(
+        n.pos.x - this.ship.pos.x,
+        n.pos.y - this.ship.pos.y,
+      );
       if (d < bestD) {
         bestD = d;
         best = n;
@@ -2408,8 +2640,12 @@ export class Game {
         // stop on the hull it is burning, never past the weapon's own range
         reach = Math.min(Math.max(60, b.weap.beamLength), Math.hypot(dx, dy));
       }
-      const ox = owner.pos.x + (exit.x || exit.y ? exit.x : Math.cos(angle) * owner.radius);
-      const oy = owner.pos.y + (exit.x || exit.y ? exit.y : Math.sin(angle) * owner.radius);
+      const ox =
+        owner.pos.x +
+        (exit.x || exit.y ? exit.x : Math.cos(angle) * owner.radius);
+      const oy =
+        owner.pos.y +
+        (exit.x || exit.y ? exit.y : Math.sin(angle) * owner.radius);
       b.x1 = ox;
       b.y1 = oy;
       b.x2 = ox + Math.cos(angle) * reach;
@@ -2432,12 +2668,25 @@ export class Game {
       ? this.npcs.filter((n) => !n.ally)
       : [this.ship, ...this.npcs.filter((n) => n.ally)];
     // Beams leave from the hull's BeamPos mounts, same as shots leave the guns
-    const exit = weaponExitPoint(shooter.sprite, weap.exitType, 0, shooter.angle);
+    const exit = weaponExitPoint(
+      shooter.sprite,
+      weap.exitType,
+      0,
+      shooter.angle,
+    );
     const ox =
-      shooter.pos.x + (exit.x || exit.y ? exit.x : Math.cos(angle) * shooter.radius);
+      shooter.pos.x +
+      (exit.x || exit.y ? exit.x : Math.cos(angle) * shooter.radius);
     const oy =
-      shooter.pos.y + (exit.x || exit.y ? exit.y : Math.sin(angle) * shooter.radius);
-    const hit = beamHit(ox, oy, angle, length, targets.filter((s) => s !== shooter));
+      shooter.pos.y +
+      (exit.x || exit.y ? exit.y : Math.sin(angle) * shooter.radius);
+    const hit = beamHit(
+      ox,
+      oy,
+      angle,
+      length,
+      targets.filter((s) => s !== shooter),
+    );
     // an asteroid closer than the ship soaks the beam instead
     let rockHit: { a: Asteroid; dist: number } | null = null;
     if (fromPlayer) {
@@ -2454,12 +2703,17 @@ export class Game {
     }
     if (rockHit && (!hit || rockHit.dist < hit.dist)) {
       this.beams.push({
-        x1: ox, y1: oy,
+        x1: ox,
+        y1: oy,
         x2: ox + Math.cos(angle) * rockHit.dist,
         y2: oy + Math.sin(angle) * rockHit.dist,
-        weap, ttl: Math.max(0.06, weap.durationSec),
-        owner: shooter, exitType: weap.exitType, relAngle: angle - shooter.angle,
-        target: null, reach: rockHit.dist,
+        weap,
+        ttl: Math.max(0.06, weap.durationSec),
+        owner: shooter,
+        exitType: weap.exitType,
+        relAngle: angle - shooter.angle,
+        target: null,
+        reach: rockHit.dist,
       });
       this.damageAsteroid(rockHit.a, weap.armorDmg + weap.shieldDmg);
       return;
@@ -2527,7 +2781,8 @@ export class Game {
       if (this.ship.destroyed) this.playerDestroyed();
     } else {
       const victim = hit.ship as NpcShip;
-      if (victim.destroyed && this.npcs.includes(victim)) this.destroyNpc(victim, victim.ally);
+      if (victim.destroyed && this.npcs.includes(victim))
+        this.destroyNpc(victim, victim.ally);
     }
   }
 
@@ -2553,8 +2808,12 @@ export class Game {
     const side = Math.random() < 0.5 ? 1 : -1;
     const off = this.ship.radius + 20;
     fighter.pos = {
-      x: this.ship.pos.x + Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
-      y: this.ship.pos.y + Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
+      x:
+        this.ship.pos.x +
+        Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
+      y:
+        this.ship.pos.y +
+        Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
     };
     fighter.angle = this.ship.angle;
     fighter.vel = { ...this.ship.vel };
@@ -2594,8 +2853,12 @@ export class Game {
       const rank = Math.floor(i / 2) + 1;
       const off = this.ship.radius + 40 * rank;
       npc.pos = {
-        x: this.ship.pos.x + Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
-        y: this.ship.pos.y + Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
+        x:
+          this.ship.pos.x +
+          Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
+        y:
+          this.ship.pos.y +
+          Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
       };
       npc.angle = this.ship.angle;
       npc.vel = { ...this.ship.vel };
@@ -2606,7 +2869,8 @@ export class Game {
   /** Hired crews draw their wages as the days pass; broke pilots lose them. */
   private payEscorts(): void {
     if (this.player.escorts.length === 0) return;
-    const days = Math.floor(this.player.date) - Math.floor(this.player.escortPayDay);
+    const days =
+      Math.floor(this.player.date) - Math.floor(this.player.escortPayDay);
     if (days <= 0) return;
     this.player.escortPayDay = Math.floor(this.player.date);
     const due = this.player.escorts.reduce((sum, e) => sum + e.wage * days, 0);
@@ -2622,7 +2886,9 @@ export class Game {
     for (const npc of this.npcs) {
       if (npc.hired) npc.done = true;
     }
-    this.message("You could not make payroll. Your escorts have left your service.");
+    this.message(
+      "You could not make payroll. Your escorts have left your service.",
+    );
   }
 
   /** Hire a ship to fly with you. Wages are a thousandth of the hull per day. */
@@ -2655,7 +2921,9 @@ export class Game {
     if (hire.captured) {
       const paid = escortSellValue(hire.shipId);
       this.player.credits += paid;
-      this.message(`You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`);
+      this.message(
+        `You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`,
+      );
     }
     this.save();
   }
@@ -2696,7 +2964,8 @@ export class Game {
    * (the Wraith, the Krypt) simply doesn't answer.
    */
   private speak(npc: NpcShip, kind: VoiceKind): void {
-    const voiceType = npc.govtId >= 128 ? (GOVT_VOICES[String(npc.govtId)] ?? 0) : 0;
+    const voiceType =
+      npc.govtId >= 128 ? (GOVT_VOICES[String(npc.govtId)] ?? 0) : 0;
     const snd = voiceSnd(voiceType, kind, npc.voiceParity);
     if (snd !== null) playSnd(snd, 0.55);
   }
@@ -2734,7 +3003,8 @@ export class Game {
       return;
     }
     // a ship holding position only engages what comes to it
-    const anchor = npc.order === "hold" && npc.holdAt ? npc.holdAt : this.ship.pos;
+    const anchor =
+      npc.order === "hold" && npc.holdAt ? npc.holdAt : this.ship.pos;
     const reach = npc.order === "hold" ? 700 : 1400;
     let prey: Ship | null = null;
     let best = reach;
@@ -2759,7 +3029,12 @@ export class Game {
    * only ever swaps one overshoot for the next, so once the ship is inside the
    * distance it needs to stop in, it turns around and burns off its speed.
    */
-  private stationKeep(npc: NpcShip, dt: number, anchor: Vec2, slack: number): void {
+  private stationKeep(
+    npc: NpcShip,
+    dt: number,
+    anchor: Vec2,
+    slack: number,
+  ): void {
     const dx = anchor.x - npc.pos.x;
     const dy = anchor.y - npc.pos.y;
     const dist = Math.hypot(dx, dy);
@@ -2796,7 +3071,9 @@ export class Game {
       if (!isPointDefense(slot.weap)) continue;
       slot.cooldown = Math.max(0, slot.cooldown - dt);
       if (slot.cooldown > 0) continue;
-      const range = isBeam(slot.weap) ? Math.max(120, slot.weap.beamLength) : 400;
+      const range = isBeam(slot.weap)
+        ? Math.max(120, slot.weap.beamLength)
+        : 400;
       // incoming missiles first — that is what point defense is for
       const incoming = this.projectiles.find(
         (p) =>
@@ -2806,7 +3083,10 @@ export class Game {
       );
       if (!incoming) continue;
       applyReload(slot);
-      const angle = Math.atan2(incoming.y - this.ship.pos.y, incoming.x - this.ship.pos.x);
+      const angle = Math.atan2(
+        incoming.y - this.ship.pos.y,
+        incoming.x - this.ship.pos.x,
+      );
       /*
        * Durability is "how many point defense hits a shot from this weapon can
        * take before it is destroyed", so a tough warhead soaks several bursts
@@ -2828,14 +3108,22 @@ export class Game {
           exitType: slot.weap.exitType,
           relAngle: 0,
           target: null,
-          reach: Math.hypot(incoming.x - this.ship.pos.x, incoming.y - this.ship.pos.y),
+          reach: Math.hypot(
+            incoming.x - this.ship.pos.x,
+            incoming.y - this.ship.pos.y,
+          ),
         });
       } else {
         this.projectiles.push(
           ...fireWeapon(this.ship, slot.weap, 1, true, null, angle),
         );
       }
-      this.spawnExplosion(incoming.x, incoming.y, 0.5, incoming.weap.explodBoom ?? 128);
+      this.spawnExplosion(
+        incoming.x,
+        incoming.y,
+        0.5,
+        incoming.weap.explodBoom ?? 128,
+      );
     }
   }
 
@@ -2906,7 +3194,8 @@ export class Game {
      * them, on a scale of 1 (close) to 3 (far)"; everything else keeps the
      * engine's standing 700px engagement range.
      */
-    const reach = person && person.aggress > 0 ? 350 + person.aggress * 350 : 700;
+    const reach =
+      person && person.aggress > 0 ? 350 + person.aggress * 350 : 700;
     if (!fleeing && npc.typeId && npc.fireCooldown <= 0 && dist < reach) {
       let diff = desired - npc.angle;
       while (diff > Math.PI) diff -= Math.PI * 2;
@@ -2923,13 +3212,23 @@ export class Game {
         if (weap && stock) {
           npc.fireCooldown = weap.reloadSec;
           if (weap.sndId) {
-            playSndAt(weap.sndId, 0.35, npc.pos.x - this.ship.pos.x, npc.pos.y - this.ship.pos.y);
+            playSndAt(
+              weap.sndId,
+              0.35,
+              npc.pos.x - this.ship.pos.x,
+              npc.pos.y - this.ship.pos.y,
+            );
           }
           if (isBeam(weap)) {
-            const aim = Math.atan2(target.pos.y - npc.pos.y, target.pos.x - npc.pos.x);
+            const aim = Math.atan2(
+              target.pos.y - npc.pos.y,
+              target.pos.x - npc.pos.x,
+            );
             this.fireBeamFromNpc(npc, weap, stock.count, target, aim);
           } else {
-            this.projectiles.push(...fireWeapon(npc, weap, stock.count, false, target));
+            this.projectiles.push(
+              ...fireWeapon(npc, weap, stock.count, false, target),
+            );
           }
         }
       }
@@ -2946,7 +3245,9 @@ export class Game {
       if (p.ttl <= 0) continue;
       // rocks are in the way too
       for (const a of this.asteroids) {
-        if (pathHitsCircle(x0, y0, p.x, p.y, a.x, a.y, this.asteroidRadius(a))) {
+        if (
+          pathHitsCircle(x0, y0, p.x, p.y, a.x, a.y, this.asteroidRadius(a))
+        ) {
           // a hit shoves the rock, and röid Mass says how hard: the Bible has
           // Mass "used when weapons hit asteroids", and it runs 125 for an ice
           // pebble to 1500 for an ice mountain, so heavy rocks barely budge
@@ -2973,7 +3274,8 @@ export class Game {
       } else if (
         p.target &&
         p.weap.guidance === 1 &&
-        Math.random() < interferenceBreaksLock(p.weap, this.system.interference) * dt
+        Math.random() <
+          interferenceBreaksLock(p.weap, this.system.interference) * dt
       ) {
         // the system's own static does the jammers' work for them
         p.target = null;
@@ -2984,7 +3286,8 @@ export class Game {
         if (p.fromPlayer && npc.ally) continue;
         if (!p.fromPlayer && !npc.ally && !(p.owner as NpcShip).ally) continue;
         // ProxSafety keeps a just-launched shot from detonating on its own ship
-        const r = npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
+        const r =
+          npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
         if (pathHitsCircle(x0, y0, p.x, p.y, npc.pos.x, npc.pos.y, r)) {
           npc.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
           if (p.weap.ionization > 0) {
@@ -2999,17 +3302,28 @@ export class Game {
           if (p.fromPlayer && !npc.hostile) this.provoke(npc);
           if (npc.destroyed) {
             const owner = p.fromPlayer ? null : (p.owner as NpcShip);
-            this.destroyNpc(npc, p.fromPlayer || !!owner?.ally, owner?.ally ? owner : null);
+            this.destroyNpc(
+              npc,
+              p.fromPlayer || !!owner?.ally,
+              owner?.ally ? owner : null,
+            );
           }
           break;
         }
       }
       if (p.ttl > 0 && !p.fromPlayer && !(p.owner as NpcShip).ally) {
-        const r = this.ship.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
-        if (pathHitsCircle(x0, y0, p.x, p.y, this.ship.pos.x, this.ship.pos.y, r)) {
+        const r =
+          this.ship.radius +
+          (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
+        if (
+          pathHitsCircle(x0, y0, p.x, p.y, this.ship.pos.x, this.ship.pos.y, r)
+        ) {
           this.ship.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
           if (p.weap.ionization > 0) {
-            this.ship.ion = Math.min(this.ship.maxIon, this.ship.ion + p.weap.ionization);
+            this.ship.ion = Math.min(
+              this.ship.maxIon,
+              this.ship.ion + p.weap.ionization,
+            );
             if (this.ship.ionized) this.message("Your systems are ionized!");
           }
           p.ttl = 0;
@@ -3018,7 +3332,10 @@ export class Game {
           if (p.weap.explodBoom !== null) {
             this.spawnExplosion(p.x, p.y, 1, p.weap.explodBoom);
           }
-          if (this.cloaked && (this.cloakFlags & CLOAK_BREAKS_ON_DAMAGE) !== 0) {
+          if (
+            this.cloaked &&
+            (this.cloakFlags & CLOAK_BREAKS_ON_DAMAGE) !== 0
+          ) {
             this.cloaked = false;
             this.message("The hit collapses your cloak.");
           }
@@ -3040,7 +3357,8 @@ export class Game {
         if (s === p.directHit || s.destroyed) return;
         if (Math.hypot(s.pos.x - p.x, s.pos.y - p.y) > r + s.radius) return;
         s.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
-        if (p.weap.ionization > 0) s.ion = Math.min(s.maxIon, s.ion + p.weap.ionization);
+        if (p.weap.ionization > 0)
+          s.ion = Math.min(s.maxIon, s.ion + p.weap.ionization);
       };
       for (const npc of this.npcs) {
         if ((npc as Ship) === p.owner) continue;
@@ -3050,7 +3368,11 @@ export class Game {
         if (p.fromPlayer && npc.armor + npc.shield < before) this.provoke(npc);
         if (npc.destroyed) {
           const owner = p.fromPlayer ? null : (p.owner as NpcShip);
-          this.destroyNpc(npc, p.fromPlayer || !!owner?.ally, owner?.ally ? owner : null);
+          this.destroyNpc(
+            npc,
+            p.fromPlayer || !!owner?.ally,
+            owner?.ally ? owner : null,
+          );
         }
       }
       if (p.weap.blastHurtsPlayer && p.owner !== this.ship) {
@@ -3075,7 +3397,8 @@ export class Game {
       if (p.weap.detonateOnExpiry && p.directHit === undefined) {
         p.directHit = null;
         this.detonated.push(p);
-        if (p.weap.explodBoom !== null) this.spawnExplosion(p.x, p.y, 1, p.weap.explodBoom);
+        if (p.weap.explodBoom !== null)
+          this.spawnExplosion(p.x, p.y, 1, p.weap.explodBoom);
       }
     }
     this.projectiles = this.projectiles.filter((p) => p.ttl > 0);
@@ -3120,8 +3443,10 @@ export class Game {
      * sensor range of the ship that was hit.
      */
     for (const other of this.npcs) {
-      if (other === npc || other.aiType !== 4 || other.hostile || other.ally) continue;
-      if (Math.hypot(other.pos.x - npc.pos.x, other.pos.y - npc.pos.y) > 1600) continue;
+      if (other === npc || other.aiType !== 4 || other.hostile || other.ally)
+        continue;
+      if (Math.hypot(other.pos.x - npc.pos.x, other.pos.y - npc.pos.y) > 1600)
+        continue;
       if (govtEnemy(other.govtId, npc.govtId)) continue; // they were enemies anyway
       other.hostile = true;
     }
@@ -3142,39 +3467,67 @@ export class Game {
       if (doneText) {
         this.pendingMissionEvents.push({
           title: active.name,
-          text: substituteTags(doneText, m, active, this.pilotName, this.rankTags()),
+          text: substituteTags(
+            doneText,
+            m,
+            active,
+            this.pilotName,
+            this.rankTags(),
+          ),
         });
       }
       this.save();
     }
   }
 
-  private destroyNpc(npc: NpcShip, byPlayer: boolean, killer: NpcShip | null = null): void {
+  private destroyNpc(
+    npc: NpcShip,
+    byPlayer: boolean,
+    killer: NpcShip | null = null,
+  ): void {
     npc.done = true;
     if (this.targetNpc === npc) this.targetNpc = null;
     // the escort that made the kill crows about it
     if (killer && !killer.done) this.speak(killer, VOICE.VICTORY);
     this.spawnExplosion(
-      npc.pos.x, npc.pos.y, Math.max(1, npc.radius / 24),
+      npc.pos.x,
+      npc.pos.y,
+      Math.max(1, npc.radius / 24),
       npc.radius > 40 ? 133 : 132,
     );
-    const shipName = npc.typeId ? (SHIPS[npc.typeId]?.name.split(";")[0] ?? "Ship") : "Ship";
-    this.message(npc.ally ? `Your ${shipName} was destroyed.` : `${shipName} destroyed.`);
+    const shipName = npc.typeId
+      ? (SHIPS[npc.typeId]?.name.split(";")[0] ?? "Ship")
+      : "Ship";
+    this.message(
+      npc.ally ? `Your ${shipName} was destroyed.` : `${shipName} destroyed.`,
+    );
 
     // an escort that dies on your watch is a failed contract
     if (npc.missionMisnId !== null) {
-      const active = this.player.activeMissions.find((a) => a.misnId === npc.missionMisnId);
+      const active = this.player.activeMissions.find(
+        (a) => a.misnId === npc.missionMisnId,
+      );
       const m = active ? MISSIONS[String(active.misnId)] : null;
       if (active && m && m.shipGoal === 3 && !active.shipsDone) {
         applySet(m.onFailure, this.player.bits, this.bitHandlers());
         applyCompReward(this.player, m.compGovt, m.compReward, true);
-        this.player.activeMissions = this.player.activeMissions.filter((a) => a !== active);
-        this.message(`Mission failed: ${active.name} — the ship you were escorting was destroyed.`);
+        this.player.activeMissions = this.player.activeMissions.filter(
+          (a) => a !== active,
+        );
+        this.message(
+          `Mission failed: ${active.name} — the ship you were escorting was destroyed.`,
+        );
         const failText = descText(m.failText);
         if (failText) {
           this.pendingMissionEvents.push({
             title: `Mission failed: ${active.name}`,
-            text: substituteTags(failText, m, active, this.pilotName, this.rankTags()),
+            text: substituteTags(
+              failText,
+              m,
+              active,
+              this.pilotName,
+              this.rankTags(),
+            ),
           });
         }
         this.save();
@@ -3192,16 +3545,22 @@ export class Game {
         this.save();
       }
     }
-    if (npc.personId !== null && !this.player.personsKilled.includes(npc.personId)) {
+    if (
+      npc.personId !== null &&
+      !this.player.personsKilled.includes(npc.personId)
+    ) {
       this.player.personsKilled.push(npc.personId); // they don't come back
     }
     if (!byPlayer || npc.ally) return;
     // combat rating + legal record
-    if (npc.typeId) this.player.ratingPoints += Math.max(0, SHIPS[npc.typeId]?.strength ?? 0);
+    if (npc.typeId)
+      this.player.ratingPoints += Math.max(0, SHIPS[npc.typeId]?.strength ?? 0);
     if (npc.govtId >= 128) applyCrime(this.player, npc.govtId, "kill");
     // mission special-ship goals
     if (npc.missionMisnId !== null) {
-      const active = this.player.activeMissions.find((a) => a.misnId === npc.missionMisnId);
+      const active = this.player.activeMissions.find(
+        (a) => a.misnId === npc.missionMisnId,
+      );
       const m = MISSIONS[String(npc.missionMisnId)];
       if (active && m && !active.shipsDone) {
         active.shipsKilled += 1;
@@ -3213,11 +3572,19 @@ export class Game {
           if (doneText) {
             this.pendingMissionEvents.push({
               title: active.name,
-              text: substituteTags(doneText, m, active, this.pilotName, this.rankTags()),
+              text: substituteTags(
+                doneText,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
             });
           }
         } else {
-          this.message(`${active.name}: ${active.shipsKilled}/${active.shipsTotal} destroyed.`);
+          this.message(
+            `${active.name}: ${active.shipsKilled}/${active.shipsTotal} destroyed.`,
+          );
         }
         this.save();
       }
@@ -3233,12 +3600,20 @@ export class Game {
       const dude = DUDES[String(active.shipDude)];
       for (let i = 0; i < remaining; i++) {
         const shipEntry = dude ? this.weightedPick(dude.ships) : null;
-        const typeId = shipEntry && SHIPS[String(shipEntry.id)] ? String(shipEntry.id) : null;
+        const typeId =
+          shipEntry && SHIPS[String(shipEntry.id)]
+            ? String(shipEntry.id)
+            : null;
         if (!typeId) continue;
         const type = SHIPS[typeId];
-        const npc = new NpcShip({ turnRate: type.turnRate, accel: type.accel, maxSpeed: type.maxSpeed });
+        const npc = new NpcShip({
+          turnRate: type.turnRate,
+          accel: type.accel,
+          maxSpeed: type.maxSpeed,
+        });
         npc.typeId = typeId;
-        npc.govtId = (dude?.govt ?? -1) >= 128 ? dude!.govt : inherentCombatGovt(typeId);
+        npc.govtId =
+          (dude?.govt ?? -1) >= 128 ? dude!.govt : inherentCombatGovt(typeId);
         const mDef = MISSIONS[String(active.misnId)];
         const goal = mDef?.shipGoal ?? 0;
         // you only shoot the ones you were sent to kill or cripple
@@ -3286,7 +3661,8 @@ export class Game {
         const seen = this.npcs.some(
           (n) =>
             n.missionMisnId === active.misnId &&
-            Math.hypot(n.pos.x - this.ship.pos.x, n.pos.y - this.ship.pos.y) < 2000,
+            Math.hypot(n.pos.x - this.ship.pos.x, n.pos.y - this.ship.pos.y) <
+              2000,
         );
         if (seen) {
           active.shipsDone = true;
@@ -3296,7 +3672,13 @@ export class Game {
           if (doneText) {
             this.pendingMissionEvents.push({
               title: active.name,
-              text: substituteTags(doneText, m, active, this.pilotName, this.rankTags()),
+              text: substituteTags(
+                doneText,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
             });
           }
           this.save();
@@ -3322,11 +3704,16 @@ export class Game {
     if (types.length === 0) return;
     // Nova's asteroid counts are per-region; a handful on screen reads right
     for (let i = 0; i < count * 2; i++) {
-      this.asteroids.push(this.makeAsteroid(types[Math.floor(Math.random() * types.length)]));
+      this.asteroids.push(
+        this.makeAsteroid(types[Math.floor(Math.random() * types.length)]),
+      );
     }
   }
 
-  private makeAsteroid(typeId: string, at?: { x: number; y: number }): Asteroid {
+  private makeAsteroid(
+    typeId: string,
+    at?: { x: number; y: number },
+  ): Asteroid {
     const roid = ROIDS[typeId];
     const ang = Math.random() * Math.PI * 2;
     const dist = 600 + Math.random() * 1800;
@@ -3340,7 +3727,8 @@ export class Game {
       vy: Math.sin(driftAng) * drift,
       armor: roid?.strength ?? 100,
       frame: Math.random() * 36,
-      spin: ((roid?.spinRate ?? 50) / 100) * 30 * (Math.random() < 0.5 ? -1 : 1),
+      spin:
+        ((roid?.spinRate ?? 50) / 100) * 30 * (Math.random() < 0.5 ? -1 : 1),
     };
   }
 
@@ -3401,7 +3789,8 @@ export class Game {
       p.vy *= 1 - Math.min(1, 1.2 * dt);
       p.ttl -= dt;
     }
-    if (this.particles.length) this.particles = this.particles.filter((p) => p.ttl > 0);
+    if (this.particles.length)
+      this.particles = this.particles.filter((p) => p.ttl > 0);
   }
 
   private collectMineral(m: Mineral): void {
@@ -3441,7 +3830,10 @@ export class Game {
       this.reinforceTimer = 45;
       return;
     }
-    if (this.gear.reinfInhibit.some((v) => v === -1 || govtClassmate(govtId, v))) return;
+    if (
+      this.gear.reinfInhibit.some((v) => v === -1 || govtClassmate(govtId, v))
+    )
+      return;
     this.reinforceTimer -= dt;
     if (this.reinforceTimer > 0) return;
     /*
@@ -3451,7 +3843,10 @@ export class Game {
      * a fleet — Sol calls flët 145, Kania flët 129 after 30 seconds.
      */
     const sys = this.system;
-    const fleet = sys.reinfFleet !== null ? FLEETS.find((f) => f.id === sys.reinfFleet) : null;
+    const fleet =
+      sys.reinfFleet !== null
+        ? FLEETS.find((f) => f.id === sys.reinfFleet)
+        : null;
     if (!fleet) {
       this.reinforceTimer = 60;
       return;
@@ -3497,8 +3892,11 @@ export class Game {
     }
     const caught = [...found.cargo, ...found.outfits];
     const paid = applySmuggling(this.player, scanner.govtId);
-    this.message(`${label} patrol detects ${caught[0]}${caught.length > 1 ? ` and ${caught.length - 1} more` : ""}!`);
-    if (paid > 0) this.message(`You are fined ${paid.toLocaleString()} credits.`);
+    this.message(
+      `${label} patrol detects ${caught[0]}${caught.length > 1 ? ` and ${caught.length - 1} more` : ""}!`,
+    );
+    if (paid > 0)
+      this.message(`You are fined ${paid.toLocaleString()} credits.`);
     // being caught turns the patrol on you, as any crime does
     this.provoke(scanner);
     scanner.hostile = true;
@@ -3513,7 +3911,9 @@ export class Game {
     const before = this.npcs.length;
     this.spawnFleetOf(call.fleet, true);
     if (this.npcs.length > before) {
-      this.message(`${this.govtLabel(call.fleet.govt)} reinforcements have arrived.`);
+      this.message(
+        `${this.govtLabel(call.fleet.govt)} reinforcements have arrived.`,
+      );
     }
   }
 
@@ -3527,7 +3927,8 @@ export class Game {
      * huge asteroid goes up bigger than a pebble (Nova steps 0/0/1/2 across
      * each family's four sizes).
      */
-    if (roid?.explodeBoom != null) this.spawnExplosion(a.x, a.y, 0.7, roid.explodeBoom);
+    if (roid?.explodeBoom != null)
+      this.spawnExplosion(a.x, a.y, 0.7, roid.explodeBoom);
     /*
      * PartCount particles in the rock's own PartColor — white for ice, tan for
      * dust, deep blue for crystal. This is the only thing that visually tells
@@ -3551,9 +3952,10 @@ export class Game {
     // spit out resource boxes for anyone with a scoop. What a rock is worth is
     // its röid YieldType: a commodity, or a jünk for the ice and crystal fields
     const yield_ = roid ? roidYield(roid.yieldType) : null;
-    const qty = roid && roid.yieldQty > 0
-      ? Math.max(1, Math.round(roid.yieldQty * (0.5 + Math.random())))
-      : 0;
+    const qty =
+      roid && roid.yieldQty > 0
+        ? Math.max(1, Math.round(roid.yieldQty * (0.5 + Math.random())))
+        : 0;
     for (let i = 0; i < Math.min(qty, 6); i++) {
       const ang = Math.random() * Math.PI * 2;
       this.minerals.push({
@@ -3576,7 +3978,10 @@ export class Game {
      */
     const fragTypes = (roid?.fragTypes ?? []).filter((f) => ROIDS[String(f)]);
     if (fragTypes.length && (roid?.fragCount ?? 0) > 0) {
-      const n = Math.max(1, Math.round(roid!.fragCount * (0.5 + Math.random())));
+      const n = Math.max(
+        1,
+        Math.round(roid!.fragCount * (0.5 + Math.random())),
+      );
       for (let i = 0; i < Math.min(n, 6); i++) {
         const pick = fragTypes[Math.floor(Math.random() * fragTypes.length)];
         const frag = this.makeAsteroid(String(pick), { x: a.x, y: a.y });
@@ -3597,16 +4002,24 @@ export class Game {
     const govtId = this.system.govtId;
     return FLEETS.filter((f) => {
       if (!SHIPS[String(f.leadShip)]) return false;
-      if (f.appearOn && !evalTest(f.appearOn, this.player.bits, {
-        outfits: this.player.outfits, explored: this.player.explored, male: true,
-      })) return false;
+      if (
+        f.appearOn &&
+        !evalTest(f.appearOn, this.player.bits, {
+          outfits: this.player.outfits,
+          explored: this.player.explored,
+          male: true,
+        })
+      )
+        return false;
       const link = f.linkSyst;
       if (link === -1) return true;
       if (link >= 128 && link <= 2175) return link === sysId;
       if (link >= 10000 && link <= 10255) return govtId === link - 9872;
-      if (link >= 15000 && link <= 15255) return govtAllied(link - 14872, govtId);
+      if (link >= 15000 && link <= 15255)
+        return govtAllied(link - 14872, govtId);
       if (link >= 20000 && link <= 20255) return govtId !== link - 19872;
-      if (link >= 25000 && link <= 25255) return govtEnemy(link - 24872, govtId);
+      if (link >= 25000 && link <= 25255)
+        return govtEnemy(link - 24872, govtId);
       return false;
     });
   }
@@ -3635,25 +4048,41 @@ export class Game {
     const makeShip = (typeId: string, slot: number): NpcShip | null => {
       const type = SHIPS[typeId];
       if (!type) return null;
-      const npc = new NpcShip({ turnRate: type.turnRate, accel: type.accel, maxSpeed: type.maxSpeed });
+      const npc = new NpcShip({
+        turnRate: type.turnRate,
+        accel: type.accel,
+        maxSpeed: type.maxSpeed,
+      });
       npc.typeId = typeId;
       npc.govtId = fleet.govt;
       npc.aiType = 3; // fleets fly as warships
       npc.hostile = hostile;
-      npc.initDefense(type.shield, type.armor, type.shieldRechPerSec,
-        (type.flags & 0x10) !== 0 ? 0.1 : 0.33);
+      npc.initDefense(
+        type.shield,
+        type.armor,
+        type.shieldRechPerSec,
+        (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
+      );
       npc.sprite = SHIP_SPRITES[typeId] ?? null;
       // stagger them into a loose formation behind the flagship
       const row = Math.floor(slot / 3);
       const col = (slot % 3) - 1;
       npc.pos = {
-        x: originX + Math.cos(ang) * row * 70 + Math.cos(ang + Math.PI / 2) * col * 70,
-        y: originY + Math.sin(ang) * row * 70 + Math.sin(ang + Math.PI / 2) * col * 70,
+        x:
+          originX +
+          Math.cos(ang) * row * 70 +
+          Math.cos(ang + Math.PI / 2) * col * 70,
+        y:
+          originY +
+          Math.sin(ang) * row * 70 +
+          Math.sin(ang + Math.PI / 2) * col * 70,
       };
       npc.angle = ang + Math.PI;
       const dest = this.system.planets[0];
       npc.phase = dest ? "toPlanet" : "leaving";
-      npc.target = dest ? { x: dest.pos.x, y: dest.pos.y } : { x: -originX, y: -originY };
+      npc.target = dest
+        ? { x: dest.pos.x, y: dest.pos.y }
+        : { x: -originX, y: -originY };
       return npc;
     };
 
@@ -3662,7 +4091,9 @@ export class Game {
     if (!lead) return;
     this.npcs.push(lead);
     for (const esc of fleet.escorts) {
-      const n = esc.min + Math.floor(Math.random() * Math.max(1, esc.max - esc.min + 1));
+      const n =
+        esc.min +
+        Math.floor(Math.random() * Math.max(1, esc.max - esc.min + 1));
       for (let i = 0; i < Math.min(n, 4); i++) {
         const ship = makeShip(String(esc.id), slot++);
         if (ship) this.npcs.push(ship);
@@ -3697,7 +4128,11 @@ export class Game {
     npc.govtId = person.govt;
     npc.aiType = person.aiType;
     npc.sprite = SHIP_SPRITES[npc.typeId] ?? null;
-    npc.stats = { turnRate: type.turnRate, accel: type.accel, maxSpeed: type.maxSpeed };
+    npc.stats = {
+      turnRate: type.turnRate,
+      accel: type.accel,
+      maxSpeed: type.maxSpeed,
+    };
     npc.shipName = person.shipName || null;
     npc.weapons = personLoadout(person, type);
     // ShieldMod is a percentage of the stock ship's shields
@@ -3726,7 +4161,12 @@ export class Game {
    * frame per 30Hz tick, so a nuclear detonation at 30 crawls while a blaster
    * impact at 100 snaps past.
    */
-  private spawnExplosion(x: number, y: number, scale: number, boomType = 133): void {
+  private spawnExplosion(
+    x: number,
+    y: number,
+    scale: number,
+    boomType = 133,
+  ): void {
     const boom = BOOMS[String(boomType)] ?? BOOMS["133"];
     if (!boom) return;
     const boomId = String(400 + boom.graphicIndex);
@@ -3734,10 +4174,19 @@ export class Game {
     // SoundIndex -1 is a silent explosion (Nova Bible); without the guard that
     // asked for snd 299. No stock bööm uses it, but a plug-in easily could.
     if (boom.soundIndex >= 0) {
-      playSndAt(300 + boom.soundIndex, 0.45, x - this.ship.pos.x, y - this.ship.pos.y);
+      playSndAt(
+        300 + boom.soundIndex,
+        0.45,
+        x - this.ship.pos.x,
+        y - this.ship.pos.y,
+      );
     }
     this.explosions.push({
-      x, y, boomId, t: 0, scale,
+      x,
+      y,
+      boomId,
+      t: 0,
+      scale,
       fps: (30 * Math.max(10, boom.frameAdvance)) / 100,
     });
   }
@@ -3755,10 +4204,15 @@ export class Game {
         this.system.planets.find((p) => p.landable) ??
         getSystem(START_SYSTEM_ID).planets.find((p) => p.landable);
       if (haven) {
-        this.ship.pos = { x: haven.pos.x + haven.radius * 2, y: haven.pos.y + haven.radius };
+        this.ship.pos = {
+          x: haven.pos.x + haven.radius * 2,
+          y: haven.pos.y + haven.radius,
+        };
       }
       this.ship.vel = { x: 0, y: 0 };
-      this.message("You eject in your escape pod and are picked up — the ship is lost, but you live.");
+      this.message(
+        "You eject in your escape pod and are picked up — the ship is lost, but you live.",
+      );
       this.save();
       return;
     }
@@ -3767,7 +4221,9 @@ export class Game {
       const id = this.pilotId;
       this.pilotId = null; // don't autosave the corpse
       if (id) deletePilot(id);
-      alert(`${this.pilotName} died in the ${this.system.name} system. Strict mode: this pilot is gone.`);
+      alert(
+        `${this.pilotName} died in the ${this.system.name} system. Strict mode: this pilot is gone.`,
+      );
       this.landedUi.hide();
       this.mode = "menu";
       this.onMenu?.();
@@ -3781,7 +4237,10 @@ export class Game {
     this.ship.shield = this.ship.maxShield;
     this.ship.armor = this.ship.maxArmor;
     if (haven) {
-      this.ship.pos = { x: haven.pos.x + haven.radius * 2, y: haven.pos.y + haven.radius };
+      this.ship.pos = {
+        x: haven.pos.x + haven.radius * 2,
+        y: haven.pos.y + haven.radius,
+      };
       this.ship.vel = { x: 0, y: 0 };
       this.message(
         `Your ship was disabled. A tug hauled you to ${haven.name} — repairs cost ${cost.toLocaleString()} cr.`,
@@ -3798,7 +4257,10 @@ export class Game {
   private nearestPlanet(): { planet: PlanetDef; dist: number } | null {
     let best: { planet: PlanetDef; dist: number } | null = null;
     for (const p of this.system.planets) {
-      const d = Math.hypot(p.pos.x - this.ship.pos.x, p.pos.y - this.ship.pos.y);
+      const d = Math.hypot(
+        p.pos.x - this.ship.pos.x,
+        p.pos.y - this.ship.pos.y,
+      );
       if (!best || d < best.dist) best = { planet: p, dist: d };
     }
     return best;
@@ -3822,7 +4284,9 @@ export class Game {
       return;
     }
     if (!this.targetPlanet && this.route.length === 0) {
-      this.message("Autopilot needs a destination — target a world (L) or plot a course (M).");
+      this.message(
+        "Autopilot needs a destination — target a world (L) or plot a course (M).",
+      );
       return;
     }
     this.autopilot = true;
@@ -3855,7 +4319,8 @@ export class Game {
         return false;
       }
       // brake into the approach so we don't sail straight past
-      const closing = (this.ship.vel.x * dx + this.ship.vel.y * dy) / (dist || 1);
+      const closing =
+        (this.ship.vel.x * dx + this.ship.vel.y * dy) / (dist || 1);
       const braking = dist < 900 && closing > dist * 0.9;
       const desired = braking
         ? Math.atan2(-this.ship.vel.y, -this.ship.vel.x)
@@ -3915,7 +4380,8 @@ export class Game {
       this.message("You have no escape pod fitted.");
       return;
     }
-    if (!confirm("Abandon ship? Your ship, outfits and cargo will be lost.")) return;
+    if (!confirm("Abandon ship? Your ship, outfits and cargo will be lost."))
+      return;
     playSnd(SND.EJECT, 0.6); // snd 372, named for exactly this
     this.player.cargo = {};
     this.playerDestroyed();
@@ -3938,7 +4404,10 @@ export class Game {
     const mounts = this.mountStatus();
     const rating = ratingName(this.player.ratingPoints);
     const outfits = Object.entries(this.player.outfits)
-      .map(([id, n]) => `${n > 1 ? `${n} × ` : ""}${OUTFITS[id]?.name.split(";")[0] ?? id}`)
+      .map(
+        ([id, n]) =>
+          `${n > 1 ? `${n} × ` : ""}${OUTFITS[id]?.name.split(";")[0] ?? id}`,
+      )
       .sort();
     const wing = this.player.escorts
       .map((e) => SHIPS[e.shipId]?.name.split(";")[0] ?? "Ship")
@@ -3951,10 +4420,22 @@ export class Game {
           title: "Ship",
           rows: [
             { label: "Class", value: type?.name.split(";")[0] ?? "Unknown" },
-            { label: "Shields", value: `${Math.round(this.ship.shield)} / ${Math.round(this.ship.maxShield)}` },
-            { label: "Armor", value: `${Math.round(this.ship.armor)} / ${Math.round(this.ship.maxArmor)}` },
-            { label: "Fuel", value: `${Math.floor(this.player.fuelJumps)} / ${this.player.maxFuelJumps} jumps` },
-            { label: "Cargo", value: `${this.cargoUsed()} / ${this.player.cargoCap} tons` },
+            {
+              label: "Shields",
+              value: `${Math.round(this.ship.shield)} / ${Math.round(this.ship.maxShield)}`,
+            },
+            {
+              label: "Armor",
+              value: `${Math.round(this.ship.armor)} / ${Math.round(this.ship.maxArmor)}`,
+            },
+            {
+              label: "Fuel",
+              value: `${Math.floor(this.player.fuelJumps)} / ${this.player.maxFuelJumps} jumps`,
+            },
+            {
+              label: "Cargo",
+              value: `${this.cargoUsed()} / ${this.player.cargoCap} tons`,
+            },
             { label: "Free mass", value: `${this.freeMassLeft()} tons` },
             {
               label: "Mounts",
@@ -3968,10 +4449,16 @@ export class Game {
         {
           title: "Record",
           rows: [
-            { label: "Credits", value: `${this.player.credits.toLocaleString()} cr` },
+            {
+              label: "Credits",
+              value: `${this.player.credits.toLocaleString()} cr`,
+            },
             { label: "Combat rating", value: rating },
             { label: "Date", value: formatDate(this.player.date) },
-            { label: "Systems charted", value: String(this.player.explored.length) },
+            {
+              label: "Systems charted",
+              value: String(this.player.explored.length),
+            },
           ],
         },
         {
@@ -4008,10 +4495,16 @@ export class Game {
       }
       const rows: InfoRow[] = [{ label: "Destination", value: where }];
       if (a.cargoLoaded && a.cargoName) {
-        rows.push({ label: "Carrying", value: `${a.cargoQty}t ${a.cargoName}` });
+        rows.push({
+          label: "Carrying",
+          value: `${a.cargoQty}t ${a.cargoName}`,
+        });
       }
       if (a.timeLimit > 0) {
-        const left = Math.max(0, a.timeLimit - (this.player.date - a.acceptedDay));
+        const left = Math.max(
+          0,
+          a.timeLimit - (this.player.date - a.acceptedDay),
+        );
         rows.push({ label: "Time left", value: `${Math.ceil(left)} days` });
       }
       return { title: a.name, rows };
@@ -4021,7 +4514,13 @@ export class Game {
       title: "Mission Log",
       sections: sections.length
         ? sections
-        : [{ title: "No active missions", rows: [], note: "Look for work at a spaceport BBS or bar." }],
+        : [
+            {
+              title: "No active missions",
+              rows: [],
+              note: "Look for work at a spaceport BBS or bar.",
+            },
+          ],
       close: () => undefined,
     });
   }
@@ -4039,7 +4538,10 @@ export class Game {
         {
           title: "Hold",
           rows: [
-            { label: "Used", value: `${this.cargoUsed()} / ${this.player.cargoCap} tons` },
+            {
+              label: "Used",
+              value: `${this.cargoUsed()} / ${this.player.cargoCap} tons`,
+            },
           ],
         },
       ],
@@ -4105,7 +4607,10 @@ export class Game {
     const near = chosen
       ? {
           planet: chosen,
-          dist: Math.hypot(chosen.pos.x - this.ship.pos.x, chosen.pos.y - this.ship.pos.y),
+          dist: Math.hypot(
+            chosen.pos.x - this.ship.pos.x,
+            chosen.pos.y - this.ship.pos.y,
+          ),
         }
       : this.nearestPlanet();
     if (!near) {
@@ -4120,7 +4625,9 @@ export class Game {
     const isGate = planet.isHypergate || planet.isWormhole;
     if (isGate && !this.gateIsWorking(planet)) {
       // a dead gate: its ring stays dark however long you sit in front of it
-      this.message(`${planet.name} is derelict. The ring is dark and will not answer.`);
+      this.message(
+        `${planet.name} is derelict. The ring is dark and will not answer.`,
+      );
       return;
     }
     if (!planet.landable && !isGate) {
@@ -4131,20 +4638,20 @@ export class Game {
       this.message("You are moving too fast to land.");
       return;
     }
+
     /*
      * spöb MinStatus: "the point on your record in the current system that
      * you'll be denied landing clearance on this stellar", ignored outright on
      * an uninhabited one. 32767 is a world that never clears anybody — the
      * Bible's "player can never land" — and 19 stellars read it, so those get
      * a flat refusal rather than an invitation to improve your standing.
+     *
+     * Exception: if you have an active mission whose current destination
+     * (travelSpobId or returnSpobId) is this planet, you may land anyway.
      */
     if (
-      /*
-       * Gates are not ports and MinStatus does not apply to them: all 19 of
-       * the stellars reading 32767 are hypergates, which is Nova's way of
-       * saying "you cannot land on this, you fly through it".
-       */
       !isGate &&
+      !this.hasActiveMissionToPlanet(planet.id) &&
       !this.clearedToLand(planet, this.system.govtId)
     ) {
       this.message(
@@ -4155,6 +4662,7 @@ export class Game {
       playSnd(SND.BEEP3, 0.5);
       return;
     }
+
     this.ship.vel = { x: 0, y: 0 };
     this.hailUi.close();
     if (isGate) {
@@ -4164,6 +4672,7 @@ export class Game {
       else this.openGate(planet);
       return;
     }
+
     this.player.landedOn = planet.id;
     // Landing does not move the calendar. Nova advances the date on hyperspace
     // jumps (and on missions that set DatePostInc), and nowhere else — there is
@@ -4179,11 +4688,23 @@ export class Game {
     this.landedUi.show(planet, this.system);
   }
 
+  /** True if any active mission currently wants the player to visit this planet. */
+  private hasActiveMissionToPlanet(planetId: string): boolean {
+    return this.player.activeMissions.some((active) => {
+      const dest = active.travelDone
+        ? active.returnSpobId
+        : active.travelSpobId;
+      return dest === planetId;
+    });
+  }
+
   /** called by the landed UI */
   depart(): void {
     // backing out of a gate chooser lets the ring shut again
     if (this.gateDocking) this.closeGate(this.gateDocking.id);
-    const planet = this.system.planets.find((p) => p.id === this.player.landedOn);
+    const planet = this.system.planets.find(
+      (p) => p.id === this.player.landedOn,
+    );
     this.player.landedOn = null;
     this.save();
     if (planet) {
@@ -4250,13 +4771,37 @@ export class Game {
     return Math.hypot(this.ship.pos.x, this.ship.pos.y) < this.noJumpRadius;
   }
 
+  /**
+   * shïp Flags 0x0001/0x0002/0x0004 are mutually exclusive "jumping speed"
+   * multipliers in the Bible (75% / 125% / 150%). They scale the burn that
+   * carries you into hyperspace, not the calendar day cost.
+   */
+  private jumpSpeedMult(): number {
+    const flags = SHIPS[this.player.shipId]?.flags ?? 0;
+    if (flags & 0x0004) return 1.5;
+    if (flags & 0x0002) return 1.25;
+    if (flags & 0x0001) return 0.75;
+    return 1;
+  }
+
+  /**
+   * Bible: oütf ModType 37 and shïp Flags2 0x0020 both mean the hull "can
+   * jump without slowing down" — skip the retro burn and go straight to aim.
+   */
+  private canJumpWithoutSlowing(): boolean {
+    if (this.gear.fastJump) return true;
+    return ((SHIPS[this.player.shipId]?.flags2 ?? 0) & 0x0020) !== 0;
+  }
+
   private startJump(): void {
     if (this.route.length === 0) {
       this.message("No hyperspace course set. Press M to open the map.");
       return;
     }
     if (this.insideNoJumpZone()) {
-      this.message("Too deep in the system's gravity well to jump. Head for open space.");
+      this.message(
+        "Too deep in the system's gravity well to jump. Head for open space.",
+      );
       playSnd(SND.BEEP3, 0.5);
       return;
     }
@@ -4265,26 +4810,96 @@ export class Game {
       return;
     }
     if (this.ship.ionized) {
-      this.message("Your systems are ionized — the hyperdrive will not engage.");
+      this.message(
+        "Your systems are ionized — the hyperdrive will not engage.",
+      );
       return;
     }
     const cur = this.system;
     const next = getSystem(this.route[0]);
     const dx = next.mapPos.x - cur.mapPos.x;
     const dy = next.mapPos.y - cur.mapPos.y;
+    const mult = this.jumpSpeedMult();
+    // base burn is long enough to streak across a typical system; faster
+    // jumpers finish sooner and hit a higher top speed while they do
+    const burnLeft = 1.7 / mult;
+    const cruise = this.ship.stats.maxSpeed;
+    const burnSpeed = Math.max(cruise * 4.5, 950) * mult;
+    const burnAccel = Math.max(this.ship.stats.accel * 3.5, 600) * mult;
+    // already crawling, inertialess, or flagged to skip the retro burn
+    const skipBrake =
+      this.canJumpWithoutSlowing() || this.inertialess || this.ship.speed < 45;
     this.jump = {
-      phase: "turning",
-      chargeLeft: this.gear.fastJump ? 0.8 : 2.2,
+      phase: skipBrake ? "turning" : "braking",
       targetAngle: Math.atan2(dy, dx),
+      burnLeft,
+      burnSpeed,
+      burnAccel,
     };
-    /*
-     * The spool-up sample ("Warp up") runs 6.08s but the charge takes 2.2s —
-     * 0.8s with a fast jump — so played as a one-shot it was still going long
-     * after arrival and read as the sound restarting in the new system. Held
-     * on a key instead so the jump itself can cut it off.
-     */
+    // Warp-up audio waits until the burn phase — see beginJumpBurn().
+    this.message(
+      skipBrake
+        ? `Autopilot engaged: jumping to ${next.name}.`
+        : `Autopilot engaged: braking for jump to ${next.name}.`,
+    );
+  }
+
+  /**
+   * Enter the high-speed hyperspace burn and start the spool-up sample.
+   * "Warp up" is held on a key so executeJump can cut it off; starting it
+   * earlier made the retro-brake sound like the drive was already firing.
+   */
+  private beginJumpBurn(): void {
+    const j = this.jump;
+    if (!j || j.phase === "burning") return;
+    j.phase = "burning";
     startSustained(JUMP_SND_KEY, SND.WARP_IN, false, 0.5);
-    this.message(`Autopilot engaged: jumping to ${next.name}.`);
+    this.message("Hyperdrive engaged...");
+  }
+
+  /**
+   * Drive one frame of the hyperspace entry sequence. The stick is locked for
+   * the whole run — matching Nova, once the drive is engaged you ride it out.
+   */
+  private updateJumpSequence(dt: number): void {
+    const j = this.jump!;
+    if (j.phase === "braking") {
+      // face reverse of current velocity and burn until nearly stopped
+      if (this.ship.speed < 45) {
+        j.phase = "turning";
+        this.message("Aligning for hyperspace...");
+      } else {
+        const retro = Math.atan2(-this.ship.vel.y, -this.ship.vel.x);
+        const facing = this.ship.steerToward(dt, retro);
+        this.ship.update(dt, 0, facing);
+      }
+      return;
+    }
+
+    if (j.phase === "turning") {
+      const facing = this.ship.steerToward(dt, j.targetAngle);
+      // coast while the nose swings onto the jump heading
+      this.ship.update(dt, 0, false);
+      if (facing) this.beginJumpBurn();
+      return;
+    }
+
+    // burning: full throttle toward the destination, past normal cruise
+    this.ship.steerToward(dt, j.targetAngle);
+    const base = this.ship.stats;
+    this.ship.stats = {
+      ...base,
+      maxSpeed: j.burnSpeed,
+      accel: j.burnAccel,
+    };
+    this.ship.update(dt, 0, true);
+    this.ship.stats = base;
+    j.burnLeft -= dt;
+    // white-out builds in the last fraction of a second of the burn
+    if (j.burnLeft < 0.22) {
+      this.jumpFlash = Math.max(this.jumpFlash, (0.22 - j.burnLeft) / 0.22);
+    }
+    if (j.burnLeft <= 0) this.executeJump();
   }
 
   private executeJump(): void {
@@ -4300,7 +4915,9 @@ export class Game {
     for (const active of this.player.activeMissions) {
       const m = MISSIONS[String(active.misnId)];
       if (!m || m.shipGoal !== 3 || active.shipsDone) continue;
-      if (this.npcs.some((n) => n.missionMisnId === active.misnId && n.escorting)) {
+      if (
+        this.npcs.some((n) => n.missionMisnId === active.misnId && n.escorting)
+      ) {
         active.shipSystemId = nextId;
       }
     }
@@ -4350,7 +4967,9 @@ export class Game {
       `Arrived in the ${next.name} system. Fuel: ${this.player.fuelJumps}/${this.player.maxFuelJumps} jumps.`,
     );
     if (this.route.length > 0) {
-      this.message(`Course continues to ${getSystem(this.routeDest ?? this.route[this.route.length - 1]).name} — press J to continue.`);
+      this.message(
+        `Course continues to ${getSystem(this.routeDest ?? this.route[this.route.length - 1]).name} — press J to continue.`,
+      );
     }
   }
 
@@ -4369,7 +4988,8 @@ export class Game {
     return {
       startMission: (misnId: number) => {
         const m = MISSIONS[String(misnId)];
-        if (!m || this.player.activeMissions.some((a) => a.misnId === misnId)) return;
+        if (!m || this.player.activeMissions.some((a) => a.misnId === misnId))
+          return;
         const here = this.player.landedOn ?? "128";
         const active = instantiateMission(m, here, this.player);
         this.player.activeMissions.push(active);
@@ -4397,12 +5017,16 @@ export class Game {
         this.recomputeLoadout();
       },
       failMission: (misnId: number) => {
-        const active = this.player.activeMissions.find((a) => a.misnId === misnId);
+        const active = this.player.activeMissions.find(
+          (a) => a.misnId === misnId,
+        );
         const m = MISSIONS[String(misnId)];
         if (!active || !m) return;
         applySet(m.onFailure, this.player.bits, this.bitHandlers());
         applyCompReward(this.player, m.compGovt, m.compReward, true);
-        this.player.activeMissions = this.player.activeMissions.filter((a) => a !== active);
+        this.player.activeMissions = this.player.activeMissions.filter(
+          (a) => a !== active,
+        );
         this.message(`Mission failed: ${active.name}.`);
       },
       moveToSystem: (systemId: number, keepPos: boolean) => {
@@ -4417,7 +5041,10 @@ export class Game {
         if (!keepPos) {
           const first = sys.planets[0];
           this.ship.pos = first
-            ? { x: first.pos.x + first.radius * 2, y: first.pos.y + first.radius }
+            ? {
+                x: first.pos.x + first.radius * 2,
+                y: first.pos.y + first.radius,
+              }
             : { x: 0, y: 0 };
         }
         this.ship.vel = { x: 0, y: 0 };
@@ -4432,7 +5059,11 @@ export class Game {
         this.jumpFlash = 0.5;
         this.message(`You find yourself in the ${sys.name} system.`);
       },
-      changeShip: (shipId: number, keepOutfits: boolean, grantDefaults: boolean) => {
+      changeShip: (
+        shipId: number,
+        keepOutfits: boolean,
+        grantDefaults: boolean,
+      ) => {
         const key = String(shipId);
         if (!SHIPS[key]) return;
         if (!keepOutfits) this.player.outfits = {};
@@ -4441,7 +5072,10 @@ export class Game {
         if (grantDefaults) {
           const stock = stockAmmo(key);
           for (const [weapId, count] of Object.entries(stock)) {
-            this.player.ammo[weapId] = Math.max(this.player.ammo[weapId] ?? 0, count);
+            this.player.ammo[weapId] = Math.max(
+              this.player.ammo[weapId] ?? 0,
+              count,
+            );
           }
         }
         this.ship.shield = this.ship.maxShield;
@@ -4470,12 +5104,21 @@ export class Game {
     };
   }
 
-  acceptMission(m: MissionType, active: ActiveMission): {
+  acceptMission(
+    m: MissionType,
+    active: ActiveMission,
+  ): {
     ok: boolean;
     reason?: string;
   } {
-    if (active.cargoLoaded && active.cargoQty > this.player.cargoCap - this.cargoUsed()) {
-      return { ok: false, reason: "You don't have enough cargo space for this mission." };
+    if (
+      active.cargoLoaded &&
+      active.cargoQty > this.player.cargoCap - this.cargoUsed()
+    ) {
+      return {
+        ok: false,
+        reason: "You don't have enough cargo space for this mission.",
+      };
     }
     this.player.activeMissions.push(active);
     applySet(m.onAccept, this.player.bits, this.bitHandlers());
@@ -4491,7 +5134,9 @@ export class Game {
   abortMission(active: ActiveMission): void {
     const m = MISSIONS[String(active.misnId)];
     if (m) applySet(m.onAbort, this.player.bits, this.bitHandlers());
-    this.player.activeMissions = this.player.activeMissions.filter((a) => a !== active);
+    this.player.activeMissions = this.player.activeMissions.filter(
+      (a) => a !== active,
+    );
     this.save();
   }
 
@@ -4511,13 +5156,22 @@ export class Game {
       if (!m) continue;
 
       // time limit
-      if (active.timeLimit > 0 && this.player.date - active.acceptedDay > active.timeLimit) {
+      if (
+        active.timeLimit > 0 &&
+        this.player.date - active.acceptedDay > active.timeLimit
+      ) {
         applySet(m.onFailure, this.player.bits, this.bitHandlers());
         applyCompReward(this.player, m.compGovt, m.compReward, true);
         const fail = descText(m.failText);
         events.push({
           title: `Mission failed: ${active.name}`,
-          text: substituteTags(fail ?? "You have run out of time.", m, active, this.pilotName, this.rankTags()),
+          text: substituteTags(
+            fail ?? "You have run out of time.",
+            m,
+            active,
+            this.pilotName,
+            this.rankTags(),
+          ),
         });
         continue;
       }
@@ -4532,7 +5186,13 @@ export class Game {
           if (doneText) {
             events.push({
               title: active.name,
-              text: substituteTags(doneText, m, active, this.pilotName, this.rankTags()),
+              text: substituteTags(
+                doneText,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
             });
           } else {
             this.message(`${active.name}: your charges are safely delivered.`);
@@ -4549,10 +5209,20 @@ export class Game {
           if (load) {
             events.push({
               title: active.name,
-              text: substituteTags(load, m, active, this.pilotName, this.rankTags()),
+              text: substituteTags(
+                load,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
             });
           }
-        } else if (active.cargoLoaded && active.returnSpobId && m.dropOffMode === 0) {
+        } else if (
+          active.cargoLoaded &&
+          active.returnSpobId &&
+          m.dropOffMode === 0
+        ) {
           /*
            * DropOffMode 0 leaves the cargo at TravelStel; mode 1 keeps it
            * aboard until the mission ends at ReturnStel, and -1 means the
@@ -4564,7 +5234,13 @@ export class Game {
           if (drop) {
             events.push({
               title: active.name,
-              text: substituteTags(drop, m, active, this.pilotName, this.rankTags()),
+              text: substituteTags(
+                drop,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
             });
           }
         }
@@ -4572,7 +5248,11 @@ export class Game {
 
       // completion
       const finalSpob = active.returnSpobId ?? active.travelSpobId;
-      if (active.travelDone && active.shipsDone && (finalSpob === null || finalSpob === planetId)) {
+      if (
+        active.travelDone &&
+        active.shipsDone &&
+        (finalSpob === null || finalSpob === planetId)
+      ) {
         this.player.credits += Math.max(0, active.pay);
         // DropOffMode 1 delivers at the end of the run rather than mid-way
         if (active.cargoLoaded && m.dropOffMode === 1) {
@@ -4581,7 +5261,13 @@ export class Game {
           if (drop) {
             events.push({
               title: active.name,
-              text: substituteTags(drop, m, active, this.pilotName, this.rankTags()),
+              text: substituteTags(
+                drop,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
             });
           }
         }
@@ -4598,7 +5284,13 @@ export class Game {
         events.push({
           title: `Mission complete: ${active.name}`,
           text:
-            substituteTags(comp ?? "", m, active, this.pilotName, this.rankTags()) ||
+            substituteTags(
+              comp ?? "",
+              m,
+              active,
+              this.pilotName,
+              this.rankTags(),
+            ) ||
             (active.pay > 0
               ? `You are paid ${active.pay.toLocaleString()} credits.`
               : "The job is done."),
@@ -4627,7 +5319,8 @@ export class Game {
     if (n <= 0) return;
     this.player.credits += n * unitPrice;
     this.player.cargo[commodityId] = have - n;
-    if (this.player.cargo[commodityId] === 0) delete this.player.cargo[commodityId];
+    if (this.player.cargo[commodityId] === 0)
+      delete this.player.cargo[commodityId];
     this.save();
   }
 
@@ -4674,7 +5367,10 @@ export class Game {
     return out;
   }
 
-  runRace(pick: number, stake: number): {
+  runRace(
+    pick: number,
+    stake: number,
+  ): {
     winner: number;
     won: boolean;
     stake: number;
@@ -4699,7 +5395,10 @@ export class Game {
     }
     const owned = this.player.outfits[outfId] ?? 0;
     if (outf.max > 0 && owned >= outf.max) {
-      return { ok: false, reason: "You already have the maximum number of these." };
+      return {
+        ok: false,
+        reason: "You already have the maximum number of these.",
+      };
     }
     if (this.player.credits < outf.cost) {
       return { ok: false, reason: "You cannot afford this outfit." };
@@ -4720,7 +5419,8 @@ export class Game {
     this.player.credits -= outf.cost;
     // oütf OnPurchase: buying can set bits, and for the shipyard upgrades it
     // is how a Chrome Valkyrie actually becomes one (its string reads "H165")
-    if (outf.onPurchase) applySet(outf.onPurchase, this.player.bits, this.bitHandlers());
+    if (outf.onPurchase)
+      applySet(outf.onPurchase, this.player.bits, this.bitHandlers());
     const isAmmo = outf.mods.some((m) => m.type === 3);
     if (isAmmo) {
       // ammunition is consumed, not carried as an outfit
@@ -4742,7 +5442,8 @@ export class Game {
   sellOutfit(outfId: string): { ok: boolean; reason?: string } {
     const outf = OUTFITS[outfId];
     const owned = this.player.outfits[outfId] ?? 0;
-    if (!outf || owned <= 0) return { ok: false, reason: "You do not own this outfit." };
+    if (!outf || owned <= 0)
+      return { ok: false, reason: "You do not own this outfit." };
     // oütf Flags 0x0008: some items can never be sold back
     if ((outf.flags & 0x0008) !== 0) {
       return { ok: false, reason: "This item cannot be sold." };
@@ -4752,7 +5453,8 @@ export class Game {
     this.player.credits += Math.floor(outf.cost * 0.75);
     // OnSell runs the other way — the cheap reactors clear the bit that marks
     // you as carrying one
-    if (outf.onSell) applySet(outf.onSell, this.player.bits, this.bitHandlers());
+    if (outf.onSell)
+      applySet(outf.onSell, this.player.bits, this.bitHandlers());
     this.recomputeLoadout();
     this.save();
     return { ok: true };
@@ -4760,7 +5462,9 @@ export class Game {
 
   refuelCost(): number {
     const missing = this.player.maxFuelJumps - this.player.fuelJumps;
-    const planet = this.player.landedOn ? SPOBS.get(this.player.landedOn) : null;
+    const planet = this.player.landedOn
+      ? SPOBS.get(this.player.landedOn)
+      : null;
     const govtId = planet ? (SPOB_GOVT.get(planet.planet.id) ?? -1) : -1;
     // 0x0800: ships and worlds of that govt refuel you for nothing
     if (govtId >= 128 && this.rankFlag(govtId, 0x0800)) return 0;
@@ -4832,7 +5536,8 @@ export class Game {
       govtId = dude.govt;
       aiType = dude.aiType;
       const shipEntry = this.weightedPick(dude.ships);
-      if (shipEntry && SHIPS[String(shipEntry.id)]) typeId = String(shipEntry.id);
+      if (shipEntry && SHIPS[String(shipEntry.id)])
+        typeId = String(shipEntry.id);
     }
     if (!typeId) {
       // systems with no düde table get a wandering independent trader
@@ -4843,7 +5548,13 @@ export class Game {
     }
     const type = typeId ? SHIPS[typeId] : null;
     const npc = new NpcShip(
-      type ? { turnRate: type.turnRate, accel: type.accel, maxSpeed: type.maxSpeed } : undefined,
+      type
+        ? {
+            turnRate: type.turnRate,
+            accel: type.accel,
+            maxSpeed: type.maxSpeed,
+          }
+        : undefined,
     );
     npc.typeId = typeId;
     // where the düde names no government, the hull's own inherent one stands in
@@ -4863,8 +5574,10 @@ export class Game {
     npc.sprite = typeId ? (SHIP_SPRITES[typeId] ?? null) : null;
     // a ship that spawns 1900 units out has a moment before it can shoot at
     // you — long enough to have its fire sound decoded and ready
-    if (type) preloadSnds(type.stockWeapons.map((sw) => WEAPONS[String(sw.id)]?.sndId));
-    if (npc.ally && govtId >= 128) preloadSnds(voiceBank(GOVT_VOICES[String(govtId)] ?? 0));
+    if (type)
+      preloadSnds(type.stockWeapons.map((sw) => WEAPONS[String(sw.id)]?.sndId));
+    if (npc.ally && govtId >= 128)
+      preloadSnds(voiceBank(GOVT_VOICES[String(govtId)] ?? 0));
     // ships whose class has AI cloak flags will vanish when they run
     if (type && (type.flags2 & 0x0f00) !== 0) npc.canCloak = true;
     if (dude) {
@@ -4891,7 +5604,9 @@ export class Game {
 
   /** Ports an AI ship will consider setting down at. Gates are not ports. */
   private portsOf(sys: SystemDef): PlanetDef[] {
-    return sys.planets.filter((p) => p.landable && !p.isHypergate && !p.isWormhole);
+    return sys.planets.filter(
+      (p) => p.landable && !p.isHypergate && !p.isWormhole,
+    );
   }
 
   /**
@@ -4903,16 +5618,24 @@ export class Game {
    * random stellar whatever it was, so warships and interceptors made for the
    * nearest world and evaporated on touching it.
    */
-  private setNpcErrand(npc: NpcShip, sys: SystemDef, exclude?: string | null): void {
+  private setNpcErrand(
+    npc: NpcShip,
+    sys: SystemDef,
+    exclude?: string | null,
+  ): void {
     const ports = this.portsOf(sys).filter((p) => p.id !== exclude);
-    const pick = ports.length > 0 ? ports[Math.floor(Math.random() * ports.length)] : null;
+    const pick =
+      ports.length > 0 ? ports[Math.floor(Math.random() * ports.length)] : null;
     const visits = npc.aiType === 1 || npc.aiType === 2;
     if (pick && (visits || npc.aiType === 4)) {
       npc.phase = npc.aiType === 4 ? "orbit" : "toPlanet";
       npc.targetPlanetId = pick.id;
       npc.targetRadius = pick.radius;
       npc.target = { x: pick.pos.x, y: pick.pos.y };
-      npc.orbitAngle = Math.atan2(npc.pos.y - pick.pos.y, npc.pos.x - pick.pos.x);
+      npc.orbitAngle = Math.atan2(
+        npc.pos.y - pick.pos.y,
+        npc.pos.x - pick.pos.x,
+      );
       return;
     }
     const outAng = Math.random() * Math.PI * 2;
@@ -4928,7 +5651,12 @@ export class Game {
    * landing, taking off, and entering/exiting hyperspace", an animation a ship
    * that never takes off can only ever play half of.
    */
-  private dockedNpcs: { npc: NpcShip; planetId: string; systemId: string; wait: number }[] = [];
+  private dockedNpcs: {
+    npc: NpcShip;
+    planetId: string;
+    systemId: string;
+    wait: number;
+  }[] = [];
 
   /** Take a ship that has just set down off the board. */
   private dockNpc(npc: NpcShip): void {
@@ -4962,7 +5690,10 @@ export class Game {
       npc.done = false;
       // lift off from the pad and climb clear under its own power
       const ang = Math.random() * Math.PI * 2;
-      npc.pos = { x: pad.pos.x + Math.cos(ang) * (pad.radius + 8), y: pad.pos.y + Math.sin(ang) * (pad.radius + 8) };
+      npc.pos = {
+        x: pad.pos.x + Math.cos(ang) * (pad.radius + 8),
+        y: pad.pos.y + Math.sin(ang) * (pad.radius + 8),
+      };
       npc.vel = { x: 0, y: 0 };
       npc.angle = ang;
       npc.shield = npc.maxShield;
@@ -4998,7 +5729,10 @@ export class Game {
     for (const p of this.system.planets) {
       const d = Math.hypot(p.pos.x - wx, p.pos.y - wy);
       // a generous margin so small stations and gates stay clickable
-      if (d <= Math.max(p.radius, 18) + 8 && (!bestPlanet || d < bestPlanet.d)) {
+      if (
+        d <= Math.max(p.radius, 18) + 8 &&
+        (!bestPlanet || d < bestPlanet.d)
+      ) {
         bestPlanet = { planet: p, d };
       }
     }
@@ -5077,7 +5811,9 @@ export class Game {
         const needle = q.trim().toLowerCase();
         const hit =
           this.allSystems().find((s) => s.name.toLowerCase() === needle) ??
-          this.allSystems().find((s) => s.name.toLowerCase().startsWith(needle));
+          this.allSystems().find((s) =>
+            s.name.toLowerCase().startsWith(needle),
+          );
         if (hit) {
           this.mapCenter = { x: hit.mapPos.x, y: hit.mapPos.y };
           this.mapSelected = hit.id;
@@ -5147,7 +5883,11 @@ export class Game {
     if (this.mode === "map") this.renderMap(ctx, w, h);
   }
 
-  private renderSpace(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  private renderSpace(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ): void {
     const cam = this.ship.pos;
     // the sidebar takes the right edge in play; the menu backdrop is full-width
     const viewW = this.mode === "menu" ? w : w - SIDEBAR_W;
@@ -5167,7 +5907,9 @@ export class Game {
     ctx.translate(viewW / 2 - cam.x, h / 2 - cam.y);
 
     // draw big stellars first so stations and ring segments layer on top
-    const drawOrder = [...this.system.planets].sort((a, b) => b.radius - a.radius);
+    const drawOrder = [...this.system.planets].sort(
+      (a, b) => b.radius - a.radius,
+    );
     for (const p of drawOrder) {
       ctx.save();
       ctx.translate(p.pos.x, p.pos.y);
@@ -5179,7 +5921,6 @@ export class Game {
       ctx.fillText(p.name, 0, p.radius + 18);
       ctx.restore();
     }
-
 
     for (const npc of this.npcs) {
       if (npc.cloaked) {
@@ -5194,17 +5935,28 @@ export class Game {
     // Nova's own target cursor (spïn 650) rides the selected ship; a selected
     // world gets the four blue corner marks the original drew.
     if (this.targetNpc) {
-      this.drawReticle(ctx, this.targetNpc.pos.x, this.targetNpc.pos.y, this.targetNpc.radius);
+      this.drawReticle(
+        ctx,
+        this.targetNpc.pos.x,
+        this.targetNpc.pos.y,
+        this.targetNpc.radius,
+      );
     }
     if (this.targetPlanet) {
-      this.drawStellarMarks(ctx, this.targetPlanet.pos.x, this.targetPlanet.pos.y, this.targetPlanet.radius + 18);
+      this.drawStellarMarks(
+        ctx,
+        this.targetPlanet.pos.x,
+        this.targetPlanet.pos.y,
+        this.targetPlanet.radius + 18,
+      );
     }
 
     // asteroids
     for (const a of this.asteroids) {
       const sheet = this.roidSheet(a.typeId);
       if (sheet) {
-        const frame = ((Math.floor(a.frame) % sheet.frames) + sheet.frames) % sheet.frames;
+        const frame =
+          ((Math.floor(a.frame) % sheet.frames) + sheet.frames) % sheet.frames;
         drawSheetFrame(ctx, sheet, frame, a.x, a.y);
       } else {
         ctx.fillStyle = "#6b6155";
@@ -5285,8 +6037,20 @@ export class Game {
       // blasters and railguns whose bolts read as energy rather than metal.
       const translucent = (p.weap.flags3 & W3_TRANSLUCENT) !== 0;
       if (translucent) ctx.globalAlpha = 0.55;
-      const sheet = p.weap.spinId !== null ? WEAPON_SPRITES[String(p.weap.spinId)] : undefined;
-      if (sheet && drawSheetFrame(ctx, sheet, rotationFrame(sheet.frames, p.angle), p.x, p.y)) {
+      const sheet =
+        p.weap.spinId !== null
+          ? WEAPON_SPRITES[String(p.weap.spinId)]
+          : undefined;
+      if (
+        sheet &&
+        drawSheetFrame(
+          ctx,
+          sheet,
+          rotationFrame(sheet.frames, p.angle),
+          p.x,
+          p.y,
+        )
+      ) {
         ctx.globalAlpha = 1;
         continue;
       }
@@ -5301,7 +6065,14 @@ export class Game {
     for (const fx of this.explosions) {
       const sheet = BOOM_SPRITES[fx.boomId];
       if (sheet) {
-        drawSheetFrame(ctx, sheet, Math.floor(fx.t * fx.fps), fx.x, fx.y, fx.scale);
+        drawSheetFrame(
+          ctx,
+          sheet,
+          Math.floor(fx.t * fx.fps),
+          fx.x,
+          fx.y,
+          fx.scale,
+        );
       }
     }
 
@@ -5313,14 +6084,24 @@ export class Game {
   }
 
   /** The four blue corner marks EV Nova draws around a selected stellar. */
-  private drawStellarMarks(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+  private drawStellarMarks(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    r: number,
+  ): void {
     const arm = 9;
     ctx.save();
     ctx.strokeStyle = "#3a6ff0";
     ctx.fillStyle = "#3a6ff0";
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
-    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as const) {
       const cx = x + sx * r;
       const cy = y + sy * r;
       // an L-shaped corner with a short diagonal tick pointing at the world
@@ -5345,7 +6126,12 @@ export class Game {
    * it. Scaling it to the target's own radius puts the arrowheads back on the
    * hull's edge where they read as a lock, whatever you have selected.
    */
-  private drawReticle(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
+  private drawReticle(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    radius: number,
+  ): void {
     const sheet = CURSOR_SPRITE;
     if (!sheet) return;
     // Scaled to the hull so it frames the target, but capped: blown up to a
@@ -5353,7 +6139,14 @@ export class Game {
     // red that hide the thing you're aiming at.
     const scale = Math.max(1, Math.min(3, (radius * 2 + 20) / sheet.w));
     ctx.globalAlpha = 0.9;
-    drawSheetFrame(ctx, sheet, Math.floor(this.time * 12) % sheet.frames, x, y, scale);
+    drawSheetFrame(
+      ctx,
+      sheet,
+      Math.floor(this.time * 12) % sheet.frames,
+      x,
+      y,
+      scale,
+    );
     ctx.globalAlpha = 1;
   }
 
@@ -5370,7 +6163,9 @@ export class Game {
     ctx.save();
     ctx.translate(ship.pos.x, ship.pos.y);
     const glow = shipTypeId ? GLOW_SPRITES[shipTypeId] : undefined;
-    const drewHull = !!(sprite && drawShipSprite(ctx, sprite, 0, 0, angle, set));
+    const drewHull = !!(
+      sprite && drawShipSprite(ctx, sprite, 0, 0, angle, set)
+    );
     if (!drewHull) {
       ctx.save();
       ctx.rotate(angle);
@@ -5389,13 +6184,23 @@ export class Game {
      * the visual cue that a hulk is dead rather than merely drifting.
      */
     const light = shipTypeId ? LIGHT_SPRITES[shipTypeId] : undefined;
-    if (light && sprite && !(ship.disabled && sprite.flags & SHAN_HIDE_LIGHTS_DISABLED)) {
+    if (
+      light &&
+      sprite &&
+      !(ship.disabled && sprite.flags & SHAN_HIDE_LIGHTS_DISABLED)
+    ) {
       const intensity = blinkIntensity(sprite, this.time, shipTypeId ?? "");
       if (intensity > 0) {
         const prev = ctx.globalCompositeOperation;
         ctx.globalCompositeOperation = "lighter";
         ctx.globalAlpha = baseAlpha * intensity;
-        drawSheetFrame(ctx, light, spriteFrame(light.framesPer ?? 0, light.frames, angle, set), 0, 0);
+        drawSheetFrame(
+          ctx,
+          light,
+          spriteFrame(light.framesPer ?? 0, light.frames, angle, set),
+          0,
+          0,
+        );
         ctx.globalAlpha = baseAlpha;
         ctx.globalCompositeOperation = prev;
       }
@@ -5408,7 +6213,13 @@ export class Game {
         ctx.globalCompositeOperation = "lighter";
         // the glow flickers between full and slightly dimmed, as in the original
         ctx.globalAlpha = baseAlpha * (0.75 + Math.random() * 0.25);
-        drawSheetFrame(ctx, glow, spriteFrame(glow.framesPer ?? 0, glow.frames, angle, set), 0, 0);
+        drawSheetFrame(
+          ctx,
+          glow,
+          spriteFrame(glow.framesPer ?? 0, glow.frames, angle, set),
+          0,
+          0,
+        );
         ctx.globalAlpha = baseAlpha;
         ctx.globalCompositeOperation = prev;
       } else {
@@ -5420,7 +6231,6 @@ export class Game {
     }
     ctx.restore();
   }
-
 
   // ---------------- HUD ----------------
 
@@ -5457,7 +6267,10 @@ export class Game {
     }
 
     // base scale fits the whole galaxy at zoom 1; user zoom/pan on top
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
     for (const sys of this.allSystems()) {
       minX = Math.min(minX, sys.mapPos.x);
       maxX = Math.max(maxX, sys.mapPos.x);
@@ -5488,7 +6301,8 @@ export class Game {
           explored: this.player.explored,
           male: true,
         })
-      ) continue;
+      )
+        continue;
       const tl = toScreen(neb.x, neb.y);
       const pw = neb.w * s;
       const ph = neb.h * s;
@@ -5514,8 +6328,21 @@ export class Game {
       for (const sys of this.allSystems()) {
         if (sys.govtId < 128 || !this.isExplored(sys.id)) continue;
         const pt = toScreen(sys.mapPos.x, sys.mapPos.y);
-        if (pt.x < -radius || pt.y < -radius || pt.x > w + radius || pt.y > h + radius) continue;
-        const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, radius);
+        if (
+          pt.x < -radius ||
+          pt.y < -radius ||
+          pt.x > w + radius ||
+          pt.y > h + radius
+        )
+          continue;
+        const grad = ctx.createRadialGradient(
+          pt.x,
+          pt.y,
+          0,
+          pt.x,
+          pt.y,
+          radius,
+        );
         grad.addColorStop(0, govtHaze(sys.govtId, 0.3));
         grad.addColorStop(0.65, govtHaze(sys.govtId, 0.18));
         grad.addColorStop(1, govtHaze(sys.govtId, 0));
@@ -5576,14 +6403,18 @@ export class Game {
      */
     const missionSystems = new Map<string, string>();
     const mark = (systemId: string | undefined, color: string) => {
-      if (systemId && !missionSystems.has(systemId)) missionSystems.set(systemId, color);
+      if (systemId && !missionSystems.has(systemId))
+        missionSystems.set(systemId, color);
     };
     for (const active of this.player.activeMissions) {
       const m = MISSIONS[String(active.misnId)];
       if (m && (m.flags & 0x0002) !== 0) continue;
-      const dest = active.travelDone ? (active.returnSpobId ?? null) : active.travelSpobId;
+      const dest = active.travelDone
+        ? (active.returnSpobId ?? null)
+        : active.travelSpobId;
       if (dest) mark(SPOB_INDEX.get(dest)?.systemId, MISSION_ARROW);
-      if (m && (m.flags & 0x0200) !== 0) mark(active.shipSystemId ?? undefined, MISSION_ARROW);
+      if (m && (m.flags & 0x0200) !== 0)
+        mark(active.shipSystemId ?? undefined, MISSION_ARROW);
     }
     // a posting being previewed from the board is the briefing's green arrow
     for (const systemId of this.mapPreview) mark(systemId, BRIEFING_ARROW);
@@ -5593,7 +6424,11 @@ export class Game {
      * system, offset by the node's own radius so it sits the same distance
      * clear of a 2px uncharted dot and a 6px current-system disc.
      */
-    const missionArrow = (pt: { x: number; y: number }, r: number, color: string) => {
+    const missionArrow = (
+      pt: { x: number; y: number },
+      r: number,
+      color: string,
+    ) => {
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(pt.x, pt.y - (r + 7));
@@ -5612,8 +6447,7 @@ export class Game {
       if (!onScreen(pt)) continue;
       const explored = this.isExplored(sys.id);
       // an unvisited neighbour of somewhere you've been shows as an unknown dot
-      const adjacent =
-        !explored && sys.links.some((l) => this.isExplored(l));
+      const adjacent = !explored && sys.links.some((l) => this.isExplored(l));
       /*
        * A mission destination is plotted however far out it lies: accepting a
        * job somewhere you have never been puts the dot and its arrow on the
@@ -5656,9 +6490,14 @@ export class Game {
       const welcome =
         inhabited &&
         sys.planets.some(
-          (p) => p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
+          (p) =>
+            p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
         );
-      ctx.fillStyle = !inhabited ? "#4a5666" : welcome ? systemGovtColor(sys) : "#c85028";
+      ctx.fillStyle = !inhabited
+        ? "#4a5666"
+        : welcome
+          ? systemGovtColor(sys)
+          : "#c85028";
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
       ctx.fill();
@@ -5670,10 +6509,18 @@ export class Game {
         ctx.stroke();
       }
       if (isMission) missionArrow(pt, r, isMission);
-      const nearCursor = Math.hypot(pt.x - this.mouse.x, pt.y - this.mouse.y) < 42;
+      const nearCursor =
+        Math.hypot(pt.x - this.mouse.x, pt.y - this.mouse.y) < 42;
       if (labelAll || isCurrent || isDest || nearCursor) {
-        ctx.font = isCurrent || isDest ? "600 12px Helvetica, Arial, sans-serif" : "11px Helvetica, Arial, sans-serif";
-        ctx.fillStyle = isCurrent ? "#ffffff" : isDest ? "#a8e0b2" : "rgba(190,205,225,0.82)";
+        ctx.font =
+          isCurrent || isDest
+            ? "600 12px Helvetica, Arial, sans-serif"
+            : "11px Helvetica, Arial, sans-serif";
+        ctx.fillStyle = isCurrent
+          ? "#ffffff"
+          : isDest
+            ? "#a8e0b2"
+            : "rgba(190,205,225,0.82)";
         ctx.fillText(sys.name, pt.x, pt.y + 18);
       }
     }
@@ -5686,7 +6533,11 @@ export class Game {
    * system's government, your standing there, what it trades and what
    * services it offers here, with its ports and hazards along the bottom.
    */
-  private drawMapPanel(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  private drawMapPanel(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ): void {
     const panelW = 186;
     const px = w - panelW - 16;
     const barH = 34;
@@ -5735,7 +6586,8 @@ export class Game {
       const goods = new Set<string>();
       const services = new Set<string>();
       for (const p of ports) {
-        for (const c of COMMODITIES) if (p.prices[c.id] !== undefined) goods.add(c.name);
+        for (const c of COMMODITIES)
+          if (p.prices[c.id] !== undefined) goods.add(c.name);
         if (p.exchange) services.add("Trading");
         if (p.outfitter) services.add("Outfitting");
         if (p.shipyard) services.add("Shipyard");
@@ -5786,7 +6638,11 @@ export class Game {
     // button bar
     this.mapButtons = [];
     const buttons: { id: string; label: string; w: number }[] = [
-      { id: "borders", label: this.mapBorders ? "Hide Borders" : "Show Borders", w: 98 },
+      {
+        id: "borders",
+        label: this.mapBorders ? "Hide Borders" : "Show Borders",
+        w: 98,
+      },
       { id: "clear", label: "Clear Route", w: 88 },
       { id: "find", label: "Find", w: 60 },
       { id: "zoomout", label: "–", w: 26 },
@@ -5809,7 +6665,8 @@ export class Game {
       ctx.fillStyle = disabled ? "#7a5a5a" : "#ffdede";
       ctx.textAlign = "center";
       ctx.fillText(b.label, bx + b.w / 2, by + 16);
-      if (!disabled) this.mapButtons.push({ id: b.id, x: bx, y: by, w: b.w, h: 24 });
+      if (!disabled)
+        this.mapButtons.push({ id: b.id, x: bx, y: by, w: b.w, h: 24 });
       bx += b.w + gap;
     }
     ctx.textAlign = "left";
