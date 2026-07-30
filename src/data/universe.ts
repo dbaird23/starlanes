@@ -596,10 +596,32 @@ export const MIN_STATUS_IGNORED = -32767;
 export const MIN_STATUS_NEVER = 32767;
 
 /**
+ * Whose legal record a world's MinStatus is measured against.
+ *
+ * The Bible calls MinStatus "the point on your record in the current system",
+ * which reads as the system's owner — but the field sits in the spöb's own
+ * "governmental affiliation" pair, immediately behind Govt, and 18 of the 170
+ * gated stellars belong to a different government than the system around them.
+ * Spacedock V settles it: a Federation station (MinStatus 2) parked in
+ * Roughnecks space, and the last two legs of the Federation Resupply chain
+ * both touch it — Fed5 returns there and Fed6 is offered there — while the
+ * chain pays only in Federation record (+2 a leg from Fed2 on). Measured
+ * against the system's Roughnecks record, which nothing in that storyline ever
+ * raises, the Federation storyline cannot be finished.
+ *
+ * The system is still the fallback: four gated stellars (Reflex-ion, Pan,
+ * Beacon and Keystone, all MinStatus -5) are independent and have no
+ * government of their own to have an opinion.
+ */
+export function landingGovtId(planet: PlanetDef, systemGovtId: number): number {
+  return planet.govtId >= 128 ? planet.govtId : systemGovtId;
+}
+
+/**
  * Will this world clear you to land, given your legal record with the
- * government whose space it sits in? The Bible: MinStatus is "the point on
- * your record in the current system that you'll be denied landing clearance",
- * and it is ignored outright on an uninhabited stellar.
+ * government that gates it (see landingGovtId)? The Bible: MinStatus is "the
+ * point on your record ... that you'll be denied landing clearance", and it is
+ * ignored outright on an uninhabited stellar.
  */
 export function landingAllowed(planet: PlanetDef, record: number): boolean {
   if (!planet.landable) return false;
@@ -664,6 +686,7 @@ function makePlanet(sp: RawSpob, descs: Record<string, string>): PlanetDef {
     bar: (sp.flags & F_BAR) !== 0,
     techLevel: sp.techLevel,
     minStatus: sp.minStatus ?? MIN_STATUS_IGNORED,
+    govtId: sp.govt ?? -1,
     specialTechs: sp.specialTechs ?? [],
     landingPictFile: pict ? pict.file : null,
     ambientSnd: sp.ambientSnd ?? null,

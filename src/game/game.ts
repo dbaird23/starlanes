@@ -28,6 +28,7 @@ import {
   systemGovtColor,
   govtHaze,
   landingAllowed,
+  landingGovtId,
   MIN_STATUS_NEVER,
   COMMODITIES,
   CURSOR_SPRITE,
@@ -536,6 +537,7 @@ export class Game {
       this.ship.pos = { x: 900, y: 600 };
     }
     this.npcs = [];
+    this.dockedNpcs = [];
     this.populateNpcs();
     this.populateAsteroids();
     this.spawnMissionShips();
@@ -716,6 +718,7 @@ export class Game {
     this.mode = "flight";
     this.landedUi.hide();
     this.npcs = [];
+    this.dockedNpcs = [];
     this.projectiles = [];
     this.explosions = [];
     this.targetNpc = null;
@@ -805,6 +808,20 @@ export class Game {
       this.mapCenter = { ...this.system.mapPos };
     }
     if (this.mapReturn === "landed") this.landedUi.suspend();
+  }
+
+  /**
+   * Take a key out of this frame's input before the game loop reads it. The
+   * landed screens are DOM, and their keydown handler runs during the browser's
+   * event dispatch — ahead of the next update() — so a key that changes the
+   * mode would otherwise be handled twice: M opened the map from a landed
+   * screen and the loop's own M handler shut it again on the very next frame,
+   * and Esc left the planet and then quit to the main menu. Input's listener is
+   * a field initialiser, so it is always registered first and the code is
+   * already recorded by the time this is called.
+   */
+  swallowKey(code: string): void {
+    this.input.consume(code);
   }
 
   /** Leave the map, back to wherever it was opened from. */
@@ -1044,8 +1061,12 @@ export class Game {
     this.updateFiringLoops();
 
     if (this.mode === "menu") {
-      // living backdrop: traffic keeps drifting behind the title
-      for (const npc of this.npcs) npc.updateAi(dt);
+      // living backdrop: traffic keeps drifting behind the title. Nobody comes
+      // back from a landing here — the title screen is not a live system.
+      for (const npc of this.npcs) {
+        npc.updateAi(dt);
+        if (npc.landing) npc.done = true;
+      }
       this.npcs = this.npcs.filter((n) => !n.done);
       if (this.npcs.length < 2) this.spawnNpc();
       this.input.endFrame();
@@ -1258,7 +1279,9 @@ export class Game {
       else if (npc.hostile) this.updateHostileAi(npc, dt);
       else if (npc.aiType === 3 || npc.aiType === 4) this.updateWarshipAi(npc, dt);
       else npc.updateAi(dt);
+      if (npc.landing) this.dockNpc(npc);
     }
+    this.updateDockedNpcs(dt);
     this.npcs = this.npcs.filter((n) => !n.done);
     if (this.targetNpc && (this.targetNpc.done || !this.npcs.includes(this.targetNpc))) {
       this.targetNpc = null;
@@ -1461,6 +1484,22 @@ export class Game {
   priceMultiplier(govtId: number): number {
     const rank = this.topRank(govtId);
     return rank && rank.priceMod > 0 ? rank.priceMod / 100 : 1;
+  }
+
+  /**
+   * Will this world clear you to land? spöb MinStatus against your record with
+   * whichever government owns it, plus the two things the Bible lets override
+   * it: a world you have already dominated no longer gets a say, and ränk
+   * Flags 0x0200 is "all planets of the affiliated government will let the
+   * player land when he has this rank, regardless of their MinStatus field"
+   * — 19 of the 31 ranks carry it, among them the Federation Naval Rank of
+   * Commander and the Vell-os T0-T5 ladder.
+   */
+  clearedToLand(planet: PlanetDef, systemGovtId: number): boolean {
+    if (this.player.dominated.includes(planet.id)) return true;
+    const govtId = landingGovtId(planet, systemGovtId);
+    if (govtId >= 128 && this.rankFlag(govtId, 0x0200)) return true;
+    return landingAllowed(planet, getRecord(this.player, govtId));
   }
 
   /** Some ranks buy you safe passage. */
@@ -2673,8 +2712,18 @@ export class Game {
         prey = other;
       }
     }
-    if (prey) this.attackAi(npc, dt, prey);
-    else npc.updateAi(dt);
+    if (prey) {
+      this.attackAi(npc, dt, prey);
+      return;
+    }
+    /*
+     * Nothing to hunt. A warship (AIType 3) "jumps out if there aren't any";
+     * an interceptor (AIType 4) "parks in orbit around a planet". Neither
+     * lands, so a ship of either type still carrying a trader's approach — the
+     * old spawn gave one to 70% of everything — is put back on its own errand.
+     */
+    if (npc.phase === "toPlanet") this.setNpcErrand(npc, this.system);
+    npc.updateAi(dt);
   }
 
   private attackAi(npc: NpcShip, dt: number, target: Ship): void {
@@ -3934,12 +3983,10 @@ export class Game {
       /*
        * Gates are not ports and MinStatus does not apply to them: all 19 of
        * the stellars reading 32767 are hypergates, which is Nova's way of
-       * saying "you cannot land on this, you fly through it". Nor does a world
-       * you have already taken by force get to refuse you.
+       * saying "you cannot land on this, you fly through it".
        */
       !isGate &&
-      !this.player.dominated.includes(planet.id) &&
-      !landingAllowed(planet, getRecord(this.player, this.system.govtId))
+      !this.clearedToLand(planet, this.system.govtId)
     ) {
       this.message(
         planet.minStatus === MIN_STATUS_NEVER
@@ -3992,6 +4039,7 @@ export class Game {
     // are flying. Without this the old NPCs sat frozen where you left them and
     // spawnEscorts() stacked a second copy of your wing on every takeoff.
     this.npcs = [];
+    this.dockedNpcs = [];
     this.projectiles = [];
     this.beams = [];
     this.explosions = [];
@@ -4104,6 +4152,7 @@ export class Game {
     this.gateAnim.clear(); // rings belong to the system you just left
     this.gateDocking = null;
     this.npcs = [];
+    this.dockedNpcs = [];
     this.projectiles = [];
     this.beams = [];
     this.explosions = [];
@@ -4191,6 +4240,7 @@ export class Game {
         }
         this.ship.vel = { x: 0, y: 0 };
         this.npcs = [];
+        this.dockedNpcs = [];
         this.projectiles = [];
         this.targetNpc = null;
         this.mode = "flight";
@@ -4652,17 +4702,94 @@ export class Game {
     } else {
       npc.pos = { x: Math.cos(ang) * 1900, y: Math.sin(ang) * 1900 };
     }
-    if (sys.planets.length > 0 && Math.random() < 0.7) {
-      const p = sys.planets[Math.floor(Math.random() * sys.planets.length)];
-      npc.phase = "toPlanet";
-      npc.target = { x: p.pos.x, y: p.pos.y };
-    } else {
-      const outAng = Math.random() * Math.PI * 2;
-      npc.phase = "leaving";
-      npc.target = { x: Math.cos(outAng) * 2100, y: Math.sin(outAng) * 2100 };
-    }
+    this.setNpcErrand(npc, sys);
     npc.angle = Math.atan2(npc.target.y - npc.pos.y, npc.target.x - npc.pos.x);
     this.npcs.push(npc);
+  }
+
+  /** Ports an AI ship will consider setting down at. Gates are not ports. */
+  private portsOf(sys: SystemDef): PlanetDef[] {
+    return sys.planets.filter((p) => p.landable && !p.isHypergate && !p.isWormhole);
+  }
+
+  /**
+   * Give a ship the errand its düde AIType says it is on. The Bible is
+   * specific about who goes where: only "1 - Wimpy Trader" and "2 - Brave
+   * Trader" visit planets, "3 - Warship ... jumps out if there aren't any"
+   * enemies, and "4 - Interceptor ... parks in orbit around a planet if he
+   * can't find any". Every spawn used to roll a flat 70% chance of flying at a
+   * random stellar whatever it was, so warships and interceptors made for the
+   * nearest world and evaporated on touching it.
+   */
+  private setNpcErrand(npc: NpcShip, sys: SystemDef, exclude?: string | null): void {
+    const ports = this.portsOf(sys).filter((p) => p.id !== exclude);
+    const pick = ports.length > 0 ? ports[Math.floor(Math.random() * ports.length)] : null;
+    const visits = npc.aiType === 1 || npc.aiType === 2;
+    if (pick && (visits || npc.aiType === 4)) {
+      npc.phase = npc.aiType === 4 ? "orbit" : "toPlanet";
+      npc.targetPlanetId = pick.id;
+      npc.targetRadius = pick.radius;
+      npc.target = { x: pick.pos.x, y: pick.pos.y };
+      npc.orbitAngle = Math.atan2(npc.pos.y - pick.pos.y, npc.pos.x - pick.pos.x);
+      return;
+    }
+    const outAng = Math.random() * Math.PI * 2;
+    npc.phase = "leaving";
+    npc.targetPlanetId = null;
+    npc.target = { x: Math.cos(outAng) * 2100, y: Math.sin(outAng) * 2100 };
+  }
+
+  /**
+   * Ships on the ground. A trader that touches down comes off the board for a
+   * while and then lifts off again — the Bible has traders *visiting* planets,
+   * which is a round trip, and has folding hulls cycling their parts "upon
+   * landing, taking off, and entering/exiting hyperspace", an animation a ship
+   * that never takes off can only ever play half of.
+   */
+  private dockedNpcs: { npc: NpcShip; planetId: string; systemId: string; wait: number }[] = [];
+
+  /** Take a ship that has just set down off the board. */
+  private dockNpc(npc: NpcShip): void {
+    npc.landing = false;
+    npc.done = true; // removed from this.npcs by the usual sweep
+    if (this.targetNpc === npc) this.targetNpc = null;
+    this.dockedNpcs.push({
+      npc,
+      planetId: npc.targetPlanetId ?? "",
+      systemId: this.system.id,
+      // long enough to read as business being done, short enough that a busy
+      // world keeps a trickle of traffic lifting off
+      wait: 6 + Math.random() * 14,
+    });
+  }
+
+  /** Count the pads down and send anyone whose business is finished back up. */
+  private updateDockedNpcs(dt: number): void {
+    if (this.dockedNpcs.length === 0) return;
+    const still: typeof this.dockedNpcs = [];
+    for (const berth of this.dockedNpcs) {
+      // a ship docked in another system stays there; you are not watching it
+      if (berth.systemId !== this.system.id) continue;
+      berth.wait -= dt;
+      const pad = this.system.planets.find((p) => p.id === berth.planetId);
+      if (berth.wait > 0 || !pad) {
+        if (pad) still.push(berth);
+        continue;
+      }
+      const npc = berth.npc;
+      npc.done = false;
+      // lift off from the pad and climb clear under its own power
+      const ang = Math.random() * Math.PI * 2;
+      npc.pos = { x: pad.pos.x + Math.cos(ang) * (pad.radius + 8), y: pad.pos.y + Math.sin(ang) * (pad.radius + 8) };
+      npc.vel = { x: 0, y: 0 };
+      npc.angle = ang;
+      npc.shield = npc.maxShield;
+      // it left the pad folded up; the parts come back out on the way clear
+      npc.unfolding = true;
+      this.setNpcErrand(npc, this.system, pad.id);
+      this.npcs.push(npc);
+    }
+    this.dockedNpcs = still;
   }
 
   // ---------------- flight clicks ----------------
@@ -5780,8 +5907,7 @@ export class Game {
       const welcome =
         inhabited &&
         sys.planets.some(
-          (p) =>
-            p.landable && !p.uninhabited && landingAllowed(p, getRecord(this.player, sys.govtId)),
+          (p) => p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
         );
       ctx.fillStyle = !inhabited ? "#4a5666" : welcome ? systemGovtColor(sys) : "#c85028";
       ctx.beginPath();

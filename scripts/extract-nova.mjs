@@ -723,8 +723,25 @@ function decodeMisn(res) {
     canAbort: d.readInt16BE(66),
     shipDoneText: d.readInt16BE(68),
     shipBehav: d.readInt16BE(40),
+    /*
+     * CompGovt @46 / CompReward @48 — "which government to use in determining
+     * how your record changes on completing this mission", and by how much.
+     *
+     * This pair had been read at @90, which is not the field: @90 holds 127 on
+     * 704 of the 791 missions and takes six distinct values, none of them a
+     * valid govt id (Nova's run 128-195), so applyCompReward's `< 128` guard
+     * threw every mission reward away and no mission in the game could move
+     * the player's legal record. @46 reads a valid govt on 453 missions and
+     * the Bible's "ignored" -1 on 336, which is 789 of the 791, and it names
+     * itself: the ;Vellos missions come out Vell-os, the ;Rebel ones
+     * Rebellion, the ;Fed ones Federation and the interrogations Bureau. The
+     * struct also packs gaplessly in the Bible's order through here —
+     * ShipGoal@38, ShipBehav@40, ShipNameID@42, ShipStart@44, CompGovt@46,
+     * CompReward@48, ShipSubtitle@50 — putting CompGovt immediately before the
+     * CompReward that was already being read correctly.
+     */
+    compGovt: d.readInt16BE(46),
     compReward: d.readInt16BE(48),
-    compGovt: d.readInt16BE(90),
     /*
      * DatePostInc @72: days the calendar jumps once the mission finishes.
      * It is the only unread field in the struct's scalar region whose values

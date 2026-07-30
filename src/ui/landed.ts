@@ -35,6 +35,36 @@ import { oopsPriceDelta, oopsesAt } from "../game/oops";
 import { evalTest } from "../game/bits";
 import { formatDate } from "../game/calendar";
 
+/**
+ * Spaceport keyboard shortcuts. M is already the star map, so the mission BBS
+ * takes N; the rest are the first letter of the counter. R refuels and I opens
+ * the mission log, both handled alongside these.
+ */
+const PORT_KEYS: Record<string, View> = {
+  KeyB: "bar",
+  KeyN: "bbs",
+  KeyT: "trade",
+  KeyS: "shipyard",
+  KeyO: "outfitter",
+  KeyI: "log",
+};
+
+/**
+ * Screens Esc backs out of. Each one already carries its own Back button, so
+ * Esc presses that rather than setting the view itself — the bar's button
+ * knows to return to the spaceport, and any screen with a different notion of
+ * "back" keeps it. The spaceport and a gate are not in here: Esc leaves the
+ * planet from those, which is Nova's own behaviour and predates this.
+ */
+const ESC_CLOSES = new Set<View>([
+  "bar", "bbs", "trade", "outfitter", "shipyard", "log",
+]);
+
+/** The screens those keys work from: the counters, not the modal panels. */
+const PORT_KEY_VIEWS = new Set<View>([
+  "spaceport", "trade", "shipyard", "outfitter", "bar", "bbs", "log", "escorts",
+]);
+
 type View =
   | "spaceport"
   | "trade"
@@ -128,17 +158,56 @@ export class LandedUi {
       if (this.root.classList.contains("hidden")) return;
       const typing = document.activeElement?.tagName === "INPUT";
       if (typing) return;
+      // anything this handler acts on must not reach the game loop as well
+      const handled = (): void => this.game.swallowKey(e.code);
+      if (this.planet && e.code === "Escape" && ESC_CLOSES.has(this.view)) {
+        e.preventDefault();
+        handled();
+        const back = this.root.querySelector<HTMLButtonElement>("#btn-back");
+        if (back) back.click();
+        else {
+          this.view = "spaceport";
+          this.render();
+        }
+        return;
+      }
       if (
         this.planet &&
         (e.code === "KeyL" || e.code === "Escape") &&
         (this.view === "spaceport" || this.view === "gate")
       ) {
+        handled();
         this.game.depart();
         return;
+      }
+      /*
+       * The spaceport's own keys. Nova lets you reach every counter from the
+       * keyboard rather than the buttons, and these work from any of the port
+       * screens, so you can go straight from the outfitter to the shipyard
+       * without stopping at the spaceport in between. M is the map, so the
+       * mission BBS takes N.
+       */
+      if (this.planet && PORT_KEY_VIEWS.has(this.view)) {
+        const target = PORT_KEYS[e.code];
+        if (target) {
+          e.preventDefault();
+          handled();
+          this.goToPort(target);
+          return;
+        }
+        if (e.code === "KeyR") {
+          e.preventDefault();
+          handled();
+          this.game.refuel();
+          this.view = "spaceport";
+          this.render();
+          return;
+        }
       }
       // M opens the map from a landed screen too, carrying the posting you
       // are reading so you can see where it would send you
       if (this.planet && e.code === "KeyM") {
+        handled();
         const sel =
           this.view === "offer"
             ? this.pendingOffer?.m
@@ -149,6 +218,26 @@ export class LandedUi {
         else this.game.openMap();
       }
     });
+  }
+
+  /**
+   * Switch counters from the keyboard, refusing anything this world doesn't
+   * have — a station with no shipyard simply says so rather than opening an
+   * empty one.
+   */
+  private goToPort(view: View): void {
+    const p = this.planet;
+    if (!p) return;
+    const missing =
+      (view === "bar" && !p.bar) ||
+      (view === "trade" && !p.exchange) ||
+      (view === "shipyard" && !p.shipyard) ||
+      (view === "outfitter" && !p.outfitter) ||
+      (view === "bbs" && p.uninhabited) ||
+      (view === "log" && this.game.player.activeMissions.length === 0);
+    if (missing) return;
+    this.view = view;
+    this.render();
   }
 
   show(planet: PlanetDef, system: SystemDef): void {
@@ -1017,20 +1106,29 @@ export class LandedUi {
       : "";
     // Nova puts the services down either side of the description: bar, board
     // and exchange on the left, the two shops on the right, Leave beneath.
+    // each counter names its key in the tooltip; the handler is in the ctor
     const left = [
-      p.bar ? '<button class="portbtn" id="btn-bar">Bar</button>' : "",
-      p.uninhabited ? "" : '<button class="portbtn" id="btn-bbs">Mission BBS</button>',
-      p.exchange ? '<button class="portbtn" id="btn-trade">Trade Center</button>' : "",
+      p.bar ? '<button class="portbtn" id="btn-bar" title="Bar (B)">Bar</button>' : "",
+      p.uninhabited
+        ? ""
+        : '<button class="portbtn" id="btn-bbs" title="Mission BBS (N)">Mission BBS</button>',
+      p.exchange
+        ? '<button class="portbtn" id="btn-trade" title="Trade Center (T)">Trade Center</button>'
+        : "",
       g.player.activeMissions.length > 0
-        ? '<button class="portbtn" id="btn-log">Mission Log</button>'
+        ? '<button class="portbtn" id="btn-log" title="Mission Log (I)">Mission Log</button>'
         : "",
     ].join("");
     const right = [
-      p.shipyard ? '<button class="portbtn" id="btn-shipyard">Shipyard</button>' : "",
-      p.outfitter ? '<button class="portbtn" id="btn-outfitter">Outfitter</button>' : "",
-      `<button class="portbtn" id="btn-refuel" ${canRefuel ? "" : "disabled"}>${refuelLabel}</button>`,
+      p.shipyard
+        ? '<button class="portbtn" id="btn-shipyard" title="Shipyard (S)">Shipyard</button>'
+        : "",
+      p.outfitter
+        ? '<button class="portbtn" id="btn-outfitter" title="Outfitter (O)">Outfitter</button>'
+        : "",
+      `<button class="portbtn" id="btn-refuel" title="Refuel (R)" ${canRefuel ? "" : "disabled"}>${refuelLabel}</button>`,
       '<span class="port-gap"></span>',
-      '<button class="portbtn" id="btn-depart">Leave</button>',
+      '<button class="portbtn" id="btn-depart" title="Leave (L)">Leave</button>',
     ].join("");
 
     this.root.innerHTML = `

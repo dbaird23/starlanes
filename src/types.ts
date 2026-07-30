@@ -38,6 +38,8 @@ export interface PlanetDef {
    * field is ignored outright on an uninhabited stellar.
    */
   minStatus: number;
+  /** spöb Govt: the government that owns this world, or -1 if independent */
+  govtId: number;
   /** credits per day once dominated */
   tribute: number;
   /** düde id of the defence fleet, and its size code */

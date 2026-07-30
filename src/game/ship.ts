@@ -188,7 +188,15 @@ export class Ship {
   }
 }
 
-export type NpcPhase = "toPlanet" | "leaving";
+/**
+ * Where an AI ship is in its errand. The Bible's four düde AI types split
+ * cleanly across these: "1 - Wimpy Trader: Visits planets", "2 - Brave Trader:
+ * Visits planets", "3 - Warship: seeks out and attacks his enemies, or jumps
+ * out if there aren't any", "4 - Interceptor: seeks out his enemies, or parks
+ * in orbit around a planet if he can't find any". So only 1 and 2 ever set
+ * down; a warship leaves through hyperspace and an interceptor loiters.
+ */
+export type NpcPhase = "toPlanet" | "orbit" | "leaving";
 
 /**
  * Standing orders for the ships flying with you. "defend" keeps them on your
@@ -200,6 +208,18 @@ export type EscortOrder = "defend" | "attack" | "hold";
 export class NpcShip extends Ship {
   phase: NpcPhase = "toPlanet";
   target: Vec2 = { x: 0, y: 0 };
+  /** the stellar this ship is heading for or circling, and how big it is */
+  targetPlanetId: string | null = null;
+  targetRadius = 60;
+  /**
+   * Set the frame this ship touches down; the game loop takes it off the board
+   * and hands it back at the same pad once its business is done. It is not
+   * `done` — a landing is the middle of an errand, not the end of one.
+   */
+  landing = false;
+  /** where it sits on its orbit, and which way round it goes */
+  orbitAngle = 0;
+  orbitDir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
   done = false;
   hostile = false;
   fireCooldown = 0;
@@ -257,8 +277,15 @@ export class NpcShip extends Ship {
     const dy = this.target.y - this.pos.y;
     const dist = Math.hypot(dx, dy);
 
-    if (this.phase === "toPlanet" && dist < 60 && this.speed < 260) {
-      this.done = true; // "landed"
+    /*
+     * A trader touches down when it is on the pad and slow enough to be there
+     * rather than flying past. The old rule fired at a flat 60px and 260 units
+     * of speed, which for a big stellar was still well inside the surface and
+     * fast enough to be a crash — and it deleted the ship outright.
+     */
+    if (this.phase === "toPlanet" && dist < this.targetRadius + 12 && this.speed < 90) {
+      this.landing = true;
+      this.vel = { x: 0, y: 0 };
       return;
     }
     if (this.phase === "leaving" && dist < 120) {
@@ -266,9 +293,45 @@ export class NpcShip extends Ship {
       return;
     }
 
+    /*
+     * An interceptor with nothing to chase "parks in orbit around a planet",
+     * so it circles rather than closing: it stays on the board, in sight, and
+     * near enough to the traffic it is there to scan.
+     */
+    if (this.phase === "orbit") {
+      const ring = this.targetRadius + 150;
+      /*
+       * Chase a mark on the ring a little ahead of where the ship already is,
+       * rather than running the orbit angle off a clock. A clock-driven mark
+       * runs away from a ship that starts 1900 units out, and it settles into
+       * whatever wide circle happens to match the angular rate — measured, one
+       * interceptor parked 1095 units up and stayed there. Deriving the mark
+       * from the ship's own bearing makes the ring the only stable place to
+       * be, and dropping the lead while out of position sends it straight in.
+       */
+      const bearing = Math.atan2(this.pos.y - this.target.y, this.pos.x - this.target.x);
+      const lead = Math.abs(dist - ring) > 100 ? 0 : this.orbitDir * 0.6;
+      this.orbitAngle = bearing + lead;
+      const want = {
+        x: this.target.x + Math.cos(this.orbitAngle) * ring,
+        y: this.target.y + Math.sin(this.orbitAngle) * ring,
+      };
+      const gap = Math.hypot(want.x - this.pos.x, want.y - this.pos.y);
+      const facing = this.steerToward(dt, Math.atan2(want.y - this.pos.y, want.x - this.pos.x));
+      this.update(dt, 0, facing && gap > 40);
+      return;
+    }
+
+    /*
+     * shän Flags 0x0002 hulls "cycle upon landing, taking off, and
+     * entering/exiting hyperspace": stow the parts on final approach and put
+     * them back out once clear of the pad.
+     */
+    const near = this.phase === "toPlanet" && dist < 500;
+    this.unfolding = !near;
+
     // steer toward target, braking as we approach a planet
     const targetAngle = Math.atan2(dy, dx);
-    const near = this.phase === "toPlanet" && dist < 500;
     let thrust = false;
     if (near && this.speed > Math.max(40, dist * 0.4)) {
       // flip and burn to slow down

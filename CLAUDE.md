@@ -201,6 +201,65 @@ screen; the map remembers where it was opened from. ModType 16 charts now apply
 **when the outfit is acquired** rather than on every stat recompute, which had
 a 1000-credit map quietly re-charting from wherever you happened to be standing.
 
+**Spaceport keyboard shortcuts.** B bar, N mission BBS (M being the map), T
+trade centre, S shipyard, O outfitter, I mission log, R refuel, L or Esc to
+leave, and Esc backs out of any counter to the spaceport by pressing that
+screen's own Back button. They work from any of the counters, not just the
+spaceport, so you can go from the outfitter to the shipyard without stopping in
+between, and each key refuses a counter this world doesn't have rather than
+opening an empty one. Inert on the modal panels (a mission offer, the landing
+events) and while an input has focus.
+
+**The landed screens must swallow the keys they handle** (`game.swallowKey`).
+They are DOM, so their keydown handler runs during event dispatch, ahead of the
+next `update()`; any key that changes the mode was otherwise handled twice.
+M opened the map from a landed screen and the loop's own M handler shut it
+again one frame later, and Esc left the planet and then quit to the main menu.
+Both only reproduce with the loop running — a backgrounded tab pauses
+`requestAnimationFrame`, which hides it — so drive `game.update()` by hand when
+testing a key that crosses between the DOM UI and the loop.
+
+**mïsn `CompGovt` was being read at the wrong offset, so no mission had ever
+moved the player's legal record.** It sat at @90, which holds 127 on 704 of the
+791 missions and takes six distinct values, none of them a valid govt id
+(Nova's run 128-195) — `applyCompReward`'s `< 128` guard then threw every
+mission reward away, and with it every MinStatus gate and every AvailRecord
+mission in the game. The field is **@46**: 453 missions read a valid govt there
+and 336 the Bible's "ignored" -1, which is 789 of the 791, and it names itself
+— the `;Vellos` missions come out Vell-os, `;Rebel` Rebellion, `;Fed`
+Federation, the interrogations Bureau. The struct packs gaplessly in the
+Bible's order through here (ShipGoal@38, ShipBehav@40, ShipNameID@42,
+ShipStart@44, CompGovt@46, CompReward@48, ShipSubtitle@50), putting CompGovt
+immediately before the CompReward that was already read correctly.
+
+**spöb MinStatus is measured against the stellar's own government**, not the
+system's, with the system as fallback for an independent world. The Bible says
+"your record in the current system", but the field sits in the spöb's
+governmental-affiliation pair behind Govt, and 18 of the 170 gated stellars
+belong to a different government than the system around them. Spacedock V
+settles it: a Federation station (MinStatus 2) in Roughnecks space, where Fed5
+returns and Fed6 is offered, while the Federation Resupply chain pays only in
+Federation record — read against the system, that storyline cannot be
+finished. The fallback matters for the four independent gated stellars
+(Reflex-ion, Pan, Beacon, Keystone, all -5). ränk Flags **0x0200** — "all
+planets of the affiliated government will let the player land ... regardless of
+their MinStatus field" — is honoured too; 19 of the 31 ranks carry it.
+
+**AI ships visit planets instead of evaporating on them.** Any NPC within 60px
+of a stellar was deleted outright, and the spawn rolled a flat 70% chance of
+sending *anything* at a random one — so warships and interceptors made for the
+nearest world and popped. The Bible's four AI types divide the work: only
+"1 - Wimpy Trader" and "2 - Brave Trader" *visit* planets, "3 - Warship ...
+jumps out if there aren't any" enemies, and "4 - Interceptor ... parks in orbit
+around a planet if he can't find any". A trader now touches down, comes off the
+board for 6-20s and lifts off again on a fresh errand; an interceptor holds a
+circle 150px above the surface, chasing a mark derived from its own bearing
+(running the orbit angle off a clock let a distant ship chase a mark that
+outran it, and one parked 1095px up and stayed). Folding hulls stow their parts
+on final approach and put them back out on the climb, which is what the Bible
+means by sprites "cycled upon landing, taking off, and entering/exiting
+hyperspace" — an animation a ship that never took off could only half play.
+
 **Being shot now starts a fight.** `provoke` sent *every* ship fleeing, so
 nothing in the game ever returned fire unless it had been born hostile. The
 düde AIType decides, and the Bible names all four: only type 1 "Wimpy Trader"
@@ -265,6 +324,11 @@ happened to live there.
   overlap almost entirely. The paired values at @126-140 are percentages
   (1..100) whose per-system sums do not reach 100, so they are independent
   chances rather than a distribution.
+- **spöb Flags 0x0100 is not "deadly" at that bit.** The Bible calls it
+  "stellar is deadly - all ships that touch it are destroyed immediately", but
+  all 27 stellars reading it are also landable, and they are Port Kane, Menin,
+  Syracuse and Forticus Shipyards — ordinary inhabited worlds you land on. It
+  is not read, and AI traders are not steered away from those 27.
 - **jünk `SellOn`** is `"h33r"` on the Vrenna Ice Lizard Pelts — not a valid
   control-bit expression. `evalTest` returns true for unparseable input, so it
   reads as "no gate" rather than silently locking the trade, which is the
