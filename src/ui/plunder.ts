@@ -18,6 +18,17 @@ export interface PlunderHold {
   energy: number;
 }
 
+/**
+ * What happened when you sent the boarding party across. A prize taken is not
+ * the end of it: Nova asks whether you want to fly her yourself or add her to
+ * your wing, and the shïp resource carries both halves of that choice —
+ * OnRetire fires "when you sell a ship of this type and/or replace it with a
+ * captured ship", and EscSellValue is what "a captured escort" fetches later.
+ */
+export type CaptureResult =
+  | { taken: false; note: string }
+  | { taken: true; prize: string; yourShip: string; roomInWing: boolean };
+
 export interface PlunderContext {
   shipName: string;
   hold: PlunderHold;
@@ -26,7 +37,9 @@ export interface PlunderContext {
   /** free tons in your own hold */
   freeCargo: number;
   take: (what: "credits" | "cargo" | "ammo" | "energy") => string;
-  capture: () => void;
+  capture: () => CaptureResult;
+  /** settle a taken prize: fly her, or send her to the wing */
+  claim: (choice: "flagship" | "escort") => void;
   close: () => void;
 }
 
@@ -34,6 +47,8 @@ export class PlunderUi {
   private root: HTMLElement;
   private ctx: PlunderContext | null = null;
   private note = "";
+  /** set once a prize is taken, while the player decides what to do with her */
+  private prize: Extract<CaptureResult, { taken: true }> | null = null;
 
   constructor() {
     this.root = document.getElementById("plunder-ui")!;
@@ -46,12 +61,14 @@ export class PlunderUi {
   show(ctx: PlunderContext): void {
     this.ctx = ctx;
     this.note = "";
+    this.prize = null;
     this.root.classList.remove("hidden");
     this.render();
   }
 
   close(): void {
     this.ctx = null;
+    this.prize = null;
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
   }
@@ -59,6 +76,10 @@ export class PlunderUi {
   private render(): void {
     const c = this.ctx;
     if (!c) return;
+    if (this.prize) {
+      this.renderPrize(c, this.prize);
+      return;
+    }
     const h = c.hold;
 
     const cargoTons = Object.values(h.cargo).reduce((a, b) => a + b, 0);
@@ -109,12 +130,60 @@ export class PlunderUi {
       });
     });
     this.root.querySelector("#pl-capture")?.addEventListener("click", () => {
-      c.capture();
-      this.close();
+      const result = c.capture();
+      if (!result.taken) {
+        // the assault was thrown back — you are still alongside her
+        this.note = result.note;
+        this.render();
+        return;
+      }
+      this.prize = result;
+      this.render();
     });
     this.root.querySelector("#pl-abort")!.addEventListener("click", () => {
       c.close();
       this.close();
     });
   }
+
+  /** The prize is yours — fly her, or put her in the wing. */
+  private renderPrize(c: PlunderContext, p: Extract<CaptureResult, { taken: true }>): void {
+    this.root.innerHTML = `
+      <div class="plunder">
+        <div class="pl-head">Your boarding party has taken the ${escapeHtml(p.prize)}.</div>
+        <div class="pl-manifest">
+          <div><span>Prize:</span><b>${escapeHtml(p.prize)}</b></div>
+          <div><span>Your ship:</span><b>${escapeHtml(p.yourShip)}</b></div>
+        </div>
+        <div class="pl-note">${
+          p.roomInWing
+            ? `Take the helm of the ${escapeHtml(p.prize)} and your ${escapeHtml(
+                p.yourShip,
+              )} will fly as your escort.`
+            : `Your command is full, so taking the helm means abandoning your ${escapeHtml(
+                p.yourShip,
+              )}.`
+        }</div>
+        <div class="pl-buttons">
+          <button class="portbtn" id="pl-flag">Make It My Ship</button>
+          <button class="portbtn" id="pl-esc" ${p.roomInWing ? "" : "disabled"}>Add To My Fleet</button>
+        </div>
+      </div>`;
+    this.root.querySelector("#pl-flag")!.addEventListener("click", () => {
+      c.claim("flagship");
+      this.close();
+    });
+    this.root.querySelector("#pl-esc")?.addEventListener("click", () => {
+      c.claim("escort");
+      this.close();
+    });
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(
+    /[&<>"']/g,
+    (ch) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] as string,
+  );
 }

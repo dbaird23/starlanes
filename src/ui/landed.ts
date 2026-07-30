@@ -17,7 +17,7 @@ import {
   SPOB_INDEX,
 } from "../data/universe";
 import type { Game, GateDestination } from "../game/game";
-import { MAX_ESCORTS, escortHireFee, escortWage } from "../game/game";
+import { MAX_ESCORTS, escortHireFee, escortSellValue, escortWage } from "../game/game";
 import { JUNKS, junkCargoKey } from "../data/universe";
 import {
   availableMissions,
@@ -806,12 +806,20 @@ export class LandedUi {
     const hired = g.player.escorts
       .map((e, i) => {
         const s = SHIPS[e.shipId];
+        // a prize is sold rather than dismissed, and draws no wage meanwhile
+        const value = e.captured ? escortSellValue(e.shipId) : 0;
         return `<div class="ship-card">
           <div class="ship-info">
             <div class="ship-name">${escapeHtml(s?.name.split(";")[0] ?? "Ship")}</div>
-            <div class="ship-stats">In your service · ${e.wage.toLocaleString()} cr/day</div>
+            <div class="ship-stats">${
+              e.captured
+                ? `Captured prize · worth ${value.toLocaleString()} cr`
+                : `In your service · ${e.wage.toLocaleString()} cr/day`
+            }</div>
           </div>
-          <div class="ship-buy"><button class="evbtn" data-dismiss="${i}">Dismiss</button></div>
+          <div class="ship-buy"><button class="evbtn" data-dismiss="${i}">${
+            e.captured ? "Sell" : "Dismiss"
+          }</button></div>
         </div>`;
       })
       .join("");

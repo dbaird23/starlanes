@@ -393,6 +393,45 @@ function decodeShip(res) {
     shortName: cstr(d, 1486, 63),
     longName: cstr(d, 1582, 183),
     avail: cstr(d, 108, 255), // shipyard availability ncb expression
+    /*
+     * OnCapture @976 / OnRetire @1231 — "evaluated when you capture a ship of
+     * this type" and "when you sell a ship of this type and/or replace it with
+     * a captured ship". Two 255-byte strings that pack gaplessly into
+     * ShortName at @1486 (976 + 255 = 1231, 1231 + 255 = 1486), and the only
+     * two string starts anywhere between HireRandom @906 and ShortName. 171
+     * hulls set OnCapture, every one of them to the same bit `b8888`; OnRetire
+     * is empty across all 288.
+     */
+    onCapture: cstr(d, 976, 255),
+    onRetire: cstr(d, 1231, 255),
+    /*
+     * The Bible prints Subtitle, Flags3, UpgradeTo, EscUpgrdCost, EscSellValue
+     * and EscortType between OnRetire and ShortName, but the struct has
+     * ShortName immediately after OnRetire and appends this block to the end
+     * of the record instead — the same trick spöb plays with its last five
+     * SpecialTechs. In the Bible's own order from @1766, and every field
+     * identifies itself:
+     *
+     *   Subtitle @1766     the Starbridge's reads "Class A", which is exactly
+     *                      the target-display subtitle the doc describes
+     *   Flags3 @1830       eight distinct values, all of which decompose into
+     *                      documented bits (0x100, 0x300, 0x140, 0x101, …)
+     *   UpgradeTo @1832    154 hulls name a valid ship id, 134 read the
+     *                      documented -1 "can't be upgraded"; range -1..414
+     *                      against a ship-id space of 128..415
+     *   EscUpgrdCost @1834 int32 round credit sums that track hull class —
+     *                      5,000 for a Shuttle, 1,000,000 for a Leviathan
+     *   EscSellValue @1838 int32, zero on all 288, which the Bible says means
+     *                      "default to 10% of the ship's original cost"
+     *   EscortType @1842   0..3 partitioning the fleet exactly 25/106/106/51
+     *                      into the doc's Fighter/Medium/Warship/Freighter
+     */
+    subtitle: cstr(d, 1766, 63),
+    flags3: d.readUInt16BE(1830),
+    upgradeTo: d.readInt16BE(1832),
+    escUpgrdCost: d.readInt32BE(1834),
+    escSellValue: d.readInt32BE(1838),
+    escortType: d.readInt16BE(1842),
     stockWeapons,
     defaultItems,
   };

@@ -154,6 +154,12 @@ export interface HiredEscort {
   shipId: string;
   /** credits per day, drawn whenever the calendar advances */
   wage: number;
+  /**
+   * Taken as a prize rather than hired. A captured crew draws no wage, and the
+   * ship is yours to sell — the Bible's EscSellValue is "the amount of cash
+   * the player gets for selling off a captured escort of this type".
+   */
+  captured?: boolean;
 }
 
 /** A mission decoded from a mïsn resource. */
@@ -400,6 +406,24 @@ export interface ShipType {
   defaultItems: StockItem[];
   /** shïp HireRandom: percent chance per day of being offered for hire in a bar */
   hireRandom: number;
+  /** ncb set when you capture this hull, and when you sell or replace it */
+  onCapture: string;
+  onRetire: string;
+  /** the target display's second line, e.g. the Starbridge's "Class A" */
+  subtitle: string;
+  /** shïp Flags3 */
+  flags3: number;
+  /** the hull an escort of this type upgrades into, or -1 */
+  upgradeTo: number;
+  escUpgrdCost: number;
+  /**
+   * What a captured escort of this type sells for. Zero on all 288 shipped
+   * hulls, which the Bible says means "Nova will default to 10% of the ship's
+   * original cost" — see escortSellValue().
+   */
+  escSellValue: number;
+  /** 0 Fighter, 1 Medium Ship, 2 Warship, 3 Freighter */
+  escortType: number;
 }
 
 /** A düde class: govt + AI + weighted ship types. */

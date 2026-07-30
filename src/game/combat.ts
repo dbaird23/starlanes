@@ -430,6 +430,14 @@ export interface OutfitBonuses {
   repairSystem: boolean;
   /** ModType 22: days added to (or removed from) each jump */
   hyperSpeed: number;
+  /**
+   * ModType 23: "amount to increase or decrease the no-jump zone's radius by
+   * (the standard radius is 1000)". One outfit uses it — the Horizontal
+   * Booster, at -500 — and its own description says what the zone is centred
+   * on: it "allows you to enter hyperspace from much closer to the system
+   * center".
+   */
+  jumpDist: number;
   /** ModType 25: boarding troops */
   marines: number;
   /** ModType 33-36: jamming strength against each seeker type */
@@ -460,7 +468,7 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
     cloak: 0, fuelScoop: 0, miningScoop: false,
     escapePod: false, densityScanner: false, iff: false, autoRefuel: false,
     fastJump: false, inertialDamper: false, repairSystem: false,
-    hyperSpeed: 0, marines: 0, jamming: [0, 0, 0, 0],
+    hyperSpeed: 0, jumpDist: 0, marines: 0, jamming: [0, 0, 0, 0],
     cloakScanner: 0, reinfInhibit: [], ionDissipate: 0, ionCapacity: 0,
     maxGuns: 0, maxTurrets: 0,
   };
@@ -490,6 +498,7 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
         case 14: b.iff = true; break;
         case 19: b.autoRefuel = true; break;
         case 22: b.hyperSpeed += mod.val; break;
+        case 23: b.jumpDist += v; break;
         case 25: b.marines += v; break;
         case 31: b.miningScoop = true; break;
         case 33: case 34: case 35: case 36:

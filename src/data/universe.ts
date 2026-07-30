@@ -167,6 +167,14 @@ interface RawShip {
   name: string;
   buyRandom: number;
   hireRandom: number;
+  onCapture: string;
+  onRetire: string;
+  subtitle: string;
+  flags3: number;
+  upgradeTo: number;
+  escUpgrdCost: number;
+  escSellValue: number;
+  escortType: number;
   shortName: string;
   longName: string;
   maxGuns: number;
@@ -814,6 +822,14 @@ export async function loadUniverse(): Promise<void> {
       stockWeapons: s.stockWeapons ?? [],
       defaultItems: s.defaultItems ?? [],
       hireRandom: s.hireRandom ?? 0,
+      onCapture: s.onCapture ?? "",
+      onRetire: s.onRetire ?? "",
+      subtitle: s.subtitle ?? "",
+      flags3: s.flags3 ?? 0,
+      upgradeTo: s.upgradeTo ?? -1,
+      escUpgrdCost: s.escUpgrdCost ?? 0,
+      escSellValue: s.escSellValue ?? 0,
+      escortType: s.escortType ?? -1,
       ...convertShipStats(s),
     };
   }

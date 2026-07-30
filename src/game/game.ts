@@ -168,7 +168,7 @@ import type {
 } from "../types";
 import { HailUi } from "../ui/hail";
 import { PlunderUi } from "../ui/plunder";
-import type { PlunderHold } from "../ui/plunder";
+import type { CaptureResult, PlunderHold } from "../ui/plunder";
 import { LandedUi } from "../ui/landed";
 import { NpcShip, SPARROW, Ship, type EscortOrder } from "./ship";
 
@@ -345,6 +345,19 @@ export function escortWage(hullCost: number): number {
   return Math.max(50, Math.round(hullCost / 1000));
 }
 
+/**
+ * What a captured escort fetches. shïp EscSellValue is "the amount of cash the
+ * player gets for selling off a captured escort of this type. If you input a
+ * number that's less than or equal to zero here, Nova will default to 10% of
+ * the ship's original cost" — and all 288 shipped hulls read zero, so the
+ * fallback is the only branch stock data ever takes.
+ */
+export function escortSellValue(shipId: string): number {
+  const type = SHIPS[shipId];
+  if (!type) return 0;
+  return type.escSellValue > 0 ? type.escSellValue : Math.round(type.cost * 0.1);
+}
+
 export class Game {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -390,7 +403,7 @@ export class Game {
   private hasMiningScoop = false;
   private gear = {
     escapePod: false, densityScanner: false, iff: false, autoRefuel: false,
-    fastJump: false, inertialDamper: false, hyperSpeed: 0, marines: 0,
+    fastJump: false, inertialDamper: false, hyperSpeed: 0, jumpDist: 0, marines: 0,
     jamming: [0, 0, 0, 0] as number[],
     cloakScanner: 0,
     reinfInhibit: [] as number[],
@@ -966,6 +979,7 @@ export class Game {
       fastJump: bonus.fastJump,
       inertialDamper: bonus.inertialDamper,
       hyperSpeed: bonus.hyperSpeed,
+      jumpDist: bonus.jumpDist,
       marines: bonus.marines,
       jamming: bonus.jamming,
       cloakScanner: bonus.cloakScanner,
@@ -1725,23 +1739,31 @@ export class Game {
         strip();
         return taken.length ? `Took ${taken.join(", ")}.` : "No room in your hold.";
       },
-      capture: () => {
-        if (odds === null || !t.typeId) return;
+      capture: (): CaptureResult => {
+        if (odds === null || !t.typeId) return { taken: false, note: "" };
         if (Math.random() < odds) {
           const captured = t.typeId;
           t.done = true;
           if (this.targetNpc === t) this.targetNpc = null;
-          this.applyShipType(captured);
-          this.player.fuelJumps = this.player.maxFuelJumps;
+          this.pendingPrize = captured;
           this.message(
             withMarines
-              ? `Your marines take the ${SHIPS[captured]?.name.split(";")[0]}! She's yours.`
-              : `Your crew storms the ${SHIPS[captured]?.name.split(";")[0]} and takes her!`,
+              ? `Your marines take the ${this.hullName(captured)}!`
+              : `Your crew storms the ${this.hullName(captured)} and takes her!`,
           );
-        } else if (withMarines) {
+          this.save();
+          return {
+            taken: true,
+            prize: this.hullName(captured),
+            yourShip: this.hullName(this.player.shipId),
+            roomInWing: this.player.escorts.length < MAX_ESCORTS,
+          };
+        }
+        let note: string;
+        if (withMarines) {
           // a failed assault costs you the boarding party
           const lost = Math.ceil(this.gear.marines / 2);
-          this.message(`The assault is thrown back — you lose ${lost} marines.`);
+          note = `The assault is thrown back — you lose ${lost} marines.`;
           for (const [outfId, owned] of Object.entries(this.player.outfits)) {
             const outf = OUTFITS[outfId];
             if (outf?.mods.some((m) => m.type === 25) && owned > 0) {
@@ -1754,12 +1776,103 @@ export class Game {
         } else {
           // no platoon to lose: the crew is beaten back bloodied instead
           this.ship.armor = Math.max(1, this.ship.armor - this.ship.maxArmor * 0.15);
-          this.message("Your crew is thrown back off the boarding tube, bloodied.");
+          note = "Your crew is thrown back off the boarding tube, bloodied.";
         }
+        this.message(note);
+        this.save();
+        return { taken: false, note };
+      },
+      claim: (choice) => this.claimPrize(choice),
+      close: () => {
+        this.claimPrize("escort"); // walking away still leaves the prize taken
         this.save();
       },
-      close: () => this.save(),
     });
+  }
+
+  /** A prize taken but not yet assigned — the plunder panel is asking. */
+  private pendingPrize: string | null = null;
+
+  /** The hull's plain class name, without Nova's ";variant" suffix. */
+  private hullName(shipId: string): string {
+    return SHIPS[shipId]?.name.split(";")[0] ?? "ship";
+  }
+
+  /**
+   * Settle a captured ship. Nova's two options, both of which the shïp
+   * resource is built for: fly her yourself, in which case your old hull drops
+   * back into the wing (shïp OnRetire is "evaluated when you sell a ship of
+   * this type and/or replace it with a captured ship"), or keep your own ship
+   * and add the prize to your escorts (EscSellValue is what "a captured
+   * escort" fetches when you later sell her).
+   */
+  private claimPrize(choice: "flagship" | "escort"): void {
+    const prize = this.pendingPrize;
+    this.pendingPrize = null;
+    if (!prize) return;
+    const room = this.player.escorts.length < MAX_ESCORTS;
+
+    if (choice === "flagship") {
+      const old = this.player.shipId;
+      // shïp OnRetire fires for the hull you are stepping out of
+      const retire = SHIPS[old]?.onRetire;
+      if (retire) applySet(retire, this.player.bits, this.bitHandlers());
+      const keepOld = room && old !== prize;
+      if (keepOld) this.player.escorts.push({ shipId: old, wage: 0, captured: true });
+      this.applyShipType(prize);
+      this.player.fuelJumps = this.player.maxFuelJumps;
+      // the crew you left behind flies her off the pad beside you, so the
+      // handover is visible now rather than only after the next takeoff
+      if (keepOld) this.spawnPrizeEscort(old);
+      this.message(
+        keepOld
+          ? `You take the helm of the ${this.hullName(prize)}; your ${this.hullName(old)} falls in behind.`
+          : room
+            ? `You take the helm of the ${this.hullName(prize)}.`
+            : `You take the helm of the ${this.hullName(prize)}, abandoning your ${this.hullName(old)} — your command was full.`,
+      );
+    } else if (room) {
+      this.player.escorts.push({ shipId: prize, wage: 0, captured: true });
+      this.spawnPrizeEscort(prize);
+      this.message(`The ${this.hullName(prize)} joins your fleet.`);
+    } else {
+      this.message(`Your command is full — the ${this.hullName(prize)} is cut loose.`);
+      this.pendingPrize = null;
+      this.save();
+      return;
+    }
+    // shïp OnCapture: 171 hulls set a bit when taken
+    const onCapture = SHIPS[prize]?.onCapture;
+    if (onCapture) applySet(onCapture, this.player.bits, this.bitHandlers());
+    this.save();
+  }
+
+  /** Put a freshly taken prize in the sky beside you, crewed and friendly. */
+  private spawnPrizeEscort(shipId: string): void {
+    const type = SHIPS[shipId];
+    if (!type) return;
+    const npc = new NpcShip({
+      turnRate: type.turnRate,
+      accel: type.accel,
+      maxSpeed: type.maxSpeed,
+    });
+    npc.typeId = shipId;
+    npc.ally = true;
+    npc.hired = true;
+    npc.hostile = false;
+    npc.govtId = -1;
+    npc.order = "defend";
+    npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
+    npc.sprite = SHIP_SPRITES[shipId] ?? null;
+    const side = this.player.escorts.length % 2 === 0 ? 1 : -1;
+    const off = this.ship.radius + 60;
+    npc.pos = {
+      x: this.ship.pos.x + Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
+      y: this.ship.pos.y + Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
+    };
+    npc.angle = this.ship.angle;
+    npc.vel = { ...this.ship.vel };
+    this.npcs.push(npc);
   }
 
   /** Public label for the comms panel: a named captain, else the hull class. */
@@ -2509,6 +2622,12 @@ export class Game {
     this.player.escorts.splice(index, 1);
     const npc = this.npcs.find((n) => n.hired && n.typeId === hire.shipId);
     if (npc) npc.done = true;
+    // a prize is property, not a contract: paying her off puts cash in hand
+    if (hire.captured) {
+      const paid = escortSellValue(hire.shipId);
+      this.player.credits += paid;
+      this.message(`You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`);
+    }
     this.save();
   }
 
@@ -3717,6 +3836,17 @@ export class Game {
       return true;
     }
     if (this.route.length > 0) {
+      /*
+       * A course plotted from a standing start begins inside the no-jump zone,
+       * so fly out of it first rather than asking startJump every frame and
+       * papering the screen with the refusal.
+       */
+      if (this.insideNoJumpZone()) {
+        const out = Math.atan2(this.ship.pos.y, this.ship.pos.x);
+        const facing = this.ship.steerToward(dt, out);
+        this.ship.update(dt, 0, facing);
+        return true;
+      }
       this.startJump(); // startJump handles fuel and takes over the stick
       return this.jump !== null;
     }
@@ -4073,9 +4203,32 @@ export class Game {
     );
   }
 
+  /**
+   * The no-jump zone. The Bible mentions it once, in oütf ModType 23 —
+   * "amount to increase or decrease the no-jump zone's radius by (the standard
+   * radius is 1000)" — and the one outfit that uses it says where the zone
+   * sits: the Horizontal Booster (ModVal -500) "allows you to enter hyperspace
+   * from much closer to the system center". So it is a circle of radius 1000
+   * about the origin, not a skirt around each stellar; 318 of Nova's 344
+   * placed stellars sit inside it, which is why it reads from the cockpit as
+   * being too close to the planet. Arrival is at 1700, safely outside.
+   */
+  get noJumpRadius(): number {
+    return Math.max(0, 1000 + this.gear.jumpDist);
+  }
+
+  private insideNoJumpZone(): boolean {
+    return Math.hypot(this.ship.pos.x, this.ship.pos.y) < this.noJumpRadius;
+  }
+
   private startJump(): void {
     if (this.route.length === 0) {
       this.message("No hyperspace course set. Press M to open the map.");
+      return;
+    }
+    if (this.insideNoJumpZone()) {
+      this.message("Too deep in the system's gravity well to jump. Head for open space.");
+      playSnd(SND.BEEP3, 0.5);
       return;
     }
     if (this.player.fuelJumps < 1) {

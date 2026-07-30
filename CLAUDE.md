@@ -260,6 +260,40 @@ on final approach and put them back out on the climb, which is what the Bible
 means by sprites "cycled upon landing, taking off, and entering/exiting
 hyperspace" — an animation a ship that never took off could only half play.
 
+**The no-jump zone.** You could enter hyperspace from a standstill on top of a
+planet. The Bible names the rule exactly once, in oütf ModType 23 — "amount to
+increase or decrease the no-jump zone's radius by (the standard radius is
+1000)" — and the single outfit that uses it settles the geometry the doc never
+states: the Horizontal Booster (ModVal **-500**) "allows you to enter
+hyperspace from much closer to the **system center**". So it is a circle of
+radius 1000 about the origin, not a skirt around each stellar — though 318 of
+the 344 placed stellars sit inside it, which is why it reads from the cockpit
+as being too close to the planet. Arrival is at 1700, safely outside. The
+autopilot flies out of the zone before jumping rather than asking every frame.
+
+**Capturing a ship asks what you want done with her.** A successful boarding
+silently swapped your hull for the prize and threw your own ship away. Nova
+offers both, and the shïp resource is built for both — the plunder panel now
+turns into a prize screen with *Make It My Ship* and *Add To My Fleet*, and
+taking the helm drops your old hull into the wing. Captured escorts draw no
+wage (they are property, not a contract) and sell for shïp **EscSellValue**,
+which is zero on all 288 hulls and so always takes the Bible's documented
+fallback of 10% of cost — 60,000 for a Starbridge.
+
+That needed the **end of the shïp record, which was entirely unread**: the
+Bible prints Subtitle, Flags3, UpgradeTo, EscUpgrdCost, EscSellValue and
+EscortType between OnRetire and ShortName, but the struct puts ShortName
+straight after OnRetire and appends the block to the end of the record — the
+same trick spöb plays with its last five SpecialTechs. OnCapture @976 and
+OnRetire @1231 are 255-byte strings packing gaplessly into ShortName @1486
+(171 hulls set OnCapture, every one to `b8888`; OnRetire is empty throughout),
+and from @1766 the appended block runs Subtitle (the Starbridge's is
+"Class A"), Flags3 @1830 (eight values, all decomposing into documented bits),
+UpgradeTo @1832 (154 valid ship ids, 134 reading the documented -1),
+EscUpgrdCost @1834 as int32 (5,000 for a Shuttle, 1,000,000 for a Leviathan),
+EscSellValue @1838 as int32, and EscortType @1842, which partitions the fleet
+exactly 25/106/106/51 into the doc's Fighter/Medium/Warship/Freighter.
+
 **Being shot now starts a fight.** `provoke` sent *every* ship fleeing, so
 nothing in the game ever returned fire unless it had been born hostile. The
 düde AIType decides, and the Bible names all four: only type 1 "Wimpy Trader"
@@ -324,6 +358,10 @@ happened to live there.
   overlap almost entirely. The paired values at @126-140 are percentages
   (1..100) whose per-system sums do not reach 100, so they are independent
   chances rather than a distribution.
+- **shïp `UpgradeTo`/`EscUpgrdCost` are extracted but no escort can be
+  upgraded yet** — there is no UI for it. The same pass read `Subtitle`
+  (target display), `Flags3` and `EscortType` (the four escort-menu
+  categories), none of which is rendered either.
 - **spöb Flags 0x0100 is not "deadly" at that bit.** The Bible calls it
   "stellar is deadly - all ships that touch it are destroyed immediately", but
   all 27 stellars reading it are also landable, and they are Port Kane, Menin,
