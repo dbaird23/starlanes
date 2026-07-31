@@ -1547,8 +1547,10 @@ export class Game {
       // Down swings the nose onto the reverse of your course, so a burn slows
       // you; inertialess hulls simply stop instead
       const braking = this.input.isDown("ArrowDown");
+      // Hold A: auto-turn toward the selected ship or stellar (manual ←→ win)
+      const aimAssist = turn === 0 && !braking && this.input.isDown("KeyA");
       // touching the controls takes the ship back off the autopilot
-      if (this.autopilot && (turn !== 0 || thrust || braking)) {
+      if (this.autopilot && (turn !== 0 || thrust || braking || aimAssist)) {
         this.autopilot = false;
         this.message("Autopilot disengaged.");
       }
@@ -1567,6 +1569,15 @@ export class Game {
             const retro = Math.atan2(-this.ship.vel.y, -this.ship.vel.x);
             this.ship.steerToward(dt, retro);
             turn = 0;
+          }
+        } else if (aimAssist) {
+          const aim = this.selectedAimPoint();
+          if (aim) {
+            this.ship.steerToward(
+              dt,
+              Math.atan2(aim.y - this.ship.pos.y, aim.x - this.ship.pos.x),
+            );
+            turn = 0; // steerToward already applied the turn
           }
         }
         // afterburner: hold Z to trade fuel for speed (100 units = 1 jump)
@@ -1753,6 +1764,18 @@ export class Game {
   }
 
   // ---------------- combat ----------------
+
+  /**
+   * Point the nose at this — selected ship first, else the selected stellar.
+   * Used by hold-A aim assist.
+   */
+  private selectedAimPoint(): { x: number; y: number } | null {
+    if (this.targetNpc && !this.targetNpc.done) {
+      return this.targetNpc.pos;
+    }
+    if (this.targetPlanet) return this.targetPlanet.pos;
+    return null;
+  }
 
   /** Cloaked ships hide from targeting unless your scanner can see them. */
   private canSee(npc: NpcShip): boolean {

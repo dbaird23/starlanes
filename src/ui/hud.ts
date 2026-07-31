@@ -505,7 +505,7 @@ export class HudUi {
   private drawHints(g: Game): void {
     const keys: [string, string][] = [
       ["↑↓←→ fly", g.afterburnerFuel > 0 ? "Z burn" : ""],
-      ["Space fire", "^Ctrl secondary"],
+      ["A aim", "Space fire"],
       ["` target", "R closest"],
       ["Y hail", "B board"],
       ["L land", g.cloakBits > 0 ? "U cloak" : "C recall"],

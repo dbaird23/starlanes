@@ -648,6 +648,7 @@ export class MainMenu {
       ["Turn left / right", "← →"],
       ["Accelerate", "↑"],
       ["Reverse (turn about)", "↓"],
+      ["Aim toward target (hold)", "A"],
       ["Afterburner", "Z"],
       ["Fire primary", "Space"],
       ["Fire secondary", "Left Ctrl"],
