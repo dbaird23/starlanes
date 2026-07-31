@@ -1,10 +1,14 @@
 import { asset } from "../asset";
 import {
+  isTitleMusicEnabled,
   playMusic,
   playSnd,
+  playSndChain,
   preloadCoreSnds,
+  setTitleMusicEnabled,
   SND,
   stopMusic,
+  whenAudioRunning,
 } from "../engine/audio";
 import {
   COLR,
@@ -74,12 +78,21 @@ const LOGO: Overlay = {
  * red backing plates retracted and the last frame has them fully out, so this
  * is a one-shot reveal. It plays once when the title screen opens, holds on
  * the last frame, and the buttons appear on the plates once it lands.
+ *
+ * Playback is time-based on rAF (not a stepped interval): with only ~10
+ * source frames, discrete jumps look jerky on modern displays, so consecutive
+ * frames are cross-faded and the whole motion is ease-out over REVEAL_MS.
  */
 const COLUMN: Overlay[] = [
   { pict: "8030", x: 343, y: 399, w: 338, h: 63, frames: 11 },
   { pict: "8031", x: 337, y: 462, w: 351, h: 64, frames: 10 },
   { pict: "8032", x: 337, y: 526, w: 351, h: 65, frames: 11 },
 ];
+
+/** Logo fire loop rate — a short cycle of similar frames, fine at low fps. */
+const LOGO_MS_PER_FRAME = 125;
+/** One-shot plate reveal duration (was ~11 × 120 ms of hard cuts). */
+const REVEAL_MS = 560;
 
 /** Overlay positions, overridden by cölr when the universe has loaded. */
 function laidOut(
@@ -94,7 +107,6 @@ const columnOverlays = (): Overlay[] =>
 const emblemPos = (): { x: number; y: number } => COLR?.rollover ?? EMBLEM;
 const buttonPos = (b: (typeof BUTTONS)[number]): { x: number; y: number } =>
   COLR?.buttons[b.colr] ?? b;
-const REVEAL_FRAMES = Math.max(...COLUMN.map((c) => c.frames));
 
 /**
  * The sphere in the middle of the emblem. rlëD 8020 is a seven-frame strip:
@@ -145,10 +157,12 @@ export class MainMenu {
   private root: HTMLElement;
   private onStart: (pilotId: string, strict?: boolean) => void;
   private selected: string | null = null;
-  private timer: number | null = null;
-  private frame = 0;
-  /** how far through the one-shot plate reveal we are */
-  private reveal = 0;
+  private animRaf: number | null = null;
+  private animStart = 0;
+  /** true once the plate reveal has finished (buttons may fade in) */
+  private revealDone = false;
+  /** plate whoosh (602+603) already fired for this open */
+  private revealSfxPlayed = false;
 
   constructor(onStart: (pilotId: string, strict?: boolean) => void) {
     this.root = document.getElementById("menu-ui")!;
@@ -163,44 +177,108 @@ export class MainMenu {
     if (!this.selected || !pilots.some((p) => p.id === this.selected)) {
       this.selected = pilots[0]?.id ?? null;
     }
-    this.reveal = 0;
+    this.revealDone = false;
+    this.revealSfxPlayed = false;
+    this.animStart = performance.now();
     this.render();
-    // the logo's fire flicker runs at about 8fps; so does the plate reveal
-    this.timer = window.setInterval(() => this.step(), 120);
+    this.stopAnim();
+    // snd 602+603 are one continuous plate cue, not two timed to the anim.
+    // Chain them on the audio clock so there's no gap between the halves.
+    this.playRevealSfx();
+    const tick = (now: number) => {
+      this.animRaf = requestAnimationFrame(tick);
+      this.step(now);
+    };
+    this.animRaf = requestAnimationFrame(tick);
   }
 
   hide(): void {
-    if (this.timer !== null) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
+    this.stopAnim();
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
     stopMusic();
   }
 
   /**
+   * Plate whoosh: "Menu button start" then "Menu button end" abutted. Defers
+   * via whenAudioRunning so a cold reload still gets it on first gesture.
+   */
+  private playRevealSfx(): void {
+    whenAudioRunning(() => {
+      if (this.root.classList.contains("hidden") || this.revealSfxPlayed)
+        return;
+      this.revealSfxPlayed = true;
+      // mid-reveal: full chain. already landed (late unlock): land thud only.
+      const elapsed = performance.now() - this.animStart;
+      if (elapsed < REVEAL_MS) {
+        playSndChain([SND.MENU_START, SND.MENU_END], 0.55);
+      } else {
+        playSnd(SND.MENU_END, 0.55);
+      }
+    });
+  }
+
+  private stopAnim(): void {
+    if (this.animRaf !== null) {
+      cancelAnimationFrame(this.animRaf);
+      this.animRaf = null;
+    }
+  }
+
+  /**
    * The logo keeps flickering; the plates run their reveal exactly once and
    * then stay put, at which point the buttons and emblem fade in.
    */
-  private step(): void {
-    this.frame++;
+  private step(now: number): void {
+    const elapsed = Math.max(0, now - this.animStart);
+
     const logo = this.root.querySelector<HTMLElement>(
       `[data-ov="${LOGO.pict}"]`,
     );
-    if (logo)
-      logo.style.backgroundPositionY = `${-(this.frame % LOGO.frames) * LOGO.h}px`;
+    if (logo) {
+      const lf = Math.floor(elapsed / LOGO_MS_PER_FRAME) % logoOverlay().frames;
+      const lo = logoOverlay();
+      logo.style.backgroundPositionY = `${-(lf % lo.frames) * lo.h}px`;
+    }
 
-    if (this.reveal >= REVEAL_FRAMES) return;
-    this.reveal++;
+    if (this.revealDone) return;
+
+    // ease-out cubic: snappy start, soft settle on the last frames
+    const t = Math.min(1, elapsed / REVEAL_MS);
+    const eased = 1 - (1 - t) ** 3;
+    this.applyReveal(eased);
+
+    if (t >= 1) {
+      this.revealDone = true;
+      this.applyReveal(1);
+      this.root.querySelector(".ttl-stage")?.classList.add("ready");
+    }
+  }
+
+  /**
+   * Drive each sliding plate to a fractional frame index in [0, frames-1].
+   * Two stacked layers cross-fade between floor/ceil so the motion isn't a
+   * hard cut between the ~10 source frames.
+   */
+  private applyReveal(progress: number): void {
     for (const ov of columnOverlays()) {
       const el = this.root.querySelector<HTMLElement>(`[data-ov="${ov.pict}"]`);
-      if (el) {
-        el.style.backgroundPositionY = `${-Math.min(this.reveal, ov.frames - 1) * ov.h}px`;
+      if (!el) continue;
+      const maxF = ov.frames - 1;
+      const pos = progress * maxF;
+      const i0 = Math.floor(pos);
+      const i1 = Math.min(i0 + 1, maxF);
+      const frac = pos - i0;
+      const a = el.querySelector<HTMLElement>('[data-layer="a"]');
+      const b = el.querySelector<HTMLElement>('[data-layer="b"]');
+      if (a && b) {
+        a.style.backgroundPositionY = `${-i0 * ov.h}px`;
+        b.style.backgroundPositionY = `${-i1 * ov.h}px`;
+        b.style.opacity = String(frac);
+      } else {
+        // single-layer fallback
+        el.style.backgroundPositionY = `${-Math.round(pos) * ov.h}px`;
       }
-    }
-    if (this.reveal >= REVEAL_FRAMES) {
-      this.root.querySelector(".ttl-stage")?.classList.add("ready");
     }
   }
 
@@ -222,12 +300,26 @@ export class MainMenu {
     el.style.backgroundPositionX = `${-Math.min(frame, spr.frames - 1) * spr.w}px`;
   }
 
-  private overlayHtml(ov: Overlay): string {
+  private overlayHtml(ov: Overlay, sliding = false): string {
     const pic = UI_PICTS[ov.pict];
     if (!pic) return "";
+    const url = asset(`nova/picts/${pic.file}`);
+    // sliding plates: two layers so consecutive frames can cross-fade
+    if (sliding) {
+      const last = this.revealDone ? ov.frames - 1 : 0;
+      return `<div class="menu-ov menu-ov-slide" data-ov="${ov.pict}" style="
+        left:${ov.x}px; top:${ov.y}px; width:${ov.w}px; height:${ov.h}px">
+        <div class="menu-ov-layer" data-layer="a" style="
+          background-image:url('${url}');
+          background-position:0 ${-last * ov.h}px"></div>
+        <div class="menu-ov-layer" data-layer="b" style="
+          background-image:url('${url}');
+          background-position:0 ${-last * ov.h}px; opacity:0"></div>
+      </div>`;
+    }
     return `<div class="menu-ov" data-ov="${ov.pict}" style="
       left:${ov.x}px; top:${ov.y}px; width:${ov.w}px; height:${ov.h}px;
-      background-image:url('${asset(`nova/picts/${pic.file}`)}')"></div>`;
+      background-image:url('${url}')"></div>`;
   }
 
   /** The red readout the original prints along the bottom of the title screen. */
@@ -285,11 +377,11 @@ export class MainMenu {
     }).join("");
 
     this.root.innerHTML = `
-      <div class="ttl-stage${this.reveal >= REVEAL_FRAMES ? " ready" : ""}"
+      <div class="ttl-stage${this.revealDone ? " ready" : ""}"
         ${bg ? `style="background-image:url('${asset(`nova/picts/${bg.file}`)}')"` : ""}>
         ${this.overlayHtml(logoOverlay())}
         ${columnOverlays()
-          .map((ov) => this.overlayHtml(ov))
+          .map((ov) => this.overlayHtml(ov, true))
           .join("")}
         ${this.emblemHtml()}
         ${buttons}
@@ -578,8 +670,19 @@ export class MainMenu {
       ["Double game speed", "Caps Lock"],
     ];
     const fastWhen = capsLockFastWhen();
+    const musicOn = isTitleMusicEnabled();
     const m = this.modal(`
       <h2>Preferences</h2>
+      <fieldset class="ttl-fieldset">
+        <legend>Title music</legend>
+        <p class="menu-hint">Theme that loops on this screen. Defaults off under a dev server, on in a production build; your choice is saved.</p>
+        <label class="ttl-check"><input type="radio" name="pref-title-music" value="1"${
+          musicOn ? " checked" : ""
+        }> <strong>On</strong></label>
+        <label class="ttl-check"><input type="radio" name="pref-title-music" value="0"${
+          !musicOn ? " checked" : ""
+        }> <strong>Off</strong></label>
+      </fieldset>
       <fieldset class="ttl-fieldset">
         <legend>Caps Lock 2× speed</legend>
         <p class="menu-hint">Caps Lock always toggles double game speed. Choose which lock state is fast.</p>
@@ -604,6 +707,14 @@ export class MainMenu {
         if (!radio.checked) return;
         const when = radio.value as CapsLockFastWhen;
         if (when === "on" || when === "off") setCapsLockFastWhen(when);
+      });
+    }
+    for (const radio of m.querySelectorAll<HTMLInputElement>(
+      'input[name="pref-title-music"]',
+    )) {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        setTitleMusicEnabled(radio.value === "1");
       });
     }
   }

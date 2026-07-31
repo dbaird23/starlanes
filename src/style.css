@@ -876,6 +876,19 @@ td.actions button:disabled {
   background-position: 0 0;
   pointer-events: none;
 }
+/* sliding menu plates: two layers so the one-shot reveal can cross-fade */
+.menu-ov-slide {
+  overflow: hidden;
+  background: none;
+}
+.menu-ov-layer {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  pointer-events: none;
+  will-change: opacity, background-position;
+}
 .ttl-btn {
   position: absolute;
   padding: 0;
@@ -886,7 +899,7 @@ td.actions button:disabled {
   /* the plates slide out first; the buttons land on them afterwards */
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease-out;
+  transition: opacity 280ms ease-out;
 }
 .ttl-stage.ready .ttl-btn {
   opacity: 1;

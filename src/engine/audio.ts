@@ -194,15 +194,59 @@ function audioCtx(): AudioContext | null {
  * that isn't running, and all fire at once the moment it resumes. So we never
  * start a source unless the context is actually running, and we resume on the
  * first gesture instead.
+ *
+ * Do not reintroduce a global "pending one-shots" queue: combat fire while the
+ * tab is backgrounded would pile up and dump on focus. Title-menu plate cues
+ * use `whenAudioRunning` instead.
  */
+type AudioReadyFn = () => void;
+const audioReadyWaiters: AudioReadyFn[] = [];
+
+function notifyAudioRunning(): void {
+  if (!ctx || ctx.state !== "running") return;
+  const batch = audioReadyWaiters.splice(0, audioReadyWaiters.length);
+  for (const fn of batch) {
+    try {
+      fn();
+    } catch {
+      /* waiter errors must not break unlock */
+    }
+  }
+}
+
+/**
+ * Run `fn` once the AudioContext is running. If it already is, `fn` runs
+ * now. Otherwise it waits for the first unlock gesture (or a successful
+ * resume). Used for title-menu cues that fire before any click.
+ */
+export function whenAudioRunning(fn: AudioReadyFn): void {
+  const ac = audioCtx();
+  if (ac?.state === "running") {
+    fn();
+    return;
+  }
+  audioReadyWaiters.push(fn);
+  if (ac && ac.state === "suspended") {
+    void ac
+      .resume()
+      .then(() => notifyAudioRunning())
+      .catch(() => undefined);
+  }
+}
+
 function installUnlock(): void {
   const unlock = (): void => {
     const ac = audioCtx();
-    if (ac && ac.state === "suspended") void ac.resume();
-    if (!ac || ac.state === "running") {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    }
+    if (!ac) return;
+    const finish = (): void => {
+      notifyAudioRunning();
+      if (ac.state === "running") {
+        window.removeEventListener("pointerdown", unlock);
+        window.removeEventListener("keydown", unlock);
+      }
+    };
+    if (ac.state === "running") finish();
+    else void ac.resume().then(finish).catch(finish);
   };
   window.addEventListener("pointerdown", unlock);
   window.addEventListener("keydown", unlock);
@@ -317,6 +361,8 @@ function startSource(
   buf: AudioBuffer,
   volume: number,
   opts?: PlayOpts,
+  /** Absolute AudioContext time; omit for "now". */
+  when?: number,
 ): void {
   const ac = ctx;
   if (!ac || !master || ac.state !== "running") return;
@@ -353,7 +399,9 @@ function startSource(
     voices.set(sndId, Math.max(0, (voices.get(sndId) ?? 1) - 1));
     totalVoices = Math.max(0, totalVoices - 1);
   };
-  src.start();
+  const at =
+    when !== undefined ? Math.max(when, ac.currentTime) : ac.currentTime;
+  src.start(at);
 }
 
 /**
@@ -375,6 +423,30 @@ export function playSnd(sndId: number, volume = 0.5, opts?: PlayOpts): void {
   void fetchSnd(sndId).then((buf) => {
     if (buf && performance.now() <= deadline)
       startSource(sndId, buf, volume, opts);
+  });
+}
+
+/**
+ * Play several snds back-to-back on the audio clock with no gap between them.
+ * Used for the title-menu plate whoosh (602 then 603), which is one continuous
+ * cue split across two resources.
+ */
+export function playSndChain(ids: number[], volume = 0.5): void {
+  if (muted || masterVolume <= 0 || ids.length === 0) return;
+  const ac = audioCtx();
+  if (!ac || ac.state !== "running") return;
+
+  void Promise.all(
+    ids.map((id) => (missing.has(id) ? null : fetchSnd(id))),
+  ).then((bufs) => {
+    if (!ctx || ctx.state !== "running" || !master) return;
+    let t = ctx.currentTime;
+    for (let i = 0; i < ids.length; i++) {
+      const buf = bufs[i];
+      if (!buf) continue;
+      startSource(ids[i], buf, volume, undefined, t);
+      t += buf.duration;
+    }
   });
 }
 
@@ -526,12 +598,14 @@ function applyMusicVolume(): void {
  * The title music loops for as long as the menu is up, which is tiresome when
  * the game is being driven from a dev server all day, so it stays off under
  * `npm run dev` and plays normally in a production build. Sound effects are
- * unaffected either way. To hear it while developing, set localStorage
- * "music" to "1"; to silence it in a build, set "music" to "0".
+ * unaffected either way. Override with localStorage "music" = "1" / "0", also
+ * exposed in the Preferences menu.
  */
+const MUSIC_PREF_KEY = "music";
+
 function musicMuted(): boolean {
   try {
-    const pref = localStorage.getItem("music");
+    const pref = localStorage.getItem(MUSIC_PREF_KEY);
     if (pref !== null) return pref === "0";
   } catch {
     // storage can be unavailable (private mode, sandboxed iframe); fall through
@@ -539,7 +613,26 @@ function musicMuted(): boolean {
   return import.meta.env.DEV;
 }
 
-/** Title music: loops while the menu is up. */
+/** Whether title music is allowed right now (pref + env default). */
+export function isTitleMusicEnabled(): boolean {
+  return !musicMuted();
+}
+
+/**
+ * Persist title-music preference to localStorage "music" ("1" / "0").
+ * Starts or stops playback when called from the title menu.
+ */
+export function setTitleMusicEnabled(on: boolean): void {
+  try {
+    localStorage.setItem(MUSIC_PREF_KEY, on ? "1" : "0");
+  } catch {
+    /* private mode — preference only lasts this session via the live path */
+  }
+  if (on) playMusic();
+  else stopMusic();
+}
+
+/** Title music: loops while the menu is up. Always starts from the top. */
 export function playMusic(): void {
   if (musicMuted()) return;
   musicWanted = true;
@@ -547,6 +640,9 @@ export function playMusic(): void {
     musicEl = new Audio(asset("nova/music.mp3"));
     musicEl.loop = true;
   }
+  // pause() alone leaves currentTime where you left; returning to the menu
+  // should open on the theme's intro, not mid-loop.
+  musicEl.currentTime = 0;
   applyMusicVolume();
   void musicEl.play().catch(() => {
     // autoplay blocked: retry on the first user interaction, but only if the
@@ -558,7 +654,9 @@ export function playMusic(): void {
       musicRetryArmed = false;
       window.removeEventListener("pointerdown", retry);
       window.removeEventListener("keydown", retry);
-      if (musicWanted) void musicEl?.play().catch(() => undefined);
+      if (!musicWanted || !musicEl) return;
+      musicEl.currentTime = 0;
+      void musicEl.play().catch(() => undefined);
     };
     window.addEventListener("pointerdown", retry);
     window.addEventListener("keydown", retry);
