@@ -119,8 +119,12 @@ export function availableMissions(
     if (m.availLoc !== loc) continue;
     if (activeIds.has(m.id)) continue;
     // destroy(0), disable(1), board(2), escort(3), observe(4) and rescue(5)
-    // are all handled; anything else spawns ships we can't resolve
-    if (m.shipCount > 0 && (m.shipGoal < 0 || m.shipGoal > 5)) continue;
+    // are all handled; chase-off(6) is the one goal we can't resolve.
+    // ShipGoal -1 is the Bible's "no specific goal for the special ships" —
+    // 243 of the 348 missions that carry special ships use it, and they are
+    // completed by their cargo and destination alone, so they must not be
+    // filtered out with goal 6.
+    if (m.shipCount > 0 && m.shipGoal > 5) continue;
     if (m.pay < 0) continue; // special-reward encodings not supported yet
     if (m.flags & 0x0400) continue; // invisible missions
     const record = getRecord(player, SPOB_GOVT.get(spob.id) ?? -1);
@@ -169,7 +173,14 @@ export function instantiateMission(
   let returnSpobId = m.returnStel === -4 ? currentSpobId : resolveStel(m.returnStel, currentSpobId);
   if (m.returnStel === -1) returnSpobId = null;
   const qty = rollCargoQty(m.cargoQty);
-  const shipsTotal = m.shipGoal >= 0 && m.shipGoal <= 5 ? Math.max(0, m.shipCount) : 0;
+  /*
+   * ShipCount ships fly for any goal we can resolve, and for the Bible's
+   * "no specific goal" (-1) as well — those are the escorts and the ambushes,
+   * placed by ShipBehav rather than by an objective. They are spawned exactly
+   * like the rest and simply never gate completion, which is what shipsDone
+   * being true from the outset says.
+   */
+  const shipsTotal = m.shipCount > 0 && m.shipGoal <= 5 ? m.shipCount : 0;
   const active: ActiveMission = {
     misnId: m.id,
     name: missionDisplayName(m),
@@ -184,7 +195,7 @@ export function instantiateMission(
     pay: m.pay,
     shipsTotal,
     shipsKilled: 0,
-    shipsDone: shipsTotal === 0,
+    shipsDone: shipsTotal === 0 || m.shipGoal < 0,
     shipDude: m.shipDude,
     shipSystemId: shipsTotal > 0 ? resolveShipSystem(m, currentSpobId, travelSpobId, returnSpobId) : null,
   };

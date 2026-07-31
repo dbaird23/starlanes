@@ -3921,7 +3921,16 @@ export class Game {
         (a) => a.misnId === npc.missionMisnId,
       );
       const m = MISSIONS[String(npc.missionMisnId)];
-      if (active && m && !active.shipsDone) {
+      if (active && m && m.shipGoal < 0) {
+        /*
+         * A goalless ship satisfies nothing by dying, but the tally still has
+         * to move: spawnMissionShips replaces `shipsTotal - shipsKilled` of
+         * them every time you enter the system, so without this an ambush you
+         * fought off would be waiting again on the way back.
+         */
+        active.shipsKilled += 1;
+        this.save();
+      } else if (active && m && !active.shipsDone) {
         active.shipsKilled += 1;
         if (active.shipsKilled >= active.shipsTotal) {
           active.shipsDone = true;
@@ -3950,13 +3959,24 @@ export class Game {
     }
   }
 
-  /** Spawn special ships for active destroy-goal missions set in this system. */
+  /** Spawn a mission's special ships if this is the system they were set in. */
   private spawnMissionShips(): void {
     for (const active of this.player.activeMissions) {
-      if (active.shipsDone || active.shipsTotal <= 0) continue;
+      if (active.shipsTotal <= 0) continue;
       if (active.shipSystemId !== this.player.systemId) continue;
+      const mDef = MISSIONS[String(active.misnId)];
+      const goal = mDef?.shipGoal ?? 0;
+      /*
+       * A satisfied objective stops the spawn. ShipGoal -1 carries no
+       * objective, so its missions are flagged shipsDone the moment they are
+       * accepted — those ships still have to fly, placed by ShipBehav alone,
+       * so only a goal-driven shipsDone is allowed to skip them.
+       */
+      if (active.shipsDone && goal >= 0) continue;
       const remaining = active.shipsTotal - active.shipsKilled;
+      if (remaining <= 0) continue;
       const dude = DUDES[String(active.shipDude)];
+      let hostileSpawned = false;
       for (let i = 0; i < remaining; i++) {
         const shipEntry = dude ? this.weightedPick(dude.ships) : null;
         const typeId =
@@ -3973,20 +3993,20 @@ export class Game {
         npc.typeId = typeId;
         npc.govtId =
           (dude?.govt ?? -1) >= 128 ? dude!.govt : inherentCombatGovt(typeId);
-        const mDef = MISSIONS[String(active.misnId)];
-        const goal = mDef?.shipGoal ?? 0;
         // you only shoot the ones you were sent to kill or cripple
         const wantHostile = goal === 0 || goal === 1;
         /*
          * ShipBehav overrides that when the mission says so: 0 makes the
          * special ships always attack the player and 1 makes them protect
          * them, whatever the goal implies. 208 missions set 0 and 40 set 1.
+         * For a goalless mission it is the only thing placing them at all.
          */
         if (mDef?.shipBehav === 1) {
           npc.hostile = false;
           npc.ally = true;
         } else if (mDef?.shipBehav === 0 || wantHostile) {
           this.setNpcHostile(npc);
+          hostileSpawned = true;
         }
         // rescue targets start dead in space
         if (goal === 5) npc.disabled = true;
@@ -4000,7 +4020,8 @@ export class Game {
         npc.angle = Math.random() * Math.PI * 2;
         this.npcs.push(npc);
       }
-      if (remaining > 0) this.message(`Hostile contacts: ${active.name}.`);
+      // escorts and protectors are not contacts to warn about
+      if (hostileSpawned) this.message(`Hostile contacts: ${active.name}.`);
     }
   }
 

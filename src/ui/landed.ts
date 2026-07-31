@@ -190,6 +190,13 @@ export class LandedUi {
   } | null = null;
   private barMissions: MissionType[] = [];
   private spaceportOffers: MissionType[] = [];
+  /**
+   * mïsn AvailLoc 4/5/6 — jobs handed over at the trade, shipyard and outfit
+   * dialogs rather than the concourse or the board. Nova raises these as you
+   * walk up to the counter, so they are keyed by the view that owns them and
+   * popped on entry.
+   */
+  private counterOffers = new Map<View, MissionType[]>();
   private pendingOffer: {
     m: MissionType;
     active: ActiveMission;
@@ -753,6 +760,7 @@ export class LandedUi {
     else playMenuOpen();
     this.view = view;
     this.render();
+    this.maybeCounterOffer(view);
   }
 
   show(planet: PlanetDef, system: SystemDef): void {
@@ -776,6 +784,14 @@ export class LandedUi {
     this.spaceportOffers = planet.uninhabited
       ? []
       : availableMissions(planet, 3, this.game.player);
+    // AvailLoc 4/5/6 hang off the three storefronts rather than the concourse
+    this.counterOffers.clear();
+    if (planet.exchange)
+      this.counterOffers.set("trade", availableMissions(planet, 4, this.game.player));
+    if (planet.shipyard)
+      this.counterOffers.set("shipyard", availableMissions(planet, 5, this.game.player));
+    if (planet.outfitter)
+      this.counterOffers.set("outfitter", availableMissions(planet, 6, this.game.player));
 
     this.view = this.events.length > 0 ? "events" : "spaceport";
     this.root.classList.remove("hidden");
@@ -811,6 +827,7 @@ export class LandedUi {
     this.bbsMissions = [];
     this.barMissions = [];
     this.spaceportOffers = [];
+    this.counterOffers.clear();
     this.selectedGate = 0;
     this.view = "gate";
     this.root.classList.remove("hidden");
@@ -902,6 +919,19 @@ export class LandedUi {
     const m = this.spaceportOffers.shift();
     this.spaceportOffers = [];
     if (m) this.openOffer(m, "spaceport");
+  }
+
+  /**
+   * A storefront mission (AvailLoc 4/5/6) raised on stepping up to the
+   * counter, and returning to it when the offer is answered. One per landing,
+   * as at the spaceport — otherwise refusing would immediately raise the next.
+   */
+  private maybeCounterOffer(view: View): void {
+    const queued = this.counterOffers.get(view);
+    if (!queued || queued.length === 0) return;
+    const m = queued[0];
+    this.counterOffers.set(view, []);
+    this.openOffer(m, view);
   }
 
   private openOffer(m: MissionType, back: View): void {

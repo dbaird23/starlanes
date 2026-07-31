@@ -85,6 +85,40 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**The storefront missions, and the three things that hid the Federation
+storyline.** mïsn **AvailLoc** has seven values and only 0 (mission BBS), 1
+(bar) and 3 (spaceport) were ever asked for, so the 22 missions posted at the
+trade, shipyard and outfit dialogs could not be offered at all. `landed.ts`
+now keeps a `counterOffers` map beside the BBS/bar/spaceport queues, filled on
+landing and popped in `setView` as you step up to the counter — one per
+counter per landing, matching the spaceport's rule, or refusing would raise
+the next one immediately. Two more blockers sat behind it:
+
+- **ShipGoal -1 was being thrown out with chase-off.** `availableMissions`
+  rejected `shipGoal < 0 || shipGoal > 5`, but -1 is the Bible's "no specific
+  goal for the special ships" and **243 of the 348** missions that carry
+  special ships use it — including all six Fed Resupply legs. Only goal 6 is
+  genuinely unresolvable. Those ships now fly too: `shipsTotal` counts them
+  and `shipsDone` starts true, so **ShipBehav alone places them** (118
+  goalless missions set 0 "always attack the player", 28 set 1 "protect", 97
+  leave it -1). Killing one tallies `shipsKilled` without touching the
+  objective, or an ambush you fought off would be waiting again on the way
+  back; the "Hostile contacts" line now fires only when something hostile
+  actually spawned, not on escorts.
+- **A missing `b` in Nova's own data.** Fed1's AvailBits reads
+  `!((b50 | 467) | b6666)`. `evalTest`'s fallback treats an unparseable token
+  as true, which made the enclosing `!(...)` permanently false — the
+  Federation storyline could never be offered even with AvailLoc 6 wired.
+  It is the **only** bare number in all 791 missions, and Fed1's own OnFailure
+  and OnAbort both set `b467`, so the intent is not in doubt. A bare digit run
+  now reads as a control-bit reference.
+
+Verified in play: Sigma1 at Earth's shipyard, Tutorial 002 at the trade centre
+(the tutorial chain used to dead-end after step 1), and Fed1 at the outfitter
+— accepting it sets b511 and books 20t of Military Stores to Spacedock III,
+with its two ShipBehav-0 Aurorans waiting in Sol. Note Fed1 also wants
+**AvailRating 2**, so a brand-new pilot still cannot see it.
+
 **Hypergates / wormholes (Bible-aligned transit).** Selecting a working
 hypergate (L cycle or click) starts the ring open animation; landing on it
 when slow enough opens the **normal galaxy map** as a destination chooser —

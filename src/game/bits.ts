@@ -125,6 +125,17 @@ export function evalTest(expr: string, bits: Bits, ctx: TestContext = {}): boole
       pos++;
       return ctx.male !== false;
     }
+    if (ch >= "0" && ch <= "9") {
+      // A bare number is a control bit that lost its 'b'. It happens exactly
+      // once in the shipped scenario: Fed1's AvailBits reads
+      // "!((b50 | 467) | b6666)", and that mission's own OnFailure and OnAbort
+      // both set b467, so the term is unmistakably meant to be b467 — "don't
+      // re-offer the Federation opener once it's been started, failed or
+      // abandoned". Falling through to the "treat as true" branch below would
+      // make the enclosing !(...) permanently false and the whole Federation
+      // storyline unofferable.
+      return bits[readNumber()] === true;
+    }
     // unparseable token: skip a char to avoid an infinite loop, treat as true
     pos++;
     return true;
