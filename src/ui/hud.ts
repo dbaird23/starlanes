@@ -74,7 +74,10 @@ export class HudUi {
   private target!: HTMLElement;
   private ledger!: HTMLElement;
   private hints!: HTMLElement;
+  private eject!: HTMLButtonElement;
   private speedBadge!: HTMLElement;
+  /** the Game passed to update(), so the EJECT click has something to call */
+  private game: Game | null = null;
 
   private ledgerRows: LedgerRow[] = [];
   private lastHints = "";
@@ -121,6 +124,10 @@ export class HudUi {
 
         <div class="hud-ledger"></div>
 
+        <button class="hud-eject hidden" type="button" title="Abandon ship in your escape pod (Alt-X)">
+          <span>&#9167; EJECT</span><small>ALT-X</small>
+        </button>
+
         <div class="hud-hints"></div>
       </div>`;
 
@@ -140,12 +147,18 @@ export class HudUi {
     this.target = q(".hud-target");
     this.ledger = q(".hud-ledger");
     this.hints = q(".hud-hints");
+    this.eject = q<HTMLButtonElement>(".hud-eject");
+    this.eject.addEventListener("click", () => this.game?.ejectFromShip());
     this.speedBadge = q(".speed-badge");
   }
 
   /** Called once a frame while in flight. */
   update(g: Game): void {
+    this.game = g;
     this.speedBadge.classList.toggle("hidden", g.timeScale <= 1);
+    // the pod is the only thing that can save a pilot, so its handle is on the
+    // panel rather than hidden behind Alt-X — and only when one is fitted
+    this.eject.classList.toggle("hidden", !g.hasEscapePod);
     this.drawScanner(g);
     this.drawIdentity(g);
     this.drawGauges(g);

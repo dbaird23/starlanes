@@ -440,6 +440,8 @@ export interface OutfitBonuses {
   miningScoop: boolean;
   /** ModType 11/13/14/19/37/38/49 */
   escapePod: boolean;
+  /** ModType 20: fires the pod for you when armour reaches zero */
+  autoEject: boolean;
   densityScanner: boolean;
   iff: boolean;
   autoRefuel: boolean;
@@ -496,6 +498,7 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
     fuelScoop: 0,
     miningScoop: false,
     escapePod: false,
+    autoEject: false,
     densityScanner: false,
     iff: false,
     autoRefuel: false,
@@ -560,6 +563,13 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
           break;
         case 11:
           b.escapePod = true;
+          break;
+        // "auto-eject ... (requires escape pod to work)" — the outfit's own
+        // description is what pins the split: it fires the pod "when it
+        // detects your armor state fall to zero ... without waiting for any
+        // input from the pilot", so a pod on its own waits for the pilot.
+        case 20:
+          b.autoEject = true;
           break;
         case 13:
           b.densityScanner = true;

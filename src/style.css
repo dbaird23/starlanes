@@ -538,6 +538,51 @@ body {
 }
 
 /*
+ * EJECT. Only drawn when an escape pod is fitted, and deliberately the one
+ * warm-coloured control on the panel — it is the handle that ends the flight
+ * and saves the pilot, and in strict play it is the only one that does.
+ */
+.hud-eject {
+  flex: none;
+  margin-top: 8px;
+  padding: 7px 11px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(255, 96, 72, 0.45);
+  border-radius: 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 96, 72, 0.16),
+    rgba(255, 96, 72, 0.05)
+  );
+  color: #ffb3a4;
+  font-family: var(--hud-sans);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+.hud-eject:hover {
+  border-color: rgba(255, 96, 72, 0.8);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 96, 72, 0.3),
+    rgba(255, 96, 72, 0.12)
+  );
+  color: #ffd7cf;
+}
+.hud-eject small {
+  font-family: var(--hud-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+/*
  * A short window drops the least essential block rather than overflowing. The
  * key hints are a learning aid and the only thing here that is not live state.
  */

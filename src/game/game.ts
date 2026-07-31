@@ -1,5 +1,6 @@
 import {
   BOOM_SPRITES,
+  DESCS,
   DUDES,
   convertShipStats,
   findRoute,
@@ -452,6 +453,7 @@ export class Game {
   private hasMiningScoop = false;
   private gear = {
     escapePod: false,
+    autoEject: false,
     densityScanner: false,
     iff: false,
     autoRefuel: false,
@@ -624,6 +626,7 @@ export class Game {
       if (onStart) applySet(onStart, this.player.bits, this.bitHandlers());
     }
     this.markExplored(this.player.systemId);
+    this.markPort(); // a freshly loaded pilot is its own last save point
     for (const [outfId, owned] of Object.entries(this.player.outfits)) {
       if (owned > 0) this.chartFromOutfit(outfId, false);
     }
@@ -1227,6 +1230,17 @@ export class Game {
     if (this.pilotId) savePilot(this.pilotId, this.player);
   }
 
+  /**
+   * The pilot as it stood the last time it was safely in port, kept as JSON so
+   * a death can put the file back the way Nova does — you resume from your last
+   * landing, not from the wreck. Taken on landing and on loading a pilot.
+   */
+  private portSnapshot: string | null = null;
+
+  private markPort(): void {
+    this.portSnapshot = JSON.stringify(this.player);
+  }
+
   /** Apply a ship class's real stats to the player's ship. */
   private applyShipType(shipId: string): void {
     const type = SHIPS[shipId];
@@ -1286,6 +1300,7 @@ export class Game {
       (SHIPS[this.player.shipId]?.flags2 & 0x0040) !== 0;
     this.gear = {
       escapePod: bonus.escapePod,
+      autoEject: bonus.autoEject,
       densityScanner: bonus.densityScanner,
       iff: bonus.iff,
       autoRefuel: bonus.autoRefuel,
@@ -2011,6 +2026,23 @@ export class Game {
     return landingAllowed(planet, getRecord(this.player, govtId));
   }
 
+  /**
+   * Call the system's own ReinfFleet in on the player's side. Nova ties this to
+   * ränk Flags 0x0400; the fleet and its delay are the system's, the same pair
+   * the hostile call uses.
+   */
+  private callReinforcementsFor(govtId: number): void {
+    if (this.pendingReinforcement) return;
+    const sys = this.system;
+    const fleet =
+      sys.reinfFleet !== null
+        ? FLEETS.find((f) => f.id === sys.reinfFleet)
+        : null;
+    if (!fleet) return;
+    this.pendingReinforcement = { fleet, at: this.time + sys.reinfDelay };
+    this.message(`${this.govtLabel(govtId)} reinforcements are on the way.`);
+  }
+
   /** Some ranks buy you safe passage. */
   private rankFlag(govtId: number, bit: number): boolean {
     for (const id of this.player.ranks) {
@@ -2496,6 +2528,15 @@ export class Game {
       this.message("Target out of communications range.");
       return;
     }
+    // gövt Flags 0x0400: "Can't hail ships of this govt." The Wraith and the
+    // Krypt carry it — there is nobody in there to answer the radio.
+    if (
+      t.govtId >= 128 &&
+      ((GOVT_FLAGS[String(t.govtId)] ?? 0) & 0x0400) !== 0
+    ) {
+      this.message("No response on any frequency.");
+      return;
+    }
     playSnd(151, 0.4);
     this.hailUi.show(t, this.hailGreeting(t));
   }
@@ -2702,10 +2743,27 @@ export class Game {
     }
 
     if (t.hostile) {
-      const bribe = Math.min(
-        this.player.credits,
-        2000 + Math.floor(this.player.credits * 0.1),
-      );
+      /*
+       * Who will even discuss money, per gövt Flags: 0x0200 "warships will
+       * take bribes" and 0x2000 "freighters will take bribes", split by the
+       * attacker's AI type the way the Bible splits it everywhere else (1-2
+       * are the traders, 3-4 the warships). 0x8000 is "ships of this govt
+       * taking bribes will demand a larger percentage of your cash supply",
+       * which is the pirates — 10% of your money buys off a patrol, a third of
+       * it buys off a raider.
+       */
+      const flags = t.govtId >= 128 ? (GOVT_FLAGS[String(t.govtId)] ?? 0) : 0;
+      const freighter = t.aiType === 1 || t.aiType === 2;
+      const takesBribes = freighter
+        ? (flags & 0x2000) !== 0
+        : (flags & 0x0200) !== 0;
+      const greedy = (flags & 0x8000) !== 0;
+      const bribe = takesBribes
+        ? Math.min(
+            this.player.credits,
+            2000 + Math.floor(this.player.credits * (greedy ? 0.33 : 0.1)),
+          )
+        : 0;
       if (bribe > 0) {
         opts.push({
           label: this.btnLabel(23, "Offer Bribe"),
@@ -2750,11 +2808,53 @@ export class Game {
       });
     }
     if (!untalkative) {
+      /*
+       * Two ränk Flags outrank a government's ordinary manners: 0x0400 is
+       * "player can always request battle assistance from ships of the
+       * affiliated government, who will also call in reinforcements on the
+       * player's behalf if they are available" (17 of the 31 ranks), and
+       * 0x0800 is "ships allied with the affiliated govt will always repair or
+       * refuel the player for free" (20 of 31), which is gövt Flags2 0x0010
+       * Roadside Assistance granted by standing rather than by nationality.
+       */
+      const battleAssist = t.govtId >= 128 && this.rankFlag(t.govtId, 0x0400);
+      const freeRepair =
+        roadsideAssistance ||
+        (t.govtId >= 128 && this.rankFlag(t.govtId, 0x0800));
       opts.push({
         label: this.btnLabel(22, "Request Assistance"),
         action: () => {
-          if (!roadsideAssistance && record < -10) {
+          if (!freeRepair && !battleAssist && record < -10) {
             return `"We don't help ships with your reputation. Good luck out there."`;
+          }
+          // under fire, a rank that carries battle assistance turns the
+          // neighbourhood: everything of theirs in scanner range takes your
+          // side, and the system's own reinforcement fleet is called for you
+          const attackers = this.npcs.filter(
+            (n) =>
+              n.hostile &&
+              !n.done &&
+              Math.hypot(n.pos.x - this.ship.pos.x, n.pos.y - this.ship.pos.y) <
+                3000,
+          );
+          if (battleAssist && attackers.length > 0) {
+            let helpers = 0;
+            for (const n of this.npcs) {
+              if (n.hostile || n.done || n.ally) continue;
+              if (n.govtId !== t.govtId && !govtAllied(n.govtId, t.govtId))
+                continue;
+              const d = Math.hypot(
+                n.pos.x - this.ship.pos.x,
+                n.pos.y - this.ship.pos.y,
+              );
+              if (d > 3000) continue;
+              n.ally = true;
+              helpers++;
+            }
+            this.callReinforcementsFor(t.govtId);
+            return helpers > 0
+              ? `"Hold on, Captain — we're coming about. All ships, engage."`
+              : `"Acknowledged. We're calling in whatever is close by."`;
           }
           const needFuel = this.player.fuelJumps < this.player.maxFuelJumps;
           const hurt = this.ship.armor < this.ship.maxArmor;
@@ -2766,10 +2866,10 @@ export class Game {
               this.player.fuelJumps + 1,
             );
           }
-          // 0x0010 is Nova's "Roadside Assistance" — these govts patch you up too
-          if (hurt && roadsideAssistance) this.ship.armor = this.ship.maxArmor;
+          // gövt Flags2 0x0010 or ränk Flags 0x0800 — these patch you up too
+          if (hurt && freeRepair) this.ship.armor = this.ship.maxArmor;
           this.save();
-          return roadsideAssistance && hurt
+          return freeRepair && hurt
             ? `"Hold position — transferring fuel and sealing that hull for you."`
             : `"Transferring a jump's worth of fuel now. Safe travels, Captain."`;
         },
@@ -4601,7 +4701,19 @@ export class Game {
     });
   }
 
-  private playerDestroyed(): void {
+  /**
+   * `deliberate` is the pilot pulling the handle — Alt-X or the sidebar's EJECT
+   * button. A fitted escape pod always answers that. It does *not* answer on
+   * its own when the ship blows up: oütf ModType 20 is "auto-eject (requires
+   * escape pod to work)" and the outfit's own text says why it exists, firing
+   * the pod "when it detects your armor state fall to zero ... without waiting
+   * for any input from the pilot". A pod alone waits for the pilot, which is
+   * what makes the 20,000-credit auto-eject "something of a must".
+   *
+   * Strict play has no say in this. Strict means a death is permanent, not
+   * that the pod is disabled — ejecting is exactly how a strict pilot lives.
+   */
+  private playerDestroyed(deliberate = false): void {
     // already mid-sequence (further hits while armour is zero)
     if (this.playerDeath) return;
 
@@ -4616,7 +4728,7 @@ export class Game {
     this.hailUi.close();
     this.infoUi.close();
 
-    const withPod = this.gear.escapePod && !this.player.strict;
+    const withPod = this.gear.escapePod && (deliberate || this.gear.autoEject);
     // Klaxon ×3 → ShipExplodes (+ Eject with the boom if you have a pod)
     const duration = Math.max(playPlayerDeath(withPod), playerDeathDuration());
     this.playerDeath = {
@@ -4673,59 +4785,81 @@ export class Game {
     this.playerDeath = null;
     this.explosions = [];
 
+    /*
+     * The escape pod is the only thing that lets you keep playing. dësc 13999,
+     * the reserved "message shown after the player uses an escape pod", says
+     * what it costs you: you drift, a prospector picks you up, and you "work
+     * several dreary odd jobs to scratch up enough money to buy a new ship" —
+     * so the hull and everything bolted to it are gone. Credits, record,
+     * missions and the outfits Flags 0x0004 marks as staying with you through
+     * a change of ship survive; you come back down in a Shuttle.
+     */
     if (d.withPod) {
+      // the hull a new pilot flies — the chär template's own starting ship
+      const podShip =
+        START_TEMPLATE && SHIPS[String(START_TEMPLATE.shipType)]
+          ? String(START_TEMPLATE.shipType)
+          : "128";
+      const keep: Record<string, number> = {};
+      for (const [id, n] of Object.entries(this.player.outfits)) {
+        if (((OUTFITS[id]?.flags ?? 0) & 0x0004) !== 0) keep[id] = n;
+      }
+      this.player.outfits = keep;
+      this.player.ammo = {};
+      this.player.cargo = {};
+      this.applyShipType(podShip);
+      grantHullOutfits(podShip, this.player.outfits);
+      this.recomputeLoadout();
       this.ship.shield = this.ship.maxShield;
       this.ship.armor = this.ship.maxArmor;
+      this.ship.vel = { x: 0, y: 0 };
       const haven =
         this.system.planets.find((p) => p.landable) ??
         getSystem(START_SYSTEM_ID).planets.find((p) => p.landable);
+      const text = DESCS["13999"];
       if (haven) {
         this.ship.pos = {
           x: haven.pos.x + haven.radius * 2,
           y: haven.pos.y + haven.radius,
         };
+        if (text) this.pendingMissionEvents.push({ title: "", text });
+        this.player.landedOn = haven.id;
+        this.mode = "landed";
+        this.save();
+        this.landedUi.show(haven, this.system);
+      } else {
+        this.message(
+          "You eject in your escape pod and are picked up — the ship is lost, but you live.",
+        );
+        this.save();
       }
-      this.ship.vel = { x: 0, y: 0 };
-      this.message(
-        "You eject in your escape pod and are picked up — the ship is lost, but you live.",
-      );
-      this.save();
       return;
     }
+    /*
+     * Without one, that is the end of the pilot. Nova does not tow you home:
+     * the game stops and you go back to the main menu, where you pick the
+     * pilot up from its last save — which is why the file is only written in
+     * port. Strict play deletes the pilot outright.
+     */
+    const id = this.pilotId;
+    this.pilotId = null; // nothing more is written for this run
     if (this.player.strict) {
-      // strict play: death is death
-      const id = this.pilotId;
-      this.pilotId = null; // don't autosave the corpse
       if (id) deletePilot(id);
       alert(
         `${this.pilotName} died in the ${this.system.name} system. Strict mode: this pilot is gone.`,
       );
-      this.landedUi.hide();
-      this.mode = "menu";
-      this.onMenu?.();
-      return;
-    }
-    const cost = Math.floor(this.player.credits * 0.1);
-    this.player.credits -= cost;
-    const haven =
-      this.system.planets.find((p) => p.landable) ??
-      getSystem(START_SYSTEM_ID).planets.find((p) => p.landable);
-    this.ship.shield = this.ship.maxShield;
-    this.ship.armor = this.ship.maxArmor;
-    if (haven) {
-      this.ship.pos = {
-        x: haven.pos.x + haven.radius * 2,
-        y: haven.pos.y + haven.radius,
-      };
-      this.ship.vel = { x: 0, y: 0 };
-      this.message(
-        `Your ship was disabled. A tug hauled you to ${haven.name} — repairs cost ${cost.toLocaleString()} cr.`,
-      );
     } else {
-      this.ship.vel = { x: 0, y: 0 };
-      this.message(`Emergency repairs cost ${cost.toLocaleString()} cr.`);
+      // roll the file back to the last time this pilot was safely in port
+      if (id && this.portSnapshot) {
+        savePilot(id, JSON.parse(this.portSnapshot) as PlayerState);
+      }
+      alert(
+        `${this.pilotName} died in the ${this.system.name} system.\n\nLoad the pilot from the main menu to resume from your last landing.`,
+      );
     }
-    this.save();
+    this.landedUi.hide();
+    this.mode = "menu";
+    this.onMenu?.();
   }
 
   // ---------------- landing ----------------
@@ -4883,8 +5017,14 @@ export class Game {
     this.message("Navigation computer cleared.");
   }
 
-  /** Nova's Alt-X: leave in the pod while the ship is still flying. */
-  private ejectFromShip(): void {
+  /** True while an escape pod is fitted — the sidebar shows EJECT for it. */
+  get hasEscapePod(): boolean {
+    return this.gear.escapePod;
+  }
+
+  /** Alt-X, or the sidebar button: leave in the pod while the ship still flies. */
+  ejectFromShip(): void {
+    if (this.playerDeath || this.mode !== "flight") return;
     if (!this.gear.escapePod) {
       this.message("You have no escape pod fitted.");
       return;
@@ -4893,7 +5033,7 @@ export class Game {
       return;
     // death cue (klaxon ×3 + explode + eject) is handled in playerDestroyed
     this.player.cargo = {};
-    this.playerDestroyed();
+    this.playerDestroyed(true);
   }
 
   /** Nova's self-destruct: scuttle the ship where it stands. */
@@ -5233,6 +5373,7 @@ export class Game {
      */
     if (this.gear.autoRefuel) this.refuel();
     this.save();
+    this.markPort(); // the point a death rolls back to
     this.landedUi.show(planet, this.system);
   }
 
