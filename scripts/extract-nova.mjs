@@ -364,6 +364,16 @@ function decodeShip(res) {
     cost: d.readInt32BE(48), // 32-bit: ships cost up to tens of millions
     mass: d.readInt16BE(62),
     length: d.readInt16BE(64), // metres; shown in the detailed ship info
+    /*
+     * InherentAI @66, in the gap the Bible's order leaves between Length @64
+     * and Crew @68. It reads 1-4 on all 288 hulls — never 0, never anything
+     * else — and the four AI types name themselves: 1 "wimpy trader" is the
+     * Shuttle, the Leviathan and the Star Liner, 2 "brave trader" the Argosy
+     * and the Enterprise, 3 "warship" the Fed Destroyer, 4 "interceptor" the
+     * Lightning and the Manta. mïsn Flags 0x2000/0x4000 gate a mission on
+     * which half of that split the player is flying.
+     */
+    inherentAi: d.readInt16BE(66),
     crew: d.readInt16BE(68), // defenders when the ship is boarded
     strength: d.readInt16BE(70), // combat-rating points awarded for a kill
     /*
@@ -807,6 +817,24 @@ function decodeMisn(res) {
      */
     datePostInc: d.readInt16BE(72),
     flags: d.readUInt16BE(80),
+    /*
+     * Flags2 @82 and AvailShipType @84, in the Bible's own order behind Flags.
+     *
+     * @82 takes only 0 (576 missions), 1 (204), 2 (10) and 4 (1) — exactly the
+     * three documented bits and nothing else — and each one lands where its
+     * meaning says it should. 0x0001 is "don't offer if the player hasn't the
+     * cargo space": 194 of its 204 missions carry cargo, against 365 cargo
+     * missions in all, so it is an opt-in gate rather than a restatement of
+     * the cargo fields. 0x0002 "apply Pay on auto-abort" is set on four
+     * missions all named "Refuel Trader" — the one job in the game that ends
+     * by aborting itself. 0x0004 "fails if the player is disabled" is set on
+     * one, "Take Vell-os to Kel'ar Iy".
+     *
+     * @84 reads the documented "ignored" 0 on all 791; nothing in the stock
+     * scenario demands a particular hull, but a plug-in can.
+     */
+    flags2: d.readUInt16BE(82),
+    availShipType: d.readInt16BE(84),
     availBits: s(92),
     onAccept: s(347),
     onRefuse: s(602),

@@ -200,6 +200,7 @@ interface RawShip {
   escortType: number;
   shortName: string;
   longName: string;
+  inherentAi: number;
   maxGuns: number;
   maxTurrets: number;
   length: number;
@@ -911,6 +912,7 @@ export async function loadUniverse(): Promise<void> {
       armor: s.armor,
       techLevel: s.techLevel,
       mass: s.mass,
+      inherentAi: s.inherentAi ?? 0,
       crew: s.crew ?? 0,
       strength: s.strength ?? 0,
       flags: s.flags ?? 0,

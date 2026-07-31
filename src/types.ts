@@ -208,6 +208,10 @@ export interface MissionType {
   compGovt: number;
   compReward: number;
   flags: number;
+  /** Flags2: 0x0001 needs cargo room, 0x0002 pay on auto-abort, 0x0004 fail if disabled */
+  flags2: number;
+  /** 0/-1 ignored, 128-255 must fly this hull, 1128+ must not, 2128+/3128+ by govt */
+  availShipType: number;
   availBits: string;
   onAccept: string;
   onRefuse: string;
@@ -401,6 +405,8 @@ export interface ShipType {
   shortName: string;
   /** the full marque shown over the ship's picture */
   longName: string;
+  /** the Bible's four AI types: 1 wimpy trader, 2 brave trader, 3 warship, 4 interceptor */
+  inherentAi: number;
   /** crew who defend the ship when it is boarded */
   crew: number;
   /** combat-rating points awarded for destroying this ship */
