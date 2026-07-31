@@ -526,6 +526,12 @@ export class Game {
   private mapZoom = 2.2;
   private mapCenter = { x: 0, y: 0 };
   private mapScale = 1; // effective px per map unit, set during render
+  /**
+   * Nova's H "hyper select" / hyperjump-coordinates overlay. Deadline for the
+   * overlay (including its fade-out tail). Refreshed by H / \ and held open
+   * while H is down; after release it lingers fully then fades away.
+   */
+  private floatingMapUntil = 0;
   private mouse = { x: 0, y: 0 };
   private drag: { x: number; y: number; moved: number } | null = null;
   private lastDragMoved = 0;
@@ -1605,7 +1611,17 @@ export class Game {
         if (this.input.shiftDown) this.selfDestruct();
         else this.toggleAutopilot();
       }
-      if (this.input.consume("Backslash")) this.cycleJumpDestination();
+      /*
+       * H is Nova's hyper-select / "hyperjump coordinates": cycle the next
+       * jump and show the floating minimap without leaving flight. \ does the
+       * same cycle (classic binding) and also peeks the map so the new course
+       * is visible.
+       */
+      if (this.input.consume("KeyH") || this.input.consume("Backslash")) {
+        this.cycleJumpDestination();
+        this.peekFloatingMap();
+      }
+      if (this.input.isDown("KeyH")) this.peekFloatingMap();
       if (this.input.consume("KeyN")) this.navOff();
       if (this.input.consume("KeyX") && this.input.altDown)
         this.ejectFromShip();
@@ -4618,7 +4634,7 @@ export class Game {
     return false;
   }
 
-  /** Nova's \: step the plotted course through this system's neighbours. */
+  /** Nova's H / \: step the plotted course through this system's neighbours. */
   private cycleJumpDestination(): void {
     const links = this.system.links.filter((id) => {
       try {
@@ -4635,6 +4651,39 @@ export class Game {
     const current = this.route.length > 0 ? this.route[0] : null;
     const idx = current ? links.indexOf(current) : -1;
     this.setDestination(links[(idx + 1) % links.length]);
+  }
+
+  /** Full-opacity linger after H / \ (or after releasing H). */
+  private static readonly FLOAT_MAP_HOLD = 2.4;
+  /** Fade duration after the hold; total on-screen time is HOLD + FADE. */
+  private static readonly FLOAT_MAP_FADE = 0.85;
+
+  /**
+   * Keep the floating hyperspace map up for a few seconds. Called on H / \
+   * (and every frame H is held) so the overlay is a peek, not a mode change.
+   * After the hold it fades out rather than vanishing.
+   */
+  private peekFloatingMap(): void {
+    this.floatingMapUntil =
+      this.time + Game.FLOAT_MAP_HOLD + Game.FLOAT_MAP_FADE;
+  }
+
+  private floatingMapVisible(): boolean {
+    return (
+      this.mode === "flight" &&
+      (this.floatingMapUntil > this.time || this.input.isDown("KeyH"))
+    );
+  }
+
+  /** 1 while held / during the hold; eases to 0 over FLOAT_MAP_FADE. */
+  private floatingMapAlpha(): number {
+    if (this.input.isDown("KeyH")) return 1;
+    const remaining = this.floatingMapUntil - this.time;
+    if (remaining <= 0) return 0;
+    if (remaining >= Game.FLOAT_MAP_FADE) return 1;
+    // ease-out so the last bit is a soft dissolve
+    const t = remaining / Game.FLOAT_MAP_FADE;
+    return t * t;
   }
 
   /** Nova's N: forget the course and take back the stick. */
@@ -5114,7 +5163,9 @@ export class Game {
     if (this.jump || this.pendingGateDest) return;
     if (this.route.length === 0) {
       if (!quiet) {
-        this.message("No hyperspace course set. Press M to open the map.");
+        this.message(
+          "No hyperspace course set. Press H to pick a neighbour, or M for the map.",
+        );
       }
       return;
     }
@@ -6318,6 +6369,9 @@ export class Game {
       ctx.fillRect(0, 0, w, h);
     }
 
+    // H overlay sits over flight only — never replaces it.
+    if (this.floatingMapVisible()) this.renderFloatingMap(ctx, w, h);
+
     if (this.mode === "map") this.renderMap(ctx, w, h);
   }
 
@@ -6748,20 +6802,247 @@ export class Game {
 
   // ---------------- galactic map ----------------
 
-  private renderMap(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    ctx.fillStyle = "rgba(2,5,12,0.92)";
-    ctx.fillRect(0, 0, w, h);
-    /*
-     * cölr FloatingMap is the border colour Nova draws around the floating
-     * hyperspace map and the escort menu. Reading it means a scenario that
-     * restyles its interface restyles this too.
-     */
+  /**
+   * Nova's floating hyperspace map (H / hyper-select). A small chart of the
+   * current system and its neighbourhood — plus any plotted route — drawn over
+   * the playfield. Flight keeps running; this is not `mode === "map"`.
+   *
+   * cölr FloatingMap is the border colour Nova uses for this overlay (and the
+   * escort menu). The full star map is a separate full-screen mode (M).
+   */
+  private renderFloatingMap(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ): void {
+    const alpha = this.floatingMapAlpha();
+    if (alpha <= 0.01) return;
+
+    const playW = w - SIDEBAR_W;
+    const boxW = Math.min(260, Math.max(180, playW * 0.28));
+    const boxH = Math.min(220, Math.max(150, h * 0.28));
+    const margin = 14;
+    const bx = playW - boxW - margin;
+    const by = margin;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // clip so labels / lanes never spill outside the plate (inner save
+    // restores the clip only — alpha stays for border + caption)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bx, by, boxW, boxH);
+    ctx.clip();
+
+    ctx.fillStyle = "rgba(4, 8, 16, 0.88)";
+    ctx.fillRect(bx, by, boxW, boxH);
+
+    const here = this.system;
+    // tight neighbourhood only: here + one-jump links. A long multi-hop plot
+    // must not zoom the plate out — the overlay is for hyper-select, not M.
+    const interest = new Set<string>([here.id, ...here.links]);
+
+    // fit so every neighbour sits inside the plate, centred on the current system
+    let maxR = 28; // minimum radius so a lone system isn't absurdly zoomed
+    for (const id of here.links) {
+      let sys;
+      try {
+        sys = getSystem(id);
+      } catch {
+        continue;
+      }
+      const dx = sys.mapPos.x - here.mapPos.x;
+      const dy = sys.mapPos.y - here.mapPos.y;
+      maxR = Math.max(maxR, Math.hypot(dx, dy));
+    }
+    // small margin so labels and rings clear the border
+    maxR *= 1.18;
+
+    const inset = 22;
+    const s = Math.min(
+      (boxW - inset * 2) / (maxR * 2),
+      (boxH - inset * 2) / (maxR * 2),
+    );
+    const cx = here.mapPos.x;
+    const cy = here.mapPos.y;
+    const toScreen = (mx: number, my: number) => ({
+      x: bx + boxW / 2 + (mx - cx) * s,
+      y: by + boxH / 2 + (my - cy) * s,
+    });
+
+    // only here + neighbours (and anything that happens to sit in that circle)
+    const visible = this.allSystems().filter((sys) => {
+      if (!interest.has(sys.id)) {
+        // drop anything outside the neighbourhood circle
+        const d = Math.hypot(
+          sys.mapPos.x - here.mapPos.x,
+          sys.mapPos.y - here.mapPos.y,
+        );
+        if (d > maxR * 1.05) return false;
+        if (!this.isExplored(sys.id) && !sys.links.some((l) => interest.has(l)))
+          return false;
+      }
+      return true;
+    });
+    const visibleIds = new Set(visible.map((s) => s.id));
+
+    // lanes between explored systems (and the next hop, so the route reads)
+    ctx.strokeStyle = "rgba(90,120,160,0.45)";
+    ctx.lineWidth = 1;
+    const drawn = new Set<string>();
+    ctx.beginPath();
+    for (const sys of visible) {
+      if (!this.isExplored(sys.id) && !interest.has(sys.id)) continue;
+      const a = toScreen(sys.mapPos.x, sys.mapPos.y);
+      for (const linkId of sys.links) {
+        if (!visibleIds.has(linkId)) continue;
+        const key = [sys.id, linkId].sort().join("|");
+        if (drawn.has(key)) continue;
+        drawn.add(key);
+        const other = getSystem(linkId);
+        const b = toScreen(other.mapPos.x, other.mapPos.y);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+    }
+    ctx.stroke();
+
+    // plotted course
+    if (this.route.length > 0) {
+      ctx.strokeStyle = "rgba(130,220,150,0.95)";
+      ctx.lineWidth = 2.5;
+      let prev = here;
+      for (const id of this.route) {
+        let next;
+        try {
+          next = getSystem(id);
+        } catch {
+          break;
+        }
+        const a = toScreen(prev.mapPos.x, prev.mapPos.y);
+        const b = toScreen(next.mapPos.x, next.mapPos.y);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        prev = next;
+      }
+    }
+
+    ctx.textAlign = "center";
+    for (const sys of visible) {
+      const pt = toScreen(sys.mapPos.x, sys.mapPos.y);
+      const explored = this.isExplored(sys.id);
+      const isCurrent = sys.id === this.player.systemId;
+      const isDest = sys.id === this.routeDest;
+      const onRoute = this.route.includes(sys.id);
+      const isNext = this.route.length > 0 && this.route[0] === sys.id;
+
+      if (!explored && !isCurrent && !onRoute && !isDest) {
+        ctx.fillStyle = "rgba(120,135,155,0.55)";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
+
+      const inhabited = sys.planets.some((p) => p.landable && !p.uninhabited);
+      const welcome =
+        inhabited &&
+        sys.planets.some(
+          (p) =>
+            p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
+        );
+      const r = isCurrent || isNext ? 5.5 : inhabited ? 4 : 3;
+      ctx.fillStyle = !inhabited
+        ? "#4a5666"
+        : welcome
+          ? systemGovtColor(sys)
+          : "#c85028";
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (isCurrent || isDest || isNext) {
+        ctx.strokeStyle = isCurrent
+          ? "#ffffff"
+          : isNext
+            ? "#ffe08a"
+            : "#8be09b";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // label current, next hop, final dest, and immediate neighbours
+      if (
+        isCurrent ||
+        isDest ||
+        isNext ||
+        here.links.includes(sys.id) ||
+        interest.has(sys.id)
+      ) {
+        ctx.font =
+          isCurrent || isNext
+            ? "600 11px Helvetica, Arial, sans-serif"
+            : "10px Helvetica, Arial, sans-serif";
+        ctx.fillStyle = isCurrent
+          ? "#ffffff"
+          : isNext
+            ? "#ffe08a"
+            : isDest
+              ? "#a8e0b2"
+              : "rgba(190,205,225,0.88)";
+        ctx.fillText(sys.name, pt.x, pt.y + 15);
+      }
+    }
+
+    ctx.restore(); // end clip
+
+    // border outside the clip so it stays sharp (still under alpha)
     if (COLR) {
       ctx.strokeStyle = COLR.floatingMap;
       ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, w - 2, h - 2);
+      ctx.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
       ctx.lineWidth = 1;
+    } else {
+      ctx.strokeStyle = "rgba(120, 160, 210, 0.85)";
+      ctx.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
     }
+
+    // small caption: next hop name
+    const nextName =
+      this.route.length > 0
+        ? (() => {
+            try {
+              return getSystem(this.route[0]).name;
+            } catch {
+              return null;
+            }
+          })()
+        : null;
+    ctx.font = "10px Helvetica, Arial, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(180, 200, 225, 0.9)";
+    ctx.fillText(
+      nextName ? `Next: ${nextName}` : "H · select destination",
+      bx + 8,
+      by + boxH - 8,
+    );
+
+    ctx.restore(); // end alpha
+  }
+
+  private renderMap(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    ctx.fillStyle = "rgba(2,5,12,0.92)";
+    ctx.fillRect(0, 0, w, h);
+    // full-screen chart frame (not the H overlay — that uses FloatingMap above)
+    ctx.strokeStyle = COLR?.floatingMap ?? "rgba(120, 160, 210, 0.6)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, w - 2, h - 2);
+    ctx.lineWidth = 1;
 
     // base scale fits the whole galaxy at zoom 1; user zoom/pan on top
     let minX = Infinity,

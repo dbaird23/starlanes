@@ -509,9 +509,9 @@ export class HudUi {
       ["` target", "R closest"],
       ["Y hail", "B board"],
       ["L land", g.cloakBits > 0 ? "U cloak" : "C recall"],
-      ["J jump", "M map"],
-      ["W select", "Esc menu"],
-      ["Caps 2×", ""],
+      ["J jump", "H course"],
+      ["M map", "W select"],
+      ["Esc menu", "Caps 2×"],
     ];
     const html = keys
       .map(([a, b]) => `<span>${a}</span><span>${b}</span>`)
