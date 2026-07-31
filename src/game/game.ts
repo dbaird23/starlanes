@@ -100,6 +100,10 @@ import {
 } from "./reputation";
 import {
   getVolume,
+  playMenuClose,
+  playMenuOpen,
+  playPlayerDeath,
+  playerDeathDuration,
   playSnd,
   playSndAt,
   preloadCoreSnds,
@@ -496,6 +500,18 @@ export class Game {
   /** Offscreen buffer for the solid-white hull silhouette during gateFlash. */
   private gateFlashBuf: HTMLCanvasElement | null = null;
   private gateFlashCtx: CanvasRenderingContext2D | null = null;
+  /**
+   * Player death is not instant: klaxon ×3 then explode (~4.6s of stock audio)
+   * while fire animations keep sparking at the wreck. Null when not dying.
+   */
+  private playerDeath: {
+    t: number;
+    duration: number;
+    withPod: boolean;
+    x: number;
+    y: number;
+    nextFx: number;
+  } | null = null;
 
   private messages: Message[] = [];
   private pendingMissionEvents: MissionEvent[] = [];
@@ -1084,7 +1100,8 @@ export class Game {
   openMap(previewSpobs: string[] = []): void {
     // don't clobber an open hypergate destination chart
     if (this.gateChooser) return;
-    this.mapReturn = this.mode === "map" ? this.mapReturn : this.mode;
+    const wasMap = this.mode === "map";
+    this.mapReturn = wasMap ? this.mapReturn : this.mode;
     this.mapPreview = previewSpobs
       .map((id) => SPOB_INDEX.get(id)?.systemId)
       .filter((id): id is string => id !== undefined);
@@ -1097,6 +1114,7 @@ export class Game {
       this.mapCenter = { ...this.system.mapPos };
     }
     if (this.mapReturn === "landed") this.landedUi.suspend();
+    if (!wasMap) playMenuOpen();
   }
 
   /**
@@ -1115,6 +1133,7 @@ export class Game {
 
   /** Leave the map, back to wherever it was opened from. */
   closeMap(): void {
+    if (this.mode === "map") playMenuClose();
     if (this.gateChooser) {
       // backing out of the gate chart shuts the ring
       this.closeGate(this.gateChooser.id);
@@ -1483,6 +1502,13 @@ export class Game {
   private updateFlight(dt: number): void {
     const sys = this.system;
 
+    // death sequence: no controls, but explosions must keep animating
+    if (this.playerDeath) {
+      this.updatePlayerDeath(dt);
+      this.advanceExplosions(dt);
+      return;
+    }
+
     /*
      * Gate enter flash: hull bleaches white on the pad, then transit. Controls
      * are locked so you stay centred on the ring.
@@ -1715,6 +1741,10 @@ export class Game {
     this.updateProjectiles(dt);
     this.updatePointDefense(dt);
     this.updateBeams(dt);
+    this.advanceExplosions(dt);
+  }
+
+  private advanceExplosions(dt: number): void {
     for (const fx of this.explosions) fx.t += dt;
     this.explosions = this.explosions.filter((fx) => {
       const sheet = BOOM_SPRITES[fx.boomId];
@@ -1740,6 +1770,8 @@ export class Game {
     const idx = this.targetNpc ? visible.indexOf(this.targetNpc) : -1;
     this.targetNpc = visible[(idx + 1) % visible.length];
     this.targetPlanet = null;
+    // Beep3 — the short select click; used to be played only as a jump refusal
+    playSnd(SND.TARGET, 0.45);
   }
 
   govtLabel(govtId: number): string {
@@ -1883,7 +1915,7 @@ export class Game {
       });
       npc.typeId = typeId;
       npc.govtId = dude.govt >= 128 ? dude.govt : inherentCombatGovt(typeId);
-      npc.hostile = true;
+      this.setNpcHostile(npc);
       npc.defenderOf = planet.id;
       npc.initDefense(
         type.shield,
@@ -2887,6 +2919,7 @@ export class Game {
     }
     this.targetNpc = best;
     this.targetPlanet = null;
+    playSnd(SND.TARGET, 0.45);
   }
 
   /** A recalled fighter flies home and stows itself in its bay. */
@@ -2941,6 +2974,20 @@ export class Game {
     this.beams = this.beams.filter((b) => b.ttl > 0);
   }
 
+  /**
+   * Whether a projectile may damage this NPC. Your wing (you + escorts) is
+   * immune to its own fire; every other ship can hit every other ship so AI
+   * dogfights actually connect. The previous filter skipped *all* non-ally
+   * shots against non-ally hulls, so hostiles never damaged each other.
+   */
+  private projectileCanHitNpc(p: Projectile, npc: NpcShip): boolean {
+    if (p.fromPlayer) return !npc.ally;
+    const owner = p.owner as NpcShip | null;
+    if (owner?.ally) return !npc.ally;
+    // independent / hostile NPC fire: anyone but the shooter (already excluded)
+    return true;
+  }
+
   /** Beams are hitscan: damage lands the instant they fire. */
   private fireBeam(
     shooter: Ship,
@@ -2951,9 +2998,16 @@ export class Game {
   ): void {
     const angle = aimAngle ?? shooter.angle;
     const length = Math.max(60, weap.beamLength);
+    // player / escort beams skip your wing; hostile beams may hit anyone else
+    // (including other hostiles) so fleet fights work the same as gunfire
     const targets: Ship[] = fromPlayer
       ? this.npcs.filter((n) => !n.ally)
-      : [this.ship, ...this.npcs.filter((n) => n.ally)];
+      : [
+          this.ship,
+          ...this.npcs.filter(
+            (n) => n !== shooter && !(n.ally && (shooter as NpcShip).ally),
+          ),
+        ];
     // Beams leave from the hull's BeamPos mounts, same as shots leave the guns
     const exit = weaponExitPoint(
       shooter.sprite,
@@ -3068,8 +3122,10 @@ export class Game {
       if (this.ship.destroyed) this.playerDestroyed();
     } else {
       const victim = hit.ship as NpcShip;
-      if (victim.destroyed && this.npcs.includes(victim))
-        this.destroyNpc(victim, victim.ally);
+      if (victim.destroyed && this.npcs.includes(victim)) {
+        // credit only when your escort made the kill
+        this.destroyNpc(victim, npc.ally, npc.ally ? npc : null);
+      }
     }
   }
 
@@ -3569,9 +3625,8 @@ export class Game {
       }
       for (const npc of this.npcs) {
         if ((npc as Ship) === p.owner) continue;
-        // your own shots pass through your fighters, and theirs through you
-        if (p.fromPlayer && npc.ally) continue;
-        if (!p.fromPlayer && !npc.ally && !(p.owner as NpcShip).ally) continue;
+        // same wing is immune; everyone else is fair game (incl. AI vs AI)
+        if (!this.projectileCanHitNpc(p, npc)) continue;
         // ProxSafety keeps a just-launched shot from detonating on its own ship
         const r =
           npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
@@ -3592,7 +3647,7 @@ export class Game {
             this.destroyNpc(
               npc,
               p.fromPlayer || !!owner?.ally,
-              owner?.ally ? owner : null,
+              owner && !p.fromPlayer ? owner : null,
             );
           }
           break;
@@ -3649,6 +3704,8 @@ export class Game {
       };
       for (const npc of this.npcs) {
         if ((npc as Ship) === p.owner) continue;
+        // same wing filter as direct hits — don't blast your own escorts
+        if (!this.projectileCanHitNpc(p, npc)) continue;
         const before = npc.armor + npc.shield;
         hurt(npc);
         // a blast that catches a bystander provokes them the same as a direct hit
@@ -3658,7 +3715,7 @@ export class Game {
           this.destroyNpc(
             npc,
             p.fromPlayer || !!owner?.ally,
-            owner?.ally ? owner : null,
+            owner && !p.fromPlayer ? owner : null,
           );
         }
       }
@@ -3703,6 +3760,20 @@ export class Game {
    * to send every one of them fleeing, so nothing in the game ever shot back
    * at you unless it had already been born hostile.
    */
+  /**
+   * Mark an NPC as fighting the player. Red Alert (snd 370) plays only when
+   * this is the first hostile in the system — not every time a new ship piles
+   * on after combat has already started.
+   */
+  private setNpcHostile(npc: NpcShip): void {
+    if (npc.ally || npc.hostile || npc.done) return;
+    const alreadyUnderAttack = this.npcs.some(
+      (n) => n !== npc && n.hostile && !n.done && !n.disabled,
+    );
+    npc.hostile = true;
+    if (!alreadyUnderAttack) playSnd(SND.RED_ALERT, 0.6);
+  }
+
   private provoke(npc: NpcShip): void {
     if (npc.ally || npc.hostile) return; // your own escorts, and anyone already fighting
     /*
@@ -3722,7 +3793,7 @@ export class Game {
       return;
     }
     // updateHostileAi flies them at the player; phase is a trader's waypoint
-    npc.hostile = true;
+    this.setNpcHostile(npc);
     /*
      * The interceptor is also Nova's "piracy police", which the Bible has
      * "attacking any ship that fires on or attempts to board another,
@@ -3735,7 +3806,7 @@ export class Game {
       if (Math.hypot(other.pos.x - npc.pos.x, other.pos.y - npc.pos.y) > 1600)
         continue;
       if (govtEnemy(other.govtId, npc.govtId)) continue; // they were enemies anyway
-      other.hostile = true;
+      this.setNpcHostile(other);
     }
   }
 
@@ -3904,16 +3975,17 @@ export class Game {
         const mDef = MISSIONS[String(active.misnId)];
         const goal = mDef?.shipGoal ?? 0;
         // you only shoot the ones you were sent to kill or cripple
-        npc.hostile = goal === 0 || goal === 1;
+        const wantHostile = goal === 0 || goal === 1;
         /*
          * ShipBehav overrides that when the mission says so: 0 makes the
          * special ships always attack the player and 1 makes them protect
          * them, whatever the goal implies. 208 missions set 0 and 40 set 1.
          */
-        if (mDef?.shipBehav === 0) npc.hostile = true;
-        else if (mDef?.shipBehav === 1) {
+        if (mDef?.shipBehav === 1) {
           npc.hostile = false;
           npc.ally = true;
+        } else if (mDef?.shipBehav === 0 || wantHostile) {
+          this.setNpcHostile(npc);
         }
         // rescue targets start dead in space
         if (goal === 5) npc.disabled = true;
@@ -4186,7 +4258,7 @@ export class Game {
       this.message(`You are fined ${paid.toLocaleString()} credits.`);
     // being caught turns the patrol on you, as any crime does
     this.provoke(scanner);
-    scanner.hostile = true;
+    this.setNpcHostile(scanner); // in case provoke only made a wimpy flee
     this.save();
   }
 
@@ -4343,13 +4415,13 @@ export class Game {
       npc.typeId = typeId;
       npc.govtId = fleet.govt;
       npc.aiType = 3; // fleets fly as warships
-      npc.hostile = hostile;
       npc.initDefense(
         type.shield,
         type.armor,
         type.shieldRechPerSec,
         (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
       );
+      if (hostile) this.setNpcHostile(npc);
       npc.sprite = SHIP_SPRITES[typeId] ?? null;
       // stagger them into a loose formation behind the flagship
       const row = Math.floor(slot / 3);
@@ -4453,6 +4525,8 @@ export class Game {
     y: number,
     scale: number,
     boomType = 133,
+    /** skip the bööm snd (player death plays its own 371×3 → 303 sequence) */
+    silent = false,
   ): void {
     const boom = BOOMS[String(boomType)] ?? BOOMS["133"];
     if (!boom) return;
@@ -4460,7 +4534,7 @@ export class Game {
     if (!BOOM_SPRITES[boomId]) return;
     // SoundIndex -1 is a silent explosion (Nova Bible); without the guard that
     // asked for snd 299. No stock bööm uses it, but a plug-in easily could.
-    if (boom.soundIndex >= 0) {
+    if (!silent && boom.soundIndex >= 0) {
       playSndAt(
         300 + boom.soundIndex,
         0.45,
@@ -4479,12 +4553,78 @@ export class Game {
   }
 
   private playerDestroyed(): void {
-    this.spawnExplosion(this.ship.pos.x, this.ship.pos.y, 1.6, 133);
+    // already mid-sequence (further hits while armour is zero)
+    if (this.playerDeath) return;
+
     this.projectiles = [];
+    this.beams = [];
     // dying mid-charge cuts the hyperdrive with everything else
     this.jump = null;
     stopSustained(JUMP_SND_KEY);
-    if (this.gear.escapePod && !this.player.strict) {
+    this.ship.vel = { x: 0, y: 0 };
+    this.ship.thrusting = false;
+    this.autopilot = false;
+    this.hailUi.close();
+    this.infoUi.close();
+
+    const withPod = this.gear.escapePod && !this.player.strict;
+    // Klaxon ×3 → ShipExplodes (+ Eject with the boom if you have a pod)
+    const duration = Math.max(playPlayerDeath(withPod), playerDeathDuration());
+    this.playerDeath = {
+      t: 0,
+      duration,
+      withPod,
+      x: this.ship.pos.x,
+      y: this.ship.pos.y,
+      nextFx: 0,
+    };
+    // opening burst — more fire is spawned every few frames in updatePlayerDeath
+    this.spawnExplosion(this.ship.pos.x, this.ship.pos.y, 2.0, 133, true);
+    this.spawnExplosion(this.ship.pos.x, this.ship.pos.y, 1.4, 132, true);
+  }
+
+  /**
+   * Hold on the wreck while klaxons and the explode sample play. Sparks keep
+   * lighting at the hull; only when the cue ends do we resolve pod / tug / menu.
+   */
+  private updatePlayerDeath(dt: number): void {
+    const d = this.playerDeath;
+    if (!d) return;
+    d.t += dt;
+    this.ship.pos.x = d.x;
+    this.ship.pos.y = d.y;
+    this.ship.vel = { x: 0, y: 0 };
+    this.ship.thrusting = false;
+    // slow tumble of the hulk
+    this.ship.angle += 0.55 * dt;
+
+    // continuous fire: secondary blasts for the whole sound sequence
+    d.nextFx -= dt;
+    if (d.nextFx <= 0) {
+      // denser early (klaxon phase), still burning through the boom sample
+      const early = d.t < d.duration * 0.35;
+      d.nextFx = early
+        ? 0.12 + Math.random() * 0.1
+        : 0.22 + Math.random() * 0.18;
+      const spread = early ? 55 : 80;
+      const ox = (Math.random() - 0.5) * spread;
+      const oy = (Math.random() - 0.5) * spread;
+      const scale = (early ? 1.1 : 0.7) + Math.random() * 1.1;
+      // 133 = ship exploding, 132 = ship breakup (smaller fire)
+      const kind = Math.random() < 0.55 ? 133 : 132;
+      this.spawnExplosion(d.x + ox, d.y + oy, scale, kind, true);
+    }
+
+    if (d.t >= d.duration) this.finishPlayerDeath();
+  }
+
+  private finishPlayerDeath(): void {
+    const d = this.playerDeath;
+    if (!d) return;
+    this.playerDeath = null;
+    this.explosions = [];
+
+    if (d.withPod) {
       this.ship.shield = this.ship.maxShield;
       this.ship.armor = this.ship.maxArmor;
       const haven =
@@ -4702,7 +4842,7 @@ export class Game {
     }
     if (!confirm("Abandon ship? Your ship, outfits and cargo will be lost."))
       return;
-    playSnd(SND.EJECT, 0.6); // snd 372, named for exactly this
+    // death cue (klaxon ×3 + explode + eject) is handled in playerDestroyed
     this.player.cargo = {};
     this.playerDestroyed();
   }
@@ -5000,7 +5140,7 @@ export class Game {
           ? `${planet.name} refuses all traffic. You are not getting down there.`
           : `${planet.name} denies you landing clearance. They want a better record than yours.`,
       );
-      playSnd(SND.BEEP3, 0.5);
+      playSnd(SND.LANDING_DENIED, 0.55); // snd 153
       return;
     }
 
@@ -5166,6 +5306,7 @@ export class Game {
         this.message(
           "No hyperspace course set. Press H to pick a neighbour, or M for the map.",
         );
+        playSnd(SND.DENY, 0.5);
       }
       return;
     }
@@ -5174,13 +5315,15 @@ export class Game {
         this.message(
           "Too deep in the system's gravity well to jump. Head for open space.",
         );
-        playSnd(SND.BEEP3, 0.5);
+        // Beep1 — gravity-well cue (Beep3 = target select, Beep5 = other denies)
+        playSnd(SND.NO_JUMP, 0.55);
       }
       return;
     }
     if (this.player.fuelJumps < 1) {
       if (!quiet) {
         this.message("Not enough hyperdrive fuel. Land somewhere and refuel.");
+        playSnd(SND.DENY, 0.5);
       }
       return;
     }
@@ -5189,6 +5332,7 @@ export class Game {
         this.message(
           "Your systems are ionized — the hyperdrive will not engage.",
         );
+        playSnd(SND.DENY, 0.5);
       }
       return;
     }
@@ -5969,7 +6113,6 @@ export class Game {
     npc.govtId = govtId >= 128 ? govtId : inherentCombatGovt(typeId);
     npc.aiType = aiType;
     npc.dudeId = dudeId;
-    npc.hostile = !!type && this.hostileToPlayer(npc.govtId);
     if (type) {
       // shïp flag 0x10: tougher ships hold together to 10% armor
       npc.initDefense(
@@ -5997,7 +6140,15 @@ export class Game {
       }
     }
     // EV gives every new ship a small chance of being somebody in particular
-    if (!npc.hostile || Math.random() < 0.5) this.maybeMakePerson(npc);
+    // (before hostility — a person may reassign govt / hold fire for a job)
+    const bornHostile = !!type && this.hostileToPlayer(npc.govtId);
+    if (!bornHostile || Math.random() < 0.5) this.maybeMakePerson(npc);
+    if (!npc.ally && this.hostileToPlayer(npc.govtId)) {
+      // leave peaceful captains who still have a LinkMission to offer
+      const person =
+        npc.personId !== null ? PERSONS[String(npc.personId)] : null;
+      if (!(person && person.linkMission >= 128)) this.setNpcHostile(npc);
+    }
     const ang = Math.random() * Math.PI * 2;
     if (anywhere) {
       const r = 400 + Math.random() * 1200;
@@ -6568,9 +6719,12 @@ export class Game {
       }
     }
 
-    if (this.cloaked) ctx.globalAlpha = 0.35;
-    this.drawShip(ctx, this.ship, true, this.player.shipId);
-    ctx.globalAlpha = 1;
+    // during the death sequence the hull is the fireball — don't paint the ship
+    if (!this.playerDeath) {
+      if (this.cloaked) ctx.globalAlpha = 0.35;
+      this.drawShip(ctx, this.ship, true, this.player.shipId);
+      ctx.globalAlpha = 1;
+    }
 
     ctx.restore();
   }

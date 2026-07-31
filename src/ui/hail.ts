@@ -6,6 +6,7 @@ import {
   shipyardPict,
   type PictInfo,
 } from "../data/universe";
+import { playMenuClose, playMenuOpen } from "../engine/audio";
 import type { Game } from "../game/game";
 import type { NpcShip } from "../game/ship";
 import type { PlanetDef } from "../types";
@@ -37,29 +38,35 @@ export class HailUi {
   }
 
   show(target: NpcShip, greeting: string): void {
+    const wasOpen = this.open;
     this.target = target;
     this.planet = null;
     this.reply = greeting;
     this.root.classList.remove("hidden");
+    if (!wasOpen) playMenuOpen();
     this.render();
   }
 
   /** Comms with a world's traffic control. */
   showPlanet(planet: PlanetDef, greeting: string, options: HailOption[]): void {
+    const wasOpen = this.open;
     this.planet = planet;
     this.target = null;
     this.planetOptions = options;
     this.reply = greeting;
     this.root.classList.remove("hidden");
+    if (!wasOpen) playMenuOpen();
     this.render();
   }
 
   close(): void {
+    if (!this.open) return;
     this.target = null;
     this.planet = null;
     this.planetOptions = [];
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
+    playMenuClose();
   }
 
   private render(): void {

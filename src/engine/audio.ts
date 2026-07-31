@@ -14,22 +14,47 @@ export const SND = {
   WARP_IN: 128, // "Warp up"    — hyperdrive spooling up
   WARP_IN_BIG: 129, // "Warp up.x2"
   WARP_OUT: 130, // "Warp out"   — arriving in a new system
-  BEEP1: 150,
-  BEEP2: 151,
-  BEEP3: 152,
-  BEEP4: 153,
-  BEEP5: 154,
+  BEEP1: 150, // generic confirm (volume, scoop, dock)
+  BEEP2: 151, // hail / comms open
+  BEEP3: 152, // target select (cycle / closest)
+  BEEP4: 153, // landing denied, gravity-well jump, hypergate power / emerge
+  BEEP5: 154, // general refusal (no course, empty tank, …)
+  /** Tab / ` through contacts — short select click. */
+  TARGET: 152,
+  /** Can't do that — no course, empty tank, ionized, … */
+  DENY: 154,
+  /** Planet will not clear you to land (MinStatus / never). */
+  LANDING_DENIED: 153,
+  /** Too deep in the gravity well to jump (same cue as landing denied). */
+  NO_JUMP: 153,
+  /** First hostile engagement in a quiet system. */
   RED_ALERT: 370,
   KLAXON: 371,
   EJECT: 372,
   CLOAK_OFF: 380,
   CLOAK_ON: 381,
   AIRLOCK: 390, // boarding / docking tube
+  /** Opening any menu / dialog. */
+  MENU_OPEN: 600,
+  /** Closing any menu / dialog. */
+  MENU_CLOSE: 601,
+  /** @deprecated use MENU_OPEN — same resource ("Menu button down") */
   MENU_DOWN: 600,
+  /** @deprecated use MENU_CLOSE — same resource ("Menu button up") */
   MENU_UP: 601,
   MENU_START: 602,
   MENU_END: 603,
 } as const;
+
+/** snd 600 — play when a menu or dialog opens. */
+export function playMenuOpen(volume = 0.45): void {
+  playSnd(SND.MENU_OPEN, volume);
+}
+
+/** snd 601 — play when a menu or dialog closes. */
+export function playMenuClose(volume = 0.45): void {
+  playSnd(SND.MENU_CLOSE, volume);
+}
 
 /**
  * Escort speech, per the Bible's gövt VoiceType field. A government's ships
@@ -448,6 +473,53 @@ export function playSndChain(ids: number[], volume = 0.5): void {
       t += buf.duration;
     }
   });
+}
+
+/** Fallback lengths if buffers are not warm yet (measured from stock wavs). */
+const KLAXON_FALLBACK_S = 0.46;
+const SHIP_EXPLODE_FALLBACK_S = 3.22;
+const DEATH_KLAXON_COUNT = 3;
+
+/**
+ * How long the player-death sequence lasts: 3× klaxon then the explode sample.
+ * Fire animations and the pod/tug outcome hold until this elapses.
+ */
+export function playerDeathDuration(): number {
+  const k = buffers.get(SND.KLAXON)?.duration ?? KLAXON_FALLBACK_S;
+  const boom = buffers.get(303)?.duration ?? SHIP_EXPLODE_FALLBACK_S;
+  return DEATH_KLAXON_COUNT * k + boom;
+}
+
+/**
+ * Player ship loss: Klaxon (371) three times, then ShipExplodes (303).
+ * With an escape pod, Eject (372) starts at the same moment as the explosion.
+ * Returns the sequence length in seconds so the visual can match.
+ */
+export function playPlayerDeath(withEscapePod: boolean, volume = 0.65): number {
+  const duration = playerDeathDuration();
+  if (muted || masterVolume <= 0) return duration;
+  const ac = audioCtx();
+  if (!ac) return duration;
+
+  void Promise.all([
+    fetchSnd(SND.KLAXON),
+    fetchSnd(303),
+    withEscapePod ? fetchSnd(SND.EJECT) : Promise.resolve(null),
+  ]).then(([klaxon, boom, eject]) => {
+    if (!ctx || ctx.state !== "running" || !master) return;
+    let t = ctx.currentTime;
+    if (klaxon) {
+      for (let i = 0; i < DEATH_KLAXON_COUNT; i++) {
+        startSource(SND.KLAXON, klaxon, volume, undefined, t);
+        t += klaxon.duration;
+      }
+    } else {
+      t += DEATH_KLAXON_COUNT * KLAXON_FALLBACK_S;
+    }
+    if (boom) startSource(303, boom, volume, undefined, t);
+    if (eject) startSource(SND.EJECT, eject, volume * 0.9, undefined, t);
+  });
+  return duration;
 }
 
 /**

@@ -1,4 +1,5 @@
 import { COMMODITIES } from "../data/universe";
+import { playMenuClose, playMenuOpen } from "../engine/audio";
 
 /**
  * Nova's plunder dialog. Boarding a crippled ship doesn't hand you the loot —
@@ -59,18 +60,22 @@ export class PlunderUi {
   }
 
   show(ctx: PlunderContext): void {
+    const wasOpen = this.ctx !== null;
     this.ctx = ctx;
     this.note = "";
     this.prize = null;
     this.root.classList.remove("hidden");
+    if (!wasOpen) playMenuOpen();
     this.render();
   }
 
   close(): void {
+    if (this.ctx === null) return;
     this.ctx = null;
     this.prize = null;
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
+    playMenuClose();
   }
 
   private render(): void {
@@ -85,7 +90,10 @@ export class PlunderUi {
     const cargoTons = Object.values(h.cargo).reduce((a, b) => a + b, 0);
     const cargoLabel = cargoTons
       ? Object.entries(h.cargo)
-          .map(([id, t]) => `${t}t ${COMMODITIES.find((c2) => c2.id === id)?.name ?? id}`)
+          .map(
+            ([id, t]) =>
+              `${t}t ${COMMODITIES.find((c2) => c2.id === id)?.name ?? id}`,
+          )
           .join(", ")
       : "None";
     const ammoRounds = Object.values(h.ammo).reduce((a, b) => a + b, 0);
@@ -123,12 +131,16 @@ export class PlunderUi {
         </div>
       </div>`;
 
-    this.root.querySelectorAll<HTMLButtonElement>("button[data-take]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        this.note = c.take(btn.dataset.take as "credits" | "cargo" | "ammo" | "energy");
-        this.render();
+    this.root
+      .querySelectorAll<HTMLButtonElement>("button[data-take]")
+      .forEach((btn) => {
+        btn.addEventListener("click", () => {
+          this.note = c.take(
+            btn.dataset.take as "credits" | "cargo" | "ammo" | "energy",
+          );
+          this.render();
+        });
       });
-    });
     this.root.querySelector("#pl-capture")?.addEventListener("click", () => {
       const result = c.capture();
       if (!result.taken) {
@@ -147,7 +159,10 @@ export class PlunderUi {
   }
 
   /** The prize is yours — fly her, or put her in the wing. */
-  private renderPrize(c: PlunderContext, p: Extract<CaptureResult, { taken: true }>): void {
+  private renderPrize(
+    c: PlunderContext,
+    p: Extract<CaptureResult, { taken: true }>,
+  ): void {
     this.root.innerHTML = `
       <div class="plunder">
         <div class="pl-head">Your boarding party has taken the ${escapeHtml(p.prize)}.</div>
@@ -184,6 +199,8 @@ function escapeHtml(s: string): string {
   return s.replace(
     /[&<>"']/g,
     (ch) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] as string,
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        ch
+      ] as string,
   );
 }

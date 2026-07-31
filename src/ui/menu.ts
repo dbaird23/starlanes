@@ -1,6 +1,8 @@
 import { asset } from "../asset";
 import {
   isTitleMusicEnabled,
+  playMenuClose,
+  playMenuOpen,
   playMusic,
   playSnd,
   playSndChain,
@@ -398,8 +400,7 @@ export class MainMenu {
       .forEach((btn) => {
         btn.addEventListener("click", () => this.onMenu(btn.dataset.menu!));
         // snd 600/601 are Nova's own "Menu button down"/"up" plate clicks
-        btn.addEventListener("pointerdown", () => playSnd(SND.MENU_DOWN, 0.5));
-        btn.addEventListener("pointerup", () => playSnd(SND.MENU_UP, 0.5));
+        // open/close cues (600/601) fire on the dialogs these buttons open
         // rolling over a button shows its icon in the middle of the emblem
         const frame = Number(btn.dataset.emblem);
         btn.addEventListener("mouseenter", () => this.setEmblemFrame(frame));
@@ -469,10 +470,17 @@ export class MainMenu {
 
   private modal(html: string): HTMLElement {
     const m = this.root.querySelector<HTMLElement>("#ttl-modal")!;
+    const wasOpen = !m.classList.contains("hidden");
     m.innerHTML = `<div class="ttl-dialog">${html}</div>`;
     m.classList.remove("hidden");
+    if (!wasOpen) playMenuOpen();
     m.querySelectorAll<HTMLButtonElement>("[data-close]").forEach((b) =>
-      b.addEventListener("click", () => m.classList.add("hidden")),
+      b.addEventListener("click", () => {
+        if (!m.classList.contains("hidden")) {
+          m.classList.add("hidden");
+          playMenuClose();
+        }
+      }),
     );
     return m;
   }

@@ -36,7 +36,12 @@ import {
   type MissionEvent,
 } from "../game/missions";
 import { MISSIONS, WEAPONS, getSystem } from "../data/universe";
-import { playAmbient, stopAmbient } from "../engine/audio";
+import {
+  playAmbient,
+  playMenuClose,
+  playMenuOpen,
+  stopAmbient,
+} from "../engine/audio";
 import type {
   ActiveMission,
   MissionType,
@@ -235,8 +240,7 @@ export class LandedUi {
         const back = this.root.querySelector<HTMLButtonElement>("#btn-back");
         if (back) back.click();
         else {
-          this.view = "spaceport";
-          this.render();
+          this.setView("spaceport");
         }
         return;
       }
@@ -268,8 +272,7 @@ export class LandedUi {
           e.preventDefault();
           handled();
           this.game.refuel();
-          this.view = "spaceport";
-          this.render();
+          this.setView("spaceport");
           return;
         }
       }
@@ -733,6 +736,21 @@ export class LandedUi {
       (view === "bbs" && p.uninhabited) ||
       (view === "log" && this.game.player.activeMissions.length === 0);
     if (missing) return;
+    this.setView(view);
+  }
+
+  /**
+   * Switch landed screens with menu open/close cues (snd 600 / 601).
+   * Returning to the spaceport is a close; leaving it (or swapping counters)
+   * is an open.
+   */
+  private setView(view: View): void {
+    if (this.view === view) {
+      this.render();
+      return;
+    }
+    if (view === "spaceport") playMenuClose();
+    else playMenuOpen();
     this.view = view;
     this.render();
   }
@@ -761,6 +779,7 @@ export class LandedUi {
 
     this.view = this.events.length > 0 ? "events" : "spaceport";
     this.root.classList.remove("hidden");
+    playMenuOpen();
     if (this.view === "spaceport") this.maybeSpaceportOffer();
     this.render();
   }
@@ -779,6 +798,7 @@ export class LandedUi {
     this.pendingOffer = { m, active, back: "shipOffer" };
     this.view = "offer";
     this.root.classList.remove("hidden");
+    playMenuOpen();
     this.render();
   }
 
@@ -794,6 +814,7 @@ export class LandedUi {
     this.selectedGate = 0;
     this.view = "gate";
     this.root.classList.remove("hidden");
+    playMenuOpen();
     this.render();
   }
 
@@ -886,10 +907,11 @@ export class LandedUi {
   private openOffer(m: MissionType, back: View): void {
     const active = this.offerFor(m);
     this.pendingOffer = { m, active, back };
-    this.view = "offer";
+    this.setView("offer");
   }
 
   hide(): void {
+    if (this.planet) playMenuClose();
     this.planet = null;
     stopAmbient();
     this.root.classList.add("hidden");
@@ -938,9 +960,8 @@ export class LandedUi {
   private renderEvents(): void {
     const ev = this.events[0];
     if (!ev) {
-      this.view = "spaceport";
+      this.setView("spaceport");
       this.maybeSpaceportOffer();
-      this.render();
       return;
     }
     this.root.innerHTML = `
@@ -962,8 +983,7 @@ export class LandedUi {
   private renderOffer(): void {
     const offer = this.pendingOffer;
     if (!offer) {
-      this.view = "spaceport";
-      this.render();
+      this.setView("spaceport");
       return;
     }
     const { m, active, back } = offer;
@@ -1004,11 +1024,11 @@ export class LandedUi {
         this.view = "spaceport";
         this.root.classList.add("hidden");
         this.root.innerHTML = "";
+        playMenuClose();
         return;
       }
-      this.view = back;
+      this.setView(back);
       if (back === "spaceport") this.maybeSpaceportOffer();
-      this.render();
     };
     this.root.querySelector("#btn-accept")!.addEventListener("click", () => {
       const result = this.game.acceptMission(m, active);
@@ -1032,8 +1052,7 @@ export class LandedUi {
           ),
         });
         this.pendingOffer = null;
-        this.view = "events";
-        this.render();
+        this.setView("events");
         return;
       }
       done();
@@ -1178,9 +1197,8 @@ export class LandedUi {
       });
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.view = "spaceport";
       this.misnScroll = 0;
-      this.render();
+      this.setView("spaceport");
     });
     this.root
       .querySelector("#btn-bbs-accept")
@@ -1217,11 +1235,10 @@ export class LandedUi {
         ),
       });
       this.pendingOffer = null;
-      this.view = "events";
+      this.setView("events");
     } else {
-      this.view = back;
+      this.setView(back);
     }
-    this.render();
   }
 
   private renderLog(): void {
@@ -1268,8 +1285,7 @@ export class LandedUi {
         </div>
       </div>`;
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.view = "spaceport";
-      this.render();
+      this.setView("spaceport");
     });
     this.root.querySelectorAll("button[data-abort]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1431,8 +1447,7 @@ export class LandedUi {
       this.render();
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.view = "bar";
-      this.render();
+      this.setView("bar");
     });
     this.root.querySelectorAll("button[data-dismiss]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1495,10 +1510,9 @@ export class LandedUi {
         ${missionRows ? `<div class="ship-list">${missionRows}</div>` : ""}
       </div>`;
     const go = (id: string, view: View) =>
-      this.root.querySelector(id)?.addEventListener("click", () => {
-        this.view = view;
-        this.render();
-      });
+      this.root
+        .querySelector(id)
+        ?.addEventListener("click", () => this.setView(view));
     go("#btn-hire", "escorts");
     go("#btn-gamble", "gamble");
     go("#btn-holovid", "holovid");
@@ -1550,8 +1564,7 @@ export class LandedUi {
         </div>
       </div>`;
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.view = "bar";
-      this.render();
+      this.setView("bar");
     });
   }
 
@@ -1654,8 +1667,7 @@ export class LandedUi {
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.gamblePick = null;
       this.gambleResult = null;
-      this.view = "bar";
-      this.render();
+      this.setView("bar");
     });
   }
 
@@ -1759,34 +1771,27 @@ export class LandedUi {
       }
     }
 
-    this.root.querySelector("#btn-trade")?.addEventListener("click", () => {
-      this.view = "trade";
-      this.render();
-    });
-    this.root.querySelector("#btn-shipyard")?.addEventListener("click", () => {
-      this.view = "shipyard";
-      this.render();
-    });
-    this.root.querySelector("#btn-outfitter")?.addEventListener("click", () => {
-      this.view = "outfitter";
-      this.render();
-    });
-    this.root.querySelector("#btn-bar")?.addEventListener("click", () => {
-      this.view = "bar";
-      this.render();
-    });
-    this.root.querySelector("#btn-bbs")?.addEventListener("click", () => {
-      this.view = "bbs";
-      this.render();
-    });
-    this.root.querySelector("#btn-log")?.addEventListener("click", () => {
-      this.view = "log";
-      this.render();
-    });
-    this.root.querySelector("#btn-escorts")?.addEventListener("click", () => {
-      this.view = "escorts";
-      this.render();
-    });
+    this.root
+      .querySelector("#btn-trade")
+      ?.addEventListener("click", () => this.setView("trade"));
+    this.root
+      .querySelector("#btn-shipyard")
+      ?.addEventListener("click", () => this.setView("shipyard"));
+    this.root
+      .querySelector("#btn-outfitter")
+      ?.addEventListener("click", () => this.setView("outfitter"));
+    this.root
+      .querySelector("#btn-bar")
+      ?.addEventListener("click", () => this.setView("bar"));
+    this.root
+      .querySelector("#btn-bbs")
+      ?.addEventListener("click", () => this.setView("bbs"));
+    this.root
+      .querySelector("#btn-log")
+      ?.addEventListener("click", () => this.setView("log"));
+    this.root
+      .querySelector("#btn-escorts")
+      ?.addEventListener("click", () => this.setView("escorts"));
     this.root.querySelector("#btn-refuel")!.addEventListener("click", () => {
       this.game.refuel();
       this.render();
@@ -1957,8 +1962,7 @@ export class LandedUi {
       ?.addEventListener("click", () => trade("sell"));
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.tradeNote = "";
-      this.view = "spaceport";
-      this.render();
+      this.setView("spaceport");
     });
   }
 
@@ -2139,9 +2143,8 @@ export class LandedUi {
       list.scrollBy({ top: 84, behavior: "smooth" });
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.view = "spaceport";
       this.shopScroll = 0;
-      this.render();
+      this.setView("spaceport");
     });
     this.root.querySelector("#btn-buy-ship")?.addEventListener("click", () => {
       const result = this.game.buyShip(this.selectedShip!);
@@ -2413,9 +2416,8 @@ export class LandedUi {
       grid.scrollBy({ top: 84, behavior: "smooth" });
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.view = "spaceport";
       this.shopScroll = 0;
-      this.render();
+      this.setView("spaceport");
     });
     this.root
       .querySelector("#btn-buy-outfit")

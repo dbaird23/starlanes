@@ -5,6 +5,8 @@
  * or its own key, exactly like the plunder manifest.
  */
 
+import { playMenuClose, playMenuOpen } from "../engine/audio";
+
 export interface InfoRow {
   label: string;
   value: string;
@@ -53,22 +55,28 @@ export class InfoUi {
   }
 
   show(ctx: InfoContext): void {
+    const wasOpen = this.ctx !== null;
     this.ctx = ctx;
     this.root.classList.remove("hidden");
+    if (!wasOpen) playMenuOpen();
     this.render();
   }
 
   close(): void {
+    if (this.ctx === null) return;
     this.ctx = null;
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
+    playMenuClose();
   }
 
   private render(): void {
     const c = this.ctx;
     if (!c) return;
 
-    const sections = (typeof c.sections === "function" ? c.sections() : c.sections)
+    const sections = (
+      typeof c.sections === "function" ? c.sections() : c.sections
+    )
       .map(
         (s) => `
         <div class="if-section">
@@ -111,12 +119,14 @@ export class InfoUi {
         <div class="if-buttons"><button class="portbtn" id="if-close">Close</button></div>
       </div>`;
 
-    this.root.querySelectorAll<HTMLButtonElement>("button[data-dump]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        c.onJettison?.(btn.dataset.dump!, parseInt(btn.dataset.qty!, 10));
-        this.render();
+    this.root
+      .querySelectorAll<HTMLButtonElement>("button[data-dump]")
+      .forEach((btn) => {
+        btn.addEventListener("click", () => {
+          c.onJettison?.(btn.dataset.dump!, parseInt(btn.dataset.qty!, 10));
+          this.render();
+        });
       });
-    });
     this.root.querySelector("#if-close")!.addEventListener("click", () => {
       c.close();
       this.close();
