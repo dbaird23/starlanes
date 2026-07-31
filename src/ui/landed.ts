@@ -1687,15 +1687,19 @@ export class LandedUi {
     const sys = this.system!;
     const g = this.game;
     const fuelCost = g.refuelCost();
-    const canRefuel =
-      fuelCost > 0 && g.player.credits >= fuelCost && !p.uninhabited;
+    const tanksFull = g.player.fuelJumps >= g.player.maxFuelJumps;
+    const canRefuel = g.canRefuel();
 
     const govt = sys.govtName ? ` · ${sys.govtName}` : "";
     const refuelLabel = p.uninhabited
       ? "No services"
-      : fuelCost === 0
+      : tanksFull
         ? "Fuel tanks full"
-        : `Refuel (${fuelCost.toLocaleString()} cr)`;
+        : fuelCost === 0
+          ? "Refuel (free)"
+          : g.player.credits < fuelCost
+            ? `Need ${fuelCost.toLocaleString()} cr`
+            : `Refuel (${fuelCost.toLocaleString()} cr)`;
 
     const hero = p.landingPictFile
       ? `<div class="land-hero" style="background-image:url('${asset(`nova/picts/${p.landingPictFile}`)}')"></div>`

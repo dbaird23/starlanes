@@ -1574,7 +1574,14 @@ export class Game {
 
       // EV Nova's own bindings, with the arrow keys flying the ship
       if (this.input.consume("KeyL")) this.selectOrLand();
-      if (this.input.consume("KeyJ")) this.startJump();
+      /*
+       * J engages the hyperdrive. A press reports why it cannot (no course,
+       * gravity well, fuel). Holding J keeps trying quietly so you can:
+       *  - fly out of the no-jump zone with J down and jump the moment you clear it
+       *  - ride a multi-system plot without re-tapping J after each arrival
+       */
+      if (this.input.consume("KeyJ")) this.startJump(false);
+      else if (this.input.isDown("KeyJ")) this.startJump(true);
       if (this.input.consume("Backquote") || this.input.consume("Tab"))
         this.cycleTarget();
       if (this.input.consume("KeyR")) this.targetClosest();
@@ -4981,7 +4988,12 @@ export class Game {
     this.targetNpc = null;
     this.ship.shield = this.ship.maxShield;
     this.ship.armor = this.ship.maxArmor; // free repairs while docked, EV-style
-    if (this.gear.autoRefuel) this.player.fuelJumps = this.player.maxFuelJumps;
+    /*
+     * Auto-recharger (oütf ModType 19) only talks to spaceport computers —
+     * same places that sell fuel by hand, at the same price. It must not top
+     * up on uninhabited rocks or other pads with no services.
+     */
+    if (this.gear.autoRefuel) this.refuel();
     this.save();
     this.landedUi.show(planet, this.system);
   }
@@ -5091,26 +5103,42 @@ export class Game {
     return ((SHIPS[this.player.shipId]?.flags2 ?? 0) & 0x0020) !== 0;
   }
 
-  private startJump(): void {
+  /**
+   * Engage the hyperspace sequence toward the next plotted system.
+   * `quiet` is for a held J: fail silently (no gravity-well spam) and only
+   * speak up when the drive actually engages. A fresh press (`quiet = false`)
+   * still explains every refusal.
+   */
+  private startJump(quiet = false): void {
+    // already mid-sequence, mid-gate, or nothing to do
+    if (this.jump || this.pendingGateDest) return;
     if (this.route.length === 0) {
-      this.message("No hyperspace course set. Press M to open the map.");
+      if (!quiet) {
+        this.message("No hyperspace course set. Press M to open the map.");
+      }
       return;
     }
     if (this.insideNoJumpZone()) {
-      this.message(
-        "Too deep in the system's gravity well to jump. Head for open space.",
-      );
-      playSnd(SND.BEEP3, 0.5);
+      if (!quiet) {
+        this.message(
+          "Too deep in the system's gravity well to jump. Head for open space.",
+        );
+        playSnd(SND.BEEP3, 0.5);
+      }
       return;
     }
     if (this.player.fuelJumps < 1) {
-      this.message("Not enough hyperdrive fuel. Land somewhere and refuel.");
+      if (!quiet) {
+        this.message("Not enough hyperdrive fuel. Land somewhere and refuel.");
+      }
       return;
     }
     if (this.ship.ionized) {
-      this.message(
-        "Your systems are ionized — the hyperdrive will not engage.",
-      );
+      if (!quiet) {
+        this.message(
+          "Your systems are ionized — the hyperdrive will not engage.",
+        );
+      }
       return;
     }
     const cur = this.system;
@@ -5265,8 +5293,14 @@ export class Game {
       `Arrived in the ${next.name} system. Fuel: ${this.player.fuelJumps}/${this.player.maxFuelJumps} jumps.`,
     );
     if (this.route.length > 0) {
+      // Held J re-engages on the next flight frame; the hint is for a lifted key.
+      const cont = getSystem(
+        this.routeDest ?? this.route[this.route.length - 1],
+      ).name;
       this.message(
-        `Course continues to ${getSystem(this.routeDest ?? this.route[this.route.length - 1]).name} — press J to continue.`,
+        this.input.isDown("KeyJ")
+          ? `Course continues to ${cont}.`
+          : `Course continues to ${cont} — hold or press J to continue.`,
       );
     }
   }
@@ -5758,20 +5792,45 @@ export class Game {
     return { ok: true };
   }
 
+  /**
+   * Credits to fill the tanks here. 0 when full, free by rank, or when this
+   * pad does not sell fuel (caller should still gate on canRefuel / uninhabited).
+   */
   refuelCost(): number {
     const missing = this.player.maxFuelJumps - this.player.fuelJumps;
+    if (missing <= 0) return 0;
     const planet = this.player.landedOn
-      ? SPOBS.get(this.player.landedOn)
+      ? SPOBS.get(this.player.landedOn)?.planet
       : null;
-    const govtId = planet ? (SPOB_GOVT.get(planet.planet.id) ?? -1) : -1;
+    if (!planet || planet.uninhabited) return 0;
+    const govtId = SPOB_GOVT.get(planet.id) ?? -1;
     // 0x0800: ships and worlds of that govt refuel you for nothing
     if (govtId >= 128 && this.rankFlag(govtId, 0x0800)) return 0;
     return Math.ceil(missing * REFUEL_COST_PER_JUMP);
   }
 
-  refuel(): void {
+  /**
+   * Whether the current pad can top up your tanks (inhabited world with room
+   * in the tanks, and either free fuel or enough credits).
+   */
+  canRefuel(): boolean {
+    const planet = this.player.landedOn
+      ? SPOBS.get(this.player.landedOn)?.planet
+      : null;
+    if (!planet || planet.uninhabited) return false;
+    if (this.player.fuelJumps >= this.player.maxFuelJumps) return false;
     const cost = this.refuelCost();
-    if (cost === 0 || this.player.credits < cost) return;
+    return cost === 0 || this.player.credits >= cost;
+  }
+
+  /**
+   * Buy a full tank from the current spaceport. No-op on uninhabited pads,
+   * when already full, or when you cannot afford it. Used by the Refuel
+   * button and by the Auto-recharger on land.
+   */
+  refuel(): void {
+    if (!this.canRefuel()) return;
+    const cost = this.refuelCost();
     this.player.credits -= cost;
     this.player.fuelJumps = this.player.maxFuelJumps;
     this.save();
