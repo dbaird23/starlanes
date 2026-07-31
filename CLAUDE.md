@@ -85,6 +85,77 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**Boarding money is 4% of the hull's cost.** düde Flags **0x0040** is "carries
+money (amount depends on the ship's purchase price)" and the Bible never says
+how much — no field holds an amount. The rate is ours; the ±25% spread is the
+one figure the doc does give for carried money (përs `Credits`). A 12M
+Manticore hands over 360-600k. Two paths still board empty and are a real gap:
+`spawnFleetOf` and `spawnMissionShips` never set `dudeId`/`bootyFlags`, and
+`maybeMakePerson` overwrites a düde roll with the captain's own Credits.
+
+**People are cargo — and three fields decide who gets offered the job.** Nova
+has no passenger berths: STR# 4000 entry 6 is "\*Passengers", the 103 missions
+that carry them use CargoQty tons like any other freight, and a hull's capacity
+for people is simply its free hold. What gates the offer is mïsn **Flags2 @82**
+— values 0/1/2/4 only, exactly the three documented bits, each landing where
+its meaning says (0x0001 "needs cargo room" on 194 of the 365 cargo missions,
+0x0002 "pay on auto-abort" on the four *Refuel Trader* jobs, 0x0004 "fails if
+disabled" on one). 0x0001 is **opt-in**: without it Nova still offers the job
+to a full hold. Also read: **AvailShipType @84** (0 on all 791 — plug-ins
+only) and shïp **InherentAI @66** (1-4 on all 288, the Shuttle a wimpy trader
+and the Fed Destroyer a warship), which drives mïsn Flags 0x2000/0x4000
+"unavailable if the player flies a cargo ship / a warship".
+
+**Bribes, mercy and assistance are per-government.** gövt Flags **0x0200**
+(warships take bribes) and **0x2000** (freighters) decide whether the Offer
+Bribe button exists at all — 29 and 21 of the 68 governments — split by the
+attacker's AI type; **0x8000** ("demand a larger percentage of your cash
+supply") raises the price from 10% to a third, and covers the Pirates and the
+Federation. You cannot buy off an Auroran, a Polaris or a Rebel. gövt Flags
+**0x0400** "can't hail ships of this govt" now silences the Wraith, the
+Hyperioids, derelicts and cargo drones. Two ränk Flags outrank a government's
+manners: **0x0400** battle assistance (17 of 31 ranks) turns every ship of
+theirs within 3000px to your side and calls the system's ReinfFleet in on your
+behalf, and **0x0800** (20 of 31) is free repair/refuel, the rank-granted twin
+of gövt Flags2 0x0010 Roadside Assistance.
+
+**Death is the end of the run, and the pod is a handle you pull.** Being
+destroyed used to charge 10% of your credits and have a tug haul you in, which
+is not a Nova rule at all. Dying now stops the game and returns to the main
+menu, and the pilot file is rolled back to `portSnapshot` — the state captured
+on landing — so you resume from your last time in port; strict play deletes the
+pilot instead.
+
+The escape pod does **not** fire by itself. oütf ModType 20 is "auto-eject
+(requires escape pod to work)" and outfit 187's own text says why it is worth
+20,000 credits: it launches the pod "when it detects your armor state fall to
+zero ... **without waiting for any input from the pilot**". So ModType 11 alone
+gives you the *ability* to eject — Alt-X, or the sidebar's EJECT button, which
+appears only when a pod is fitted — and ModType 20 pulls the handle for you.
+`playerDestroyed(deliberate)` carries the distinction. **Strict play has no say
+in it**: strict means a death is permanent, not that the pod is disabled, and
+ejecting is precisely how a strict pilot survives. (It used to read
+`escapePod && !strict`, which disarmed the pod for exactly the pilots who
+needed it, and auto-ejected everyone else who merely owned one.)
+
+Whichever way it fires, dësc **13999** (the reserved "message shown after the
+player uses an escape pod") settles what it costs: you "work several dreary odd
+jobs to scratch up enough money to buy a new ship", so hull, outfits, ammo and
+cargo are gone and you come down at a nearby world in the chär template's
+starting hull, keeping credits, record, missions and the outfits Flags 0x0004
+marks as persistent. The desc is queued through `pendingMissionEvents` and read
+on that landing.
+
+**The outfitter lists what you own, wherever you are.** An owned item was
+dropped from the grid by the tech-level filter, so a Map bought on its one
+special-tech world (the three are techs 80/81/82) vanished the moment you left
+and there is no other screen showing what you carry — it read as "the map isn't
+kept". It is kept: none of the four map outfits sets Flags 0x0010 ("remove
+after purchase") or 0x0008 ("can't be sold"). Owned items now always appear;
+Buy and Sell are gated on whether the world actually trades the item, with
+Flags **0x0800** ("can be sold anywhere, regardless of tech level") as the
+documented exception, and the status line says which it is.
+
 **The storefront missions, and the three things that hid the Federation
 storyline.** mïsn **AvailLoc** has seven values and only 0 (mission BBS), 1
 (bar) and 3 (spaceport) were ever asked for, so the 22 missions posted at the
