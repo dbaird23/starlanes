@@ -3777,13 +3777,14 @@ export class Game {
   private provoke(npc: NpcShip): void {
     if (npc.ally || npc.hostile) return; // your own escorts, and anyone already fighting
     /*
-     * gövt ShootPenalty, "the amount of evilness a player gains for shooting a
-     * ship of this govt" — charged once per victim rather than once per round,
-     * so a burst of chaingun fire is one offence. Only "kill" was ever being
-     * charged, so shooting up a government's traffic cost you nothing until
-     * something actually blew up.
+     * No legal penalty is charged here. gövt ShootPenalty exists and is
+     * extracted, but the Bible annotates the field itself "(currently
+     * ignored)" — Nova never charges it, so opening fire costs you nothing on
+     * your record until you disable, board or destroy something. A previous
+     * pass wired it up, which made shooting a Federation ship cost 5 evilness
+     * where the original charges 0; see applyCrime, which no longer accepts
+     * "shoot" as a crime at all.
      */
-    if (npc.govtId >= 128) applyCrime(this.player, npc.govtId, "shoot");
     if (npc.aiType === 1) {
       if (npc.phase !== "leaving") {
         npc.phase = "leaving";

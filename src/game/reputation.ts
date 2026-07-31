@@ -46,14 +46,22 @@ function bumpRecord(player: PlayerState, govtId: number, delta: number): void {
 }
 
 /**
- * Nova's crime model. Each government states what it costs you to shoot,
- * disable, board or destroy one of its ships — ShootPenalty, DisabPenalty,
- * BoardPenalty and KillPenalty, all in "evilness" points. Its allies take the
- * same offence at half weight and its enemies quietly approve, which is how
- * the Bible puts it: "doing evil deeds to one government will improve your
- * rating with its enemies, and vice versa."
+ * Nova's crime model. Each government states what it costs you to disable,
+ * board or destroy one of its ships — DisabPenalty, BoardPenalty and
+ * KillPenalty, in "evilness" points. Its allies take the same offence at half
+ * weight and its enemies quietly approve, which is how the Bible puts it:
+ * "doing evil deeds to one government will improve your rating with its
+ * enemies, and vice versa."
+ *
+ * gövt **ShootPenalty is deliberately absent** from this union. The field is
+ * real and is extracted, but the Bible annotates it "(currently ignored)" —
+ * the original never charges it, so merely opening fire costs you nothing
+ * until something is actually disabled, boarded or destroyed. Leaving it out
+ * of `Crime` makes charging it a type error rather than a comment to be
+ * overlooked; a pass that wired it up had shooting a Federation ship cost 5
+ * evilness where Nova charges 0.
  */
-export type Crime = "shoot" | "disable" | "board" | "kill";
+export type Crime = "disable" | "board" | "kill";
 
 function penaltyFor(govtId: number, crime: Crime): number {
   const g = GOVTS[String(govtId)];
@@ -61,8 +69,7 @@ function penaltyFor(govtId: number, crime: Crime): number {
   const raw =
     crime === "kill" ? g.killPenalty
     : crime === "board" ? g.boardPenalty
-    : crime === "disable" ? g.disabPenalty
-    : g.shootPenalty;
+    : g.disabPenalty;
   // -1 is Nova's "no penalty at all" for these fields
   return raw > 0 ? raw : 0;
 }

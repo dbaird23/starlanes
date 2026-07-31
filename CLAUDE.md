@@ -414,10 +414,8 @@ düde AIType decides, and the Bible names all four: only type 1 "Wimpy Trader"
 runs, and it is the rarest — 20 of Nova's 147 düdes, against 12 brave traders,
 65 warships and 50 interceptors, all of which now turn and fight. The
 interceptor's documented "piracy police" clause is in as well: firing on a
-non-enemy ship turns any interceptor watching from within 1600px. gövt
-ShootPenalty is charged at the same moment (once per victim, not per round) —
-only KillPenalty had ever been applied, so shooting up a government's traffic
-was free until something exploded.
+non-enemy ship turns any interceptor watching from within 1600px. No legal
+penalty is charged for opening fire — see ShootPenalty under "Known gaps".
 
 **Beams follow the ship firing them.** `BeamFx` froze its world coordinates at
 the moment of firing and then sat there for the weapon's Duration — up to 0.83s
@@ -511,6 +509,20 @@ happened to live there.
   the shipped thresholds (50..1000 across 65 governments) for a lone player,
   which switched reinforcements off almost entirely when tried. Reverted;
   do not re-wire it without pinning the unit first.
+- **gövt `ShootPenalty` is extracted and deliberately never charged.** The
+  Bible annotates the field itself "(currently ignored)", so the original
+  costs you nothing on your record for merely opening fire — only disabling,
+  boarding or destroying registers. A pass had wired it up, which made
+  shooting a Federation ship cost 5 evilness against Nova's 0. It is now left
+  out of the `Crime` union in `reputation.ts` outright, so charging it is a
+  type error rather than a comment to be overlooked. Do not re-wire it.
+- **gövt `DisabPenalty` and `BoardPenalty` are extracted and not yet charged
+  — this one is a real gap, not a deliberate omission.** Unlike ShootPenalty
+  the Bible does not mark them ignored, so Nova honours both: disabling a
+  ship should cost DisabPenalty and plundering it BoardPenalty. `applyCrime`
+  accepts them and `penaltyFor` reads them, but nothing calls it with either
+  — only `"kill"` has call sites (`game.ts`, on player and NPC deaths). The
+  hooks would be `checkDisableGoals` and `tryBoard`/`claimPrize`.
 
 ### Queue, roughly by size
 
