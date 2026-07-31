@@ -141,6 +141,7 @@ function spobSeed(id: string): number {
 /** oütf Flags the outfitter acts on (Nova Bible). */
 const OUTF_CANT_SELL = 0x0008;
 const OUTF_HIDE_UNLESS_REQUIRE = 0x0100;
+const OUTF_SELL_ANYWHERE = 0x0800;
 const OUTF_SUPPRESS_EQUAL_WEIGHT = 0x1000;
 const OUTF_HIDE_UNLESS_AVAIL = 0x4000;
 
@@ -787,11 +788,20 @@ export class LandedUi {
     // AvailLoc 4/5/6 hang off the three storefronts rather than the concourse
     this.counterOffers.clear();
     if (planet.exchange)
-      this.counterOffers.set("trade", availableMissions(planet, 4, this.game.player));
+      this.counterOffers.set(
+        "trade",
+        availableMissions(planet, 4, this.game.player),
+      );
     if (planet.shipyard)
-      this.counterOffers.set("shipyard", availableMissions(planet, 5, this.game.player));
+      this.counterOffers.set(
+        "shipyard",
+        availableMissions(planet, 5, this.game.player),
+      );
     if (planet.outfitter)
-      this.counterOffers.set("outfitter", availableMissions(planet, 6, this.game.player));
+      this.counterOffers.set(
+        "outfitter",
+        availableMissions(planet, 6, this.game.player),
+      );
 
     this.view = this.events.length > 0 ? "events" : "spaceport";
     this.root.classList.remove("hidden");
@@ -2289,32 +2299,41 @@ export class LandedUi {
      * only through a special.
      */
     const outfitDay = Math.floor(g.player.date);
-    const inStock = OUTFIT_ORDER.filter((id) => {
+    /** Is this world actually trading in the item today? */
+    const tradedHere = (id: string): boolean => {
       const o = OUTFITS[id];
       const techOk =
         o.techLevel > 0 &&
         (o.techLevel <= p.techLevel || p.specialTechs.includes(o.techLevel));
       if (!techOk || o.cost <= 0) return false;
-      const owned = (g.player.outfits[id] ?? 0) > 0;
       const availOk = evalTest(o.avail, g.player.bits, testContext(g.player));
       // 0x4000 hides an item until its Availability comes true; without that
       // flag Nova still lists it, just refuses to sell it (handled at buy time).
-      if ((o.flags & OUTF_HIDE_UNLESS_AVAIL) !== 0 && !availOk && !owned)
-        return false;
+      if ((o.flags & OUTF_HIDE_UNLESS_AVAIL) !== 0 && !availOk) return false;
       // 0x0100 does the same against the Require bits, which we don't model —
       // so those items stay hidden unless already owned.
-      if ((o.flags & OUTF_HIDE_UNLESS_REQUIRE) !== 0 && !owned) return false;
+      if ((o.flags & OUTF_HIDE_UNLESS_REQUIRE) !== 0) return false;
       /*
        * BuyRandom is the percent chance the item is on the shelf on a given
        * day, exactly as for hulls. Zero means never, which is what keeps the
        * 51 story-granted items — the Vell-os mind powers, the Bureau Bomb —
        * out of the shops entirely; the other 155 turn over as time passes.
-       * Anything already owned stays listed so it can still be sold.
        */
-      if (owned) return true;
       if (o.buyRandom <= 0) return false;
       return dailyRoll(`${p.id}|o${id}|${outfitDay}`) * 100 < o.buyRandom;
-    });
+    };
+    /*
+     * The shelf is what this world trades plus everything you already carry.
+     * Owned items have to stay listed wherever you land — an item bought on
+     * its one special-tech world (the three Maps are techs 80/81/82) would
+     * otherwise vanish the moment you left, and no other screen shows what you
+     * own. Whether you can sell it here is a separate question: Flags 0x0800
+     * is "can be sold anywhere, regardless of tech level", so without it the
+     * counter only takes back what it stocks.
+     */
+    const inStock = OUTFIT_ORDER.filter(
+      (id) => tradedHere(id) || (g.player.outfits[id] ?? 0) > 0,
+    );
     /*
      * 0x1000: "When this item is available for sale, it prevents all
      * higher-numbered items with equal DispWeight from being made available at
@@ -2373,8 +2392,11 @@ export class LandedUi {
       const tooHeavy = o.mass > 0 && free < o.mass;
       const tooPoor = g.player.credits < price;
       const noMount = g.mountBlock(id);
-      const canBuy = !atMax && !tooHeavy && !tooPoor && !noMount;
-      const canSell = owned > 0 && (o.flags & OUTF_CANT_SELL) === 0;
+      const stocked = tradedHere(id);
+      const canBuy = stocked && !atMax && !tooHeavy && !tooPoor && !noMount;
+      const sellsHere = stocked || (o.flags & OUTF_SELL_ANYWHERE) !== 0;
+      const canSell =
+        owned > 0 && sellsHere && (o.flags & OUTF_CANT_SELL) === 0;
       const pict = outfitPict(id);
       const [name, subtitle] = o.name.split(";");
 
@@ -2384,19 +2406,23 @@ export class LandedUi {
         : `<div class="oi-hero placeholder">${name}</div>`;
 
       // Nova's own wording for why a purchase is blocked
-      const status = atMax
-        ? "Can't have any more!"
-        : noMount === "gun"
-          ? "No free gun mounts!"
-          : noMount === "turret"
-            ? "No free turret mounts!"
-            : tooHeavy
-              ? "Not enough free space!"
-              : tooPoor
-                ? "You can't afford this!"
-                : subtitle
-                  ? subtitle.trim()
-                  : "";
+      const status = !stocked
+        ? sellsHere
+          ? "Not sold here."
+          : "Not traded here."
+        : atMax
+          ? "Can't have any more!"
+          : noMount === "gun"
+            ? "No free gun mounts!"
+            : noMount === "turret"
+              ? "No free turret mounts!"
+              : tooHeavy
+                ? "Not enough free space!"
+                : tooPoor
+                  ? "You can't afford this!"
+                  : subtitle
+                    ? subtitle.trim()
+                    : "";
 
       info = `
         <div class="oi-info">
