@@ -130,8 +130,22 @@ export class Ship {
       this.armor > 0 &&
       this.armor <= this.maxArmor * this.disableAt
     ) {
-      this.disabled = true;
+      this.disable();
     }
+  }
+
+  /**
+   * Dead in space: engines, steering and weapons offline. Only residual drift
+   * remains (and that bleeds off quickly). Called when armour crosses the
+   * disable line, and for govt-flag derelicts at spawn.
+   */
+  disable(): void {
+    this.disabled = true;
+    this.thrusting = false;
+    this.turning = 0;
+    // kill the burn so they don't coast half a system still "flying"
+    this.vel.x *= 0.15;
+    this.vel.y *= 0.15;
   }
 
   get destroyed(): boolean {
@@ -184,6 +198,20 @@ export class Ship {
   }
 
   update(dt: number, turn: -1 | 0 | 1, thrust: boolean): void {
+    // disabled hulls cannot thrust or steer — only bleed residual drift
+    if (this.disabled) {
+      this.turning = 0;
+      this.thrusting = false;
+      this.pos.x += this.vel.x * dt;
+      this.pos.y += this.vel.y * dt;
+      this.vel.x *= Math.max(0, 1 - 2.2 * dt);
+      this.vel.y *= Math.max(0, 1 - 2.2 * dt);
+      if (this.speed < 3) {
+        this.vel.x = 0;
+        this.vel.y = 0;
+      }
+      return;
+    }
     this.angle += turn * this.stats.turnRate * dt;
     this.turning = turn;
     this.thrusting = thrust;
@@ -203,6 +231,10 @@ export class Ship {
 
   /** Turn toward a world-space heading; returns true when roughly facing it. */
   steerToward(dt: number, targetAngle: number): boolean {
+    if (this.disabled) {
+      this.turning = 0;
+      return false;
+    }
     let diff = targetAngle - this.angle;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;

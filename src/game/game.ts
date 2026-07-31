@@ -1723,20 +1723,19 @@ export class Game {
         npc.pos.x += npc.vel.x * dt * 0.3;
         npc.pos.y += npc.vel.y * dt * 0.3;
       } else if (npc.disabled) {
-        // dead in space: drifting, no thrust, no guns
-        npc.thrusting = false;
-        npc.pos.x += npc.vel.x * dt;
-        npc.pos.y += npc.vel.y * dt;
-        npc.vel.x *= 1 - 0.15 * dt;
-        npc.vel.y *= 1 - 0.15 * dt;
-        npc.angle += 0.25 * dt;
+        // dead in space: no thrust, no guns, no errands — residual drift only
+        npc.landing = false;
+        npc.cloaked = false;
+        npc.update(dt, 0, false);
       } else if (npc.ally) this.updateAllyAi(npc, dt);
       else if (npc.hostile) this.updateHostileAi(npc, dt);
       else if (npc.aiType === 3 || npc.aiType === 4)
         this.updateWarshipAi(npc, dt);
       else npc.updateAi(dt);
-      this.maybeOpenGateForNpc(npc);
-      if (npc.landing) this.dockNpc(npc, dt);
+      if (!npc.disabled) {
+        this.maybeOpenGateForNpc(npc);
+        if (npc.landing) this.dockNpc(npc, dt);
+      }
     }
     this.updateDockedNpcs(dt);
     this.npcs = this.npcs.filter((n) => !n.done);
@@ -3529,6 +3528,11 @@ export class Game {
   }
 
   private attackAi(npc: NpcShip, dt: number, target: Ship): void {
+    // a disabled ship cannot chase or fire — only drift
+    if (npc.disabled) {
+      npc.update(dt, 0, false);
+      return;
+    }
     if ((target as NpcShip).disabled) {
       npc.updateAi(dt);
       return;
