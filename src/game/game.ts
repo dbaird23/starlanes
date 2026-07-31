@@ -6179,9 +6179,15 @@ export class Game {
     if (dude) {
       npc.bootyFlags = dude.booty;
       if ((dude.booty & 0x40) !== 0 && type) {
-        // money aboard scales with the hull's value, as the Bible describes —
-        // a fraction of a percent, so piracy pays without breaking the economy
-        npc.booty = Math.round(type.cost * 0.002 * (0.5 + Math.random()));
+        /*
+         * düde Flags 0x0040 is "carries money (amount depends on the ship's
+         * purchase price)" and the Bible never says how much, so the rate is
+         * ours: 4% of the hull's cost, which is what boarding a big warship
+         * pays in the original as far as anyone remembers it. The spread is
+         * the one number the doc does give for carried money — përs Credits'
+         * "+/- 25%" — so a 12M Manticore hands over 360k-600k.
+         */
+        npc.booty = Math.round(type.cost * 0.04 * (0.75 + Math.random() * 0.5));
       }
     }
     // EV gives every new ship a small chance of being somebody in particular
