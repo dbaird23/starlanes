@@ -16,3 +16,10 @@ dist/
 AGENTS.md
 /dev-dist/
 /docs/
+
+# Finder/sync duplicates ("game 2.ts", "shipinfo-20129 2.png"). These are junk,
+# but tsconfig globs src/**, so a stray "game 2.ts" breaks `npx tsc --noEmit`
+# with errors that have nothing to do with your code. 32 of them turned up at
+# once from a sync; ignore them so they never get committed by `git add -A`.
+* 2.*
+* [0-9].*
