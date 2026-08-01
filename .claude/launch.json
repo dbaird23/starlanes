@@ -2,6 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "starlanes",
+      "url": "http://localhost:5173",
+      "port": 5173
+    },
+    {
       "name": "starlanes-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],

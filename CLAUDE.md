@@ -254,30 +254,96 @@ off-screen and the I mission log looked dead. Only `#game`, `#landed-ui`,
 `#menu-ui` and `#intro-ui` belong in that force rule.
 
 **The flight sidebar is DOM, not canvas** (`src/ui/hud.ts` + the `.hud-*` block
-in `style.css`). It implements Claude Design 2a, "Deep Glass · Orbital", from
-the *EV Nova Sidebar Redesigns* project. Layered gradients, a dashed target
-frame, glow shadows and two webfonts are a stylesheet in CSS and a few hundred
-fragile lines in canvas 2D, and the landed screens were already HTML. The one
-per-frame thing — the scanner's moving contacts — is a small nested `<canvas>`.
+in `style.css`). It implements Claude Design **3a, "Classic"**, from the *EV
+Nova Sidebar Redesigns* project — Nova's brushed-metal plate rebuilt in CSS,
+with black chrome-bezelled wells for every readout and a repeating
+plate-and-piping "machinery" tail that absorbs whatever height is left over.
+(It used to be 2a, "Deep Glass · Orbital", a dark-glass panel; that was
+deliberately reversed in favour of looking like the original.) Layered
+gradients, inset bezels and engraved type are a stylesheet in CSS and a few
+hundred fragile lines in canvas 2D, and the landed screens were already HTML.
+The one per-frame thing — the scanner's moving contacts — is a small nested
+`<canvas>`.
 
 Consequences worth knowing:
 
-- **ïntf StatusBkgnd and the ïntf rects no longer position anything.** The
-  plate was already deliberately undrawn; the rects cannot express this layout,
-  so the arrangement is the design's. The resource still supplies *colours*
-  (ShieldColor/ArmorColor/FuelFull/FuelPartial, BrightRadar/DimRadar), and
-  gövt Color still tints the government name, so a plug-in restyles the panel
-  even though it can no longer move things.
-- **Fonts are self-hosted** in `public/fonts` (Chakra Petch, JetBrains Mono,
-  latin subset only, 134 KB) rather than pulled from Google — the game reads
-  everything else locally and should not need the network to look right.
+- **The plate is artwork now, and ïntf StatusBkgnd names it.** That field —
+  700 for the default bar, 701-706 for the six governments — was the one thing
+  on the resource still marked "deliberately undrawn". It is now the id of a
+  PNG at `public/hud/statusbar-<id>.png`. Nova's own 700-706 are *not*
+  extracted (picts.json has no `status` category), so these are hand-drawn
+  replacements; only 701, Polaris, exists so far and every other government
+  falls back to the CSS metal at the same geometry — one layout, two skins.
+  The art is drawn at HUD_W wide with `background-size: var(--hud-w) auto`,
+  top-aligned: **it is never scaled to fit**, so a short window loses the
+  bottom of the picture and nothing distorts.
+- **The eight openings are a fixed contract, and every plate must match.**
+  `OPENINGS` in `ui/hud.ts` holds them in the art's own 481x3190 space —
+  scanner 21-369, gauges 412-584, nav 627-705, primary 748-799, secondary
+  842-893, target 936-1220, cargo/credits/date 1263-1352, controls 1395-1649,
+  all spanning x 43-435 — and each readout is positioned absolutely into its
+  hole. Nothing reads the PNG at runtime. Measure a new plate by its **frame
+  ridges**, which are all exactly 42px, and take the gaps between them; do
+  *not* measure by looking for full-width black, because every hole has a soft
+  lit reflection along its top and bottom inside edges and that test cuts each
+  one short by ~25%. Two holes are tight and the code works around them: the
+  primary hole is one line, so four primary slots collapse to "name +3", and
+  the cargo hole is three lines, so Free/Credits/Date are emitted first and
+  the per-commodity manifest (ours, not Nova's) is what gets clipped.
+- **There is no EJECT button, by choice.** The plate is instrument holes and
+  decorative tail with nowhere to put one, so pulling the pod's handle is
+  Alt-X and only Alt-X. `playerDestroyed(deliberate)` and oütf ModType 20's
+  auto-eject are unaffected — see "Death is the end of the run" above, which
+  still holds in full. Note the key-hints hole does not currently advertise
+  Alt-X; all sixteen of its slots are spoken for.
+- **The ïntf also sets the width, the gutter, the colours, the font and the two
+  type sizes** — everything except vertical position. `publishInterfaceVars()`
+  in `data/universe.ts` writes them to `--hud-*` on `documentElement` and is
+  re-run by `setInterfaceForGovt`, so flying a Polaris hull restyles the whole
+  plate. Two horizontal measures the design happened to agree with are now
+  taken from the resource outright: radarArea is 176 square at x=8, so the
+  plate is 192 wide and the scanner is square; shieldArea starts at x=35,
+  leaving the 27px gutter that is Nova's own column of gauge icons. The rects
+  still cannot *position* anything vertically — the artwork's openings do
+  that now.
+- **The font is the ïntf's own StatusFont**, "Geneva" on all seven shipped
+  interfaces, at StatFontSize 12 with SubtitleSize 10 for the target subtitle
+  and the ledger labels. Geneva is still installed on macOS, so on the
+  platform Nova shipped for this is literally the original face; the stack
+  falls back to Verdana, its usual metric stand-in, elsewhere. Chakra Petch is
+  no longer used by the HUD (JetBrains Mono still is, for the small stencil
+  tags); both stay self-hosted in `public/fonts` — the game reads everything
+  else locally and should not need the network to look right.
+- **The plate carries no pilot name, no government and no scanner labels.**
+  3a's scope is bare glass and so is Nova's; those were 2a's and were removed
+  on request. The remaining non-Nova blocks — the primary-weapon lines, DATE,
+  the key hints and EJECT — are kept but drawn in the same idiom.
+- **Fuel is one continuous bar, with no jump count.** It used to be a segment
+  per jump with "N JUMPS" printed beside it; 3a's plate has neither, and both
+  were removed on request. The ïntf's two fuel colours survive the change —
+  FuelFull fills, FuelPartial is the trough behind it — so nothing that was
+  data-driven became a literal. Afterburning still takes the bar gold.
+- **The key hints are a lit well, not engraved metal.** The plate stamps its
+  *labels* into the brushed grey, which is right for something glanced at, but
+  the hints are read: dark ink on the metal came out around 3:1 at 8px. They
+  are now dim mono on black inside a bezelled well like every other readout,
+  which is ~11:1. Don't move them back onto the plate.
+- **`#hud-ui` is click-through** (`pointer-events: none`) so the canvas
+  underneath still gets the mouse. Nothing on the panel is interactive today;
+  anything added that should be must opt back in with `pointer-events: auto`,
+  or it will look live and do nothing. That is exactly how the old EJECT
+  button shipped broken.
+- **Nothing flexes any more.** The panel used to be a flex column that gave up
+  scanner height on a short window and dropped the key hints under 830px; with
+  fixed artwork behind it that is wrong, so every block is at a fixed y and a
+  short window simply loses the bottom. The last opening ends at 658px, so any
+  window ≥ 660 tall shows the complete instrument set. Verified at 960, 900 and
+  560px. The radar still scales off the smaller half-dimension so a
+  letterboxed scope stays circular.
 - `HUD_W` in `ui/hud.ts` is the single source of the sidebar width; `game.ts`
   takes `SIDEBAR_W` from it so the reserved canvas and the panel cannot drift.
 - The HUD reads private Game state through small accessors (`hudClock`,
   `hasIff`, `cloakBits`, …) rather than those fields being made public.
-- On a window shorter than 830px the key hints are dropped and the scanner
-  clamps down by `vh`; the radar scales off the smaller half-dimension so a
-  letterboxed scope stays circular.
 
 Earlier passes: `colr` emblem position · `outf`
 flags/DispWeight/OnPurchase/OnSell · `govt` legal model

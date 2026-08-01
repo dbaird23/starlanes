@@ -392,6 +392,30 @@ export function setInterfaceForGovt(govtId: number | null): void {
       : undefined;
   if (found) INTERFACE = found;
   else if (DEFAULT_INTERFACE) INTERFACE = DEFAULT_INTERFACE;
+  publishInterfaceVars();
+}
+
+/**
+ * Publish the live ïntf as CSS variables. The flight sidebar is HTML (see
+ * ui/hud.ts), so this is the only route by which StatusFont/StatFontSize/
+ * SubtitleSize, BrightText/DimText and the three gauge colours reach it — and
+ * it is why flying a Polaris hull restyles the whole plate rather than just
+ * swapping a name. The stylesheet carries ïntf 128's own values as fallbacks,
+ * so the panel is right before galaxy.json has loaded.
+ */
+export function publishInterfaceVars(): void {
+  if (typeof document === "undefined") return;
+  const css = document.documentElement.style;
+  const i = INTERFACE;
+  css.setProperty("--hud-font", `"${i.statusFont}"`);
+  css.setProperty("--hud-size", `${i.statFontSize}px`);
+  css.setProperty("--hud-sub-size", `${i.subtitleSize}px`);
+  css.setProperty("--hud-bright", i.brightText);
+  css.setProperty("--hud-dim", i.dimText);
+  css.setProperty("--hud-shield", i.shieldColor);
+  css.setProperty("--hud-armor", i.armorColor);
+  css.setProperty("--hud-fuel", i.fuelFull);
+  css.setProperty("--hud-fuel-part", i.fuelPartial);
 }
 
 /**
@@ -1171,6 +1195,7 @@ export async function loadUniverse(): Promise<void> {
     ALL_INTERFACES = raw.interfaces;
     INTERFACE = raw.interfaces[0];
     DEFAULT_INTERFACE = raw.interfaces[0];
+    publishInterfaceVars();
   }
   CRONS = raw.crons ?? [];
   FLEETS = raw.fleets ?? [];

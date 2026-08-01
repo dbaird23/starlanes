@@ -5,7 +5,6 @@ import {
   STR_LISTS,
   getSystem,
   junkFromCargoKey,
-  systemGovtColor,
   targetPict,
 } from "../data/universe";
 import { formatDateShort } from "../game/calendar";
@@ -14,23 +13,95 @@ import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
 
 /**
- * The flight status sidebar — design 2a, "Deep Glass · Orbital".
+ * The flight status sidebar — design 3a, "Classic": Nova's own brushed-metal
+ * plate rebuilt in CSS, chrome-bezelled wells and all.
  *
  * This is DOM rather than part of the game canvas. The panel is layered
- * gradients, a dashed target frame, glow shadows and two webfonts, all of which
- * CSS does in a stylesheet and canvas 2D does in a few hundred fragile lines;
- * the landed screens are already HTML, so this matches the rest of the UI. The
- * one genuinely per-frame thing — the scanner's moving contacts — gets a small
+ * gradients, inset bezels and engraved type, all of which CSS does in a
+ * stylesheet and canvas 2D does in a few hundred fragile lines; the landed
+ * screens are already HTML, so this matches the rest of the UI. The one
+ * genuinely per-frame thing — the scanner's moving contacts — gets a small
  * nested <canvas> of its own.
  *
- * Everything positional used to come from the ïntf rects. Those describe Nova's
- * own 192-wide plate and cannot express this layout, so the arrangement is the
- * design's; the resource still supplies colours (shield/armor/fuel, the radar's
- * two contact colours) and the plate itself stays unread — see renderHud's note.
+ * The ïntf rects still cannot *position* anything, because the design is
+ * height-flexible and the rects are a fixed 192x~590 plate. What they do now is
+ * set the width and the two horizontal measures, which the design happens to
+ * agree with: radarArea is 176 square at x=8, so the plate is 8+176+8 = 192 and
+ * the scanner is square; shieldArea starts at x=35, leaving a 27px gutter to
+ * its left, which is exactly Nova's own column of gauge icons. Colours, font
+ * and the two type sizes come from the live resource too — see
+ * publishInterfaceVars in data/universe.ts. StatusBkgnd (PICT 700, the plate
+ * artwork) stays deliberately undrawn; the metal here is the design's.
  */
 
-/** Matches --hud-w in style.css; the game reserves this much of the canvas. */
-export const HUD_W = 268;
+/**
+ * Matches --hud-w in style.css; the game reserves this much of the canvas.
+ * ïntf 128's plate: radarArea.x * 2 + radarArea.w.
+ */
+export const HUD_W = 192;
+
+/**
+ * The status-bar plate artwork, in its own pixel space.
+ *
+ * ïntf **StatusBkgnd** finally names something: it is the PICT of the plate,
+ * 700 for the default bar and 701-706 for the six government ones, and the art
+ * is looked up by that id at `/hud/statusbar-<id>.png`. Nova's own 700-706 are
+ * not extracted (no `status` category in picts.json), so these are hand-drawn
+ * replacements; a government with no file falls back to the CSS metal.
+ *
+ * The plate is one tall image that is **never squashed** — it is drawn at
+ * HUD_W wide, top-aligned, and a short window simply loses the bottom of it.
+ * That makes the panel's geometry fixed rather than flexible, so the readouts
+ * are positioned absolutely into the artwork's cut-outs instead of flowing.
+ */
+const PLATE_W = 481;
+/** x extent of every opening, in the art's pixels */
+const OPEN_X = 43;
+const OPEN_R = 435;
+
+/**
+ * The eight openings, top to bottom, in the art's pixels.
+ *
+ * Measured off the artwork rather than eyeballed: the plate is built on a
+ * regular grid whose frame ridges are all exactly 42px tall, and these are the
+ * gaps between them. (Don't measure by looking for full-width black — each
+ * opening has a soft lit reflection along its top and bottom inside edges, and
+ * that test cuts every hole short.)
+ *
+ * **Every status-bar plate has to share this geometry.** Nothing reads the
+ * openings out of the PNG at runtime; changing where a hole sits means
+ * changing it here, for all seven governments at once.
+ */
+const OPENINGS = {
+  scan: [21, 369],
+  gauges: [412, 584],
+  nav: [627, 705],
+  pri: [748, 799],
+  sec: [842, 893],
+  target: [936, 1220],
+  ledger: [1263, 1352],
+  hints: [1395, 1649],
+} as const satisfies Record<string, readonly [number, number]>;
+
+/**
+ * There is no EJECT button. The plate is all instrument holes and decorative
+ * tail with nowhere to put one, and pulling the pod's handle is Alt-X — the
+ * key hints in the controls hole say so. `playerDestroyed(deliberate)` and
+ * oütf ModType 20's auto-eject are unaffected.
+ */
+
+/** art pixels → panel pixels */
+const K = HUD_W / PLATE_W;
+
+/** Absolute placement for one opening, as an inline style. */
+function boxStyle([y0, y1]: readonly [number, number]): string {
+  return (
+    `left:${(OPEN_X * K).toFixed(1)}px;` +
+    `width:${((OPEN_R - OPEN_X) * K).toFixed(1)}px;` +
+    `top:${(y0 * K).toFixed(1)}px;` +
+    `height:${((y1 - y0 + 1) * K).toFixed(1)}px`
+  );
+}
 
 /** Decorative starfield, fixed so it doesn't crawl between frames. */
 const STARS: [number, number, number, string][] = [
@@ -60,27 +131,24 @@ interface LedgerRow {
 
 export class HudUi {
   private root: HTMLElement;
+  private plate!: HTMLElement;
   private scan!: HTMLCanvasElement;
   private scanCtx!: CanvasRenderingContext2D;
-  private scanRange!: HTMLElement;
-  private scanSys!: HTMLElement;
-  private pilot!: HTMLElement;
-  private govt!: HTMLElement;
   private gauges!: HTMLElement;
   private navBox!: HTMLElement;
   private navKind!: HTMLElement;
   private navValue!: HTMLElement;
-  private weapons!: HTMLElement;
+  private weapPri!: HTMLElement;
+  private weapSec!: HTMLElement;
   private target!: HTMLElement;
   private ledger!: HTMLElement;
   private hints!: HTMLElement;
-  private eject!: HTMLButtonElement;
   private speedBadge!: HTMLElement;
-  /** the Game passed to update(), so the EJECT click has something to call */
-  private game: Game | null = null;
 
   private ledgerRows: LedgerRow[] = [];
   private lastHints = "";
+  /** StatusBkgnd id the plate art is currently showing, so it loads once */
+  private plateArtId = -1;
 
   constructor() {
     this.root = document.getElementById("hud-ui")!;
@@ -96,71 +164,82 @@ export class HudUi {
   private build(): void {
     this.root.innerHTML = `
       <div class="speed-badge hidden" title="Caps Lock — double game speed (polarity in Preferences)">2×</div>
-      <div class="hud-card">
-        <div class="hud-scan">
+      <div class="hud-plate">
+        <div class="hud-machinery" aria-hidden="true">
+          <span class="hud-mach-rail"></span>
+          <span class="hud-mach-vent"></span>
+          <span class="hud-mach-pipe"></span>
+          <span class="hud-mach-lip"></span>
+        </div>
+
+        <div class="hud-well hud-scan" style="${boxStyle(OPENINGS.scan)}">
           <canvas class="hud-scan-c"></canvas>
-          <div class="hud-scan-tag"><i></i><span class="hud-scan-range">SCAN</span></div>
-          <div class="hud-scan-sys"></div>
         </div>
 
-        <div class="hud-who">
-          <span class="hud-pilot"></span>
-          <span class="hud-govt"></span>
+        <div class="hud-well hud-gauges" style="${boxStyle(OPENINGS.gauges)}"></div>
+
+        <div class="hud-well hud-nav" style="${boxStyle(OPENINGS.nav)}">
+          <div class="hud-nav-kind"></div>
+          <div class="hud-nav-value"></div>
         </div>
 
-        <div class="hud-gauges"></div>
+        <div class="hud-well hud-weap hud-weap-pri" style="${boxStyle(OPENINGS.pri)}"></div>
+        <div class="hud-well hud-weap hud-weap-sec" style="${boxStyle(OPENINGS.sec)}"></div>
 
-        <div class="hud-nav">
-          <span class="hud-nav-ring"></span>
-          <div>
-            <div class="hud-nav-kind"></div>
-            <div class="hud-nav-value"></div>
-          </div>
-        </div>
+        <div class="hud-well hud-target" style="${boxStyle(OPENINGS.target)}"></div>
 
-        <div class="hud-weapons"></div>
+        <div class="hud-well hud-ledger" style="${boxStyle(OPENINGS.ledger)}"></div>
 
-        <div class="hud-target"></div>
-
-        <div class="hud-ledger"></div>
-
-        <button class="hud-eject hidden" type="button" title="Abandon ship in your escape pod (Alt-X)">
-          <span>&#9167; EJECT</span><small>ALT-X</small>
-        </button>
-
-        <div class="hud-hints"></div>
+        <div class="hud-well hud-hints" style="${boxStyle(OPENINGS.hints)}"></div>
       </div>`;
 
     const q = <T extends HTMLElement>(sel: string) =>
       this.root.querySelector<T>(sel)!;
     this.scan = q<HTMLCanvasElement>(".hud-scan-c");
     this.scanCtx = this.scan.getContext("2d")!;
-    this.scanRange = q(".hud-scan-range");
-    this.scanSys = q(".hud-scan-sys");
-    this.pilot = q(".hud-pilot");
-    this.govt = q(".hud-govt");
     this.gauges = q(".hud-gauges");
     this.navBox = q(".hud-nav");
     this.navKind = q(".hud-nav-kind");
     this.navValue = q(".hud-nav-value");
-    this.weapons = q(".hud-weapons");
+    this.plate = q(".hud-plate");
+    this.weapPri = q(".hud-weap-pri");
+    this.weapSec = q(".hud-weap-sec");
     this.target = q(".hud-target");
     this.ledger = q(".hud-ledger");
     this.hints = q(".hud-hints");
-    this.eject = q<HTMLButtonElement>(".hud-eject");
-    this.eject.addEventListener("click", () => this.game?.ejectFromShip());
     this.speedBadge = q(".speed-badge");
+  }
+
+  /**
+   * Point the plate at the current ïntf's StatusBkgnd art, or drop back to the
+   * CSS metal when that government has no PNG yet. Cheap to call every frame —
+   * the id only changes when the player's ship does.
+   */
+  private applyPlateArt(): void {
+    const want = INTERFACE.statusBkgnd;
+    if (want === this.plateArtId) return;
+    this.plateArtId = want;
+    const url = `/hud/statusbar-${want}.png`;
+    const probe = new Image();
+    probe.onload = () => {
+      // a later ship change may have moved on while this was loading
+      if (this.plateArtId !== want) return;
+      this.plate.style.backgroundImage = `url('${url}')`;
+      this.plate.classList.add("has-art");
+    };
+    probe.onerror = () => {
+      if (this.plateArtId !== want) return;
+      this.plate.style.backgroundImage = "";
+      this.plate.classList.remove("has-art");
+    };
+    probe.src = url;
   }
 
   /** Called once a frame while in flight. */
   update(g: Game): void {
-    this.game = g;
+    this.applyPlateArt();
     this.speedBadge.classList.toggle("hidden", g.timeScale <= 1);
-    // the pod is the only thing that can save a pilot, so its handle is on the
-    // panel rather than hidden behind Alt-X — and only when one is fitted
-    this.eject.classList.toggle("hidden", !g.hasEscapePod);
     this.drawScanner(g);
-    this.drawIdentity(g);
     this.drawGauges(g);
     this.drawNav(g);
     this.drawWeapons(g);
@@ -272,90 +351,49 @@ export class HudUi {
     }
 
     if (!g.cloaked || (g.cloakBits & CLOAK_VISIBLE_ON_RADAR) !== 0) {
-      ctx.fillStyle = g.cloaked ? "#7fa0c8" : "#9df0f7";
-      ctx.shadowColor = "#5fd4e0";
-      ctx.shadowBlur = 9;
+      ctx.fillStyle = g.cloaked ? INTERFACE.dimRadar : INTERFACE.brightRadar;
+      ctx.shadowColor = INTERFACE.brightRadar;
+      ctx.shadowBlur = 7;
       ctx.beginPath();
       ctx.arc(cx, cy, 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
     }
     ctx.restore();
-
-    setText(this.scanRange, `SCAN ${RADAR_RANGE}`);
-    setText(this.scanSys, `${g.system.name.toUpperCase()} SYS`);
-  }
-
-  // ---------------- identity ----------------
-
-  private drawIdentity(g: Game): void {
-    setText(this.pilot, g.pilotName);
-    const name = g.system.govtName ?? "Independent";
-    setText(this.govt, name);
-    // gövt Color, the government's own theme colour, rather than a flat accent
-    const want = g.system.govtId >= 128 ? systemGovtColor(g.system) : "#5fd4e0";
-    if (this.govt.style.color !== want) this.govt.style.color = want;
   }
 
   // ---------------- gauges ----------------
 
   private drawGauges(g: Game): void {
     const rows: string[] = [];
-    rows.push(
-      barRow(
-        "SHIELD",
-        pct(g.ship.maxShield ? g.ship.shield / g.ship.maxShield : 0),
-        "hud-bar-shield",
-        g.ship.maxShield ? g.ship.shield / g.ship.maxShield : 0,
-      ),
-    );
-    rows.push(
-      barRow(
-        "ARMOR",
-        pct(g.ship.maxArmor ? g.ship.armor / g.ship.maxArmor : 0),
-        "hud-bar-armor",
-        g.ship.maxArmor ? g.ship.armor / g.ship.maxArmor : 0,
-      ),
-    );
+    const sh = g.ship.maxShield ? g.ship.shield / g.ship.maxShield : 0;
+    const ar = g.ship.maxArmor ? g.ship.armor / g.ship.maxArmor : 0;
+    rows.push(barRow("shield", "var(--hud-shield)", sh, pct(sh)));
+    rows.push(barRow("armor", "var(--hud-armor)", ar, pct(ar)));
 
     /*
-     * Fuel is segmented because Nova counts it in whole jumps: ïntf
-     * FuelFull/FuelPartial fill to the last complete jump in the bright colour
-     * and show the remainder dim, so you can tell at a glance whether there is
-     * actually a jump in the tank.
+     * Fuel is one continuous bar. Nova counts it in whole jumps, so an earlier
+     * pass drew a segment per jump with the count printed beside it; 3a's plate
+     * has neither, and the ïntf's two fuel colours survive the change — FuelFull
+     * is the fill and FuelPartial the empty run behind it. Afterburning takes
+     * the bar gold, which is the one thing here that is not the resource's.
      */
-    const max = Math.max(1, Math.min(20, g.player.maxFuelJumps));
-    const whole = Math.floor(g.player.fuelJumps);
-    const part = g.player.fuelJumps - whole;
-    const segs: string[] = [];
-    for (let i = 0; i < max; i++) {
-      const cls =
-        i < whole
-          ? g.isAfterburning
-            ? "on burn"
-            : "on"
-          : i === whole && part > 0.02
-            ? "part"
-            : "";
-      segs.push(`<i class="${cls}"></i>`);
-    }
+    const fuel = g.player.maxFuelJumps
+      ? g.player.fuelJumps / g.player.maxFuelJumps
+      : 0;
     rows.push(
-      `<div class="hud-gauge">
-        <div class="hud-gauge-head"><span>FUEL</span><span>${whole} JUMP${whole === 1 ? "" : "S"}</span></div>
-        <div class="hud-fuel">${segs.join("")}</div>
-      </div>`,
+      barRow(
+        "fuel",
+        g.isAfterburning ? "var(--hud-gold)" : "var(--hud-fuel)",
+        fuel,
+        "",
+      ),
     );
 
+    // ion has no ïntf colour of its own — the resource names three gauges
     if (g.ship.ion > 0) {
       const f = g.ship.ion / g.ship.maxIon;
-      rows.push(
-        barRow(
-          "ION",
-          pct(f),
-          g.ship.ionized ? "hud-bar-ionized" : "hud-bar-ion",
-          f,
-        ),
-      );
+      rows.push(barRow("ion", g.ship.ionized ? "#d8c840" : "#8a7fd0", f, pct(f)));
     }
 
     setHtml(this.gauges, rows.join(""));
@@ -365,11 +403,12 @@ export class HudUi {
 
   private drawNav(g: Game): void {
     const dest = g.routeDest ? getSystem(g.routeDest).name : null;
+    // Nova's own wording for the nav box, which names the kind of destination
     const kind = dest
-      ? "HYPERSPACE"
+      ? "Hyperspace"
       : g.targetPlanet
-        ? "STELLAR NAV"
-        : "NAV SYSTEM";
+        ? "Stellar Navigation"
+        : "Navigation";
     const value = dest ?? g.targetPlanet?.name ?? "Offline";
     this.navBox.classList.toggle("off", !dest && !g.targetPlanet);
     setText(this.navKind, kind);
@@ -378,31 +417,40 @@ export class HudUi {
 
   // ---------------- weapons ----------------
 
+  /**
+   * The plate has one hole for the primaries and one for the secondary, so a
+   * hull with four primary slots has to say so on a single line — the first
+   * weapon's name, then "+N" for the rest. They all fire together on Space, so
+   * there is nothing to choose between them; Nova prints no primary line at
+   * all for exactly that reason.
+   */
   private drawWeapons(g: Game): void {
-    const rows: string[] = [];
-    let hasSecondary = false;
-    for (const slot of g.weaponSlots.slice(0, 4)) {
-      const sec = isSecondary(slot.weap);
-      if (sec) hasSecondary = true;
-      const ammo = sec ? ` ×${g.player.ammo[slot.weap.id] ?? 0}` : "";
+    const pri = g.weaponSlots.filter((s) => !isSecondary(s.weap));
+    const sec = g.weaponSlots.filter((s) => isSecondary(s.weap));
+
+    const label = (
+      slot: (typeof g.weaponSlots)[number],
+      extra: number,
+      ammo: boolean,
+    ): string => {
       const count = slot.count > 1 ? ` ×${slot.count}` : "";
-      const name = `${slot.weap.name.split(";")[0]}${count}${ammo}`;
-      rows.push(
-        `<div class="hud-weap${slot.cooldown > 0 ? " cooling" : ""}">
-          <span class="hud-weap-name">${esc(name)}</span>
-          <span class="hud-pill${sec ? " sec" : ""}">${sec ? "SEC" : "PRI"}</span>
-        </div>`,
-      );
-    }
-    if (!hasSecondary) {
-      rows.push(
-        `<div class="hud-weap empty">
-          <span class="hud-weap-name">No Secondary Weapon</span>
-          <span class="hud-pill dim">SEC</span>
-        </div>`,
-      );
-    }
-    setHtml(this.weapons, rows.join(""));
+      const rounds = ammo ? ` ×${g.player.ammo[slot.weap.id] ?? 0}` : "";
+      const more = extra > 0 ? ` +${extra}` : "";
+      return `${slot.weap.name.split(";")[0]}${count}${rounds}${more}`;
+    };
+
+    weapLine(
+      this.weapPri,
+      pri.length ? label(pri[0], pri.length - 1, false) : "No Primary Weapon",
+      !pri.length,
+      pri.some((s) => s.cooldown > 0),
+    );
+    weapLine(
+      this.weapSec,
+      sec.length ? label(sec[0], sec.length - 1, true) : "No Secondary Weapon",
+      !sec.length,
+      sec.some((s) => s.cooldown > 0),
+    );
   }
 
   // ---------------- target ----------------
@@ -411,10 +459,7 @@ export class HudUi {
     const t = g.targetNpc;
     if (!t) {
       this.target.classList.add("empty");
-      setHtml(
-        this.target,
-        `<div class="hud-targ-ring"><i></i></div><span class="hud-targ-none">No Target</span>`,
-      );
+      setHtml(this.target, `<span class="hud-targ-none">No Target</span>`);
       return;
     }
     this.target.classList.remove("empty");
@@ -466,7 +511,21 @@ export class HudUi {
   private drawLedger(g: Game): void {
     // STR# 4002 is Nova's own cargo-abbreviation list
     const abbrev = STR_LISTS["4002"] ?? [];
-    const rows: [string, string, string][] = [];
+    /*
+     * The artwork's hole is three lines tall and the rest is clipped, so the
+     * three the opening is named for go first. Nova's own plate prints only
+     * these; the per-commodity manifest below them is ours, and is what a
+     * loaded hold loses.
+     */
+    const rows: [string, string, string][] = [
+      ["FREE", String(Math.max(0, g.player.cargoCap - g.cargoUsed())), ""],
+      ["CREDITS", g.player.credits.toLocaleString(), "credits"],
+      ["DATE", formatDateShort(g.player.date), ""],
+    ];
+    const special = g.player.activeMissions.find(
+      (a) => a.cargoLoaded && a.cargoName,
+    );
+    if (special) rows.push(["SPECIAL", special.cargoName!, "special"]);
     for (const [i, c] of COMMODITIES.entries()) {
       const held = g.player.cargo[c.id] ?? 0;
       if (held > 0) rows.push([abbrev[i] ?? c.name, String(held), ""]);
@@ -476,17 +535,6 @@ export class HudUi {
       const junk = junkFromCargoKey(key);
       if (junk && held > 0) rows.push([junk.name, String(held), ""]);
     }
-    rows.push([
-      "FREE",
-      String(Math.max(0, g.player.cargoCap - g.cargoUsed())),
-      "",
-    ]);
-    const special = g.player.activeMissions.find(
-      (a) => a.cargoLoaded && a.cargoName,
-    );
-    if (special) rows.push(["SPECIAL", special.cargoName!, "special"]);
-    rows.push(["CREDITS", g.player.credits.toLocaleString(), "credits"]);
-    rows.push(["DATE", formatDateShort(g.player.date), "date"]);
 
     // reuse the row elements: the list is stable frame to frame, so only the
     // text changes and the browser never reflows the whole panel
@@ -542,17 +590,38 @@ function pct(f: number): string {
   return `${Math.round(Math.max(0, Math.min(1, f)) * 100)}%`;
 }
 
+/**
+ * One gauge: Nova's round icon in the 27px gutter ïntf leaves to the left of
+ * the bars, then the inset trough. The fill takes the resource's own colour as
+ * a background-*colour* so the trough's gloss layer survives on top of it. A
+ * readout rides inside the trough where one is passed — the original prints no
+ * number, but the panel has nowhere else 192px wide to put one.
+ */
 function barRow(
-  label: string,
-  right: string,
-  cls: string,
+  icon: string,
+  color: string,
   frac: number,
+  readout: string,
 ): string {
   const w = `${Math.max(0, Math.min(1, frac)) * 100}%`;
   return `<div class="hud-gauge">
-    <div class="hud-gauge-head"><span>${label}</span><span>${right}</span></div>
-    <div class="hud-bar"><div class="${cls}" style="width:${w}"></div></div>
+    <span class="hud-gicon ${icon}"></span>
+    <span class="hud-trough hud-trough-${icon}"><i style="width:${w};background-color:${color}"></i>${
+      readout ? `<b>${readout}</b>` : ""
+    }</span>
   </div>`;
+}
+
+/** One of the two weapon holes. */
+function weapLine(
+  el: HTMLElement,
+  name: string,
+  empty: boolean,
+  cooling: boolean,
+): void {
+  setText(el, name);
+  el.classList.toggle("empty", empty);
+  el.classList.toggle("cooling", cooling);
 }
 
 /** Only touch the DOM when the value actually changed — this runs at 60fps. */

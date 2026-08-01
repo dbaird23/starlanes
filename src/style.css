@@ -75,18 +75,55 @@ body {
 }
 
 /* ===========================================================================
-   Flight status sidebar — design 2a, "Deep Glass · Orbital".
-   Tokens are the design's own; see src/ui/hud.ts for why this is DOM.
+   Flight status sidebar — design 3a, "Classic", now backed by real plate art.
+
+   The panel is one tall PNG per government, named for the ïntf's own
+   StatusBkgnd id, drawn at the sidebar's width and top-aligned so a short
+   window CUTS THE BOTTOM OFF rather than squashing it. The artwork has eight
+   cut-outs and each readout is positioned absolutely into one of them; the
+   geometry lives in OPENINGS in src/ui/hud.ts and is written onto the elements
+   as inline styles, so nothing here may set top/height on a .hud-well.
+
+   Without art for the current government the same eight boxes are drawn as CSS
+   metal wells instead — one geometry, two skins. Colours, font and the two
+   type sizes are the live ïntf, published as --hud-* by publishInterfaceVars
+   in data/universe.ts. See src/ui/hud.ts for why this is DOM and not canvas.
    =========================================================================== */
 
 :root {
-  --hud-w: 268px;
-  --hud-teal: #5fd4e0;
-  --hud-teal-lt: #9df0f7;
-  --hud-ink: #dbe6ea;
-  --hud-gold: #ffd27a;
+  /* ïntf 128: radarArea.x * 2 + radarArea.w. Mirrored by HUD_W in ui/hud.ts. */
+  --hud-w: 192px;
+
+  /*
+   * ïntf 128's own values, used until galaxy.json loads and then replaced from
+   * whichever ïntf the player is flying behind.
+   */
+  --hud-font: "Geneva";
+  --hud-size: 12px;
+  --hud-sub-size: 10px;
+  --hud-bright: #ffffff;
+  --hud-dim: #888888;
+  --hud-shield: #bd0000;
+  --hud-armor: #a6a6a6;
+  --hud-fuel: #4c5c6f;
+  --hud-fuel-part: #28333f;
+
+  /*
+   * ïntf StatusFont is "Geneva" throughout the shipped data. Geneva is still
+   * installed on macOS, so on the platform Nova shipped for this really is the
+   * original face; Verdana is the usual metric stand-in everywhere else.
+   */
+  --hud-sans: var(--hud-font), Geneva, Verdana, "DejaVu Sans", sans-serif;
   --hud-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --hud-sans: "Chakra Petch", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --hud-gold: #ffd27a;
+
+  /*
+   * Where the artwork's last opening ends, in panel pixels (1650 × 192/481),
+   * plus room for the well's chrome bezel. Only the CSS-metal fallback needs
+   * it — that is where its machinery tail starts, standing in for the plate
+   * art's own decorative tail.
+   */
+  --hud-tail-top: 664px;
 }
 
 #hud-ui {
@@ -95,7 +132,6 @@ body {
   right: 0;
   width: var(--hud-w);
   height: 100%;
-  padding: 10px;
   pointer-events: none;
   z-index: 5;
 }
@@ -123,337 +159,266 @@ body {
   z-index: 6;
 }
 
-.hud-card {
+/* ---- the plate ---- */
+.hud-plate {
+  position: relative;
   height: 100%;
   overflow: hidden;
-  padding: 12px;
-  border-radius: 18px;
-  background: linear-gradient(#101821 0%, #0a0f15 40%, #070b10 100%);
-  border: 1px solid rgba(120, 170, 200, 0.14);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   font-family: var(--hud-sans);
-  color: var(--hud-ink);
+  font-size: var(--hud-size);
+  color: var(--hud-bright);
+  /*
+   * The art is set from JS as a background-image. Fixed width and `auto`
+   * height is the whole trick: the plate is never scaled to fit, so a short
+   * window loses the bottom of the picture and nothing distorts.
+   */
+  background-repeat: no-repeat;
+  background-position: top left;
+  background-size: var(--hud-w) auto;
+  /* fallback skin: brushed metal, a fine vertical grain over a horizontal one */
+  background-color: #4b4e51;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.045) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.16) 0 1px,
+      transparent 1px 4px
+    ),
+    linear-gradient(
+      90deg,
+      #2c2e30 0%,
+      #7c8084 12%,
+      #5b5f62 34%,
+      #74787c 58%,
+      #46494c 82%,
+      #212325 100%
+    );
+  border-left: 2px solid #14161a;
+  box-shadow: inset 3px 0 6px rgba(0, 0, 0, 0.6);
+}
+/* real plate art: it brings its own metal, grain and edge */
+.hud-plate.has-art {
+  background-color: #000;
+  border-left: 0;
+  box-shadow: none;
+}
+
+/*
+ * Every readout sits in one of the artwork's holes. Position comes from the
+ * inline style the HUD writes; this only says how the contents behave, and —
+ * when there is no art — punches the hole itself: black, sunk with an inner
+ * shadow, and ringed by a chrome bezel.
+ */
+.hud-well {
+  position: absolute;
+  overflow: hidden;
+  box-sizing: border-box;
+  /* the art's holes are rounded rectangles; clip content to match */
+  border-radius: 5px;
+}
+.hud-plate:not(.has-art) .hud-well {
+  background: #020304;
+  box-shadow:
+    inset 0 0 0 1px #0a0b0c,
+    inset 0 3px 7px rgba(0, 0, 0, 0.9),
+    0 0 0 2px #8b8f93,
+    0 0 0 3px #2b2d2f,
+    0 1px 2px rgba(255, 255, 255, 0.25);
 }
 
 /* ---- scanner ---- */
-.hud-scan {
-  position: relative;
-  flex: none;
-  /*
-   * Square at full height, but the panel has to fit a laptop too: the scanner
-   * is the one block with slack in it, so it gives up height first rather than
-   * the readouts below being pushed off the bottom. The radar maps world
-   * coordinates off the smaller half-dimension, so a letterboxed scope stays
-   * circular instead of stretching.
-   */
-  height: clamp(148px, 23vh, 244px);
-  border-radius: 13px;
-  overflow: hidden;
-  border: 1px solid rgba(95, 212, 224, 0.16);
-  background:
-    radial-gradient(
-      120px 90px at 78% 12%,
-      rgba(95, 212, 224, 0.16),
-      transparent 70%
-    ),
-    radial-gradient(
-      160px 140px at 12% 82%,
-      rgba(120, 90, 200, 0.2),
-      transparent 72%
-    ),
-    radial-gradient(circle at 50% 50%, #0b1220 0%, #04070c 78%);
-}
+/* the scope carries no labels — Nova's radar is bare glass and so is 3a's */
 .hud-scan-c {
   display: block;
   width: 100%;
   height: 100%;
 }
-.hud-scan-tag {
-  position: absolute;
-  left: 10px;
-  top: 9px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.16em;
-  color: rgba(219, 230, 234, 0.55);
-}
-.hud-scan-tag i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--hud-teal);
-  box-shadow: 0 0 8px var(--hud-teal);
-}
-.hud-scan-sys {
-  position: absolute;
-  right: 10px;
-  bottom: 8px;
-  font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.16em;
-  color: rgba(219, 230, 234, 0.4);
-}
-
-/* ---- pilot / government ---- */
-.hud-who {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.hud-pilot {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.hud-govt {
-  font-family: var(--hud-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--hud-teal);
-  flex: none;
-}
 
 /* ---- gauges ---- */
 .hud-gauges {
+  padding: 0 5px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  justify-content: center;
+  gap: 6px;
 }
-.hud-gauge-head {
+.hud-gauge {
   display: flex;
-  justify-content: space-between;
-  font-family: var(--hud-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  color: rgba(219, 230, 234, 0.5);
-  margin-bottom: 4px;
+  align-items: center;
+  gap: 5px;
 }
-.hud-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
+/*
+ * ïntf puts the three bars at x=35 in a plate whose margin is 8; the 27px that
+ * leaves is Nova's own column of gauge icons, which is what this is.
+ */
+.hud-gicon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #4a4d50, #17191b 70%);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 0 0 1px #101214,
+    0 1px 2px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.hud-bar > div {
-  height: 6px;
-  border-radius: 3px;
+.hud-gicon::before {
+  content: "";
+}
+.hud-gicon.shield::before,
+.hud-gicon.armor::before,
+.hud-gicon.ion::before {
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  border-left: 7px solid #e21b1b;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.hud-gicon.fuel::before {
+  width: 8px;
+  height: 12px;
+  background: #e21b1b;
+  clip-path: polygon(58% 0%, 6% 58%, 44% 58%, 30% 100%, 94% 40%, 52% 40%);
+}
+.hud-trough {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 11px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #1b1d1f;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.18);
+}
+/* the fill colour is the resource's; the gloss over it is the plate's */
+.hud-trough > i {
+  display: block;
+  height: 11px;
+  border-radius: 2px;
+  background-image: linear-gradient(
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0) 55%,
+    rgba(0, 0, 0, 0.3)
+  );
   transition: width 0.12s linear;
 }
-.hud-bar-shield {
-  background: linear-gradient(90deg, var(--hud-teal), var(--hud-teal-lt));
-  box-shadow: 0 0 10px rgba(95, 212, 224, 0.5);
+.hud-trough > b {
+  position: absolute;
+  right: 3px;
+  top: 0;
+  line-height: 11px;
+  font-family: var(--hud-mono);
+  font-weight: 400;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  /* it rides over both the near-white armor fill and the bare trough, so the
+     halo has to carry it rather than the colour */
+  color: #ffffff;
+  text-shadow:
+    0 0 3px #000,
+    0 1px 1px #000;
 }
-.hud-bar-armor {
-  background: linear-gradient(90deg, #c7d8de, #f0f6f8);
-}
-.hud-bar-ion {
-  background: linear-gradient(90deg, #7a6fc0, #9a90d0);
-}
-.hud-bar-ionized {
-  background: linear-gradient(90deg, #c0b040, #e0d060);
-  box-shadow: 0 0 10px rgba(224, 208, 96, 0.5);
-}
-.hud-fuel {
-  display: flex;
-  gap: 4px;
-}
-.hud-fuel i {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
-}
-.hud-fuel i.on {
-  background: #8fa9c9;
-}
-.hud-fuel i.part {
-  background: rgba(143, 169, 201, 0.4);
-}
-.hud-fuel i.burn {
-  background: var(--hud-gold);
+/* ïntf FuelPartial: the dim colour for the fuel you have not got */
+.hud-trough-fuel {
+  background: var(--hud-fuel-part);
 }
 
 /* ---- hyperspace / nav ---- */
 .hud-nav {
-  padding: 9px 12px;
-  border-radius: 12px;
-  background: linear-gradient(
-    rgba(95, 212, 224, 0.1),
-    rgba(95, 212, 224, 0.04)
-  );
-  border: 1px solid rgba(95, 212, 224, 0.18);
+  padding: 0 6px;
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.hud-nav-ring {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex: none;
-  border: 2px solid var(--hud-teal);
-  box-shadow: 0 0 10px rgba(95, 212, 224, 0.6);
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
 }
 .hud-nav-kind {
-  font-family: var(--hud-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  color: rgba(95, 212, 224, 0.8);
+  font-size: var(--hud-sub-size);
+  color: var(--hud-dim);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .hud-nav-value {
-  font-size: 21px;
   font-weight: 600;
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* no course and no world selected: the panel goes cold */
-.hud-nav.off {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.07);
-}
-.hud-nav.off .hud-nav-ring {
-  border-color: rgba(219, 230, 234, 0.25);
-  box-shadow: none;
-}
-.hud-nav.off .hud-nav-kind {
-  color: rgba(219, 230, 234, 0.4);
-}
+/* no course and no world selected: the box goes cold */
 .hud-nav.off .hud-nav-value {
-  color: rgba(219, 230, 234, 0.4);
-  font-size: 17px;
+  color: var(--hud-dim);
+  font-weight: 400;
 }
 
 /* ---- weapons ---- */
-.hud-weapons {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+/* one hole each: the primaries collapse to a line, the secondary gets its own */
 .hud-weap {
-  padding: 8px 11px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.05);
+  padding: 0 7px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-}
-.hud-weap.empty {
-  background: rgba(255, 255, 255, 0.025);
-}
-.hud-weap-name {
-  font-size: 14px;
+  justify-content: center;
+  text-align: center;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.hud-weap.empty .hud-weap-name {
-  color: rgba(219, 230, 234, 0.45);
-}
-.hud-weap.cooling .hud-weap-name {
-  color: rgba(219, 230, 234, 0.5);
-}
-.hud-pill {
-  font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.14em;
-  flex: none;
-  color: var(--hud-teal);
-  border: 1px solid rgba(95, 212, 224, 0.35);
-  border-radius: 4px;
-  padding: 1px 5px;
-}
-.hud-pill.sec {
-  color: var(--hud-gold);
-  border-color: rgba(255, 210, 122, 0.35);
-}
-.hud-pill.dim {
-  color: rgba(219, 230, 234, 0.3);
-  border-color: rgba(255, 255, 255, 0.1);
+.hud-weap.empty,
+.hud-weap.cooling {
+  color: var(--hud-dim);
 }
 
 /* ---- target ---- */
 .hud-target {
-  flex: 1 1 auto;
-  min-height: 72px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: radial-gradient(
-    circle at 50% 50%,
-    rgba(95, 212, 224, 0.05),
-    rgba(0, 0, 0, 0.45) 70%
-  );
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  padding: 3px 5px 4px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
+  gap: 1px;
 }
 .hud-target.empty {
   align-items: center;
   justify-content: center;
-  gap: 6px;
-}
-.hud-targ-ring {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1px solid rgba(219, 230, 234, 0.22);
-  position: relative;
-}
-.hud-targ-ring i {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 3px;
-  height: 3px;
-  margin: -1.5px 0 0 -1.5px;
-  border-radius: 50%;
-  background: rgba(219, 230, 234, 0.3);
 }
 .hud-targ-none {
-  font-size: 13px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(219, 230, 234, 0.35);
+  color: var(--hud-dim);
 }
 .hud-targ-head {
-  font-size: 14px;
-  font-weight: 600;
+  flex: none;
   text-align: center;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .hud-targ-head.hostile {
-  color: #e08a7a;
+  color: #e07060;
 }
 .hud-targ-head.named {
   color: #d9c37a;
 }
+/* ïntf SubtitleSize, which is what the field is for */
 .hud-targ-sub {
-  font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.12em;
+  flex: none;
   text-align: center;
-  color: rgba(219, 230, 234, 0.45);
+  font-size: var(--hud-sub-size);
+  color: var(--hud-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /*
  * Nova's target PICTs are a red silhouette on an opaque black plate, meant to
  * be blitted into a black cut-out. Screen-blending drops the black against the
- * panel instead of stamping a hard rectangle over the gradient.
+ * well instead of stamping a hard rectangle over it.
  */
 .hud-targ-art {
   flex: 1 1 auto;
@@ -462,16 +427,15 @@ body {
   mix-blend-mode: screen;
 }
 .hud-targ-foot {
+  flex: none;
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.08em;
-  color: rgba(219, 230, 234, 0.5);
+  gap: 6px;
+  font-size: var(--hud-sub-size);
+  color: var(--hud-dim);
 }
 .hud-targ-foot .bad {
-  color: #e08a7a;
+  color: #e07060;
 }
 .hud-targ-foot span {
   white-space: nowrap;
@@ -479,125 +443,156 @@ body {
   text-overflow: ellipsis;
 }
 
-/* ---- ledger ---- */
+/* ---- cargo / credits / date ---- */
+/*
+ * The artwork's hole is 36px, which is three lines and no more, so this runs
+ * at SubtitleSize rather than StatFontSize and anything past the third row is
+ * clipped. Free, Credits and Date are emitted first for that reason — the
+ * per-commodity manifest is ours, not Nova's, and is what gets cut.
+ */
 .hud-ledger {
-  flex: none;
-  padding: 9px 11px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.035);
+  padding: 1px 7px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  justify-content: center;
+  font-size: var(--hud-sub-size);
 }
 .hud-led-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
+  line-height: 1.18;
 }
 .hud-led-k {
-  font-family: var(--hud-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  flex: none;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(219, 230, 234, 0.45);
+  color: var(--hud-dim);
 }
 .hud-led-v {
-  font-family: var(--hud-mono);
-  font-size: 15px;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .hud-led-v.credits {
-  font-size: 16px;
+  font-weight: 600;
   color: var(--hud-gold);
 }
-.hud-led-v.date {
-  font-size: 13px;
-  color: rgba(219, 230, 234, 0.75);
-}
 .hud-led-v.special {
-  font-size: 12px;
   color: #c9a86a;
 }
 
-/* ---- key hints ---- */
+/* ---- controls ---- */
+/* eight rows in a 102px hole: 9px mono at 1.1 leading is 86px, which clears it */
 .hud-hints {
-  flex: none;
-  margin-top: 2px;
-  padding-top: 9px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 2px 6px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3px 10px;
+  align-content: center;
+  gap: 1px 6px;
   font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.06em;
-  color: rgba(219, 230, 234, 0.3);
+  font-size: 9px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: #9ba1a6;
 }
 
+/* ---- machinery (CSS-metal fallback only) ---- */
 /*
- * EJECT. Only drawn when an escape pod is fitted, and deliberately the one
- * warm-coloured control on the panel — it is the handle that ends the flight
- * and saves the pilot, and in strict play it is the only one that does.
+ * Stands in for the plate art's decorative tail on a government whose PNG
+ * doesn't exist yet: below the last opening, whatever height is left is filled
+ * with plate-and-piping. It repeats rather than stretching, so it simply
+ * continues or gets cut off, the same as the artwork does.
  */
-.hud-eject {
-  flex: none;
-  margin-top: 8px;
-  padding: 7px 11px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  border: 1px solid rgba(255, 96, 72, 0.45);
-  border-radius: 3px;
-  background: linear-gradient(
+.hud-machinery {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--hud-tail-top);
+  bottom: 0;
+  overflow: hidden;
+  border-top: 1px solid rgba(0, 0, 0, 0.5);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.14) 0 1px,
+      rgba(0, 0, 0, 0.32) 1px 2px,
+      transparent 2px 66px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.3) 0 2px,
+      rgba(255, 255, 255, 0.14) 2px 3px,
+      transparent 3px 58px
+    ),
+    linear-gradient(
+      90deg,
+      #3a3d40 0%,
+      #6e7276 18%,
+      #55585b 45%,
+      #6a6e72 70%,
+      #35383a 100%
+    );
+}
+.hud-plate.has-art .hud-machinery {
+  display: none;
+}
+.hud-mach-rail {
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  background: linear-gradient(90deg, #8d9195, #4c5053);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.hud-mach-vent {
+  position: absolute;
+  left: 58px;
+  top: 0;
+  bottom: 0;
+  width: 38px;
+  background: repeating-linear-gradient(
     180deg,
-    rgba(255, 96, 72, 0.16),
-    rgba(255, 96, 72, 0.05)
+    transparent 0 10px,
+    rgba(255, 255, 255, 0.28) 10px 11px,
+    rgba(60, 64, 67, 0.9) 11px 52px,
+    rgba(0, 0, 0, 0.45) 52px 54px,
+    transparent 54px 64px
   );
-  color: #ffb3a4;
-  font-family: var(--hud-sans);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  cursor: pointer;
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
 }
-.hud-eject:hover {
-  border-color: rgba(255, 96, 72, 0.8);
-  background: linear-gradient(
+.hud-mach-pipe {
+  position: absolute;
+  right: 8px;
+  top: 0;
+  bottom: 0;
+  width: 52px;
+  border-radius: 6px 6px 0 0;
+  background: repeating-linear-gradient(
     180deg,
-    rgba(255, 96, 72, 0.3),
-    rgba(255, 96, 72, 0.12)
+    #d3d7da 0 3px,
+    #9ea2a6 3px 7px,
+    #4e5255 7px 13px,
+    #7f8387 13px 16px
   );
-  color: #ffd7cf;
+  box-shadow:
+    inset -6px 0 10px rgba(0, 0, 0, 0.55),
+    inset 6px 0 8px rgba(255, 255, 255, 0.2);
 }
-.hud-eject small {
-  font-family: var(--hud-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.08em;
-  opacity: 0.6;
-}
-
-/*
- * A short window drops the least essential block rather than overflowing. The
- * key hints are a learning aid and the only thing here that is not live state.
- */
-@media (max-height: 830px) {
-  .hud-hints {
-    display: none;
-  }
-}
-@media (max-height: 600px) {
-  .hud-ledger {
-    gap: 3px;
-  }
-  .hud-weap {
-    padding: 6px 11px;
-  }
+.hud-mach-lip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 5px;
+  background: linear-gradient(rgba(255, 255, 255, 0.28), transparent);
 }
 
 /* ---- Landed / spaceport overlay ---- */
