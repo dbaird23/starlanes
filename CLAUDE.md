@@ -712,3 +712,21 @@ Still open or only half-landed:
 6. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
    (and density-scanner blip size); we still advance a flat
    `max(1, 1 + hyperSpeed)` and ignore Mass for travel time.
+7. **The six remaining status-bar plates, and what they weigh.** Only 701
+   (Polaris) is drawn; 700, 702-706 fall back to the CSS metal. They must
+   share the geometry in `OPENINGS` — see "The eight openings are a fixed
+   contract" above, and measure by the 42px frame ridges. Two cut-outs are
+   worth resizing while the artwork is still being made: the **cargo** hole is
+   three lines, so a loaded hold's per-commodity manifest is clipped (roughly
+   double its height to keep it), and the **primary weapon** hole is one line,
+   which is why four slots read "name +3". There is also nowhere to put an
+   EJECT button, which is why there isn't one.
+
+   On size: 701 is **2.3 MB**, so seven is ~16 MB. That is small beside the
+   98 MB of extracted game data already tracked, but the `.gitignore` note
+   applies — PNGs don't delta, so **every revision of a plate adds its full
+   size to history again**, and iterating on artwork is what makes that add
+   up. The panel renders at 192 CSS px and the art is 481 wide, so there is
+   2.5× retina headroom: if the repo starts to feel heavy, downscaling to
+   ~384 (2×) is the cheap fix, and `git commit --amend` is preferable to a
+   fresh commit when re-exporting the same plate.
