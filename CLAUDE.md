@@ -270,23 +270,41 @@ Consequences worth knowing:
 - **The plate is artwork now, and ïntf StatusBkgnd names it.** That field —
   700 for the default bar, 701-706 for the six governments — was the one thing
   on the resource still marked "deliberately undrawn". It is now the id of a
-  PNG at `public/hud/statusbar-<id>.png`. Nova's own 700-706 are *not*
+  JPEG at `public/hud/statusbar-<id>.jpg`. Nova's own 700-706 are *not*
   extracted (picts.json has no `status` category), so these are hand-drawn
-  replacements; only 701, Polaris, exists so far and every other government
-  falls back to the CSS metal at the same geometry — one layout, two skins.
+  replacements. **700 and 701-705 exist; only 706, Vell-os, is still missing**
+  and falls back to the CSS metal at the same geometry — one layout, two skins.
   The art is drawn at HUD_W wide with `background-size: var(--hud-w) auto`,
   top-aligned: **it is never scaled to fit**, so a short window loses the
   bottom of the picture and nothing distorts.
+- **The plates are drawn 481 wide and shipped at 384**, which is 2× the 192 CSS
+  px the panel occupies — sharp on a retina display and no bigger than it has
+  to be. `PLATE_W` in `ui/hud.ts` stays **481** because that is the space the
+  openings were *measured* in; only the aspect ratio matters at runtime, so
+  re-exporting at another width needs no code change, while changing that
+  constant would move every readout.
+- **They are JPEGs for a reason, and it is not just size.** These are
+  photographic metal, which PNG cannot compress — 6.7 MB for the six at 384
+  wide, against **1.5 MB** of JPEG q88 at 43-48 dB PSNR. AVIF was smaller
+  again (680 KB) but `sips` encoded one of the six into a file Chromium
+  fetches whole, reports the correct dimensions for, and then decodes to
+  **solid black** — the plate silently vanishes. Re-encoding the same source
+  byte-for-byte reproduced it, and flattening the alpha did not help. If you
+  re-export these, check each one actually paints; an encoder's exit code
+  proves nothing.
 - **The eight openings are a fixed contract, and every plate must match.**
   `OPENINGS` in `ui/hud.ts` holds them in the art's own 481x3190 space —
   scanner 21-369, gauges 412-584, nav 627-705, primary 748-799, secondary
   842-893, target 936-1220, cargo/credits/date 1263-1352, controls 1395-1649,
   all spanning x 43-435 — and each readout is positioned absolutely into its
-  hole. Nothing reads the PNG at runtime. Measure a new plate by its **frame
+  hole. Nothing reads the image at runtime. Measure a new plate by its **frame
   ridges**, which are all exactly 42px, and take the gaps between them; do
   *not* measure by looking for full-width black, because every hole has a soft
   lit reflection along its top and bottom inside edges and that test cuts each
-  one short by ~25%. Two holes are tight and the code works around them: the
+  one short by ~25%. The six shipped plates agree to within ±11 art px (±4.4
+  panel px) rather than exactly, which is fine — the differences are per-plate
+  and systematic, i.e. how hard each one's bevel is drawn, not a hole in the
+  wrong place. Two holes are tight and the code works around them: the
   primary hole is one line, so four primary slots collapse to "name +3", and
   the cargo hole is three lines, so Free/Credits/Date are emitted first and
   the per-commodity manifest (ours, not Nova's) is what gets clipped.
@@ -712,21 +730,20 @@ Still open or only half-landed:
 6. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
    (and density-scanner blip size); we still advance a flat
    `max(1, 1 + hyperSpeed)` and ignore Mass for travel time.
-7. **The six remaining status-bar plates, and what they weigh.** Only 701
-   (Polaris) is drawn; 700, 702-706 fall back to the CSS metal. They must
-   share the geometry in `OPENINGS` — see "The eight openings are a fixed
-   contract" above, and measure by the 42px frame ridges. Two cut-outs are
-   worth resizing while the artwork is still being made: the **cargo** hole is
-   three lines, so a loaded hold's per-commodity manifest is clipped (roughly
-   double its height to keep it), and the **primary weapon** hole is one line,
-   which is why four slots read "name +3". There is also nowhere to put an
-   EJECT button, which is why there isn't one.
+7. **The Vell-os status-bar plate (706)** is the only one still missing; it
+   falls back to the CSS metal. Draw it 481 wide to the geometry in
+   `OPENINGS` — see "The eight openings are a fixed contract" above — then
+   export at 384 wide, JPEG q88, and **check it actually paints in the
+   browser** rather than trusting the encoder.
 
-   On size: 701 is **2.3 MB**, so seven is ~16 MB. That is small beside the
-   98 MB of extracted game data already tracked, but the `.gitignore` note
-   applies — PNGs don't delta, so **every revision of a plate adds its full
-   size to history again**, and iterating on artwork is what makes that add
-   up. The panel renders at 192 CSS px and the art is 481 wide, so there is
-   2.5× retina headroom: if the repo starts to feel heavy, downscaling to
-   ~384 (2×) is the cheap fix, and `git commit --amend` is preferable to a
-   fresh commit when re-exporting the same plate.
+   Two cut-outs are still worth resizing across all seven if the artwork is
+   ever revised: the **cargo** hole is three lines, so a loaded hold's
+   per-commodity manifest is clipped (roughly double its height to keep it),
+   and the **primary weapon** hole is one line, which is why four slots read
+   "name +3". There is also nowhere to put an EJECT button, which is why there
+   isn't one.
+
+   On size: the six shipped plates total **1.5 MB**, nothing beside the 98 MB
+   of extracted game data. The `.gitignore` note still applies — images don't
+   delta, so every revision of a plate adds its full size to history again —
+   so prefer `git commit --amend` when re-exporting the same plate.

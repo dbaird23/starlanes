@@ -45,14 +45,33 @@ export const HUD_W = 192;
  *
  * ïntf **StatusBkgnd** finally names something: it is the PICT of the plate,
  * 700 for the default bar and 701-706 for the six government ones, and the art
- * is looked up by that id at `/hud/statusbar-<id>.png`. Nova's own 700-706 are
+ * is looked up by that id at `/hud/statusbar-<id>.jpg`. Nova's own 700-706 are
  * not extracted (no `status` category in picts.json), so these are hand-drawn
- * replacements; a government with no file falls back to the CSS metal.
+ * replacements; a government with no file falls back to the CSS metal, which is
+ * still the case for 706, Vell-os.
+ *
+ * JPEG, not PNG or AVIF, and the reason is worth keeping: the plates are
+ * photographic metal, which PNG cannot compress (6.7 MB for the six at 384
+ * wide against 1.5 MB of JPEG at the same 43-48 dB). AVIF was smaller again,
+ * but `sips` encodes at least one of these six into a file that Chromium
+ * fetches whole, reports the right dimensions for, and then decodes to solid
+ * black — so a plate would silently vanish. If you re-encode these, check each
+ * one actually paints rather than trusting the encoder's exit code.
  *
  * The plate is one tall image that is **never squashed** — it is drawn at
  * HUD_W wide, top-aligned, and a short window simply loses the bottom of it.
  * That makes the panel's geometry fixed rather than flexible, so the readouts
  * are positioned absolutely into the artwork's cut-outs instead of flowing.
+ */
+
+/**
+ * The width the openings below were **measured** in, which is not the width the
+ * files ship at: the art was drawn 481 wide and is exported at 384, twice the
+ * 192 CSS px the panel occupies, so it is pin-sharp on a 2× display and no
+ * larger than it has to be. Only the aspect ratio matters at runtime — CSS
+ * scales whatever arrives to HUD_W — so this stays 481 and the coordinates
+ * below stay in the space they were taken from. Re-exporting at another size
+ * needs no change here; changing this number would move every readout.
  */
 const PLATE_W = 481;
 /** x extent of every opening, in the art's pixels */
@@ -219,7 +238,7 @@ export class HudUi {
     const want = INTERFACE.statusBkgnd;
     if (want === this.plateArtId) return;
     this.plateArtId = want;
-    const url = `/hud/statusbar-${want}.png`;
+    const url = `/hud/statusbar-${want}.jpg`;
     const probe = new Image();
     probe.onload = () => {
       // a later ship change may have moved on while this was loading
