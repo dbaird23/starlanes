@@ -272,11 +272,26 @@ Consequences worth knowing:
   on the resource still marked "deliberately undrawn". It is now the id of a
   JPEG at `public/hud/statusbar-<id>.jpg`. Nova's own 700-706 are *not*
   extracted (picts.json has no `status` category), so these are hand-drawn
-  replacements. **700 and 701-705 exist; only 706, Vell-os, is still missing**
-  and falls back to the CSS metal at the same geometry — one layout, two skins.
-  The art is drawn at HUD_W wide with `background-size: var(--hud-w) auto`,
-  top-aligned: **it is never scaled to fit**, so a short window loses the
-  bottom of the picture and nothing distorts.
+  replacements, and **all seven governments now have one**. The art is drawn at
+  HUD_W wide with `background-size: var(--hud-w) auto`, top-aligned: **it is
+  never scaled to fit**, so a short window loses the bottom of the picture and
+  nothing distorts.
+- **706, Vell-os, is drawn rather than photographed.** The StatusBkgnd id also
+  goes on the plate as a `plate-<id>` class, so a government can have a CSS
+  skin instead of a JPEG, and Nova's Vell-os bar is the one plate that wants
+  one: it is not metal at all but black, with cyan light piped around every
+  opening and down both outer edges, fading below the instruments into a faint
+  blue haze. Sampled off the original — edge piping `#48c0f8` beside the
+  scanner and gone by the tail, opening outlines near-white cyan `#60e0e0`,
+  ground `#001020`, openings pure black. That is gradients and glows, so it
+  costs a few lines of CSS instead of a quarter-megabyte JPEG of a gradient.
+  Its gradient stops are in **pixels, not percentages**, for the same reason
+  the photographs are top-aligned: the light has to die where the instruments
+  end (658px) whatever the window height. The rules are scoped
+  `.plate-706:not(.has-art)`, so dropping a real `statusbar-706.jpg` in later
+  wins without anything here being deleted first.
+- A government with neither a JPEG nor a `plate-<id>` rule falls back to the
+  CSS metal at the same geometry — one layout, several skins.
 - **The plates are drawn 481 wide and shipped at 384**, which is 2× the 192 CSS
   px the panel occupies — sharp on a retina display and no bigger than it has
   to be. `PLATE_W` in `ui/hud.ts` stays **481** because that is the space the
@@ -730,18 +745,17 @@ Still open or only half-landed:
 6. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
    (and density-scanner blip size); we still advance a flat
    `max(1, 1 + hyperSpeed)` and ignore Mass for travel time.
-7. **The Vell-os status-bar plate (706)** is the only one still missing; it
-   falls back to the CSS metal. Draw it 481 wide to the geometry in
-   `OPENINGS` — see "The eight openings are a fixed contract" above — then
-   export at 384 wide, JPEG q88, and **check it actually paints in the
-   browser** rather than trusting the encoder.
+7. **Status-bar plate revisions.** All seven governments are covered — six
+   JPEGs and the drawn Vell-os skin — so this is only open if the artwork is
+   revised. Two cut-outs would be worth resizing across all seven: the
+   **cargo** hole is three lines, so a loaded hold's per-commodity manifest is
+   clipped (roughly double its height to keep it), and the **primary weapon**
+   hole is one line, which is why four slots read "name +3". There is also
+   nowhere to put an EJECT button, which is why there isn't one.
 
-   Two cut-outs are still worth resizing across all seven if the artwork is
-   ever revised: the **cargo** hole is three lines, so a loaded hold's
-   per-commodity manifest is clipped (roughly double its height to keep it),
-   and the **primary weapon** hole is one line, which is why four slots read
-   "name +3". There is also nowhere to put an EJECT button, which is why there
-   isn't one.
+   A new plate is drawn 481 wide to the geometry in `OPENINGS`, exported at
+   384 wide as JPEG q88, and **checked that it actually paints in the browser**
+   rather than trusting the encoder.
 
    On size: the six shipped plates total **1.5 MB**, nothing beside the 98 MB
    of extracted game data. The `.gitignore` note still applies — images don't

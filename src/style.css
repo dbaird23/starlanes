@@ -595,6 +595,112 @@ body {
   background: linear-gradient(rgba(255, 255, 255, 0.28), transparent);
 }
 
+/* ===========================================================================
+   Vell-os — StatusBkgnd 706, drawn rather than photographed.
+
+   Nova's Vell-os bar is the one status plate that is not metal at all: black,
+   with cyan light piped around every opening and down both outer edges,
+   fading out below the instruments into a faint blue haze. Sampled off the
+   original: the edge piping runs #48c0f8 beside the scanner and is gone by
+   the tail, the opening outlines are near-white cyan (#60e0e0), the ground
+   between them is #001020, and the openings themselves are pure black. All of
+   that is gradients and glows, so it costs a few lines here instead of a
+   quarter-megabyte JPEG of a gradient.
+
+   `:not(.has-art)` on the well and icon rules so that dropping a real
+   statusbar-706.jpg in later wins without anything being deleted here.
+   =========================================================================== */
+
+/*
+ * Everything here is anchored in *pixels*, not percentages, for the same
+ * reason the photographed plates are top-aligned and never scaled: the light
+ * has to fade where the instruments end (658px, the bottom of the last
+ * opening) whatever the window height, or a tall window keeps the piping lit
+ * halfway down an empty tail and a short one cuts it off mid-glow.
+ */
+.hud-plate.plate-706 {
+  background-color: #000;
+  background-image:
+    radial-gradient(
+      210px 200px at 50% 640px,
+      rgba(24, 74, 126, 0.3),
+      transparent 72%
+    ),
+    linear-gradient(
+      180deg,
+      #001526 0px,
+      #001020 260px,
+      #000a14 470px,
+      #000408 620px,
+      #000 790px
+    );
+  border-left: 0;
+  box-shadow: none;
+}
+
+/* the lit edges: brightest beside the scanner, out before the tail */
+.hud-plate.plate-706::before,
+.hud-plate.plate-706::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    #2e94e0 0px,
+    #48c0f8 70px,
+    #58a8f8 230px,
+    #2a5f96 430px,
+    #102038 570px,
+    rgba(8, 16, 32, 0) 700px
+  );
+  box-shadow: 0 0 12px rgba(72, 192, 248, 0.5);
+  pointer-events: none;
+}
+.hud-plate.plate-706::before {
+  left: 0;
+}
+.hud-plate.plate-706::after {
+  right: 0;
+}
+
+/* every opening is a black hole ringed in cyan light, not a chrome bezel */
+.hud-plate.plate-706:not(.has-art) .hud-well {
+  background: #000;
+  box-shadow:
+    0 0 0 2px #5fdcf0,
+    0 0 11px rgba(95, 220, 240, 0.5),
+    inset 0 0 14px rgba(18, 88, 140, 0.4);
+}
+
+/* the gauge icons follow the plate: cyan on black, not red on chrome */
+.hud-plate.plate-706:not(.has-art) .hud-gicon {
+  background: radial-gradient(circle at 36% 30%, #0a2438, #000 72%);
+  box-shadow:
+    0 0 0 1px #5fdcf0,
+    0 0 7px rgba(95, 220, 240, 0.45);
+}
+.hud-plate.plate-706:not(.has-art) .hud-gicon.shield::before,
+.hud-plate.plate-706:not(.has-art) .hud-gicon.armor::before,
+.hud-plate.plate-706:not(.has-art) .hud-gicon.ion::before {
+  border-left-color: #7fe8f8;
+}
+.hud-plate.plate-706:not(.has-art) .hud-gicon.fuel::before {
+  background: #7fe8f8;
+}
+.hud-plate.plate-706:not(.has-art) .hud-trough {
+  background: #000814;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(95, 220, 240, 0.55);
+}
+
+/* the tail is the plate's own haze, not brushed-metal machinery */
+.hud-plate.plate-706 .hud-machinery {
+  display: none;
+}
+
 /* ---- Landed / spaceport overlay ---- */
 #landed-ui {
   position: fixed;

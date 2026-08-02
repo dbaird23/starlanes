@@ -47,8 +47,8 @@ export const HUD_W = 192;
  * 700 for the default bar and 701-706 for the six government ones, and the art
  * is looked up by that id at `/hud/statusbar-<id>.jpg`. Nova's own 700-706 are
  * not extracted (no `status` category in picts.json), so these are hand-drawn
- * replacements; a government with no file falls back to the CSS metal, which is
- * still the case for 706, Vell-os.
+ * replacements; a government with no file falls back to the CSS metal, unless
+ * a `.plate-<id>` rule draws it instead — which is how 706, Vell-os, works.
  *
  * JPEG, not PNG or AVIF, and the reason is worth keeping: the plates are
  * photographic metal, which PNG cannot compress (6.7 MB for the six at 384
@@ -237,6 +237,16 @@ export class HudUi {
   private applyPlateArt(): void {
     const want = INTERFACE.statusBkgnd;
     if (want === this.plateArtId) return;
+    /*
+     * The id also goes on as a class, so a plate can be *drawn* instead of
+     * photographed. Vell-os (706) is: Nova's is black with cyan light piped
+     * around each opening and down both edges, which is gradients and glows —
+     * a few lines of CSS rather than 250 KB of JPEG of a gradient.
+     */
+    if (this.plateArtId >= 0) {
+      this.plate.classList.remove(`plate-${this.plateArtId}`);
+    }
+    this.plate.classList.add(`plate-${want}`);
     this.plateArtId = want;
     const url = `/hud/statusbar-${want}.jpg`;
     const probe = new Image();
