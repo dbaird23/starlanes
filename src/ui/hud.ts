@@ -7,6 +7,7 @@ import {
   junkFromCargoKey,
   targetPict,
 } from "../data/universe";
+import { asset } from "../asset";
 import { formatDateShort } from "../game/calendar";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
@@ -248,7 +249,10 @@ export class HudUi {
     }
     this.plate.classList.add(`plate-${want}`);
     this.plateArtId = want;
-    const url = `/hud/statusbar-${want}.jpg`;
+    // through asset() so the path survives a non-root deploy (GH Pages
+    // serves under /starlanes/, where a bare /hud/... 404s and every plate
+    // silently fell back to the CSS metal)
+    const url = asset(`hud/statusbar-${want}.jpg`);
     const probe = new Image();
     probe.onload = () => {
       // a later ship change may have moved on while this was loading
