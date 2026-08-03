@@ -1071,10 +1071,12 @@ td.actions button:disabled {
 }
 
 /*
- * The readout sits inside the console's red dome, which is symmetric about the
- * stage centre (x 512) and widens as it drops. The two columns and the hull
- * between them therefore straddle 512, low enough that the outer edges clear
- * the dome's shoulders: the block spans x 284-742, y 645-729.
+ * The readout sits inside the console's red dome, straddling the hull at the
+ * stage centre. Measured off an original 1024x768 title-screen capture: both
+ * columns are left-aligned — labels and values share a left edge, ragged
+ * right — with the left column's edge at x 333 and the right's at x 642.
+ * They are anchored by their left edges, not mirrored about the centre; the
+ * longest lines end by x ~742, clearing the dome's shoulders.
  */
 .ttl-info {
   position: absolute;
@@ -1083,14 +1085,13 @@ td.actions button:disabled {
   font:
     11px/1.35 system-ui,
     sans-serif;
+  text-align: left;
 }
 .ttl-info.left {
-  left: 273px;
-  text-align: right;
+  left: 333px;
 }
 .ttl-info.right {
-  left: 583px;
-  text-align: right;
+  left: 642px;
 }
 /*
  * The pilot's hull, in the gap between the two readout columns (x 443-583).
