@@ -1535,12 +1535,7 @@ export class Game {
       return; // DOM UI handles everything
     }
 
-    if (
-      this.mode === "flight" &&
-      this.input.consume("Escape") &&
-      !this.jump &&
-      !this.pendingGateDest
-    ) {
+    if (this.mode === "flight" && this.input.consume("Escape")) {
       // open overlays take Esc first (close them, don't quit to title)
       if (this.infoUi.open) {
         this.infoUi.close();
@@ -1554,6 +1549,23 @@ export class Game {
       }
       if (this.plunderUi.open) {
         this.plunderUi.dismiss();
+        this.input.endFrame();
+        return;
+      }
+      /*
+       * Mid-jump / gate bleach normally rides out without Esc (Nova). But a
+       * disabled hull can get stuck in the jump align forever (no steering),
+       * and you must always be able to open the menu when dead in space.
+       */
+      if (this.ship.disabled) {
+        this.cancelJumpSequence();
+        this.pendingGateDest = null;
+        this.ship.gateFlash = 0;
+        this.exitToMenu();
+        this.input.endFrame();
+        return;
+      }
+      if (this.jump || this.pendingGateDest) {
         this.input.endFrame();
         return;
       }
@@ -1771,6 +1783,8 @@ export class Game {
       else if (actionDown(this.input, "jump")) this.startJump(true);
       if (consumeCycleTargets(this.input)) this.cycleTarget();
       if (actionConsume(this.input, "targetClosest")) this.targetClosest();
+      if (actionConsume(this.input, "selectUnderCursor"))
+        this.selectUnderCursor();
       if (actionConsume(this.input, "hail")) this.hailTarget();
       if (actionConsume(this.input, "board")) this.tryBoard();
       if (actionConsume(this.input, "cloak")) this.toggleCloak();
@@ -1940,7 +1954,8 @@ export class Game {
   }
 
   private cycleTarget(): void {
-    const visible = this.npcs.filter((n) => this.canSee(n));
+    // Allies/escorts are only pickable with select-under-cursor, not R / `.
+    const visible = this.npcs.filter((n) => this.canSee(n) && !n.ally);
     if (visible.length === 0) {
       this.targetNpc = null;
       this.message("No contacts on sensors.");
@@ -3164,12 +3179,12 @@ export class Game {
     );
   }
 
-  /** Target the nearest ship (EV's "closest target" key). */
+  /** Target the nearest hostile ship (classic R). */
   private targetClosest(): void {
     let best: NpcShip | null = null;
     let bestD = Infinity;
     for (const n of this.npcs) {
-      if (!this.canSee(n)) continue;
+      if (!this.canSee(n) || n.ally || !n.hostile) continue;
       const d = Math.hypot(
         n.pos.x - this.ship.pos.x,
         n.pos.y - this.ship.pos.y,
@@ -3180,7 +3195,7 @@ export class Game {
       }
     }
     if (!best) {
-      this.message("No contacts on sensors.");
+      this.message("No hostiles on sensors.");
       return;
     }
     this.targetNpc = best;
@@ -5637,6 +5652,13 @@ export class Game {
   private startJump(quiet = false): void {
     // already mid-sequence, mid-gate, or nothing to do
     if (this.jump || this.pendingGateDest) return;
+    if (this.ship.disabled) {
+      if (!quiet) {
+        this.message("Your ship is disabled — the hyperdrive will not engage.");
+        playSnd(SND.DENY, 0.5);
+      }
+      return;
+    }
     if (this.route.length === 0) {
       if (!quiet) {
         this.message(
@@ -5718,8 +5740,23 @@ export class Game {
    * Drive one frame of the hyperspace entry sequence. The stick is locked for
    * the whole run — matching Nova, once the drive is engaged you ride it out.
    */
+  /** Abort a hyperspace entry in progress (disabled hull, Esc to menu, …). */
+  private cancelJumpSequence(): void {
+    if (!this.jump) return;
+    this.jump = null;
+    stopSustained(JUMP_SND_KEY);
+    this.jumpFlash = 0;
+  }
+
   private updateJumpSequence(dt: number): void {
     const j = this.jump!;
+    // Dead in space cannot finish align/burn — drop the sequence so Esc and
+    // other controls are not locked behind a stuck jump.
+    if (this.ship.disabled) {
+      this.cancelJumpSequence();
+      this.message("Jump aborted — your ship is disabled.");
+      return;
+    }
     if (j.phase === "braking") {
       // face reverse of current velocity and burn until nearly stopped
       if (this.ship.speed < 45) {
@@ -6677,25 +6714,20 @@ export class Game {
     this.dockedNpcs = still;
   }
 
-  // ---------------- flight clicks ----------------
+  // ---------------- flight targeting under cursor ----------------
 
   /**
-   * Click a stellar to make it the one you are flying to. Landing already
-   * cycles targets with L, but with five worlds in Sol that is a lot of
-   * presses to reach the one you want, and the same click is what picks a
-   * destination in Nova. Clicking a ship targets it instead, and clicking
-   * empty space clears the selection.
+   * Select the ship or stellar under the pointer (keybind "selectUnderCursor",
+   * Mouse Left in Classic). Empty space clears the selection. Uses the same
+   * world point as aim-cursor so a keyboard bind works with the mouse still.
    */
-  private onFlightClick(e: MouseEvent): void {
-    if (this.lastDragMoved > 6) return;
-    const rect = this.canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+  private selectUnderCursor(): void {
+    if (this.mode !== "flight" || this.flightOverlayOpen()) return;
     const viewW = this.viewW - SIDEBAR_W;
-    if (mx > viewW) return; // the status bar has its own hit areas
-    // undo the camera transform renderSpace applies
-    const wx = mx - viewW / 2 + this.ship.pos.x;
-    const wy = my - this.viewH / 2 + this.ship.pos.y;
+    if (this.mouse.x > viewW) return; // the status bar has its own hit areas
+    const aim = this.cursorWorldPoint();
+    const wx = aim.x;
+    const wy = aim.y;
 
     let bestPlanet: { planet: PlanetDef; d: number } | null = null;
     for (const p of this.system.planets) {
@@ -6716,12 +6748,15 @@ export class Game {
     let bestNpc: { npc: NpcShip; d: number } | null = null;
     for (const npc of this.npcs) {
       if (npc.done || npc.cloaked) continue;
+      if (!this.canSee(npc)) continue;
       const d = Math.hypot(npc.pos.x - wx, npc.pos.y - wy);
       if (d <= 28 && (!bestNpc || d < bestNpc.d)) bestNpc = { npc, d };
     }
     if (bestNpc) {
       this.targetNpc = bestNpc.npc;
       this.targetPlanet = null;
+      // same select click as R / cycle targets (Beep3)
+      playSnd(SND.TARGET, 0.45);
       this.message(`Target: ${this.shipLabel(bestNpc.npc)}.`);
       return;
     }
@@ -6734,10 +6769,7 @@ export class Game {
   // ---------------- map clicks ----------------
 
   private onClick(e: MouseEvent): void {
-    if (this.mode === "flight") {
-      this.onFlightClick(e);
-      return;
-    }
+    // Flight targeting is the selectUnderCursor bind (not a free left-click).
     if (this.mode !== "map") return;
     if (this.lastDragMoved > 6) return; // was a pan, not a click
     const rect = this.canvas.getBoundingClientRect();

@@ -34,6 +34,7 @@ export type ActionId =
   | "selectSecondary"
   | "cycleTargets"
   | "targetClosest"
+  | "selectUnderCursor"
   | "land"
   | "jump"
   | "hyperSelect"
@@ -72,7 +73,8 @@ export const ACTIONS: ActionDef[] = [
   { id: "fireSecondary", label: "Fire secondary" },
   { id: "selectSecondary", label: "Select secondary" },
   { id: "cycleTargets", label: "Cycle targets" },
-  { id: "targetClosest", label: "Target nearest ship" },
+  { id: "targetClosest", label: "Target nearest hostile" },
+  { id: "selectUnderCursor", label: "Select item under cursor" },
   { id: "land", label: "Target / land / dock" },
   { id: "jump", label: "Hyperspace jump" },
   { id: "hyperSelect", label: "Display mini map" },
@@ -129,6 +131,7 @@ const CLASSIC_BINDINGS: Record<ActionId, Chord> = {
   selectSecondary: { code: "KeyW" },
   cycleTargets: { code: "Backquote" },
   targetClosest: { code: "KeyR" },
+  selectUnderCursor: { code: "Mouse0" },
   land: { code: "KeyL" },
   jump: { code: "KeyJ" },
   hyperSelect: { code: "KeyH" },

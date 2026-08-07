@@ -579,7 +579,7 @@ export class HudUi {
     const keys: [string, string][] = [
       [fly, g.afterburnerFuel > 0 ? `${b("afterburner")} burn` : ""],
       [`${b("aimAssist")} aim`, `${b("firePrimary")} fire`],
-      [`${b("cycleTargets")} target`, `${b("targetClosest")} closest`],
+      [`${b("cycleTargets")} target`, `${b("targetClosest")} hostile`],
       [`${b("hail")} hail`, `${b("board")} board`],
       [
         `${b("land")} land`,
