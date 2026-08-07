@@ -40,6 +40,7 @@ import {
   cloneBindings,
   customPresetLabel,
   CUSTOM_PRESET_VALUE,
+  exportKeybindings,
   findCollisions,
   formatChord,
   KEYBINDING_PRESETS,
@@ -287,12 +288,23 @@ export class MainMenu {
   /**
    * Title-screen letter shortcuts (Nova-style). Only while the bare menu is
    * up — not over a modal, the intro, or a focused text field.
+   * Esc closes simple modals (Open Pilot, About, New Pilot, notices).
+   * Preferences installs its own capture-phase Esc handler for dirty confirm.
    */
   private onTitleKey = (e: KeyboardEvent): void => {
     if (this.root.classList.contains("hidden") || e.repeat) return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const modal = this.root.querySelector<HTMLElement>("#ttl-modal");
-    if (modal && !modal.classList.contains("hidden")) return;
+    if (modal && !modal.classList.contains("hidden")) {
+      // Preferences owns Escape (rebind cancel + unsaved-discard confirm).
+      if (modal.querySelector(".prefs-dialog")) return;
+      if (e.code === "Escape") {
+        e.preventDefault();
+        modal.classList.add("hidden");
+        playMenuClose();
+      }
+      return;
+    }
     if (this.root.querySelector(".ttl-stage.intro")) return;
     const tag = (e.target as HTMLElement | null)?.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
@@ -768,6 +780,7 @@ export class MainMenu {
                 ).join("")}
                 <option value="${CUSTOM_PRESET_VALUE}" disabled id="pref-preset-custom">${customPresetLabel(basePresetId)}</option>
               </select>
+              <button class="evbtn" id="pref-export-keys" type="button" title="Download the current layout as a JSON file">Export…</button>
             </div>
             <p class="menu-hint">Choose a preset to load it, or click a binding and press a key or mouse button (with Opt / Shift / Ctrl for a chord). Delete clears a binding. A bare Shift/Opt/Ctrl key collides with any chord that uses that modifier — free it first, then holding the bare key will not block other binds. Esc and Caps Lock are fixed.</p>
             <div id="pref-bind-status" class="menu-hint pref-bind-status"></div>
@@ -801,6 +814,9 @@ export class MainMenu {
     )!;
     const saveBtn = m.querySelector<HTMLButtonElement>("#pref-save")!;
     const cancelBtn = m.querySelector<HTMLButtonElement>("#pref-cancel")!;
+    const exportKeysBtn = m.querySelector<HTMLButtonElement>(
+      "#pref-export-keys",
+    )!;
     const confirmEl = m.querySelector<HTMLElement>("#pref-confirm")!;
     const discardBtn = m.querySelector<HTMLButtonElement>("#pref-discard")!;
     const keepBtn = m.querySelector<HTMLButtonElement>("#pref-keep")!;
@@ -1051,6 +1067,19 @@ export class MainMenu {
       closePrefs();
     });
     cancelBtn.addEventListener("click", () => requestCancel());
+    exportKeysBtn.addEventListener("click", () => {
+      if (confirmOpen) return;
+      // Export the draft on screen, including unsaved edits.
+      const data = exportKeybindings(draft, basePresetId);
+      const url = URL.createObjectURL(
+        new Blob([data.json], { type: "application/json" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
     presetSelect.addEventListener("change", () => {
       if (confirmOpen) return;
       const id = presetSelect.value;

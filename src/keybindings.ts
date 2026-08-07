@@ -154,6 +154,45 @@ const CLASSIC_BINDINGS: Record<ActionId, Chord> = {
 };
 
 /**
+ * WASD flight, mouse fire, Shift aim-at-cursor — layout inspired by
+ * Starsector. Eject / self-destruct left unbound (bind deliberately).
+ */
+const STARSECTOR_BINDINGS: Record<ActionId, Chord> = {
+  turnLeft: { code: "KeyA" },
+  turnRight: { code: "KeyD" },
+  accelerate: { code: "KeyW" },
+  reverse: { code: "KeyS" },
+  aimAssist: { code: "KeyX" },
+  aimCursor: { code: "ShiftLeft" },
+  afterburner: { code: "Space" },
+  firePrimary: { code: "Mouse0" },
+  fireSecondary: { code: "Mouse2" },
+  selectSecondary: { code: "KeyQ" },
+  cycleTargets: { code: "Backquote" },
+  targetClosest: { code: "KeyR" },
+  selectUnderCursor: { code: "KeyE" },
+  land: { code: "KeyL" },
+  jump: { code: "KeyZ" },
+  hyperSelect: { code: "KeyH" },
+  cycleJumpDest: { code: "KeyG" },
+  map: { code: "Tab" },
+  hail: { code: "KeyY" },
+  board: { code: "KeyB" },
+  cloak: { code: "KeyU" },
+  recallFighters: { code: "KeyC", alt: true },
+  autopilot: { code: "BracketRight" },
+  navOff: { code: "KeyN" },
+  escortAttack: { code: "KeyF" },
+  escortForm: { code: "KeyC" },
+  escortHold: { code: "KeyV" },
+  playerInfo: { code: "KeyP" },
+  missionInfo: { code: "KeyI" },
+  jettison: { code: "KeyK", alt: true },
+  eject: { ...UNBOUND },
+  selfDestruct: { ...UNBOUND },
+};
+
+/**
  * Ordered list of built-in layouts. Append new presets here — Preferences
  * reads this array for the select options; no UI change required.
  */
@@ -163,7 +202,11 @@ export const KEYBINDING_PRESETS: readonly KeybindingPreset[] = [
     name: "Classic",
     bindings: CLASSIC_BINDINGS,
   },
-  // e.g. { id: "wasd", name: "WASD", bindings: WASD_BINDINGS },
+  {
+    id: "starsector",
+    name: "Starsector",
+    bindings: STARSECTOR_BINDINGS,
+  },
 ];
 
 export const DEFAULT_PRESET_ID = KEYBINDING_PRESETS[0]!.id;
@@ -256,6 +299,37 @@ export function normalizeBindings(
     }
   }
   return out;
+}
+
+/** Portable file format tag for exported keybinding configs. */
+export const KEYBINDINGS_FILE_FORMAT = "starlanes-keybindings";
+
+/**
+ * Serialise a binding map to a downloadable JSON payload. `basePresetId` is
+ * the named layout the mix branched from (for Custom (…) / future import).
+ */
+export function exportKeybindings(
+  bindings: Record<ActionId, Chord>,
+  basePresetId?: string,
+): { filename: string; json: string } {
+  const matched = matchPresetId(bindings);
+  const base = resolvePresetId(
+    matched ?? basePresetId ?? DEFAULT_PRESET_ID,
+  );
+  const slug = (matched ?? "custom").replace(/[^\w.-]+/g, "_") || "custom";
+  return {
+    filename: `starlanes-keybindings-${slug}.json`,
+    json: JSON.stringify(
+      {
+        format: KEYBINDINGS_FILE_FORMAT,
+        version: 1,
+        basePreset: base,
+        keybindings: cloneBindings(bindings),
+      },
+      null,
+      2,
+    ),
+  };
 }
 
 /** Canonical id for collision checks; L/R modifier keys collapse. */

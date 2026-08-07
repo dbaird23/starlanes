@@ -1836,7 +1836,9 @@ export class Game {
      */
     this.ship.unfolding =
       this.ship.sprite && this.ship.sprite.flags & SHAN_UNFOLD_FIRING
-        ? actionDown(this.input, "firePrimary") && !this.ship.ionized
+        ? actionDown(this.input, "firePrimary") &&
+          !this.ship.ionized &&
+          !this.ship.disabled
         : this.jump === null;
     this.ship.advanceAnimation(dt);
     for (const npc of this.npcs) npc.advanceAnimation(dt);
@@ -3050,7 +3052,8 @@ export class Game {
       !this.flightOverlayOpen() &&
       this.jump === null &&
       actionDown(this.input, "firePrimary") &&
-      !this.ship.ionized;
+      !this.ship.ionized &&
+      !this.ship.disabled;
     for (const slot of this.weaponSlots) {
       if (!slot.weap.sndLoop || !slot.weap.sndId || !isPrimary(slot.weap))
         continue;
@@ -3064,7 +3067,10 @@ export class Game {
     for (const slot of this.weaponSlots) {
       slot.cooldown = Math.max(0, slot.cooldown - dt);
     }
-    if (actionDown(this.input, "firePrimary") && !this.ship.ionized) {
+    // Disabled = weapons offline (ship.disable docstring); ionized same for guns.
+    // Uses action bindings, not raw Space — mouse-fire presets must honour this too.
+    const canShoot = !this.ship.ionized && !this.ship.disabled;
+    if (actionDown(this.input, "firePrimary") && canShoot) {
       for (const slot of this.weaponSlots) {
         if (!isPrimary(slot.weap) || slot.cooldown > 0) continue;
         applyReload(slot);
@@ -3097,7 +3103,7 @@ export class Game {
     }
     // Secondary fires whichever is selected — missiles launch, fighter bays
     // scramble, exactly as EV treats bays as secondary weapons
-    if (actionConsume(this.input, "fireSecondary")) {
+    if (actionConsume(this.input, "fireSecondary") && canShoot) {
       const slot = this.selectedSecondary();
       if (!slot) {
         this.message("No secondary weapon selected.");
