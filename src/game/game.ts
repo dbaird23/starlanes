@@ -648,10 +648,10 @@ export class Game {
       ? sys.planets.find((p) => p.id === this.player.landedOn)
       : sys.planets[0];
     if (home) {
-      this.ship.pos = {
-        x: home.pos.x + home.radius * 2.2,
-        y: home.pos.y + home.radius * 1.4,
-      };
+      // You resume where you left off, which is the pad you last put down on
+      // — same rule as `depart()`: on top of the world, not parked off to one
+      // side of it.
+      this.ship.pos = { ...home.pos };
     } else {
       this.ship.pos = { x: 900, y: 600 };
     }

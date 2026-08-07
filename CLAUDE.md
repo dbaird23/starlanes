@@ -85,6 +85,25 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**The opening sequence has exactly one player, and it is `IntroUi`.** A new
+pilot sat through PICT 8200-8202 twice: `menu.ts` ran its own hardcoded
+slideshow (`INTRO_PAGES` + `playIntro`) before handing over, and
+`Game.startPilot` then played the same pictures from the chär template. The
+menu's copy is gone. `IntroUi` wins because it is data-driven — IntroPict1-4,
+their PictDelay dwell times and the IntroTextID dësc — so a plug-in template
+plays. It kept what the menu version had that the other lacked: a page
+counter, the click/space/esc hint, and **Esc skipping the whole sequence**
+rather than one page. Its keydown listener is now **capture-phase with
+`stopPropagation`**, because unlike the menu's version it plays over a system
+that is already flying (`Input` listens on window too) — without that, Space
+advanced the picture *and* fired a weapon behind it.
+
+**Opening a pilot puts you over the world you left, not beside it.**
+`startPilot` parked the ship at `planet.pos + (radius*2.2, radius*1.4)`, which
+reads as starting off to the right of the planet. It now uses `{...home.pos}`,
+the same rule `depart()` already states: you resume on the pad and fly clear
+under your own power.
+
 **Boarding money is 4% of the hull's cost.** düde Flags **0x0040** is "carries
 money (amount depends on the ship's purchase price)" and the Bible never says
 how much — no field holds an amount. The rate is ours; the ±25% spread is the

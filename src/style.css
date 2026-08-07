@@ -2034,10 +2034,7 @@ td.actions button:disabled {
   text-align: center;
 }
 
-/* ---- Preamble pages (PICT 8200-8202), shown once on a new pilot ---- */
-.ttl-stage.intro {
-  cursor: pointer;
-}
+/* ---- Footer of the chär opening sequence (see #intro-ui below) ---- */
 .intro-foot {
   position: absolute;
   left: 0;
