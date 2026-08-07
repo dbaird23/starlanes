@@ -373,9 +373,12 @@ Consequences worth knowing:
   on request. The remaining non-Nova blocks — the primary-weapon lines and
   the key hints — are kept but drawn in the same idiom.
 - **The date is not on the plate.** It was a third line in the cargo well and
-  now reads on the map screen's bottom strip, beside Ports and Navigation
-  Hazards (`drawMapPanel`), labelled and at the strip's own value brightness.
-  Days pass by jumping, so it belongs on the chart you plan the jump from.
+  now closes out the map's destination panel (`drawMapPanel`), ruled off below
+  Goods Traded / Services in that panel's own label-over-value idiom. It is
+  anchored to the foot of the box rather than following the content's `ty`,
+  because how far the goods and services lists run depends on which system is
+  selected. Days pass by jumping, so it belongs on the chart you plan the jump
+  from.
   `formatDateShort` in `game/calendar.ts` has no caller left; it is kept
   because it is the plate-width form, should anything want it back.
 - **The full-screen map lays out left of the plate, not under it.** The

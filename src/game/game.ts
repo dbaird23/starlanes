@@ -7931,6 +7931,23 @@ export class Game {
       value("Uncharted", "#62748c");
     }
 
+    /*
+     * The calendar closes the panel out, ruled off from the system's own
+     * details above it. It is anchored to the foot of the box rather than
+     * following `ty`, since how far the goods and services lists run is a
+     * property of the system you happen to have selected.
+     */
+    const dateBase = py + panelH - 14;
+    ctx.strokeStyle = "#22304a";
+    ctx.beginPath();
+    ctx.moveTo(px + 10, dateBase - 32);
+    ctx.lineTo(px + panelW - 10, dateBase - 32);
+    ctx.stroke();
+    ty = dateBase - 13;
+    label("Date:");
+    ty = dateBase;
+    value(formatDate(this.player.date));
+
     // ports and hazards along the bottom of the chart area
     ctx.font = "10.5px Helvetica, Arial, sans-serif";
     let fy = h - barH - 34;
@@ -7956,21 +7973,6 @@ export class Game {
             ? "Light asteroid field"
             : "None";
     ctx.fillText(hazard, 148, fy);
-
-    /*
-     * The calendar reads here and nowhere else in flight — it used to be a
-     * third line in the status bar's cargo well, where it cost the hold's
-     * manifest a line and sat nowhere near anything it affects. Days pass by
-     * jumping, so the chart you plan the jump on is where the date belongs.
-     * Label and value in the strip's own idiom, right-aligned off the panel.
-     */
-    const dateText = formatDate(this.player.date);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#b8c8dc";
-    ctx.fillText(dateText, px - 12, fy);
-    ctx.fillStyle = "#7d90aa";
-    ctx.fillText("Date:", px - 20 - ctx.measureText(dateText).width, fy);
-    ctx.textAlign = "left";
 
     // button bar
     this.mapButtons = [];
