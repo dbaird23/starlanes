@@ -262,6 +262,41 @@ export class LandedUi {
         return;
       }
       /*
+       * Trade / outfitter / shipyard: B buys and S sells the focused item.
+       * These take priority over the port-letter shortcuts (B → bar, S →
+       * shipyard) while you are already at the counter — otherwise B would
+       * leave for the bar mid-purchase. Shipyard has no Sell button, so S is
+       * inert there.
+       */
+      if (
+        this.planet &&
+        (this.view === "trade" ||
+          this.view === "outfitter" ||
+          this.view === "shipyard") &&
+        (e.code === "KeyB" || e.code === "KeyS")
+      ) {
+        e.preventDefault();
+        handled();
+        const buySel =
+          this.view === "trade"
+            ? "#tc-buy"
+            : this.view === "outfitter"
+              ? "#btn-buy-outfit"
+              : "#btn-buy-ship";
+        const sellSel =
+          this.view === "trade"
+            ? "#tc-sell"
+            : this.view === "outfitter"
+              ? "#btn-sell-outfit"
+              : null;
+        const sel = e.code === "KeyB" ? buySel : sellSel;
+        if (sel) {
+          const btn = this.root.querySelector<HTMLButtonElement>(sel);
+          if (btn && !btn.disabled) btn.click();
+        }
+        return;
+      }
+      /*
        * The spaceport's own keys. Nova lets you reach every counter from the
        * keyboard rather than the buttons, and these work from any of the port
        * screens, so you can go straight from the outfitter to the shipyard
