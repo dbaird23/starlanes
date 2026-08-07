@@ -7864,9 +7864,20 @@ export class Game {
             ? "Light asteroid field"
             : "None";
     ctx.fillText(hazard, 148, fy);
+
+    /*
+     * The calendar reads here and nowhere else in flight — it used to be a
+     * third line in the status bar's cargo well, where it cost the hold's
+     * manifest a line and sat nowhere near anything it affects. Days pass by
+     * jumping, so the chart you plan the jump on is where the date belongs.
+     * Label and value in the strip's own idiom, right-aligned off the panel.
+     */
+    const dateText = formatDate(this.player.date);
     ctx.textAlign = "right";
-    ctx.fillStyle = "#62748c";
-    ctx.fillText(formatDate(this.player.date), px - 12, fy);
+    ctx.fillStyle = "#b8c8dc";
+    ctx.fillText(dateText, px - 12, fy);
+    ctx.fillStyle = "#7d90aa";
+    ctx.fillText("Date:", px - 20 - ctx.measureText(dateText).width, fy);
     ctx.textAlign = "left";
 
     // button bar

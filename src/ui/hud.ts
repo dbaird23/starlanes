@@ -8,7 +8,6 @@ import {
   targetPict,
 } from "../data/universe";
 import { asset } from "../asset";
-import { formatDateShort } from "../game/calendar";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
@@ -522,14 +521,14 @@ export class HudUi {
     const abbrev = STR_LISTS["4002"] ?? [];
     /*
      * The artwork's hole is three lines tall and the rest is clipped, so the
-     * three the opening is named for go first. Nova's own plate prints only
+     * two the opening is named for go first. Nova's own plate prints only
      * these; the per-commodity manifest below them is ours, and is what a
-     * loaded hold loses.
+     * loaded hold loses. The date used to sit here as a third line and now
+     * lives on the map screen, which buys the manifest a line back.
      */
     const rows: [string, string, string][] = [
       ["FREE", String(Math.max(0, g.player.cargoCap - g.cargoUsed())), ""],
       ["CREDITS", g.player.credits.toLocaleString(), "credits"],
-      ["DATE", formatDateShort(g.player.date), ""],
     ];
     const special = g.player.activeMissions.find(
       (a) => a.cargoLoaded && a.cargoName,

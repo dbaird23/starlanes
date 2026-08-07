@@ -340,8 +340,10 @@ Consequences worth knowing:
   and systematic, i.e. how hard each one's bevel is drawn, not a hole in the
   wrong place. Two holes are tight and the code works around them: the
   primary hole is one line, so four primary slots collapse to "name +3", and
-  the cargo hole is three lines, so Free/Credits/Date are emitted first and
-  the per-commodity manifest (ours, not Nova's) is what gets clipped.
+  the cargo hole is three lines, so Free and Credits are emitted first and
+  the per-commodity manifest (ours, not Nova's) is what gets clipped. The
+  date was a third line here until it moved to the map (see below), which
+  buys the manifest one line back.
 - **There is no EJECT button, by choice.** The plate is instrument holes and
   decorative tail with nowhere to put one, so pulling the pod's handle is
   Alt-X and only Alt-X. `playerDestroyed(deliberate)` and oütf ModType 20's
@@ -368,8 +370,14 @@ Consequences worth knowing:
   else locally and should not need the network to look right.
 - **The plate carries no pilot name, no government and no scanner labels.**
   3a's scope is bare glass and so is Nova's; those were 2a's and were removed
-  on request. The remaining non-Nova blocks — the primary-weapon lines, DATE,
-  the key hints and EJECT — are kept but drawn in the same idiom.
+  on request. The remaining non-Nova blocks — the primary-weapon lines and
+  the key hints — are kept but drawn in the same idiom.
+- **The date is not on the plate.** It was a third line in the cargo well and
+  now reads on the map screen's bottom strip, beside Ports and Navigation
+  Hazards (`drawMapPanel`), labelled and at the strip's own value brightness.
+  Days pass by jumping, so it belongs on the chart you plan the jump from.
+  `formatDateShort` in `game/calendar.ts` has no caller left; it is kept
+  because it is the plate-width form, should anything want it back.
 - **Fuel is one continuous bar, with no jump count.** It used to be a segment
   per jump with "N JUMPS" printed beside it; 3a's plate has neither, and both
   were removed on request. The ïntf's two fuel colours survive the change —
