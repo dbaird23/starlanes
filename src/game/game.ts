@@ -7385,9 +7385,23 @@ export class Game {
     ctx.restore(); // end alpha
   }
 
-  private renderMap(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  private renderMap(
+    ctx: CanvasRenderingContext2D,
+    fullW: number,
+    h: number,
+  ): void {
     ctx.fillStyle = "rgba(2,5,12,0.92)";
-    ctx.fillRect(0, 0, w, h);
+    // the backdrop runs the whole width, so nothing of the flight scene shows
+    // through beside the status bar
+    ctx.fillRect(0, 0, fullW, h);
+    /*
+     * The chart itself lays out in the space *left* of the status bar. The
+     * sidebar is an opaque DOM panel over the canvas and stays up under the
+     * map, so drawing to the full canvas width put the right-hand readout —
+     * government, standing, goods, services — underneath it: 176 of its 186
+     * columns were hidden, which read as the map having no panel at all.
+     */
+    const w = fullW - SIDEBAR_W;
     // full-screen chart frame (not the H overlay — that uses FloatingMap above)
     ctx.strokeStyle = COLR?.floatingMap ?? "rgba(120, 160, 210, 0.6)";
     ctx.lineWidth = 2;

@@ -378,6 +378,15 @@ Consequences worth knowing:
   Days pass by jumping, so it belongs on the chart you plan the jump from.
   `formatDateShort` in `game/calendar.ts` has no caller left; it is kept
   because it is the plate-width form, should anything want it back.
+- **The full-screen map lays out left of the plate, not under it.** The
+  sidebar stays up in map mode (`setVisible(flight || map)`) and is opaque,
+  so `renderMap` taking the whole canvas width hid 176 of the 186 columns of
+  its right-hand readout — government, standing, goods, services — and the
+  map looked like it had no panel. It now paints its backdrop the full width
+  (nothing of the flight scene shows through beside the bar) and lays the
+  chart, panel, footer and buttons out in `fullW - SIDEBAR_W`. Everything
+  clickable — `mapNodes`, `mapButtons` — is recorded during that same pass in
+  canvas coordinates, so the hit tests followed the change for free.
 - **Fuel is one continuous bar, with no jump count.** It used to be a segment
   per jump with "N JUMPS" printed beside it; 3a's plate has neither, and both
   were removed on request. The ïntf's two fuel colours survive the change —
