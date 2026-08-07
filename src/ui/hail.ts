@@ -17,8 +17,8 @@ export interface HailOption {
 }
 
 /**
- * Communications panel for a hailed ship. Shown over the flight view; the
- * game keeps running behind it, EV-style.
+ * Communications panel for a hailed ship or world. Opening it freezes the
+ * flight sim (see Game.flightOverlayOpen) until the channel is closed.
  */
 export class HailUi {
   private root: HTMLElement;

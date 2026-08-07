@@ -3,9 +3,9 @@ import { playMenuClose, playMenuOpen } from "../engine/audio";
 
 /**
  * Nova's plunder dialog. Boarding a crippled ship doesn't hand you the loot —
- * it opens a manifest and lets you take one thing at a time, with the odds of
- * storming the ship outright printed alongside. Each button greys out once
- * that hold is empty or you have nowhere to put it.
+ * it opens a manifest and freezes the flight sim while you take one thing at a
+ * time, with the odds of storming the ship printed alongside. Each button
+ * greys out once that hold is empty or you have nowhere to put it.
  */
 
 export interface PlunderHold {
@@ -76,6 +76,14 @@ export class PlunderUi {
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
     playMenuClose();
+  }
+
+  /** Esc / abort: run the context close hook, then hide the panel. */
+  dismiss(): void {
+    if (this.ctx === null) return;
+    const c = this.ctx;
+    this.close();
+    c.close();
   }
 
   private render(): void {

@@ -7,7 +7,10 @@
 import {
   cloneBindings,
   DEFAULT_BINDINGS,
+  DEFAULT_PRESET_ID,
+  matchPresetId,
   normalizeBindings,
+  resolvePresetId,
   setLiveBindings,
   type ActionId,
   type Chord,
@@ -28,11 +31,17 @@ export interface Settings {
   capsLockFastWhen: CapsLockFastWhen;
   /** Flight key chords; missing actions fall back to Nova defaults. */
   keybindings: Record<ActionId, Chord>;
+  /**
+   * Last named preset the player loaded or matched. When keybindings diverge
+   * from every preset, Preferences labels the select "Custom (…)" using this.
+   */
+  keybindingBasePreset: string;
 }
 
 const DEFAULTS: Settings = {
   capsLockFastWhen: "on",
   keybindings: cloneBindings(DEFAULT_BINDINGS),
+  keybindingBasePreset: DEFAULT_PRESET_ID,
 };
 
 function parseFastWhen(v: unknown): CapsLockFastWhen {
@@ -44,13 +53,27 @@ function load(): Settings {
     const raw = JSON.parse(
       localStorage.getItem(KEY) ?? "null",
     ) as Partial<Settings> | null;
-    if (!raw || typeof raw !== "object") return { ...DEFAULTS, keybindings: cloneBindings() };
+    if (!raw || typeof raw !== "object") {
+      return {
+        ...DEFAULTS,
+        keybindings: cloneBindings(),
+      };
+    }
+    const keybindings = normalizeBindings(raw.keybindings);
+    // Prefer an exact match; otherwise keep the stored branch parent.
+    const matched = matchPresetId(keybindings);
     return {
       capsLockFastWhen: parseFastWhen(raw.capsLockFastWhen),
-      keybindings: normalizeBindings(raw.keybindings),
+      keybindings,
+      keybindingBasePreset: resolvePresetId(
+        matched ?? raw.keybindingBasePreset ?? DEFAULT_PRESET_ID,
+      ),
     };
   } catch {
-    return { ...DEFAULTS, keybindings: cloneBindings() };
+    return {
+      ...DEFAULTS,
+      keybindings: cloneBindings(),
+    };
   }
 }
 
@@ -92,11 +115,26 @@ export function getKeybindings(): Readonly<Record<ActionId, Chord>> {
   return current.keybindings;
 }
 
-/** Replace all flight keybindings and persist. Caller must ensure no collisions. */
-export function setKeybindings(bindings: Record<ActionId, Chord>): void {
+export function getKeybindingBasePreset(): string {
+  return current.keybindingBasePreset;
+}
+
+/**
+ * Replace flight keybindings and remember which named preset they came from
+ * (exact match, or the branch parent for a custom mix). Caller ensures no collisions.
+ */
+export function setKeybindings(
+  bindings: Record<ActionId, Chord>,
+  basePresetId?: string,
+): void {
+  const matched = matchPresetId(bindings);
+  const base = resolvePresetId(
+    matched ?? basePresetId ?? current.keybindingBasePreset,
+  );
   current = {
     ...current,
     keybindings: cloneBindings(bindings),
+    keybindingBasePreset: base,
   };
   setLiveBindings(current.keybindings);
   persist(current);

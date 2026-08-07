@@ -599,7 +599,9 @@ export class Game {
       this.lastDragMoved = this.drag?.moved ?? 0;
       this.drag = null;
     });
-    canvas.addEventListener("mousemove", (e) => {
+    // Track cursor over the whole window so aim-cursor stays live when the
+    // pointer crosses the HUD or leaves the canvas briefly.
+    window.addEventListener("mousemove", (e) => {
       const rect = canvas.getBoundingClientRect();
       this.mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       if (this.drag && this.mode === "map") {
@@ -1494,8 +1496,16 @@ export class Game {
 
   // ---------------- update ----------------
 
+  /**
+   * In-flight DOM overlays that freeze the sim (boarding, hail, P/I/jettison).
+   * The H floating minimap is canvas-only and does *not* count — flight keeps
+   * running under it.
+   */
+  private flightOverlayOpen(): boolean {
+    return this.infoUi.open || this.hailUi.open || this.plunderUi.open;
+  }
+
   update(dt: number): void {
-    this.time += dt;
     // held weapon sounds are driven from here, not from the firing branch, so
     // that landing, jumping or dying with the trigger down still cuts them off
     this.updateFiringLoops();
@@ -1506,6 +1516,7 @@ export class Game {
        * paused with Esc freezes in place so Enter ship restores it unchanged.
        */
       if (!this.resumeMode) {
+        this.time += dt;
         for (const npc of this.npcs) {
           npc.updateAi(dt);
           if (npc.landing) npc.done = true;
@@ -1518,6 +1529,7 @@ export class Game {
     }
 
     if (this.mode === "landed") {
+      this.time += dt;
       this.updateGates(dt);
       this.input.endFrame();
       return; // DOM UI handles everything
@@ -1529,9 +1541,19 @@ export class Game {
       !this.jump &&
       !this.pendingGateDest
     ) {
-      // an open info panel takes Esc first, before it means "leave the game"
+      // open overlays take Esc first (close them, don't quit to title)
       if (this.infoUi.open) {
         this.infoUi.close();
+        this.input.endFrame();
+        return;
+      }
+      if (this.hailUi.open) {
+        this.hailUi.close();
+        this.input.endFrame();
+        return;
+      }
+      if (this.plunderUi.open) {
+        this.plunderUi.dismiss();
         this.input.endFrame();
         return;
       }
@@ -1539,6 +1561,18 @@ export class Game {
       this.input.endFrame();
       return;
     }
+
+    /*
+     * Boarding / hail / info freeze the flight sim. Map mode also freezes
+     * flight (handled below). The H floating minimap does not — it peeks
+     * over a still-running system.
+     */
+    if (this.mode === "flight" && this.flightOverlayOpen()) {
+      this.input.endFrame();
+      return;
+    }
+
+    this.time += dt;
 
     if (actionConsume(this.input, "map")) {
       if (this.mode === "map") this.closeMap();
@@ -1632,18 +1666,27 @@ export class Game {
     if (this.jump) {
       this.updateJumpSequence(dt);
     } else {
-      let turn =
-        (actionDown(this.input, "turnLeft") ? -1 : 0) +
-        (actionDown(this.input, "turnRight") ? 1 : 0);
+      // Hold aim-cursor: steer at the pointer each frame; left/right are ignored.
+      const aimCursor = actionDown(this.input, "aimCursor");
+      let turn = aimCursor
+        ? 0
+        : (actionDown(this.input, "turnLeft") ? -1 : 0) +
+          (actionDown(this.input, "turnRight") ? 1 : 0);
       const thrust = actionDown(this.input, "accelerate");
       // Down swings the nose onto the reverse of your course, so a burn slows
       // you; inertialess hulls simply stop instead
       const braking = actionDown(this.input, "reverse");
-      // Hold aim-assist: auto-turn toward the selected ship or stellar (manual turn wins)
+      // Hold aim-assist: auto-turn toward the selected ship or stellar
       const aimAssist =
-        turn === 0 && !braking && actionDown(this.input, "aimAssist");
+        !aimCursor &&
+        turn === 0 &&
+        !braking &&
+        actionDown(this.input, "aimAssist");
       // touching the controls takes the ship back off the autopilot
-      if (this.autopilot && (turn !== 0 || thrust || braking || aimAssist)) {
+      if (
+        this.autopilot &&
+        (turn !== 0 || thrust || braking || aimAssist || aimCursor)
+      ) {
         this.autopilot = false;
         this.message("Autopilot disengaged.");
       }
@@ -1663,6 +1706,14 @@ export class Game {
             this.ship.steerToward(dt, retro);
             turn = 0;
           }
+        } else if (aimCursor) {
+          // Rate-limited turn toward the cursor; clamps so one frame cannot overshoot.
+          const aim = this.cursorWorldPoint();
+          this.ship.steerToward(
+            dt,
+            Math.atan2(aim.y - this.ship.pos.y, aim.x - this.ship.pos.x),
+          );
+          turn = 0;
         } else if (aimAssist) {
           const aim = this.selectedAimPoint();
           if (aim) {
@@ -1863,6 +1914,21 @@ export class Game {
     }
     if (this.targetPlanet) return this.targetPlanet.pos;
     return null;
+  }
+
+  /**
+   * World-space point under the cursor in the flight view (camera centred on
+   * the player). Used by aim-cursor; safe even when the pointer is over the HUD.
+   */
+  private cursorWorldPoint(): { x: number; y: number } {
+    const viewW = this.viewW - SIDEBAR_W;
+    // Clamp into the playfield so aiming into the sidebar still aims past the edge
+    const mx = Math.max(0, Math.min(viewW, this.mouse.x));
+    const my = Math.max(0, Math.min(this.viewH, this.mouse.y));
+    return {
+      x: mx - viewW / 2 + this.ship.pos.x,
+      y: my - this.viewH / 2 + this.ship.pos.y,
+    };
   }
 
   /** Cloaked ships hide from targeting unless your scanner can see them. */
@@ -2964,6 +3030,7 @@ export class Game {
   private updateFiringLoops(): void {
     const firing =
       this.mode === "flight" &&
+      !this.flightOverlayOpen() &&
       this.jump === null &&
       actionDown(this.input, "firePrimary") &&
       !this.ship.ionized;

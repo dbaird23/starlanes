@@ -1290,7 +1290,44 @@ td.actions button:disabled {
     11px ui-monospace,
     monospace;
 }
-/* Preferences: scroll the body, pin Save / Cancel / Reset to the bottom */
+.pref-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+.pref-preset-label {
+  font-size: 12px;
+  color: #cfd8e3;
+  flex-shrink: 0;
+}
+.pref-preset-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
+  padding: 6px 8px;
+  background: #0b1220;
+  border: 1px solid #2b3d56;
+  border-radius: 4px;
+  color: #e2eaf4;
+  font:
+    12px system-ui,
+    sans-serif;
+  cursor: pointer;
+}
+.pref-preset-select:hover:not(:disabled) {
+  border-color: #6b84aa;
+}
+.pref-preset-select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pref-preset-select option {
+  background: #0b1220;
+  color: #e2eaf4;
+}
+
+/* Preferences: scroll the body, pin Save / Cancel to the bottom */
 .ttl-dialog.prefs-dialog {
   width: min(640px, 94vw);
   max-height: 86vh;

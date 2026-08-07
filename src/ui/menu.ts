@@ -33,16 +33,24 @@ import {
 import {
   ACTION_IDS,
   ACTIONS,
+  bindingsForPreset,
   chordFromEvent,
+  chordFromMouseEvent,
   chordsEqual,
   cloneBindings,
-  DEFAULT_BINDINGS,
+  customPresetLabel,
+  CUSTOM_PRESET_VALUE,
   findCollisions,
   formatChord,
+  KEYBINDING_PRESETS,
+  matchPresetId,
+  resolvePresetId,
+  UNBOUND,
   type ActionId,
 } from "../keybindings";
 import {
   capsLockFastWhen,
+  getKeybindingBasePreset,
   getKeybindings,
   setCapsLockFastWhen,
   setKeybindings,
@@ -714,6 +722,10 @@ export class MainMenu {
     const musicOn = isTitleMusicEnabled();
     const saved = cloneBindings(getKeybindings());
     let draft = cloneBindings(saved);
+    /** Named preset this draft was last loaded from / matched (for "Custom (…)"). */
+    let basePresetId = resolvePresetId(
+      matchPresetId(draft) ?? getKeybindingBasePreset(),
+    );
     let listening: ActionId | null = null;
     /** Pure modifier held while composing a chord; bound alone on release if unused. */
     let pendingModifier: string | null = null;
@@ -747,16 +759,25 @@ export class MainMenu {
           </fieldset>
           <fieldset class="ttl-fieldset">
             <legend>Keybindings</legend>
-            <p class="menu-hint">Click a binding, then press a key (with Opt / Shift / Ctrl if you need a chord). Collisions are highlighted — Save stays off until every action has a unique binding. Esc and Caps Lock are fixed.</p>
+            <div class="pref-preset-row">
+              <label class="pref-preset-label" for="pref-preset">Preset</label>
+              <select id="pref-preset" class="pref-preset-select" title="Load a named layout into the draft">
+                ${KEYBINDING_PRESETS.map(
+                  (p) =>
+                    `<option value="${p.id}">${p.name}</option>`,
+                ).join("")}
+                <option value="${CUSTOM_PRESET_VALUE}" disabled id="pref-preset-custom">${customPresetLabel(basePresetId)}</option>
+              </select>
+            </div>
+            <p class="menu-hint">Choose a preset to load it, or click a binding and press a key or mouse button (with Opt / Shift / Ctrl for a chord). Delete clears a binding. A bare Shift/Opt/Ctrl key collides with any chord that uses that modifier — free it first, then holding the bare key will not block other binds. Esc and Caps Lock are fixed.</p>
             <div id="pref-bind-status" class="menu-hint pref-bind-status"></div>
             <table class="keytable keytable-bind" id="pref-keytable"></table>
             <p class="menu-hint pref-fixed-keys">Also fixed: <kbd>Esc</kbd> menu · <kbd>Caps Lock</kbd> 2× speed · <kbd>−</kbd>/<kbd>=</kbd>/<kbd>0</kbd> volume</p>
           </fieldset>
         </div>
         <div class="btnrow prefs-actions">
-          <button class="evbtn primary" id="pref-cancel" type="button">Cancel</button>
-          <button class="evbtn" id="pref-save" type="button">Save</button>
-          <button class="evbtn" id="pref-reset" type="button">Reset</button>
+          <button class="evbtn" id="pref-cancel" type="button">Cancel</button>
+          <button class="evbtn primary" id="pref-save" type="button">Save</button>
         </div>
         <div class="pref-confirm hidden" id="pref-confirm" role="dialog" aria-label="Discard changes">
           <div class="pref-confirm-card">
@@ -774,9 +795,12 @@ export class MainMenu {
 
     const table = m.querySelector<HTMLTableElement>("#pref-keytable")!;
     const status = m.querySelector<HTMLElement>("#pref-bind-status")!;
+    const presetSelect = m.querySelector<HTMLSelectElement>("#pref-preset")!;
+    const customOption = m.querySelector<HTMLOptionElement>(
+      "#pref-preset-custom",
+    )!;
     const saveBtn = m.querySelector<HTMLButtonElement>("#pref-save")!;
     const cancelBtn = m.querySelector<HTMLButtonElement>("#pref-cancel")!;
-    const resetBtn = m.querySelector<HTMLButtonElement>("#pref-reset")!;
     const confirmEl = m.querySelector<HTMLElement>("#pref-confirm")!;
     const discardBtn = m.querySelector<HTMLButtonElement>("#pref-discard")!;
     const keepBtn = m.querySelector<HTMLButtonElement>("#pref-keep")!;
@@ -784,9 +808,8 @@ export class MainMenu {
     const isDirty = (): boolean =>
       ACTION_IDS.some((id) => !chordsEqual(draft[id], saved[id]));
 
-    const cleanup = (): void => {
-      window.removeEventListener("keydown", onKeyDown, true);
-      window.removeEventListener("keyup", onKeyUp, true);
+    // Filled in after key/mouse listeners are declared (closePrefs runs later).
+    let cleanup = (): void => {
       listening = null;
       pendingModifier = null;
       confirmOpen = false;
@@ -847,7 +870,7 @@ export class MainMenu {
           .filter(Boolean)
           .join(" ");
         const title = listen
-          ? "Press a key… Esc to cancel"
+          ? "Press a key or mouse button… Esc/Delete unbind"
           : clash
             ? "Conflicts with another action"
             : "Click to rebind";
@@ -860,7 +883,8 @@ export class MainMenu {
       }).join("");
       table.innerHTML = rows;
       if (listening) {
-        status.textContent = "Press a key (or Esc to cancel rebinding).";
+        status.textContent =
+          "Press a key or mouse button · Esc / Delete / Backspace to unbind · click the slot again to cancel.";
         status.classList.remove("error");
       } else if (collisions.size > 0) {
         status.textContent = `${collisions.size} binding${
@@ -873,6 +897,13 @@ export class MainMenu {
       }
       saveBtn.disabled =
         collisions.size > 0 || listening !== null || confirmOpen;
+
+      // Named preset when exact; otherwise Custom (parent preset name).
+      const matched = matchPresetId(draft);
+      if (matched) basePresetId = matched;
+      customOption.textContent = customPresetLabel(basePresetId);
+      presetSelect.value = matched ?? CUSTOM_PRESET_VALUE;
+      presetSelect.disabled = confirmOpen;
 
       table.querySelectorAll<HTMLButtonElement>("[data-bind]").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -921,7 +952,13 @@ export class MainMenu {
       if (listening) {
         e.preventDefault();
         e.stopPropagation();
-        if (e.code === "Escape") {
+        // Esc / Delete / Backspace clear the binding (not dialog cancel).
+        if (
+          e.code === "Escape" ||
+          e.code === "Backspace" ||
+          e.code === "Delete"
+        ) {
+          draft = { ...draft, [listening]: { ...UNBOUND } };
           listening = null;
           pendingModifier = null;
           paint();
@@ -963,18 +1000,63 @@ export class MainMenu {
       paint();
     };
 
+    /**
+     * Mouse buttons rebind while listening. Dialog chrome (Save, radios, other
+     * bind rows) is ignored so the UI still works; the listening row itself
+     * and empty dialog surface count as a mouse bind.
+     */
+    const onMouseDown = (e: MouseEvent): void => {
+      if (!listening || confirmOpen || m.classList.contains("hidden")) return;
+      const t = e.target as HTMLElement | null;
+      const bindBtn = t?.closest("button[data-bind]") as HTMLElement | null;
+      if (bindBtn && bindBtn.dataset.bind !== listening) return;
+      if (
+        !bindBtn &&
+        t?.closest("button, select, input, a, label, textarea")
+      ) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      pendingModifier = null;
+      draft = { ...draft, [listening]: chordFromMouseEvent(e) };
+      listening = null;
+      paint();
+    };
+
+    const onContextMenu = (e: MouseEvent): void => {
+      if (!listening || confirmOpen) return;
+      // Right-click is a valid bind; don't open the browser menu mid-rebind.
+      e.preventDefault();
+    };
+
     window.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("keyup", onKeyUp, true);
+    window.addEventListener("mousedown", onMouseDown, true);
+    window.addEventListener("contextmenu", onContextMenu, true);
+
+    cleanup = (): void => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+      window.removeEventListener("mousedown", onMouseDown, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
+      listening = null;
+      pendingModifier = null;
+      confirmOpen = false;
+    };
 
     saveBtn.addEventListener("click", () => {
       if (findCollisions(draft).size > 0 || listening || confirmOpen) return;
-      setKeybindings(draft);
+      setKeybindings(draft, basePresetId);
       closePrefs();
     });
     cancelBtn.addEventListener("click", () => requestCancel());
-    resetBtn.addEventListener("click", () => {
+    presetSelect.addEventListener("change", () => {
       if (confirmOpen) return;
-      draft = cloneBindings(DEFAULT_BINDINGS);
+      const id = presetSelect.value;
+      if (id === CUSTOM_PRESET_VALUE) return;
+      basePresetId = resolvePresetId(id);
+      draft = cloneBindings(bindingsForPreset(id));
       listening = null;
       pendingModifier = null;
       paint();

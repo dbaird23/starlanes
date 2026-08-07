@@ -1,8 +1,7 @@
 /**
  * The in-flight information panels: Nova's player info (P), mission info (I)
- * and the jettison dialog (Alt-K). All three are read-mostly overlays that
- * pause nothing — the galaxy keeps turning behind them — so each closes on Esc
- * or its own key, exactly like the plunder manifest.
+ * and the jettison dialog (Alt-K). Opening any of them freezes the flight sim
+ * (see Game.flightOverlayOpen); Esc or Close dismisses the panel.
  */
 
 import { playMenuClose, playMenuOpen } from "../engine/audio";
