@@ -75,7 +75,7 @@ export const ACTIONS: ActionDef[] = [
   { id: "targetClosest", label: "Target nearest ship" },
   { id: "land", label: "Target / land / dock" },
   { id: "jump", label: "Hyperspace jump" },
-  { id: "hyperSelect", label: "Hyper select (floating map)" },
+  { id: "hyperSelect", label: "Display mini map" },
   { id: "cycleJumpDest", label: "Select jump destination" },
   { id: "map", label: "Star map" },
   { id: "hail", label: "Communicate" },

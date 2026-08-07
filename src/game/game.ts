@@ -557,9 +557,9 @@ export class Game {
   private mapCenter = { x: 0, y: 0 };
   private mapScale = 1; // effective px per map unit, set during render
   /**
-   * Nova's H "hyper select" / hyperjump-coordinates overlay. Deadline for the
-   * overlay (including its fade-out tail). Refreshed by H / \ and held open
-   * while H is down; after release it lingers fully then fades away.
+   * Floating mini-map overlay deadline (including fade-out). Refreshed by the
+   * display-mini-map bind (held open while down) and by cycle-jump-dest peeks;
+   * after release it lingers fully then fades away.
    */
   private floatingMapUntil = 0;
   private mouse = { x: 0, y: 0 };
@@ -1789,18 +1789,20 @@ export class Game {
       if (actionConsume(this.input, "selfDestruct")) this.selfDestruct();
       else if (actionConsume(this.input, "autopilot")) this.toggleAutopilot();
       /*
-       * Hyper-select cycles the next jump and peeks the floating minimap while
-       * held. Cycle-jump-dest is the classic alternate (default \) that peeks
-       * once per press.
+       * Display mini map (default H): show the floating chart only — does not
+       * change the jump selection. Hold keeps it up; release fades it out.
+       * Select jump destination (default \): step the course and peek the map.
        */
-      if (
-        actionConsume(this.input, "hyperSelect") ||
-        actionConsume(this.input, "cycleJumpDest")
-      ) {
+      if (actionConsume(this.input, "cycleJumpDest")) {
         this.cycleJumpDestination();
         this.peekFloatingMap();
       }
-      if (actionDown(this.input, "hyperSelect")) this.peekFloatingMap();
+      if (
+        actionConsume(this.input, "hyperSelect") ||
+        actionDown(this.input, "hyperSelect")
+      ) {
+        this.peekFloatingMap();
+      }
       if (actionConsume(this.input, "navOff")) this.navOff();
       if (actionConsume(this.input, "eject")) this.ejectFromShip();
       if (actionConsume(this.input, "playerInfo")) this.openPlayerInfo();
@@ -5100,7 +5102,7 @@ export class Game {
     return false;
   }
 
-  /** Nova's H / \: step the plotted course through this system's neighbours. */
+  /** Step the plotted course through this system's neighbours (default \). */
   private cycleJumpDestination(): void {
     const links = this.system.links.filter((id) => {
       try {
@@ -5125,8 +5127,8 @@ export class Game {
   private static readonly FLOAT_MAP_FADE = 0.85;
 
   /**
-   * Keep the floating hyperspace map up for a few seconds. Called on H / \
-   * (and every frame H is held) so the overlay is a peek, not a mode change.
+   * Keep the floating mini map up for a few seconds. Called while display-mini-map
+   * is held and when cycle-jump-dest peeks the course — not a full map mode.
    * After the hold it fades out rather than vanishing.
    */
   private peekFloatingMap(): void {
@@ -5638,7 +5640,7 @@ export class Game {
     if (this.route.length === 0) {
       if (!quiet) {
         this.message(
-          "No hyperspace course set. Press H to pick a neighbour, or M for the map.",
+          `No hyperspace course set. Press ${formatChord(getBinding("cycleJumpDest"))} to pick a neighbour, or ${formatChord(getBinding("map"))} for the map.`,
         );
         playSnd(SND.DENY, 0.5);
       }

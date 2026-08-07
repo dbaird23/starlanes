@@ -587,7 +587,7 @@ export class HudUi {
           ? `${b("cloak")} cloak`
           : `${b("recallFighters")} recall`,
       ],
-      [`${b("jump")} jump`, `${b("hyperSelect")} course`],
+      [`${b("jump")} jump`, `${b("hyperSelect")} map`],
       [`${b("map")} map`, `${b("selectSecondary")} select`],
       ["Esc menu", "Caps 2×"],
     ];
