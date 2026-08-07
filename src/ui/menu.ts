@@ -69,8 +69,6 @@ interface Overlay {
   frames: number;
 }
 
-const INTRO_PAGES = ["8200", "8201", "8202"];
-
 /*
  * Sizes and frame counts come from the sprites; every position on this screen
  * comes from cölr 128, which carries LogoX/Y, RolloverX/Y, the three Slide
@@ -624,67 +622,17 @@ export class MainMenu {
       const strict = m.querySelector<HTMLInputElement>("#np-strict")!.checked;
       const name = nameEl.value.trim() || "Captain";
       const id = createPilot(strict ? `${name} †` : name);
-      this.playIntro(() => {
-        this.hide();
-        this.handlers.loadPilot(id, strict);
-      });
+      /*
+       * The chär opening sequence is not played here. The menu used to run
+       * its own hardcoded PICT 8200-8202 slideshow before handing over, and
+       * `Game.startPilot` plays the same pictures again from the chär
+       * template (IntroPict1-4 / PictDelay1-4 / IntroTextID) — so a new pilot
+       * sat through the preamble twice. The data-driven one wins; it also
+       * shows the IntroTextID dësc and follows a plug-in's own template.
+       */
+      this.hide();
+      this.handlers.loadPilot(id, strict);
     });
-  }
-
-  /**
-   * Nova's preamble: three full-page spreads of history that play once, when
-   * a pilot is created. They're PICT 8200-8202, complete composites — text,
-   * screens and chrome all baked in — so they only need showing at the
-   * original 1024x768 and scaling to fit.
-   */
-  private playIntro(done: () => void): void {
-    const pages = INTRO_PAGES.map((id) => UI_PICTS[id]).filter(Boolean);
-    if (pages.length === 0) {
-      done();
-      return;
-    }
-    let page = 0;
-
-    const draw = () => {
-      const pic = pages[page];
-      this.root.innerHTML = `
-        <div class="ttl-stage intro" style="background-image:url('${asset(`nova/picts/${pic.file}`)}')">
-          <div class="intro-foot">
-            <span>${page + 1} / ${pages.length}</span>
-            <span class="intro-hint">click or press space to continue · esc to skip</span>
-          </div>
-        </div>`;
-      this.fitStage();
-      // Bind to the page element, not the root: the click that opened the
-      // intro is still bubbling up through the root when we get here, and a
-      // root listener would eat it and skip straight to page two.
-      this.root
-        .querySelector<HTMLElement>(".ttl-stage.intro")!
-        .addEventListener("click", () => advance());
-    };
-
-    const finish = () => {
-      window.removeEventListener("keydown", onKey, true);
-      done();
-    };
-    const advance = () => {
-      page++;
-      if (page >= pages.length) finish();
-      else draw();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        finish();
-      } else if (e.key === " " || e.key === "Enter" || e.key === "ArrowRight") {
-        e.preventDefault();
-        advance();
-      }
-    };
-
-    // the intro owns the screen, so intercept keys before the flight loop
-    window.addEventListener("keydown", onKey, true);
-    draw();
   }
 
   private openPilot(): void {

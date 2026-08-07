@@ -704,10 +704,10 @@ export class Game {
       ? sys.planets.find((p) => p.id === this.player.landedOn)
       : sys.planets[0];
     if (home) {
-      this.ship.pos = {
-        x: home.pos.x + home.radius * 2.2,
-        y: home.pos.y + home.radius * 1.4,
-      };
+      // You resume where you left off, which is the pad you last put down on
+      // — same rule as `depart()`: on top of the world, not parked off to one
+      // side of it.
+      this.ship.pos = { ...home.pos };
     } else {
       this.ship.pos = { x: 900, y: 600 };
     }
@@ -7463,9 +7463,23 @@ export class Game {
     ctx.restore(); // end alpha
   }
 
-  private renderMap(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  private renderMap(
+    ctx: CanvasRenderingContext2D,
+    fullW: number,
+    h: number,
+  ): void {
     ctx.fillStyle = "rgba(2,5,12,0.92)";
-    ctx.fillRect(0, 0, w, h);
+    // the backdrop runs the whole width, so nothing of the flight scene shows
+    // through beside the status bar
+    ctx.fillRect(0, 0, fullW, h);
+    /*
+     * The chart itself lays out in the space *left* of the status bar. The
+     * sidebar is an opaque DOM panel over the canvas and stays up under the
+     * map, so drawing to the full canvas width put the right-hand readout —
+     * government, standing, goods, services — underneath it: 176 of its 186
+     * columns were hidden, which read as the map having no panel at all.
+     */
+    const w = fullW - SIDEBAR_W;
     // full-screen chart frame (not the H overlay — that uses FloatingMap above)
     ctx.strokeStyle = COLR?.floatingMap ?? "rgba(120, 160, 210, 0.6)";
     ctx.lineWidth = 2;
@@ -7942,9 +7956,20 @@ export class Game {
             ? "Light asteroid field"
             : "None";
     ctx.fillText(hazard, 148, fy);
+
+    /*
+     * The calendar reads here and nowhere else in flight — it used to be a
+     * third line in the status bar's cargo well, where it cost the hold's
+     * manifest a line and sat nowhere near anything it affects. Days pass by
+     * jumping, so the chart you plan the jump on is where the date belongs.
+     * Label and value in the strip's own idiom, right-aligned off the panel.
+     */
+    const dateText = formatDate(this.player.date);
     ctx.textAlign = "right";
-    ctx.fillStyle = "#62748c";
-    ctx.fillText(formatDate(this.player.date), px - 12, fy);
+    ctx.fillStyle = "#b8c8dc";
+    ctx.fillText(dateText, px - 12, fy);
+    ctx.fillStyle = "#7d90aa";
+    ctx.fillText("Date:", px - 20 - ctx.measureText(dateText).width, fy);
     ctx.textAlign = "left";
 
     // button bar

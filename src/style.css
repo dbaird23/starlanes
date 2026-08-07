@@ -443,12 +443,13 @@ body {
   text-overflow: ellipsis;
 }
 
-/* ---- cargo / credits / date ---- */
+/* ---- cargo / credits ---- */
 /*
  * The artwork's hole is 36px, which is three lines and no more, so this runs
  * at SubtitleSize rather than StatFontSize and anything past the third row is
- * clipped. Free, Credits and Date are emitted first for that reason — the
- * per-commodity manifest is ours, not Nova's, and is what gets cut.
+ * clipped. Free and Credits are emitted first for that reason — the
+ * per-commodity manifest is ours, not Nova's, and is what gets cut. The date
+ * was a third line here until it moved to the map screen.
  */
 .hud-ledger {
   padding: 1px 7px;
@@ -2164,10 +2165,7 @@ td.actions button:disabled {
   text-align: center;
 }
 
-/* ---- Preamble pages (PICT 8200-8202), shown once on a new pilot ---- */
-.ttl-stage.intro {
-  cursor: pointer;
-}
+/* ---- Footer of the chär opening sequence (see #intro-ui below) ---- */
 .intro-foot {
   position: absolute;
   left: 0;

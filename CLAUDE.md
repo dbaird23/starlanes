@@ -85,6 +85,25 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**The opening sequence has exactly one player, and it is `IntroUi`.** A new
+pilot sat through PICT 8200-8202 twice: `menu.ts` ran its own hardcoded
+slideshow (`INTRO_PAGES` + `playIntro`) before handing over, and
+`Game.startPilot` then played the same pictures from the chär template. The
+menu's copy is gone. `IntroUi` wins because it is data-driven — IntroPict1-4,
+their PictDelay dwell times and the IntroTextID dësc — so a plug-in template
+plays. It kept what the menu version had that the other lacked: a page
+counter, the click/space/esc hint, and **Esc skipping the whole sequence**
+rather than one page. Its keydown listener is now **capture-phase with
+`stopPropagation`**, because unlike the menu's version it plays over a system
+that is already flying (`Input` listens on window too) — without that, Space
+advanced the picture *and* fired a weapon behind it.
+
+**Opening a pilot puts you over the world you left, not beside it.**
+`startPilot` parked the ship at `planet.pos + (radius*2.2, radius*1.4)`, which
+reads as starting off to the right of the planet. It now uses `{...home.pos}`,
+the same rule `depart()` already states: you resume on the pad and fly clear
+under your own power.
+
 **Boarding money is 4% of the hull's cost.** düde Flags **0x0040** is "carries
 money (amount depends on the ship's purchase price)" and the Bible never says
 how much — no field holds an amount. The rate is ours; the ±25% spread is the
@@ -321,8 +340,10 @@ Consequences worth knowing:
   and systematic, i.e. how hard each one's bevel is drawn, not a hole in the
   wrong place. Two holes are tight and the code works around them: the
   primary hole is one line, so four primary slots collapse to "name +3", and
-  the cargo hole is three lines, so Free/Credits/Date are emitted first and
-  the per-commodity manifest (ours, not Nova's) is what gets clipped.
+  the cargo hole is three lines, so Free and Credits are emitted first and
+  the per-commodity manifest (ours, not Nova's) is what gets clipped. The
+  date was a third line here until it moved to the map (see below), which
+  buys the manifest one line back.
 - **There is no EJECT button, by choice.** The plate is instrument holes and
   decorative tail with nowhere to put one, so pulling the pod's handle is
   Alt-X and only Alt-X. `playerDestroyed(deliberate)` and oütf ModType 20's
@@ -349,8 +370,23 @@ Consequences worth knowing:
   else locally and should not need the network to look right.
 - **The plate carries no pilot name, no government and no scanner labels.**
   3a's scope is bare glass and so is Nova's; those were 2a's and were removed
-  on request. The remaining non-Nova blocks — the primary-weapon lines, DATE,
-  the key hints and EJECT — are kept but drawn in the same idiom.
+  on request. The remaining non-Nova blocks — the primary-weapon lines and
+  the key hints — are kept but drawn in the same idiom.
+- **The date is not on the plate.** It was a third line in the cargo well and
+  now reads on the map screen's bottom strip, beside Ports and Navigation
+  Hazards (`drawMapPanel`), labelled and at the strip's own value brightness.
+  Days pass by jumping, so it belongs on the chart you plan the jump from.
+  `formatDateShort` in `game/calendar.ts` has no caller left; it is kept
+  because it is the plate-width form, should anything want it back.
+- **The full-screen map lays out left of the plate, not under it.** The
+  sidebar stays up in map mode (`setVisible(flight || map)`) and is opaque,
+  so `renderMap` taking the whole canvas width hid 176 of the 186 columns of
+  its right-hand readout — government, standing, goods, services — and the
+  map looked like it had no panel. It now paints its backdrop the full width
+  (nothing of the flight scene shows through beside the bar) and lays the
+  chart, panel, footer and buttons out in `fullW - SIDEBAR_W`. Everything
+  clickable — `mapNodes`, `mapButtons` — is recorded during that same pass in
+  canvas coordinates, so the hit tests followed the change for free.
 - **Fuel is one continuous bar, with no jump count.** It used to be a segment
   per jump with "N JUMPS" printed beside it; 3a's plate has neither, and both
   were removed on request. The ïntf's two fuel colours survive the change —

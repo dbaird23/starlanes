@@ -16,17 +16,31 @@ export class IntroUi {
   private timer: number | null = null;
   private onDone: (() => void) | null = null;
   private queue: { pict?: PictInfo; text?: string; seconds: number }[] = [];
+  /** page counter for the footer: how many items the sequence started with */
+  private total = 0;
+  private shown = 0;
 
   constructor() {
     this.root = document.getElementById("intro-ui")!;
     // any click advances; the sequence is a formality, not a puzzle
     this.root.addEventListener("click", () => this.advance());
-    window.addEventListener("keydown", (e) => {
-      if (!this.root.classList.contains("hidden")) {
+    /*
+     * Capture on `window`, so the key is swallowed before it reaches the
+     * game: the sequence plays over a system that is already set up and
+     * flying, and `Input` also listens on window. Stopping propagation here
+     * keeps Space from firing a weapon behind the picture.
+     */
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (!this.active) return;
         e.preventDefault();
-        this.advance();
-      }
-    });
+        e.stopPropagation();
+        if (e.key === "Escape") this.finish();
+        else this.advance();
+      },
+      true,
+    );
   }
 
   get active(): boolean {
@@ -47,6 +61,8 @@ export class IntroUi {
     }));
     if (introText) this.queue.push({ text: introText, seconds: 60 });
     if (!this.queue.length) return false;
+    this.total = this.queue.length;
+    this.shown = 0;
     this.onDone = done;
     this.root.classList.remove("hidden");
     this.step();
@@ -56,12 +72,17 @@ export class IntroUi {
   private step(): void {
     const item = this.queue.shift();
     if (!item) return this.finish();
-    this.root.innerHTML = item.pict
-      ? `<div class="intro-stage"><img src="${asset(`nova/picts/${item.pict.file}`)}" alt=""></div>`
-      : `<div class="intro-stage"><div class="intro-text">${item
+    this.shown++;
+    const body = item.pict
+      ? `<img src="${asset(`nova/picts/${item.pict.file}`)}" alt="">`
+      : `<div class="intro-text">${item
           .text!.split("\n")
           .map((line) => `<p>${line}</p>`)
-          .join("")}</div></div>`;
+          .join("")}</div>`;
+    this.root.innerHTML = `<div class="intro-stage">${body}<div class="intro-foot">
+        <span>${this.shown} / ${this.total}</span>
+        <span class="intro-hint">click or press space to continue · esc to skip</span>
+      </div></div>`;
     // preloading the next picture keeps the cut from flashing white
     if (this.queue[0]?.pict) getPict(this.queue[0].pict.file);
     this.clearTimer();
@@ -81,6 +102,7 @@ export class IntroUi {
 
   private finish(): void {
     this.clearTimer();
+    this.queue = [];
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
     const done = this.onDone;
