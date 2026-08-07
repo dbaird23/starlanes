@@ -8,6 +8,7 @@ import {
   targetPict,
 } from "../data/universe";
 import { asset } from "../asset";
+import { formatChordShort, getBinding } from "../keybindings";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
@@ -572,14 +573,22 @@ export class HudUi {
   // ---------------- hints ----------------
 
   private drawHints(g: Game): void {
+    const b = (id: Parameters<typeof getBinding>[0]) =>
+      formatChordShort(getBinding(id));
+    const fly = `${b("accelerate")}${b("reverse")}${b("turnLeft")}${b("turnRight")} fly`;
     const keys: [string, string][] = [
-      ["↑↓←→ fly", g.afterburnerFuel > 0 ? "Z burn" : ""],
-      ["A aim", "Space fire"],
-      ["` target", "R closest"],
-      ["Y hail", "B board"],
-      ["L land", g.cloakBits > 0 ? "U cloak" : "C recall"],
-      ["J jump", "H course"],
-      ["M map", "W select"],
+      [fly, g.afterburnerFuel > 0 ? `${b("afterburner")} burn` : ""],
+      [`${b("aimAssist")} aim`, `${b("firePrimary")} fire`],
+      [`${b("cycleTargets")} target`, `${b("targetClosest")} closest`],
+      [`${b("hail")} hail`, `${b("board")} board`],
+      [
+        `${b("land")} land`,
+        g.cloakBits > 0
+          ? `${b("cloak")} cloak`
+          : `${b("recallFighters")} recall`,
+      ],
+      [`${b("jump")} jump`, `${b("hyperSelect")} course`],
+      [`${b("map")} map`, `${b("selectSecondary")} select`],
       ["Esc menu", "Caps 2×"],
     ];
     const html = keys
