@@ -299,14 +299,6 @@ export class HudUi {
     const ctx = this.scanCtx;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-
-    for (const [sx, sy, r, col] of STARS) {
-      ctx.fillStyle = col;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.arc(sx * w, sy * h, r / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
     ctx.globalAlpha = 1;
 
     const cx = w / 2;
