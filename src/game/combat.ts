@@ -74,15 +74,39 @@ export interface WeaponSlot {
 }
 
 /**
+ * Projectiles (or beam emitters) per trigger tick.
+ *
+ * wëap Flags 0x0040 "Multiple weapons of this type fire simultaneously" → all
+ * copies go off together. Otherwise copies fire in series: one shot per tick,
+ * mounts alternating, so N of a weapon is N× the fire rate rather than N× the
+ * shot count in a single volley.
+ */
+export function volleyCount(weap: WeaponType, fitted: number): number {
+  const n = Math.max(1, fitted | 0);
+  if (weap.simultaneous) return Math.min(n, 4);
+  return 1;
+}
+
+/**
+ * Reload interval after one trigger tick (no burst). Series multiplies ROF by
+ * fitted count; simultaneous keeps the weapon's Reload between full volleys.
+ */
+export function reloadInterval(weap: WeaponType, fitted: number): number {
+  const n = Math.max(1, fitted | 0);
+  return weap.simultaneous ? weap.reloadSec : weap.reloadSec / n;
+}
+
+/**
  * The reload to impose after a shot. A weapon with a BurstCount fires that
  * many rounds at its normal Reload and then pays the longer BurstReload —
  * which is what makes a chaingun a chaingun rather than a fast cannon. The
  * Bible multiplies the burst budget by how many of the weapon the ship
- * carries, for weapons that don't fire simultaneously.
+ * carries, for weapons that don't fire simultaneously. Non-burst series
+ * shortens the cooldown instead (N copies → Reload/N).
  */
 export function applyReload(slot: WeaponSlot): void {
   if (slot.weap.burstCount <= 0) {
-    slot.cooldown = slot.weap.reloadSec;
+    slot.cooldown = reloadInterval(slot.weap, slot.count);
     return;
   }
   // Flags 0x0040: all barrels fire together, so the budget is not multiplied.
@@ -91,6 +115,8 @@ export function applyReload(slot: WeaponSlot): void {
     (slot.weap.simultaneous ? 1 : Math.max(1, slot.count));
   if (slot.burstLeft <= 0) slot.burstLeft = budget;
   slot.burstLeft--;
+  // Within a burst, series still fires one round per tick at full Reload;
+  // the multiplied budget already gives N× shots before BurstReload.
   slot.cooldown =
     slot.burstLeft <= 0
       ? Math.max(slot.weap.burstReloadSec, slot.weap.reloadSec)

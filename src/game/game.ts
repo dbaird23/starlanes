@@ -132,6 +132,8 @@ import {
   ammoCapped,
   inherentCombatGovt,
   applyReload,
+  reloadInterval,
+  volleyCount,
   W3_AMMO_AT_BURST_END,
   W3_TRANSLUCENT,
   fireWeapon,
@@ -3074,6 +3076,8 @@ export class Game {
       for (const slot of this.weaponSlots) {
         if (!isPrimary(slot.weap) || slot.cooldown > 0) continue;
         applyReload(slot);
+        // Series: one shot (mounts rotate). Simultaneous (0x0040): all copies.
+        const volley = volleyCount(slot.weap, slot.count);
         // looped weapons are held by updateFiringLoops instead
         if (slot.weap.sndId && !slot.weap.sndLoop)
           playSnd(slot.weap.sndId, 0.35);
@@ -3086,13 +3090,13 @@ export class Game {
               )
             : undefined;
         if (isBeam(slot.weap)) {
-          this.fireBeam(this.ship, slot.weap, slot.count, true, aim);
+          this.fireBeam(this.ship, slot.weap, volley, true, aim);
         } else {
           this.projectiles.push(
             ...fireWeapon(
               this.ship,
               slot.weap,
-              slot.count,
+              volley,
               true,
               this.targetNpc,
               aim,
@@ -3130,11 +3134,24 @@ export class Game {
              * cycle" — the chainguns and the Polaron and Ion Cannon spend one
              * round per burst rather than per shot.
              */
+            const volley = Math.min(
+              volleyCount(slot.weap, slot.count),
+              ammoLeft,
+            );
             const spends =
               !(slot.weap.flags3 & W3_AMMO_AT_BURST_END) || slot.burstLeft <= 0;
-            if (spends) this.player.ammo[slot.weap.id] = ammoLeft - 1;
+            // Ammo is per shot that leaves the rail; a simultaneous volley spends
+            // one round per barrel.
+            if (spends)
+              this.player.ammo[slot.weap.id] = Math.max(0, ammoLeft - volley);
             this.projectiles.push(
-              ...fireWeapon(this.ship, slot.weap, 1, true, this.targetNpc),
+              ...fireWeapon(
+                this.ship,
+                slot.weap,
+                volley,
+                true,
+                this.targetNpc,
+              ),
             );
           }
         }
@@ -3362,7 +3379,7 @@ export class Game {
       reach,
     });
     if (!hit) return;
-    // multiple emitters of the same beam stack their damage
+    // Simultaneous beams stack damage; series passes count=1 so one emitter.
     const shots = Math.max(1, Math.min(count, 4));
     hit.ship.takeHit(weap.shieldDmg * shots, weap.armorDmg * shots);
     if (fromPlayer) {
@@ -3845,7 +3862,8 @@ export class Game {
         });
         const weap = stock ? WEAPONS[String(stock.id)] : null;
         if (weap && stock) {
-          npc.fireCooldown = weap.reloadSec;
+          const volley = volleyCount(weap, stock.count);
+          npc.fireCooldown = reloadInterval(weap, stock.count);
           if (weap.sndId) {
             playSndAt(
               weap.sndId,
@@ -3859,10 +3877,10 @@ export class Game {
               target.pos.y - npc.pos.y,
               target.pos.x - npc.pos.x,
             );
-            this.fireBeamFromNpc(npc, weap, stock.count, target, aim);
+            this.fireBeamFromNpc(npc, weap, volley, target, aim);
           } else {
             this.projectiles.push(
-              ...fireWeapon(npc, weap, stock.count, false, target),
+              ...fireWeapon(npc, weap, volley, false, target),
             );
           }
         }
