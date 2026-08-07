@@ -422,6 +422,11 @@ export class Game {
   pilotId: string | null = null;
   pilotName = "Captain";
   /**
+   * Mode to restore after Esc → title → Enter ship. Null when there is no
+   * live session (cold title, or the pilot was explicitly reloaded/killed).
+   */
+  private resumeMode: Mode | null = null;
+  /**
    * Simulation clock multiplier. Caps Lock always toggles 2×; Preferences
    * only choose which lock state is fast (on or off). The frame loop
    * multiplies dt by this so physics, AI and cooldowns all race.
@@ -617,8 +622,52 @@ export class Game {
   }
 
   /** Begin playing as a pilot (new or loaded). Called from the main menu. */
+  /**
+   * Title "Enter ship": resume a session paused with Esc when the same pilot
+   * is still selected; otherwise load that pilot from disk (as Open Pilot does).
+   */
+  enterShip(pilotId: string, strict?: boolean): void {
+    if (this.tryResume(pilotId)) return;
+    this.startPilot(pilotId, strict);
+  }
+
+  /** True if a live session for this pilot is sitting under the title menu. */
+  hasPausedSession(pilotId?: string | null): boolean {
+    if (!this.resumeMode || !this.pilotId) return false;
+    if (pilotId != null && pilotId !== this.pilotId) return false;
+    return true;
+  }
+
+  /**
+   * Restore the mode Esc interrupted. Returns false if there is nothing to
+   * resume (caller should load the pilot instead).
+   */
+  tryResume(pilotId: string): boolean {
+    if (!this.hasPausedSession(pilotId) || !this.resumeMode) return false;
+    const mode = this.resumeMode;
+    this.resumeMode = null;
+    if (mode === "landed" && this.player.landedOn) {
+      const home = this.system.planets.find(
+        (p) => p.id === this.player.landedOn,
+      );
+      if (home) {
+        this.mode = "landed";
+        this.landedUi.show(home, this.system);
+        return true;
+      }
+    }
+    if (mode === "map") {
+      this.mode = "map";
+      return true;
+    }
+    // flight (default), or landed without a pad to re-open
+    this.mode = "flight";
+    return true;
+  }
+
   startPilot(pilotId: string, strict?: boolean): void {
     preloadCoreSnds();
+    this.resumeMode = null;
     this.pilotId = pilotId;
     this.pilotName =
       listPilots().find((p) => p.id === pilotId)?.name ?? "Captain";
@@ -1019,16 +1068,33 @@ export class Game {
     );
   }
 
-  /** Save and return to the title menu. */
+  /** Drop a paused session (deleted pilot, etc.) so Enter ship cannot resume it. */
+  clearPausedSession(pilotId?: string | null): void {
+    if (pilotId != null && this.pilotId !== pilotId) return;
+    this.resumeMode = null;
+    this.pilotId = null;
+  }
+
+  /**
+   * Esc from flight: pause and show the title menu. The live session stays in
+   * memory so Enter ship resumes where you left off. Open Pilot / New Pilot
+   * still load from disk (and replace this session). Death also clears it.
+   */
   exitToMenu(): void {
-    this.save();
+    if (this.mode !== "menu" && this.pilotId) {
+      this.resumeMode = this.mode;
+    } else {
+      this.resumeMode = null;
+    }
     this.landedUi.hide();
     this.hailUi.close();
+    this.infoUi.close();
+    this.plunderUi.close();
     // a jump abandoned mid-charge must not go on spooling over the menu
     this.jump = null;
     stopSustained(JUMP_SND_KEY);
     this.mode = "menu";
-    this.pilotId = null;
+    // keep pilotId — Enter ship for this pilot resumes instead of reloading
     this.onMenu?.();
   }
 
@@ -1435,14 +1501,18 @@ export class Game {
     this.updateFiringLoops();
 
     if (this.mode === "menu") {
-      // living backdrop: traffic keeps drifting behind the title. Nobody comes
-      // back from a landing here — the title screen is not a live system.
-      for (const npc of this.npcs) {
-        npc.updateAi(dt);
-        if (npc.landing) npc.done = true;
+      /*
+       * Cold title (no paused pilot): living backdrop traffic. A session
+       * paused with Esc freezes in place so Enter ship restores it unchanged.
+       */
+      if (!this.resumeMode) {
+        for (const npc of this.npcs) {
+          npc.updateAi(dt);
+          if (npc.landing) npc.done = true;
+        }
+        this.npcs = this.npcs.filter((n) => !n.done);
+        if (this.npcs.length < 2) this.spawnNpc();
       }
-      this.npcs = this.npcs.filter((n) => !n.done);
-      if (this.npcs.length < 2) this.spawnNpc();
       this.input.endFrame();
       return;
     }
@@ -4848,6 +4918,7 @@ export class Game {
      */
     const id = this.pilotId;
     this.pilotId = null; // nothing more is written for this run
+    this.resumeMode = null;
     if (this.player.strict) {
       if (id) deletePilot(id);
       alert(

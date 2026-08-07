@@ -215,10 +215,19 @@ const BUTTONS = [
   },
 ];
 
+export interface MainMenuHandlers {
+  /** Title "Enter ship" — resume paused session if any, else load. */
+  enterShip: (pilotId: string, strict?: boolean) => void;
+  /** Open Pilot / New Pilot — always load from the saved pilot file. */
+  loadPilot: (pilotId: string, strict?: boolean) => void;
+  /** Forget a paused session if that pilot file is deleted. */
+  onDeletePilot?: (pilotId: string) => void;
+}
+
 /** Title screen / pilot management, shown over the starfield. */
 export class MainMenu {
   private root: HTMLElement;
-  private onStart: (pilotId: string, strict?: boolean) => void;
+  private handlers: MainMenuHandlers;
   private selected: string | null = null;
   private animRaf: number | null = null;
   private animStart = 0;
@@ -227,18 +236,24 @@ export class MainMenu {
   /** plate whoosh (602+603) already fired for this open */
   private revealSfxPlayed = false;
 
-  constructor(onStart: (pilotId: string, strict?: boolean) => void) {
+  constructor(handlers: MainMenuHandlers) {
     this.root = document.getElementById("menu-ui")!;
-    this.onStart = onStart;
+    this.handlers = handlers;
     window.addEventListener("keydown", this.onTitleKey);
   }
 
-  show(): void {
+  /**
+   * @param preferPilotId when Esc pauses a live run, keep that pilot selected
+   *   so Enter ship resumes it without hunting the list.
+   */
+  show(preferPilotId?: string | null): void {
     this.root.classList.remove("hidden");
     playMusic();
     preloadCoreSnds();
     const pilots = listPilots();
-    if (!this.selected || !pilots.some((p) => p.id === this.selected)) {
+    if (preferPilotId && pilots.some((p) => p.id === preferPilotId)) {
+      this.selected = preferPilotId;
+    } else if (!this.selected || !pilots.some((p) => p.id === this.selected)) {
       this.selected = pilots[0]?.id ?? null;
     }
     this.revealDone = false;
@@ -546,7 +561,7 @@ export class MainMenu {
       case "enter":
         if (this.selected) {
           this.hide();
-          this.onStart(this.selected);
+          this.handlers.enterShip(this.selected);
         } else {
           this.newPilot();
         }
@@ -611,7 +626,7 @@ export class MainMenu {
       const id = createPilot(strict ? `${name} †` : name);
       this.playIntro(() => {
         this.hide();
-        this.onStart(id, strict);
+        this.handlers.loadPilot(id, strict);
       });
     });
   }
@@ -714,7 +729,8 @@ export class MainMenu {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.hide();
-        this.onStart(btn.dataset.start!);
+        // Explicit load — even the pilot you just paused restarts from its save.
+        this.handlers.loadPilot(btn.dataset.start!);
       });
     });
     m.querySelectorAll<HTMLButtonElement>("[data-export]").forEach((btn) => {
@@ -737,6 +753,7 @@ export class MainMenu {
         e.stopPropagation();
         const id = btn.dataset.delete!;
         deletePilot(id);
+        this.handlers.onDeletePilot?.(id);
         if (this.selected === id) this.selected = listPilots()[0]?.id ?? null;
         this.render();
         this.openPilot();
