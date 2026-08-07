@@ -541,6 +541,7 @@ export class LandedUi {
           "btn-hire",
           "btn-gamble",
           "btn-holovid",
+          "btn-sim",
           "btn-back",
         ].filter((id) => this.root.querySelector(`#${id}`));
         return this.stepLinear(
@@ -1522,10 +1523,17 @@ export class LandedUi {
     const missionRows = this.barMissions
       .map((m) => this.missionRow(m, "bar"))
       .join("");
+    /*
+     * The fifth button is ours, not Nova's — there is no STR# 150 caption for
+     * it, because the original had no on-foot game to caption. It sits with
+     * Gamble and Holovid because it is the same kind of thing: a diversion the
+     * bar sells you, with no consequence for the pilot either way.
+     */
     const barBtns: [string, string][] = [
       ["btn-hire", btnLabel(12, "Hire Escort")],
       ["btn-gamble", btnLabel(10, "Gamble")],
       ["btn-holovid", btnLabel(11, "Holovid")],
+      ["btn-sim", "Combat Sim"],
       ["btn-back", btnLabel(0, "Leave")],
     ];
     if (!this.selectedBar || !barBtns.some(([id]) => id === this.selectedBar)) {
@@ -1557,6 +1565,9 @@ export class LandedUi {
     go("#btn-gamble", "gamble");
     go("#btn-holovid", "holovid");
     go("#btn-back", "spaceport");
+    this.root.querySelector("#btn-sim")?.addEventListener("click", () => {
+      this.game.startDerelict();
+    });
     this.wireMissionRows("bar", this.barMissions);
   }
 

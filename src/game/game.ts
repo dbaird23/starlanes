@@ -180,8 +180,11 @@ import { HUD_W, HudUi } from "../ui/hud";
 import type { CaptureResult, PlunderHold } from "../ui/plunder";
 import { LandedUi } from "../ui/landed";
 import { NpcShip, SPARROW, Ship, type EscortOrder } from "./ship";
+import { FpsSession } from "./fps";
+import { DERELICT } from "./fps/level";
+import type { FpsOptions } from "./fps/types";
 
-type Mode = "menu" | "flight" | "map" | "landed";
+type Mode = "menu" | "flight" | "map" | "landed" | "fps";
 
 /**
  * Hyperspace entry, as Nova plays it (and as the SDA notes spell out):
@@ -411,6 +414,9 @@ export class Game {
   private hailUi: HailUi;
 
   mode: Mode = "menu";
+  /** the on-foot mini-game, while one is running */
+  fps: FpsSession | null = null;
+  private fpsReturn: Mode = "landed";
   player: PlayerState;
   pilotId: string | null = null;
   pilotName = "Captain";
@@ -1134,6 +1140,46 @@ export class Game {
     this.input.consume(code);
   }
 
+  /**
+   * Go aboard on foot. Modelled on openMap/closeMap: the landed DOM screen is
+   * suspended, the shared canvas is taken over, and resume() brings back the
+   * same screen you left.
+   *
+   * The arcade entry point passes no `onOutcome`, which is what makes it a
+   * diversion — with no callback there is nowhere for a win or a loss to reach
+   * the pilot's credits, cargo, record or bits. Wiring this to a real boarding
+   * action is a matter of generating the level from the boarded hull and
+   * filling that callback in; see `tryBoard`.
+   */
+  startFps(opts: FpsOptions): void {
+    if (this.fps) return;
+    this.fpsReturn = this.mode;
+    this.fps = new FpsSession(this.canvas, opts);
+    this.mode = "fps";
+    if (this.fpsReturn === "landed") this.landedUi.suspend();
+  }
+
+  /** Back off the deck, to whichever screen sent us there. */
+  endFps(): void {
+    this.fps?.dispose();
+    this.fps = null;
+    this.mode = this.fpsReturn === "landed" ? "landed" : "flight";
+    if (this.mode === "landed") this.landedUi.resume();
+    this.fpsReturn = "landed";
+  }
+
+  /** The bar's cabinet: the derelict, with nothing at stake. */
+  startDerelict(): void {
+    this.startFps({
+      title: "Derelict",
+      level: DERELICT,
+      loadout: [{ weaponId: "128", ammo: 160 }],
+      health: 100,
+      wallPlate: 700,
+      ambientSnd: 10034, // "Rundown station"
+    });
+  }
+
   /** Leave the map, back to wherever it was opened from. */
   closeMap(): void {
     if (this.mode === "map") playMenuClose();
@@ -1444,6 +1490,24 @@ export class Game {
       this.updateGates(dt);
       this.input.endFrame();
       return; // DOM UI handles everything
+    }
+
+    /*
+     * On foot. This has to return before the KeyM handler below, or M would
+     * open the galaxy map in the middle of a firefight; Escape is swallowed
+     * here for the same reason, though the flight and map handlers are already
+     * guarded by mode. Losing the pointer lock pauses the session rather than
+     * ending it — Escape is how the browser hands the pointer back.
+     */
+    if (this.mode === "fps") {
+      this.input.consume("Escape");
+      this.input.consume("KeyM");
+      if (this.fps) {
+        this.fps.update(dt, this.input);
+        if (this.fps.wantsExit) this.endFps();
+      }
+      this.input.endFrame();
+      return;
     }
 
     if (
@@ -6587,6 +6651,11 @@ export class Game {
   // ---------------- map clicks ----------------
 
   private onClick(e: MouseEvent): void {
+    if (this.mode === "fps") {
+      // clicking the canvas is what captures the pointer, and what un-pauses
+      this.fps?.requestLock();
+      return;
+    }
     if (this.mode === "flight") {
       this.onFlightClick(e);
       return;
@@ -6682,6 +6751,11 @@ export class Game {
 
     // the sidebar is DOM, so it is shown and hidden rather than not painted
     this.hudUi.setVisible(this.mode === "flight" || this.mode === "map");
+
+    if (this.mode === "fps") {
+      this.fps?.render(ctx, w, h);
+      return;
+    }
 
     if (this.mode === "landed") return; // overlay covers screen
 

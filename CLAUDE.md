@@ -85,6 +85,64 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**Derelict: an on-foot raycaster, in `src/game/fps/`.** A Wolf3D-style sweep of
+a dead ship, entered from a fifth button in the Bar beside Gamble and Holovid.
+It is a **vertical slice and deliberately a diversion**: `FpsOptions.onOutcome`
+is the only way a result can leave, and the arcade entry point
+(`Game.startDerelict`) does not pass one, so a win and a loss both leave
+credits, cargo, record, bits and missions exactly as they were. Wiring it to a
+real boarding action means generating the level from the boarded hull (`crew`
+and `length` are on all 288 ships) and filling that callback in at `tryBoard`
+— which is also where `BoardPenalty`, listed under Known gaps, would finally
+get charged.
+
+Why a raycaster rather than anything else: **Nova's art is already in the
+format one consumes.** The Wraith Adult/Youth/Child sheets (`ship-1080/1082/
+1084.png`) are 36 pre-rendered rotations per set, so a billboard turns
+correctly as you strafe — the hardest asset problem in a sprite FPS, solved
+before we start, and `rotationFrame`/`getSprite` already index that layout.
+They are also the right monster: the sprites are lit and drawn from above,
+which reads as wrong on anything that walks and fine on something that hovers.
+Walls come from the **machinery tail of the status-bar plates** — below the
+last instrument opening, `public/hud/statusbar-70*.jpg` is greebled panel,
+conduit and rivets, six different materials, one per government. Mind the
+coordinate space: `OPENINGS` is measured in the art's 481-wide space and ends
+at 1649, but the files ship 384 wide, so the tail starts at `1649 × imgW/481`
+— derived in `textures.ts`, not hardcoded. Those plates do **not** load through
+`getSprite`/`getPict`, which hardcode the `nova/sprites/` and `nova/picts/`
+prefixes; `textures.ts` loads them itself through `asset()`.
+
+Structural notes that are easy to get wrong:
+
+- It is a fifth **`Mode`**, not a `LandedUi` view. The canvas is already
+  cleared and unused in landed mode and the sidebar already auto-hides, so
+  `startFps`/`endFps` are `openMap`/`closeMap` verbatim — suspend the landed
+  DOM, take the canvas, `resume()` back onto the same screen. A view would have
+  meant splicing into the five-step key-precedence order in `landed.ts` and
+  touching the `style.css` full-viewport force rule.
+- **The `update()` branch must return before the unguarded `KeyM` handler**,
+  or M opens the galaxy map mid-firefight. Escape is consumed there too.
+- **Losing the pointer lock pauses; it must not exit.** Esc is how the browser
+  hands the pointer back, and the landed Esc handler departs the planet.
+  Leaving is Q, or the pause card.
+- One projection constant (`proj = H * WALL_H`) drives walls *and* billboards.
+  Wolf3D's one-cell-tall walls read as knee-height fencing down a long hold;
+  scaling only the walls lifts a Wraith's feet off the deck.
+- There are no floor or ceiling textures anywhere in the extraction, so the
+  deck and overhead are flat colours shaded **per screen row by real distance**
+  (a floor row at y is `proj / 2(y - half)` away) with a darker seam each whole
+  cell. That is what makes the dark read as depth rather than as a void.
+- Levels are ASCII in `level.ts`. Keep corridors **1-2 cells wide** — an open
+  hall renders as a distant ribbon with no depth cues. Validate a new deck for
+  equal row widths, a sealed border and no orphaned cells before shipping it.
+- `SHOT_RANGE` is deliberately *not* derived from the wëap's
+  `durationSec × speed`: 650 px is calibrated for ships crossing a system and
+  there is no honest cells-per-pixel. `reloadSec`, `accuracy` (the spread cone,
+  in degrees), `burstCount`, `sndId` and the two damage channels are read from
+  the resource and do translate; the damage is summed and scaled once
+  (`FOOT_DAMAGE`) because Nova's numbers are hull-scale.
+
+
 **Boarding money is 4% of the hull's cost.** düde Flags **0x0040** is "carries
 money (amount depends on the ship's purchase price)" and the Bible never says
 how much — no field holds an amount. The rate is ours; the ±25% spread is the
