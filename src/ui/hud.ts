@@ -9,6 +9,7 @@ import {
 } from "../data/universe";
 import { asset } from "../asset";
 import { formatDateShort } from "../game/calendar";
+import { formatChordShort, getBinding } from "../keybindings";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
@@ -122,22 +123,6 @@ function boxStyle([y0, y1]: readonly [number, number]): string {
     `height:${((y1 - y0 + 1) * K).toFixed(1)}px`
   );
 }
-
-/** Decorative starfield, fixed so it doesn't crawl between frames. */
-const STARS: [number, number, number, string][] = [
-  [0.14, 0.11, 2, "#dff2f7"],
-  [0.28, 0.24, 1, "#a8c4cf"],
-  [0.44, 0.08, 2, "#ffffff"],
-  [0.63, 0.19, 1, "#c7d8de"],
-  [0.82, 0.33, 2, "#eaf4f7"],
-  [0.09, 0.46, 1, "#b9ccd4"],
-  [0.36, 0.57, 2, "#f3fafc"],
-  [0.71, 0.52, 1, "#a8c4cf"],
-  [0.22, 0.71, 2, "#dff2f7"],
-  [0.56, 0.78, 1, "#c7d8de"],
-  [0.88, 0.69, 2, "#ffffff"],
-  [0.48, 0.9, 1, "#a8c4cf"],
-];
 
 const RADAR_RANGE = 2400;
 const CLOAK_VISIBLE_ON_RADAR = 0x0001;
@@ -589,14 +574,22 @@ export class HudUi {
   // ---------------- hints ----------------
 
   private drawHints(g: Game): void {
+    const b = (id: Parameters<typeof getBinding>[0]) =>
+      formatChordShort(getBinding(id));
+    const fly = `${b("accelerate")}${b("reverse")}${b("turnLeft")}${b("turnRight")} fly`;
     const keys: [string, string][] = [
-      ["↑↓←→ fly", g.afterburnerFuel > 0 ? "Z burn" : ""],
-      ["A aim", "Space fire"],
-      ["` target", "R closest"],
-      ["Y hail", "B board"],
-      ["L land", g.cloakBits > 0 ? "U cloak" : "C recall"],
-      ["J jump", "H course"],
-      ["M map", "W select"],
+      [fly, g.afterburnerFuel > 0 ? `${b("afterburner")} burn` : ""],
+      [`${b("aimAssist")} aim`, `${b("firePrimary")} fire`],
+      [`${b("cycleTargets")} target`, `${b("targetClosest")} closest`],
+      [`${b("hail")} hail`, `${b("board")} board`],
+      [
+        `${b("land")} land`,
+        g.cloakBits > 0
+          ? `${b("cloak")} cloak`
+          : `${b("recallFighters")} recall`,
+      ],
+      [`${b("jump")} jump`, `${b("hyperSelect")} course`],
+      [`${b("map")} map`, `${b("selectSecondary")} select`],
       ["Esc menu", "Caps 2×"],
     ];
     const html = keys

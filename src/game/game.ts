@@ -158,6 +158,13 @@ import {
   type WeaponSlot,
 } from "./combat";
 import { Input } from "../engine/input";
+import {
+  actionConsume,
+  actionDown,
+  consumeCycleTargets,
+  formatChord,
+  getBinding,
+} from "../keybindings";
 import { simFastForCapsLock } from "../settings";
 import { InfoUi, type InfoRow } from "../ui/info";
 import { drawStarfield } from "../engine/starfield";
@@ -1463,7 +1470,7 @@ export class Game {
       return;
     }
 
-    if (this.input.consume("KeyM")) {
+    if (actionConsume(this.input, "map")) {
       if (this.mode === "map") this.closeMap();
       else if (this.mode === "flight") this.openMap();
     }
@@ -1556,14 +1563,15 @@ export class Game {
       this.updateJumpSequence(dt);
     } else {
       let turn =
-        (this.input.isDown("ArrowLeft") ? -1 : 0) +
-        (this.input.isDown("ArrowRight") ? 1 : 0);
-      const thrust = this.input.isDown("ArrowUp");
+        (actionDown(this.input, "turnLeft") ? -1 : 0) +
+        (actionDown(this.input, "turnRight") ? 1 : 0);
+      const thrust = actionDown(this.input, "accelerate");
       // Down swings the nose onto the reverse of your course, so a burn slows
       // you; inertialess hulls simply stop instead
-      const braking = this.input.isDown("ArrowDown");
-      // Hold A: auto-turn toward the selected ship or stellar (manual ←→ win)
-      const aimAssist = turn === 0 && !braking && this.input.isDown("KeyA");
+      const braking = actionDown(this.input, "reverse");
+      // Hold aim-assist: auto-turn toward the selected ship or stellar (manual turn wins)
+      const aimAssist =
+        turn === 0 && !braking && actionDown(this.input, "aimAssist");
       // touching the controls takes the ship back off the autopilot
       if (this.autopilot && (turn !== 0 || thrust || braking || aimAssist)) {
         this.autopilot = false;
@@ -1595,11 +1603,11 @@ export class Game {
             turn = 0; // steerToward already applied the turn
           }
         }
-        // afterburner: hold Z to trade fuel for speed (100 units = 1 jump)
+        // afterburner: hold to trade fuel for speed (100 units = 1 jump)
         this.afterburning =
           this.afterburnerBurn > 0 &&
           thrust &&
-          this.input.isDown("KeyZ") &&
+          actionDown(this.input, "afterburner") &&
           this.player.fuelJumps > 0.05;
         if (this.inertialess && !thrust && !braking) {
           // an inertialess hull holds station the moment you stop pushing
@@ -1630,57 +1638,53 @@ export class Game {
         }
       }
 
-      // EV Nova's own bindings, with the arrow keys flying the ship
-      if (this.input.consume("KeyL")) this.selectOrLand();
+      // Bound in Preferences; defaults match Nova with arrow-key flight.
+      if (actionConsume(this.input, "land")) this.selectOrLand();
       /*
-       * J engages the hyperdrive. A press reports why it cannot (no course,
-       * gravity well, fuel). Holding J keeps trying quietly so you can:
-       *  - fly out of the no-jump zone with J down and jump the moment you clear it
-       *  - ride a multi-system plot without re-tapping J after each arrival
+       * Jump engages the hyperdrive. A press reports why it cannot (no course,
+       * gravity well, fuel). Holding keeps trying quietly so you can:
+       *  - fly out of the no-jump zone with jump held and leave the moment you clear it
+       *  - ride a multi-system plot without re-tapping after each arrival
        */
-      if (this.input.consume("KeyJ")) this.startJump(false);
-      else if (this.input.isDown("KeyJ")) this.startJump(true);
-      if (this.input.consume("Backquote") || this.input.consume("Tab"))
-        this.cycleTarget();
-      if (this.input.consume("KeyR")) this.targetClosest();
-      if (this.input.consume("KeyY")) this.hailTarget();
-      if (this.input.consume("KeyB")) this.tryBoard();
-      if (this.input.consume("KeyU")) this.toggleCloak();
-      // audio: - / = ride the master gain, 0 mutes
+      if (actionConsume(this.input, "jump")) this.startJump(false);
+      else if (actionDown(this.input, "jump")) this.startJump(true);
+      if (consumeCycleTargets(this.input)) this.cycleTarget();
+      if (actionConsume(this.input, "targetClosest")) this.targetClosest();
+      if (actionConsume(this.input, "hail")) this.hailTarget();
+      if (actionConsume(this.input, "board")) this.tryBoard();
+      if (actionConsume(this.input, "cloak")) this.toggleCloak();
+      // audio: - / = ride the master gain, 0 mutes (not rebindable)
       if (this.input.consume("Minus")) this.nudgeVolume(-0.1);
       if (this.input.consume("Equal")) this.nudgeVolume(0.1);
       if (this.input.consume("Digit0")) {
         this.message(toggleMuted() ? "Sound muted." : "Sound unmuted.");
       }
-      if (this.input.consume("KeyW")) this.cycleSecondary();
-      if (this.input.consume("KeyC")) this.recallFighters();
-      // escort orders
-      if (this.input.consume("KeyE")) this.orderEscorts("attack");
-      if (this.input.consume("KeyF")) this.orderEscorts("defend");
-      if (this.input.consume("KeyV")) this.orderEscorts("hold");
-      // navigation
-      if (this.input.consume("KeyQ")) {
-        if (this.input.shiftDown) this.selfDestruct();
-        else this.toggleAutopilot();
-      }
+      if (actionConsume(this.input, "selectSecondary")) this.cycleSecondary();
+      if (actionConsume(this.input, "escortAttack"))
+        this.orderEscorts("attack");
+      if (actionConsume(this.input, "escortForm")) this.orderEscorts("defend");
+      if (actionConsume(this.input, "escortHold")) this.orderEscorts("hold");
+      if (actionConsume(this.input, "recallFighters")) this.recallFighters();
+      if (actionConsume(this.input, "selfDestruct")) this.selfDestruct();
+      else if (actionConsume(this.input, "autopilot")) this.toggleAutopilot();
       /*
-       * H is Nova's hyper-select / "hyperjump coordinates": cycle the next
-       * jump and show the floating minimap without leaving flight. \ does the
-       * same cycle (classic binding) and also peeks the map so the new course
-       * is visible.
+       * Hyper-select cycles the next jump and peeks the floating minimap while
+       * held. Cycle-jump-dest is the classic alternate (default \) that peeks
+       * once per press.
        */
-      if (this.input.consume("KeyH") || this.input.consume("Backslash")) {
+      if (
+        actionConsume(this.input, "hyperSelect") ||
+        actionConsume(this.input, "cycleJumpDest")
+      ) {
         this.cycleJumpDestination();
         this.peekFloatingMap();
       }
-      if (this.input.isDown("KeyH")) this.peekFloatingMap();
-      if (this.input.consume("KeyN")) this.navOff();
-      if (this.input.consume("KeyX") && this.input.altDown)
-        this.ejectFromShip();
-      // information panels
-      if (this.input.consume("KeyP")) this.openPlayerInfo();
-      if (this.input.consume("KeyI")) this.openMissionInfo();
-      if (this.input.consume("KeyK") && this.input.altDown) this.openJettison();
+      if (actionDown(this.input, "hyperSelect")) this.peekFloatingMap();
+      if (actionConsume(this.input, "navOff")) this.navOff();
+      if (actionConsume(this.input, "eject")) this.ejectFromShip();
+      if (actionConsume(this.input, "playerInfo")) this.openPlayerInfo();
+      if (actionConsume(this.input, "missionInfo")) this.openMissionInfo();
+      if (actionConsume(this.input, "jettison")) this.openJettison();
       this.updateWeapons(dt);
     }
 
@@ -1695,7 +1699,7 @@ export class Game {
      */
     this.ship.unfolding =
       this.ship.sprite && this.ship.sprite.flags & SHAN_UNFOLD_FIRING
-        ? this.input.isDown("Space") && !this.ship.ionized
+        ? actionDown(this.input, "firePrimary") && !this.ship.ionized
         : this.jump === null;
     this.ship.advanceAnimation(dt);
     for (const npc of this.npcs) npc.advanceAnimation(dt);
@@ -2121,7 +2125,9 @@ export class Game {
   private tryBoard(): void {
     const t = this.targetNpc;
     if (!t) {
-      this.message("No target selected. Press Tab to select a ship.");
+      this.message(
+        `No target selected. Press ${formatChord(getBinding("cycleTargets"))} to select a ship.`,
+      );
       return;
     }
     if (!t.disabled) {
@@ -2517,7 +2523,9 @@ export class Game {
     }
     const t = this.targetNpc;
     if (!t) {
-      this.message("No target selected. Press Tab for ships, L for worlds.");
+      this.message(
+        `No target selected. Press ${formatChord(getBinding("cycleTargets"))} for ships, ${formatChord(getBinding("land"))} for worlds.`,
+      );
       return;
     }
     const dist = Math.hypot(
@@ -2887,7 +2895,7 @@ export class Game {
     const firing =
       this.mode === "flight" &&
       this.jump === null &&
-      this.input.isDown("Space") &&
+      actionDown(this.input, "firePrimary") &&
       !this.ship.ionized;
     for (const slot of this.weaponSlots) {
       if (!slot.weap.sndLoop || !slot.weap.sndId || !isPrimary(slot.weap))
@@ -2902,7 +2910,7 @@ export class Game {
     for (const slot of this.weaponSlots) {
       slot.cooldown = Math.max(0, slot.cooldown - dt);
     }
-    if (this.input.isDown("Space") && !this.ship.ionized) {
+    if (actionDown(this.input, "firePrimary") && !this.ship.ionized) {
       for (const slot of this.weaponSlots) {
         if (!isPrimary(slot.weap) || slot.cooldown > 0) continue;
         applyReload(slot);
@@ -2933,12 +2941,9 @@ export class Game {
         }
       }
     }
-    // Left Control fires whichever secondary is selected — missiles launch,
-    // fighter bays scramble, exactly as EV treats bays as secondary weapons
-    if (
-      this.input.consume("ControlLeft") ||
-      this.input.consume("ControlRight")
-    ) {
+    // Secondary fires whichever is selected — missiles launch, fighter bays
+    // scramble, exactly as EV treats bays as secondary weapons
+    if (actionConsume(this.input, "fireSecondary")) {
       const slot = this.selectedSecondary();
       if (!slot) {
         this.message("No secondary weapon selected.");
@@ -4994,13 +4999,14 @@ export class Game {
   private floatingMapVisible(): boolean {
     return (
       this.mode === "flight" &&
-      (this.floatingMapUntil > this.time || this.input.isDown("KeyH"))
+      (this.floatingMapUntil > this.time ||
+        actionDown(this.input, "hyperSelect"))
     );
   }
 
   /** 1 while held / during the hold; eases to 0 over FLOAT_MAP_FADE. */
   private floatingMapAlpha(): number {
-    if (this.input.isDown("KeyH")) return 1;
+    if (actionDown(this.input, "hyperSelect")) return 1;
     const remaining = this.floatingMapUntil - this.time;
     if (remaining <= 0) return 0;
     if (remaining >= Game.FLOAT_MAP_FADE) return 1;
@@ -5682,10 +5688,11 @@ export class Game {
       const cont = getSystem(
         this.routeDest ?? this.route[this.route.length - 1],
       ).name;
+      const jumpKey = formatChord(getBinding("jump"));
       this.message(
-        this.input.isDown("KeyJ")
+        actionDown(this.input, "jump")
           ? `Course continues to ${cont}.`
-          : `Course continues to ${cont} — hold or press J to continue.`,
+          : `Course continues to ${cont} — hold or press ${jumpKey} to continue.`,
       );
     }
   }

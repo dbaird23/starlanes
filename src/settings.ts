@@ -4,6 +4,15 @@
  * localStorage under the pilot keys.
  */
 
+import {
+  cloneBindings,
+  DEFAULT_BINDINGS,
+  normalizeBindings,
+  setLiveBindings,
+  type ActionId,
+  type Chord,
+} from "./keybindings";
+
 const KEY = "starlanes.settings";
 
 /** Hardware Caps Lock state that should run the sim at 2×. */
@@ -17,10 +26,13 @@ export interface Settings {
    * while typing / double speed with Caps Lock released.
    */
   capsLockFastWhen: CapsLockFastWhen;
+  /** Flight key chords; missing actions fall back to Nova defaults. */
+  keybindings: Record<ActionId, Chord>;
 }
 
 const DEFAULTS: Settings = {
   capsLockFastWhen: "on",
+  keybindings: cloneBindings(DEFAULT_BINDINGS),
 };
 
 function parseFastWhen(v: unknown): CapsLockFastWhen {
@@ -32,12 +44,13 @@ function load(): Settings {
     const raw = JSON.parse(
       localStorage.getItem(KEY) ?? "null",
     ) as Partial<Settings> | null;
-    if (!raw || typeof raw !== "object") return { ...DEFAULTS };
+    if (!raw || typeof raw !== "object") return { ...DEFAULTS, keybindings: cloneBindings() };
     return {
       capsLockFastWhen: parseFastWhen(raw.capsLockFastWhen),
+      keybindings: normalizeBindings(raw.keybindings),
     };
   } catch {
-    return { ...DEFAULTS };
+    return { ...DEFAULTS, keybindings: cloneBindings() };
   }
 }
 
@@ -50,6 +63,7 @@ function persist(s: Settings): void {
 }
 
 let current = load();
+setLiveBindings(current.keybindings);
 
 export function getSettings(): Readonly<Settings> {
   return current;
@@ -72,4 +86,18 @@ export function setCapsLockFastWhen(when: CapsLockFastWhen): void {
  */
 export function simFastForCapsLock(capsOn: boolean): boolean {
   return current.capsLockFastWhen === "on" ? capsOn : !capsOn;
+}
+
+export function getKeybindings(): Readonly<Record<ActionId, Chord>> {
+  return current.keybindings;
+}
+
+/** Replace all flight keybindings and persist. Caller must ensure no collisions. */
+export function setKeybindings(bindings: Record<ActionId, Chord>): void {
+  current = {
+    ...current,
+    keybindings: cloneBindings(bindings),
+  };
+  setLiveBindings(current.keybindings);
+  persist(current);
 }

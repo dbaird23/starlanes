@@ -70,6 +70,11 @@ export class Input {
     return this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
   }
 
+  /** Either Control key (secondary fire, and chord modifiers). */
+  get ctrlDown(): boolean {
+    return this.keys.has("ControlLeft") || this.keys.has("ControlRight");
+  }
+
   /** true once per physical key press */
   consume(code: string): boolean {
     if (this.pressed.has(code)) {

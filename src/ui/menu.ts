@@ -31,8 +31,21 @@ import {
   loadPilot,
 } from "../game/pilots";
 import {
+  ACTION_IDS,
+  ACTIONS,
+  chordFromEvent,
+  chordsEqual,
+  cloneBindings,
+  DEFAULT_BINDINGS,
+  findCollisions,
+  formatChord,
+  type ActionId,
+} from "../keybindings";
+import {
   capsLockFastWhen,
+  getKeybindings,
   setCapsLockFastWhen,
+  setKeybindings,
   type CapsLockFastWhen,
 } from "../settings";
 
@@ -146,12 +159,60 @@ const EMBLEM_IDLE_FRAME = 6;
  * "enter" where "open" belongs.
  */
 const BUTTONS = [
-  { id: "new", sprite: "8050", x: 349, y: 400, emblem: 0, colr: 0 },
-  { id: "enter", sprite: "8053", x: 555, y: 401, emblem: 3, colr: 3 },
-  { id: "open", sprite: "8051", x: 344, y: 464, emblem: 1, colr: 1 },
-  { id: "prefs", sprite: "8054", x: 581, y: 464, emblem: 4, colr: 4 },
-  { id: "quit", sprite: "8052", x: 345, y: 528, emblem: 2, colr: 2 },
-  { id: "about", sprite: "8055", x: 580, y: 528, emblem: 5, colr: 5 },
+  {
+    id: "new",
+    sprite: "8050",
+    x: 349,
+    y: 400,
+    emblem: 0,
+    colr: 0,
+    key: "N",
+  },
+  {
+    id: "enter",
+    sprite: "8053",
+    x: 555,
+    y: 401,
+    emblem: 3,
+    colr: 3,
+    key: "E",
+  },
+  {
+    id: "open",
+    sprite: "8051",
+    x: 344,
+    y: 464,
+    emblem: 1,
+    colr: 1,
+    key: "O",
+  },
+  {
+    id: "prefs",
+    sprite: "8054",
+    x: 581,
+    y: 464,
+    emblem: 4,
+    colr: 4,
+    key: "P",
+  },
+  {
+    id: "quit",
+    sprite: "8052",
+    x: 345,
+    y: 528,
+    emblem: 2,
+    colr: 2,
+    key: "Q",
+  },
+  {
+    id: "about",
+    sprite: "8055",
+    x: 580,
+    y: 528,
+    emblem: 5,
+    colr: 5,
+    key: "A",
+  },
 ];
 
 /** Title screen / pilot management, shown over the starfield. */
@@ -169,6 +230,7 @@ export class MainMenu {
   constructor(onStart: (pilotId: string, strict?: boolean) => void) {
     this.root = document.getElementById("menu-ui")!;
     this.onStart = onStart;
+    window.addEventListener("keydown", this.onTitleKey);
   }
 
   show(): void {
@@ -200,6 +262,33 @@ export class MainMenu {
     this.root.innerHTML = "";
     stopMusic();
   }
+
+  /**
+   * Title-screen letter shortcuts (Nova-style). Only while the bare menu is
+   * up — not over a modal, the intro, or a focused text field.
+   */
+  private onTitleKey = (e: KeyboardEvent): void => {
+    if (this.root.classList.contains("hidden") || e.repeat) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const modal = this.root.querySelector<HTMLElement>("#ttl-modal");
+    if (modal && !modal.classList.contains("hidden")) return;
+    if (this.root.querySelector(".ttl-stage.intro")) return;
+    const tag = (e.target as HTMLElement | null)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    const map: Record<string, string> = {
+      KeyE: "enter",
+      KeyO: "open",
+      KeyP: "prefs",
+      KeyN: "new",
+      KeyA: "about",
+      KeyQ: "quit",
+    };
+    const id = map[e.code];
+    if (!id) return;
+    e.preventDefault();
+    this.onMenu(id);
+  };
 
   /**
    * Plate whoosh: "Menu button start" then "Menu button end" abutted. Defers
@@ -372,7 +461,19 @@ export class MainMenu {
       const spr = MENU_SPRITES[b.sprite];
       if (!spr) return "";
       const at = buttonPos(b);
-      return `<button class="ttl-btn" data-menu="${b.id}" data-emblem="${b.emblem}" title="${b.id}" style="
+      const label =
+        b.id === "enter"
+          ? "Enter ship"
+          : b.id === "open"
+            ? "Open pilot"
+            : b.id === "prefs"
+              ? "Set prefs"
+              : b.id === "new"
+                ? "New pilot"
+                : b.id === "about"
+                  ? "About"
+                  : "Quit Nova";
+      return `<button class="ttl-btn" data-menu="${b.id}" data-emblem="${b.emblem}" title="${label} (${b.key})" style="
         left:${at.x}px; top:${at.y}px; width:${spr.w}px; height:${spr.h}px;
         background-image:url('${asset(`nova/sprites/${spr.file}`)}');
         --hover-x:${-spr.w}px"></button>`;
@@ -644,71 +745,278 @@ export class MainMenu {
   }
 
   private prefs(): void {
-    const keys: [string, string][] = [
-      ["Turn left / right", "← →"],
-      ["Accelerate", "↑"],
-      ["Reverse (turn about)", "↓"],
-      ["Aim toward target (hold)", "A"],
-      ["Afterburner", "Z"],
-      ["Fire primary", "Space"],
-      ["Fire secondary", "Left Ctrl"],
-      ["Select secondary", "W"],
-      ["Cycle targets", "` or Tab"],
-      ["Target nearest ship", "R"],
-      ["Target / cycle worlds", "L"],
-      ["Land / dock", "L (again, in range)"],
-      ["Hyperspace jump", "J"],
-      ["Hyper select (floating map)", "H"],
-      ["Select jump destination", "H or \\"],
-      ["Star map", "M"],
-      ["Communicate", "Y"],
-      ["Board disabled ship", "B"],
-      ["Engage cloak", "U"],
-      ["Recall fighters", "C"],
-      ["Autopilot", "Q"],
-      ["Nav system off", "N"],
-      ["Escorts: attack my target", "E"],
-      ["Escorts: form up", "F"],
-      ["Escorts: hold position", "V"],
-      ["Player info", "P"],
-      ["Mission info", "I"],
-      ["Jettison cargo", "Alt-K"],
-      ["Eject (escape pod)", "Alt-X"],
-      ["Self-destruct", "Shift-Q"],
-      ["Return to title screen", "Esc"],
-      ["Double game speed", "Caps Lock"],
-    ];
     const fastWhen = capsLockFastWhen();
     const musicOn = isTitleMusicEnabled();
+    const saved = cloneBindings(getKeybindings());
+    let draft = cloneBindings(saved);
+    let listening: ActionId | null = null;
+    /** Pure modifier held while composing a chord; bound alone on release if unused. */
+    let pendingModifier: string | null = null;
+    let confirmOpen = false;
+
     const m = this.modal(`
-      <h2>Preferences</h2>
-      <fieldset class="ttl-fieldset">
-        <legend>Title music</legend>
-        <p class="menu-hint">Theme that loops on this screen. Defaults off under a dev server, on in a production build; your choice is saved.</p>
-        <label class="ttl-check"><input type="radio" name="pref-title-music" value="1"${
-          musicOn ? " checked" : ""
-        }> <strong>On</strong></label>
-        <label class="ttl-check"><input type="radio" name="pref-title-music" value="0"${
-          !musicOn ? " checked" : ""
-        }> <strong>Off</strong></label>
-      </fieldset>
-      <fieldset class="ttl-fieldset">
-        <legend>Caps Lock 2× speed</legend>
-        <p class="menu-hint">Caps Lock always toggles double game speed. Choose which lock state is fast.</p>
-        <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="on"${
-          fastWhen === "on" ? " checked" : ""
-        }> Fast when Caps Lock is <strong>on</strong>
-          <span class="menu-hint"> — Nova default</span></label>
-        <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="off"${
-          fastWhen === "off" ? " checked" : ""
-        }> Fast when Caps Lock is <strong>off</strong>
-          <span class="menu-hint"> — if you leave Caps Lock on for typing</span></label>
-      </fieldset>
-      <p class="menu-hint">Nova's original bindings, with the arrow keys for flight.</p>
-      <table class="keytable">${keys
-        .map(([k, v]) => `<tr><td>${k}</td><td><kbd>${v}</kbd></td></tr>`)
-        .join("")}</table>
-      <div class="btnrow"><button class="evbtn primary" data-close>Done</button></div>`);
+      <div class="prefs-shell">
+        <h2>Preferences</h2>
+        <div class="prefs-body">
+          <fieldset class="ttl-fieldset">
+            <legend>Title music</legend>
+            <p class="menu-hint">Theme that loops on this screen. Defaults off under a dev server, on in a production build; your choice is saved.</p>
+            <label class="ttl-check"><input type="radio" name="pref-title-music" value="1"${
+              musicOn ? " checked" : ""
+            }> <strong>On</strong></label>
+            <label class="ttl-check"><input type="radio" name="pref-title-music" value="0"${
+              !musicOn ? " checked" : ""
+            }> <strong>Off</strong></label>
+          </fieldset>
+          <fieldset class="ttl-fieldset">
+            <legend>Caps Lock 2× speed</legend>
+            <p class="menu-hint">Caps Lock always toggles double game speed. Choose which lock state is fast.</p>
+            <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="on"${
+              fastWhen === "on" ? " checked" : ""
+            }> Fast when Caps Lock is <strong>on</strong>
+              <span class="menu-hint"> — Nova default</span></label>
+            <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="off"${
+              fastWhen === "off" ? " checked" : ""
+            }> Fast when Caps Lock is <strong>off</strong>
+              <span class="menu-hint"> — if you leave Caps Lock on for typing</span></label>
+          </fieldset>
+          <fieldset class="ttl-fieldset">
+            <legend>Keybindings</legend>
+            <p class="menu-hint">Click a binding, then press a key (with Opt / Shift / Ctrl if you need a chord). Collisions are highlighted — Save stays off until every action has a unique binding. Esc and Caps Lock are fixed.</p>
+            <div id="pref-bind-status" class="menu-hint pref-bind-status"></div>
+            <table class="keytable keytable-bind" id="pref-keytable"></table>
+            <p class="menu-hint pref-fixed-keys">Also fixed: <kbd>Esc</kbd> menu · <kbd>Caps Lock</kbd> 2× speed · <kbd>−</kbd>/<kbd>=</kbd>/<kbd>0</kbd> volume</p>
+          </fieldset>
+        </div>
+        <div class="btnrow prefs-actions">
+          <button class="evbtn primary" id="pref-cancel" type="button">Cancel</button>
+          <button class="evbtn" id="pref-save" type="button">Save</button>
+          <button class="evbtn" id="pref-reset" type="button">Reset</button>
+        </div>
+        <div class="pref-confirm hidden" id="pref-confirm" role="dialog" aria-label="Discard changes">
+          <div class="pref-confirm-card">
+            <p>You have unsaved keybinding changes. Discard them?</p>
+            <div class="btnrow">
+              <button class="evbtn primary" id="pref-discard" type="button">Discard</button>
+              <button class="evbtn" id="pref-keep" type="button">Keep editing</button>
+            </div>
+          </div>
+        </div>
+      </div>`);
+
+    // Mark the dialog shell so layout can pin the action row.
+    m.querySelector(".ttl-dialog")?.classList.add("prefs-dialog");
+
+    const table = m.querySelector<HTMLTableElement>("#pref-keytable")!;
+    const status = m.querySelector<HTMLElement>("#pref-bind-status")!;
+    const saveBtn = m.querySelector<HTMLButtonElement>("#pref-save")!;
+    const cancelBtn = m.querySelector<HTMLButtonElement>("#pref-cancel")!;
+    const resetBtn = m.querySelector<HTMLButtonElement>("#pref-reset")!;
+    const confirmEl = m.querySelector<HTMLElement>("#pref-confirm")!;
+    const discardBtn = m.querySelector<HTMLButtonElement>("#pref-discard")!;
+    const keepBtn = m.querySelector<HTMLButtonElement>("#pref-keep")!;
+
+    const isDirty = (): boolean =>
+      ACTION_IDS.some((id) => !chordsEqual(draft[id], saved[id]));
+
+    const cleanup = (): void => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+      listening = null;
+      pendingModifier = null;
+      confirmOpen = false;
+    };
+
+    const closePrefs = (): void => {
+      cleanup();
+      if (!m.classList.contains("hidden")) {
+        m.classList.add("hidden");
+        playMenuClose();
+      }
+    };
+
+    const hideConfirm = (): void => {
+      confirmOpen = false;
+      confirmEl.classList.add("hidden");
+    };
+
+    const showConfirm = (): void => {
+      // Stop mid-rebind so Esc in the confirm means "keep editing".
+      listening = null;
+      pendingModifier = null;
+      confirmOpen = true;
+      confirmEl.classList.remove("hidden");
+      paint();
+      discardBtn.focus();
+    };
+
+    const requestCancel = (): void => {
+      if (confirmOpen) {
+        hideConfirm();
+        return;
+      }
+      if (listening) {
+        listening = null;
+        pendingModifier = null;
+        paint();
+        return;
+      }
+      if (isDirty()) {
+        showConfirm();
+        return;
+      }
+      closePrefs();
+    };
+
+    const paint = (): void => {
+      const collisions = findCollisions(draft);
+      const rows = ACTIONS.map(({ id, label }) => {
+        const chord = draft[id];
+        const clash = collisions.has(id);
+        const listen = listening === id;
+        const kbdClass = [
+          "keybind-kbd",
+          clash ? "collision" : "",
+          listen ? "listening" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const title = listen
+          ? "Press a key… Esc to cancel"
+          : clash
+            ? "Conflicts with another action"
+            : "Click to rebind";
+        return `<tr class="${clash ? "collision-row" : ""}${listen ? " listening-row" : ""}" data-action="${id}">
+          <td>${label}</td>
+          <td><button type="button" class="${kbdClass}" data-bind="${id}" title="${title}">${
+            listen ? "…" : formatChord(chord)
+          }</button></td>
+        </tr>`;
+      }).join("");
+      table.innerHTML = rows;
+      if (listening) {
+        status.textContent = "Press a key (or Esc to cancel rebinding).";
+        status.classList.remove("error");
+      } else if (collisions.size > 0) {
+        status.textContent = `${collisions.size} binding${
+          collisions.size === 1 ? "" : "s"
+        } conflict — resolve them before saving.`;
+        status.classList.add("error");
+      } else {
+        status.textContent = "";
+        status.classList.remove("error");
+      }
+      saveBtn.disabled =
+        collisions.size > 0 || listening !== null || confirmOpen;
+
+      table.querySelectorAll<HTMLButtonElement>("[data-bind]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (confirmOpen) return;
+          const id = btn.dataset.bind as ActionId;
+          listening = listening === id ? null : id;
+          pendingModifier = null;
+          paint();
+        });
+      });
+    };
+
+    const isModCode = (code: string): boolean =>
+      code === "ShiftLeft" ||
+      code === "ShiftRight" ||
+      code === "AltLeft" ||
+      code === "AltRight" ||
+      code === "ControlLeft" ||
+      code === "ControlRight" ||
+      code === "MetaLeft" ||
+      code === "MetaRight";
+
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (m.classList.contains("hidden")) return;
+      if (e.repeat) return;
+
+      // Confirm overlay: Esc keeps editing; Enter discards.
+      if (confirmOpen) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          hideConfirm();
+          return;
+        }
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          e.stopPropagation();
+          closePrefs();
+          return;
+        }
+        return;
+      }
+
+      if (listening) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.code === "Escape") {
+          listening = null;
+          pendingModifier = null;
+          paint();
+          return;
+        }
+        // Hold modifiers to build Opt/Shift/Ctrl chords; alone they bind on keyup.
+        if (isModCode(e.code)) {
+          if (e.code !== "MetaLeft" && e.code !== "MetaRight") {
+            pendingModifier = e.code;
+          }
+          return;
+        }
+        pendingModifier = null;
+        const chord = chordFromEvent(e);
+        if (!chord) return;
+        draft = { ...draft, [listening]: chord };
+        listening = null;
+        paint();
+        return;
+      }
+
+      // Esc cancels the whole dialog (with dirty confirm when needed).
+      if (e.code === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        requestCancel();
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent): void => {
+      if (!listening || !pendingModifier || confirmOpen) return;
+      if (e.code !== pendingModifier) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Modifier released without another key → bind that key alone (e.g. Left Ctrl).
+      draft = { ...draft, [listening]: { code: e.code } };
+      listening = null;
+      pendingModifier = null;
+      paint();
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+
+    saveBtn.addEventListener("click", () => {
+      if (findCollisions(draft).size > 0 || listening || confirmOpen) return;
+      setKeybindings(draft);
+      closePrefs();
+    });
+    cancelBtn.addEventListener("click", () => requestCancel());
+    resetBtn.addEventListener("click", () => {
+      if (confirmOpen) return;
+      draft = cloneBindings(DEFAULT_BINDINGS);
+      listening = null;
+      pendingModifier = null;
+      paint();
+    });
+    discardBtn.addEventListener("click", () => closePrefs());
+    keepBtn.addEventListener("click", () => hideConfirm());
+
     for (const radio of m.querySelectorAll<HTMLInputElement>(
       'input[name="pref-caps-fast"]',
     )) {
@@ -726,6 +1034,8 @@ export class MainMenu {
         setTitleMusicEnabled(radio.value === "1");
       });
     }
+
+    paint();
   }
 
   private about(): void {
