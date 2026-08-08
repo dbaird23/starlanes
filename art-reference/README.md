@@ -48,7 +48,34 @@ rooms/bridge.png                  bridge with forward viewport
 props/crates.png                  cargo containers
 props/consoles.png                console, terminal, opened access panel
 props/conduit.png                 cabling, pipe, gas cylinder
+airlock/airlock.png               where every run starts and ends
+damage/damage.png                 a breach — and the clearest profile reference
 ```
+
+### The breach is the best profile reference we have
+
+`damage/damage.png` shows the octagonal cross-section more legibly than the lit
+corridor does, because the near-field frames are unlit and read as silhouette:
+floor, lower chamfer, vertical wall, upper chamfer, ceiling, with the bay frames
+stepping away down the length. Measure the profile against this one.
+
+It also settles the resting state, which was previously specified only by
+inference: near-black, with specular highlights picking out wet-looking metal
+edges and hanging cable. The deck is the brightest surface in frame because it
+catches what little light there is — which is exactly what the per-row distance
+shading already does.
+
+And it supplies a light source that costs nothing: **starlight through the
+breach**. A hull-breach cell that emits cold light goes straight through the
+additive path, gives a dead section one dramatic source, and explains itself.
+
+### The airlock repeats the octagon
+
+`airlock/airlock.png` puts the same eight-sided silhouette in the hatch — locking
+lugs at each corner, grab rails either side, a suit rack, a control panel with
+live orange indicators, one working overhead fitting. Worth keeping as a motif:
+the ship's cross-section shows up again in its doors, so the shape reads as
+structural rather than decorative.
 
 ### The breaker pair is a free emissive map
 
