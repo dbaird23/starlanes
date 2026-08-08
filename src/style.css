@@ -2484,6 +2484,70 @@ td.actions button:disabled {
   min-height: 34px;
 }
 
+/* Trade Center quantity dialog (replaces browser prompt) */
+.tc-qty-back {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 5, 10, 0.72);
+  z-index: 10;
+}
+.panel.tc-qty {
+  width: min(360px, 92vw);
+  padding: 16px 18px 14px;
+}
+.panel.tc-qty h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: #eaf3ff;
+}
+.panel.tc-qty .menu-hint {
+  margin: 0 0 14px;
+}
+.tc-qty-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #8fa2ba;
+}
+.tc-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tc-qty-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  background: #0b1220;
+  border: 1px solid #2b3d56;
+  border-radius: 4px;
+  color: #e2eaf4;
+  font:
+    15px ui-monospace,
+    Menlo,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+.tc-qty-row input:focus {
+  outline: none;
+  border-color: #6b84aa;
+}
+.tc-qty-total {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #d6e2f0;
+  font-variant-numeric: tabular-nums;
+}
+.panel.tc-qty .btnrow {
+  justify-content: flex-end;
+  margin: 0;
+  gap: 8px;
+}
+
 /* chär opening sequence: full-bleed stills before a new pilot takes over */
 #intro-ui {
   position: fixed;

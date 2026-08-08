@@ -217,9 +217,41 @@ export class LandedUi {
     window.addEventListener("keydown", (e) => {
       if (this.root.classList.contains("hidden")) return;
       const typing = document.activeElement?.tagName === "INPUT";
-      if (typing) return;
       // anything this handler acts on must not reach the game loop as well
       const handled = (): void => this.game.swallowKey(e.code);
+      /*
+       * Trade quantity dialog is modal over the exchange. Esc cancels; Enter
+       * confirms even while the number field is focused. Other keys still
+       * type into the input when it has focus; they are otherwise swallowed
+       * so B/S/T cannot re-fire under the overlay.
+       */
+      if (this.tradeQty) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          handled();
+          this.tradeQty = null;
+          this.render();
+          return;
+        }
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          handled();
+          this.root.querySelector<HTMLButtonElement>("#tc-qty-ok")?.click();
+          return;
+        }
+        if (typing) return;
+        // block port / list keys under the overlay
+        if (
+          e.code.startsWith("Key") ||
+          e.code.startsWith("Arrow") ||
+          e.code === "Tab"
+        ) {
+          e.preventDefault();
+          handled();
+        }
+        return;
+      }
+      if (typing) return;
       /*
        * The shipyard's Info dialog is modal: Esc closes it, and nothing else
        * reaches the counter underneath — otherwise Esc would leave the
@@ -1014,6 +1046,8 @@ export class LandedUi {
     if (!this.planet || !this.system) return;
     // the Info dialog belongs to the shipyard; anything that leaves closes it
     if (this.view !== "shipyard") this.shipInfoOpen = false;
+    // quantity chooser is trade-only
+    if (this.view !== "trade") this.tradeQty = null;
     if (this.view === "spaceport") this.renderSpaceport();
     else if (this.view === "trade") this.renderTrade();
     else if (this.view === "shipyard") this.renderShipyard();
@@ -1996,53 +2030,150 @@ export class LandedUi {
           <button class="evbtn" id="tc-sell" ${sel?.canSell ? "" : "disabled"}>${btnLabel(2, "Sell")}</button>
           <button class="evbtn primary" id="btn-back">${btnLabel(4, "Done")}</button>
         </div>
-      </div>`;
+      </div>
+      ${this.tradeQtyDialog()}`;
 
     this.root
       .querySelectorAll<HTMLElement>(".tc-row[data-id]")
       .forEach((row) => {
         row.addEventListener("click", () => {
+          if (this.tradeQty) return;
           this.selectedGood = row.dataset.id!;
           this.tradeNote = "";
           this.render();
         });
       });
-    const trade = (dir: "buy" | "sell") => {
+    const openQty = (dir: "buy" | "sell") => {
       if (!sel) return;
       const most =
         dir === "buy"
           ? Math.min(space, Math.floor(g.player.credits / sel.price))
           : sel.have;
-      const asked = prompt(
-        `${STR_LISTS["2002"]?.[370] ?? "Enter quantity:"} (max ${most})`,
-        String(most),
-      );
-      if (asked === null) return;
-      const qty = Math.max(0, Math.min(most, parseInt(asked, 10) || 0));
-      if (qty <= 0) return;
-      const before = g.player.cargo[sel.key] ?? 0;
-      if (dir === "buy") g.buy(sel.key, qty, sel.price);
-      else g.sell(sel.key, qty, sel.price);
-      const moved = Math.abs((g.player.cargo[sel.key] ?? 0) - before);
-      this.tradeNote = moved
-        ? `You ${dir === "buy" ? "bought" : "sold"} ${moved} ton${moved === 1 ? "" : "s"} of ${sel.name}.`
-        : "";
+      if (most <= 0) return;
+      this.tradeQty = {
+        dir,
+        key: sel.key,
+        name: sel.name,
+        price: sel.price,
+        max: most,
+      };
       this.render();
     };
     this.root
       .querySelector("#tc-buy")
-      ?.addEventListener("click", () => trade("buy"));
+      ?.addEventListener("click", () => openQty("buy"));
     this.root
       .querySelector("#tc-sell")
-      ?.addEventListener("click", () => trade("sell"));
+      ?.addEventListener("click", () => openQty("sell"));
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.tradeNote = "";
+      this.tradeQty = null;
       this.setView("spaceport");
+    });
+    this.bindTradeQtyDialog();
+  }
+
+  /**
+   * Quantity chooser for Buy / Sell — replaces the browser `prompt`. Mirrors
+   * Nova's "Enter quantity" line (STR# 2002/370) inside the landed UI chrome.
+   */
+  private tradeQtyDialog(): string {
+    const q = this.tradeQty;
+    if (!q) return "";
+    const verb = q.dir === "buy" ? "Buy" : "Sell";
+    const prompt =
+      STR_LISTS["2002"]?.[370] ?? "Enter quantity:";
+    const total = q.price * q.max;
+    return `
+      <div class="tc-qty-back" role="dialog" aria-label="${escapeHtml(prompt)}">
+        <div class="panel tc-qty">
+          <h2>${verb} ${escapeHtml(q.name)}</h2>
+          <p class="menu-hint">${q.price.toLocaleString()} cr each · max ${q.max.toLocaleString()} ton${q.max === 1 ? "" : "s"}</p>
+          <label class="tc-qty-label" for="tc-qty-input">${escapeHtml(prompt)}</label>
+          <div class="tc-qty-row">
+            <input id="tc-qty-input" type="number" min="1" max="${q.max}" value="${q.max}" inputmode="numeric">
+            <button class="evbtn" type="button" id="tc-qty-max">Max</button>
+          </div>
+          <p class="tc-qty-total" id="tc-qty-total">${verb === "Buy" ? "Cost" : "Proceeds"}: ${total.toLocaleString()} cr</p>
+          <div class="btnrow">
+            <button class="evbtn" type="button" id="tc-qty-cancel">Cancel</button>
+            <button class="evbtn primary" type="button" id="tc-qty-ok">${verb}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  private bindTradeQtyDialog(): void {
+    const q = this.tradeQty;
+    if (!q) return;
+    const input = this.root.querySelector<HTMLInputElement>("#tc-qty-input");
+    const totalEl = this.root.querySelector<HTMLElement>("#tc-qty-total");
+    if (!input || !totalEl) return;
+
+    const clamp = (): number => {
+      const raw = parseInt(input.value, 10);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.min(q.max, raw));
+    };
+    const paintTotal = (): void => {
+      const n = clamp();
+      const verb = q.dir === "buy" ? "Cost" : "Proceeds";
+      totalEl.textContent = `${verb}: ${(n * q.price).toLocaleString()} cr`;
+    };
+    input.addEventListener("input", paintTotal);
+    input.addEventListener("change", () => {
+      const n = clamp();
+      input.value = n > 0 ? String(n) : "";
+      paintTotal();
+    });
+    this.root.querySelector("#tc-qty-max")!.addEventListener("click", () => {
+      input.value = String(q.max);
+      paintTotal();
+      input.focus();
+      input.select();
+    });
+    this.root.querySelector("#tc-qty-cancel")!.addEventListener("click", () => {
+      this.tradeQty = null;
+      this.render();
+    });
+    this.root.querySelector("#tc-qty-ok")!.addEventListener("click", () => {
+      const qty = clamp();
+      if (qty <= 0) {
+        input.focus();
+        input.select();
+        return;
+      }
+      const g = this.game;
+      const before = g.player.cargo[q.key] ?? 0;
+      if (q.dir === "buy") g.buy(q.key, qty, q.price);
+      else g.sell(q.key, qty, q.price);
+      const moved = Math.abs((g.player.cargo[q.key] ?? 0) - before);
+      this.tradeNote = moved
+        ? `You ${q.dir === "buy" ? "bought" : "sold"} ${moved} ton${moved === 1 ? "" : "s"} of ${q.name}.`
+        : "";
+      this.tradeQty = null;
+      this.render();
+    });
+    // Focus after the DOM is live so Enter confirms without an extra click.
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
     });
   }
 
   private selectedGood: string | null = null;
   private tradeNote = "";
+  /**
+   * Open quantity dialog for a Buy/Sell. Null when the exchange list is free
+   * to use. Cleared when leaving the trade centre or cancelling.
+   */
+  private tradeQty: {
+    dir: "buy" | "sell";
+    key: string;
+    name: string;
+    price: number;
+    max: number;
+  } | null = null;
   private selectedShip: string | null = null;
   /** whether the shipyard's Info dialog is up over the showroom */
   private shipInfoOpen = false;
