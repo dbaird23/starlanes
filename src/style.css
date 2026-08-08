@@ -361,6 +361,13 @@ body {
   color: var(--hud-dim);
   font-weight: 400;
 }
+/* Course locked but still inside the no-jump zone — address is set, J is not. */
+.hud-nav.nojump .hud-nav-value {
+  opacity: 0.4;
+}
+.hud-nav.nojump .hud-nav-kind {
+  opacity: 0.55;
+}
 
 /* ---- weapons ---- */
 /* one hole each: the primaries collapse to a line, the secondary gets its own */

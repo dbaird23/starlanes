@@ -15,15 +15,21 @@ export const SND = {
   WARP_IN_BIG: 129, // "Warp up.x2"
   WARP_OUT: 130, // "Warp out"   — arriving in a new system
   BEEP1: 150, // generic confirm (volume, scoop, dock)
-  BEEP2: 151, // hail / comms open
-  BEEP3: 152, // target select (cycle / closest)
+  BEEP2: 151, // hail / comms open; landable planet selected
+  BEEP3: 152, // target select; hyperspace course set
   BEEP4: 153, // landing denied, gravity-well jump, hypergate power / emerge
-  BEEP5: 154, // general refusal (no course, empty tank, …)
-  /** Tab / ` through contacts — short select click. */
+  BEEP5: 154, // general refusal; clear of no-jump zone with a course set
+  /** Tab / ` through contacts — short select click. Also course-set. */
   TARGET: 152,
-  /** Can't do that — no course, empty tank, ionized, … */
+  /**
+   * Can't do that — no course, empty tank, ionized, … Also the "jump is
+   * clear" chirp when you leave the gravity well with a course plotted.
+   */
   DENY: 154,
-  /** Planet will not clear you to land (MinStatus / never). */
+  /**
+   * Planet will not clear you to land (MinStatus / never), or a non-landable
+   * stellar got focus (same cue as the focus-denied beep).
+   */
   LANDING_DENIED: 153,
   /** Too deep in the gravity well to jump (same cue as landing denied). */
   NO_JUMP: 153,

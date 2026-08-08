@@ -36,6 +36,7 @@ export type ActionId =
   | "targetClosest"
   | "selectUnderCursor"
   | "land"
+  | "cycleStellars"
   | "jump"
   | "hyperSelect"
   | "cycleJumpDest"
@@ -75,7 +76,8 @@ export const ACTIONS: ActionDef[] = [
   { id: "cycleTargets", label: "Cycle targets" },
   { id: "targetClosest", label: "Target nearest hostile" },
   { id: "selectUnderCursor", label: "Select item under cursor" },
-  { id: "land", label: "Target / land / dock" },
+  { id: "land", label: "Land / dock" },
+  { id: "cycleStellars", label: "Cycle planets / stations" },
   { id: "jump", label: "Hyperspace jump" },
   { id: "hyperSelect", label: "Display mini map" },
   { id: "cycleJumpDest", label: "Select jump destination" },
@@ -133,6 +135,7 @@ const CLASSIC_BINDINGS: Record<ActionId, Chord> = {
   targetClosest: { code: "KeyR" },
   selectUnderCursor: { code: "Mouse0" },
   land: { code: "KeyL" },
+  cycleStellars: { code: "Semicolon" },
   jump: { code: "KeyJ" },
   hyperSelect: { code: "KeyH" },
   cycleJumpDest: { code: "Backslash" },
@@ -172,6 +175,7 @@ const STARSECTOR_BINDINGS: Record<ActionId, Chord> = {
   targetClosest: { code: "KeyR" },
   selectUnderCursor: { code: "KeyE" },
   land: { code: "KeyL" },
+  cycleStellars: { code: "Semicolon" },
   jump: { code: "KeyZ" },
   hyperSelect: { code: "KeyH" },
   cycleJumpDest: { code: "KeyG" },
@@ -459,6 +463,8 @@ export function formatCode(code: string): string {
 
 export function formatChord(c: Chord): string {
   if (isUnbound(c)) return "—";
+  // Shift+; is ":" on a US keyboard — show the glyph rather than Shift-;
+  if (c.code === "Semicolon" && c.shift && !c.alt && !c.ctrl) return ":";
   const parts: string[] = [];
   if (c.ctrl) parts.push("Ctrl");
   if (c.alt) parts.push("Opt");
@@ -470,6 +476,7 @@ export function formatChord(c: Chord): string {
 /** Compact label for the HUD hint strip. */
 export function formatChordShort(c: Chord): string {
   if (isUnbound(c)) return "";
+  if (c.code === "Semicolon" && c.shift && !c.alt && !c.ctrl) return ":";
   const parts: string[] = [];
   if (c.ctrl) parts.push("⌃");
   if (c.alt) parts.push("⌥");

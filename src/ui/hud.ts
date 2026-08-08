@@ -420,6 +420,9 @@ export class HudUi {
         : "Navigation";
     const value = dest ?? g.targetPlanet?.name ?? "Offline";
     this.navBox.classList.toggle("off", !dest && !g.targetPlanet);
+    // Course set but the no-jump well is still holding you — dim the address
+    // so the HUD shows why J is not engaging.
+    this.navBox.classList.toggle("nojump", !!(dest && g.inNoJumpZone));
     setText(this.navKind, kind);
     setText(this.navValue, value);
   }
@@ -576,20 +579,21 @@ export class HudUi {
     const b = (id: Parameters<typeof getBinding>[0]) =>
       formatChordShort(getBinding(id));
     const fly = `${b("accelerate")}${b("reverse")}${b("turnLeft")}${b("turnRight")} fly`;
+    // Eight pairs — the key-hints well has sixteen slots and no more.
     const keys: [string, string][] = [
       [fly, g.afterburnerFuel > 0 ? `${b("afterburner")} burn` : ""],
       [`${b("aimAssist")} aim`, `${b("firePrimary")} fire`],
       [`${b("cycleTargets")} target`, `${b("targetClosest")} hostile`],
       [`${b("hail")} hail`, `${b("board")} board`],
+      [`${b("land")} land`, `${b("cycleStellars")} body`],
       [
-        `${b("land")} land`,
         g.cloakBits > 0
           ? `${b("cloak")} cloak`
           : `${b("recallFighters")} recall`,
+        `${b("jump")} jump`,
       ],
-      [`${b("jump")} jump`, `${b("hyperSelect")} map`],
-      [`${b("map")} map`, `${b("selectSecondary")} select`],
-      ["Esc menu", "Caps 2×"],
+      [`${b("hyperSelect")} peek`, `${b("map")} map`],
+      [`${b("selectSecondary")} select`, "Esc menu"],
     ];
     const html = keys
       .map(([a, b]) => `<span>${a}</span><span>${b}</span>`)

@@ -462,6 +462,8 @@ export class Game {
 
   route: string[] = []; // system ids to traverse, in order
   routeDest: string | null = null;
+  /** Prior frame's no-jump zone state — edge-detect clear-for-jump (snd 154). */
+  private wasInNoJumpZone = false;
   weaponSlots: WeaponSlot[] = [];
   /** afterburner fuel burn (units/sec); 0 when none is fitted */
   private afterburnerBurn = 0;
@@ -1697,6 +1699,16 @@ export class Game {
     }
 
     /*
+     * Leaving the gravity well with a course already plotted: the HUD address
+     * goes full opacity and we chirp 154 so you know J will take now.
+     */
+    const inWell = this.insideNoJumpZone();
+    if (this.route.length > 0 && this.wasInNoJumpZone && !inWell) {
+      playSnd(SND.DENY, 0.45); // 154
+    }
+    this.wasInNoJumpZone = inWell;
+
+    /*
      * Gate enter flash: hull bleaches white on the pad, then transit. Controls
      * are locked so you stay centred on the ring.
      */
@@ -1822,6 +1834,7 @@ export class Game {
 
       // Bound in Preferences; defaults match Nova with arrow-key flight.
       if (actionConsume(this.input, "land")) this.selectOrLand();
+      if (actionConsume(this.input, "cycleStellars")) this.cycleStellars();
       /*
        * Jump engages the hyperdrive. A press reports why it cannot (no course,
        * gravity well, fuel). Holding keeps trying quietly so you can:
@@ -5559,35 +5572,66 @@ export class Game {
     this.message(`Jettisoned ${dumped}t of ${cargoLabel(commodityId)}.`);
   }
 
+  /**
+   * Land binding: lock the nearest stellar if nothing is targeted, otherwise
+   * keep trying to land on the current target (range/speed messages only —
+   * never steps to another world). Cycle planets with cycleStellars (":").
+   */
   private selectOrLand(): void {
-    const landables = this.system.planets;
-    if (landables.length === 0) {
+    const stellars = this.system.planets;
+    if (stellars.length === 0) {
       this.message("There is nothing to land on in this system.");
       return;
     }
-    if (this.targetPlanet) {
-      const near = Math.hypot(
-        this.targetPlanet.pos.x - this.ship.pos.x,
-        this.targetPlanet.pos.y - this.ship.pos.y,
+    if (!this.targetPlanet) {
+      const byDist = [...stellars].sort(
+        (a, b) =>
+          Math.hypot(a.pos.x - this.ship.pos.x, a.pos.y - this.ship.pos.y) -
+          Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
       );
-      if (near <= this.targetPlanet.radius * LAND_DIST + 60) {
-        this.tryLand(this.targetPlanet);
-        return;
-      }
+      this.setTargetPlanet(byDist[0]!);
+      return;
     }
-    // cycle by distance, nearest first
-    const byDist = [...landables].sort(
-      (a, b) =>
-        Math.hypot(a.pos.x - this.ship.pos.x, a.pos.y - this.ship.pos.y) -
-        Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
-    );
+    this.tryLand(this.targetPlanet);
+  }
+
+
+  /**
+   * Cycle planets / stations / gates by distance from the ship (nearest first).
+   * After the last body, clears the lock (nothing selected), then starts over.
+   * Separate from Land so L only docks the locked stellar.
+   */
+  private cycleStellars(): void {
+    const byDist = this.system.planets
+      .filter((el) => !el.isWormhole)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.pos.x - this.ship.pos.x, a.pos.y - this.ship.pos.y) -
+          Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
+      );
+    if (byDist.length === 0) {
+      this.message("There is nothing to target in this system.");
+      return;
+    }
+    /*
+     * Same pattern as cycleTarget: A → B → … → last → none → A …
+     * so you can deselect a stellar without a separate key.
+     */
     const idx = this.targetPlanet ? byDist.indexOf(this.targetPlanet) : -1;
-    this.setTargetPlanet(byDist[(idx + 1) % byDist.length]);
+    if (idx < 0) {
+      this.setTargetPlanet(byDist[0]!);
+    } else if (idx >= byDist.length - 1) {
+      this.setTargetPlanet(null);
+    } else {
+      this.setTargetPlanet(byDist[idx + 1]!);
+    }
   }
 
   /**
    * Target a stellar. Selecting a working hypergate starts its open sequence;
    * landing (when close and slow) is what opens the destination chart.
+   * Focus cue: snd 151 when you can land (or use a working gate/wormhole),
+   * snd 153 when clearance is refused or the stellar is unusable.
    */
   private setTargetPlanet(planet: PlanetDef | null): void {
     const prev = this.targetPlanet;
@@ -5612,6 +5656,22 @@ export class Game {
       ),
     );
     this.message(`Target: ${planet.name} (${dist} away).`);
+    playSnd(
+      this.canLandOn(planet) ? SND.BEEP2 : SND.LANDING_DENIED,
+      0.45,
+    );
+  }
+
+  /**
+   * Whether targeting this stellar should sound as landable (151) rather than
+   * denied (153). Mirrors tryLand's clearance rules, not range or speed.
+   */
+  private canLandOn(planet: PlanetDef): boolean {
+    const isGate = planet.isHypergate || planet.isWormhole;
+    if (isGate) return this.gateIsWorking(planet);
+    if (!planet.landable) return false;
+    if (this.hasActiveMissionToPlanet(planet.id)) return true;
+    return this.clearedToLand(planet, this.system.govtId);
   }
 
   private tryLand(chosen?: PlanetDef): void {
@@ -5799,6 +5859,8 @@ export class Game {
     this.message(
       `Course set for ${dest.name}: ${route.length} jump${route.length === 1 ? "" : "s"}.`,
     );
+    // snd 152 — select-jump / course lock (same family as target select)
+    playSnd(SND.TARGET, 0.45);
   }
 
   /**
@@ -5817,6 +5879,11 @@ export class Game {
 
   private insideNoJumpZone(): boolean {
     return Math.hypot(this.ship.pos.x, this.ship.pos.y) < this.noJumpRadius;
+  }
+
+  /** HUD: dim the hyperspace address while the well is blocking the jump. */
+  get inNoJumpZone(): boolean {
+    return this.insideNoJumpZone();
   }
 
   /**
@@ -5862,7 +5929,7 @@ export class Game {
         this.message(
           `No hyperspace course set. Press ${formatChord(getBinding("cycleJumpDest"))} to pick a neighbour, or ${formatChord(getBinding("map"))} for the map.`,
         );
-        playSnd(SND.DENY, 0.5);
+        playSnd(SND.DENY, 0.5); // 154 — no course
       }
       return;
     }
@@ -5871,15 +5938,14 @@ export class Game {
         this.message(
           "Too deep in the system's gravity well to jump. Head for open space.",
         );
-        // Beep1 — gravity-well cue (Beep3 = target select, Beep5 = other denies)
-        playSnd(SND.NO_JUMP, 0.55);
+        playSnd(SND.NO_JUMP, 0.55); // 153 — gravity well
       }
       return;
     }
     if (this.player.fuelJumps < 1) {
       if (!quiet) {
         this.message("Not enough hyperdrive fuel. Land somewhere and refuel.");
-        playSnd(SND.DENY, 0.5);
+        playSnd(SND.DENY, 0.5); // 154
       }
       return;
     }
@@ -5888,7 +5954,7 @@ export class Game {
         this.message(
           "Your systems are ionized — the hyperdrive will not engage.",
         );
-        playSnd(SND.DENY, 0.5);
+        playSnd(SND.DENY, 0.5); // 154
       }
       return;
     }
@@ -7552,8 +7618,6 @@ export class Game {
     ctx.rect(bx, by, boxW, boxH);
     ctx.clip();
 
-    ctx.fillStyle = "rgba(4, 8, 16, 0.88)";
-    ctx.fillRect(bx, by, boxW, boxH);
 
     const here = this.system;
     // tight neighbourhood only: here + one-jump links. A long multi-hop plot
@@ -7728,26 +7792,6 @@ export class Game {
       ctx.strokeStyle = "rgba(120, 160, 210, 0.85)";
       ctx.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
     }
-
-    // small caption: next hop name
-    const nextName =
-      this.route.length > 0
-        ? (() => {
-            try {
-              return getSystem(this.route[0]).name;
-            } catch {
-              return null;
-            }
-          })()
-        : null;
-    ctx.font = "10px Helvetica, Arial, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(180, 200, 225, 0.9)";
-    ctx.fillText(
-      nextName ? `Next: ${nextName}` : "H · select destination",
-      bx + 8,
-      by + boxH - 8,
-    );
 
     ctx.restore(); // end alpha
   }
