@@ -159,6 +159,8 @@ export interface PlayerState {
   escortPayDay: number;
   /** set once the hull's stock weapons have been materialised as owned outfits */
   hullDefaults?: boolean;
+  /** saved nav destination — route is recomputed from current system on load */
+  routeDest?: string | null;
 }
 
 /**

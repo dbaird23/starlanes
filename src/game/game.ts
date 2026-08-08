@@ -31,7 +31,6 @@ import {
   landingGovtId,
   MIN_STATUS_NEVER,
   COMMODITIES,
-  CURSOR_SPRITE,
   INTERFACE,
   setInterfaceForGovt,
   UI_PICTS,
@@ -144,6 +143,7 @@ import {
   W3_AMMO_AT_BURST_END,
   W3_TRANSLUCENT,
   fireWeapon,
+  leadPoint,
   isBeam,
   isFighterBay,
   isPointDefense,
@@ -730,6 +730,13 @@ export class Game {
     this.ship.vel = { x: 0, y: 0 };
     this.route = [];
     this.routeDest = null;
+    if (this.player.routeDest && this.player.routeDest !== this.player.systemId) {
+      const restored = findRoute(this.player.systemId, this.player.routeDest);
+      if (restored) {
+        this.route = restored;
+        this.routeDest = this.player.routeDest;
+      }
+    }
     this.jump = null;
     stopSustained(JUMP_SND_KEY); // a pilot switch mid-charge leaves nothing humming
     this.projectiles = [];
@@ -1358,7 +1365,10 @@ export class Game {
   }
 
   private commitPilot(): void {
-    if (this.pilotId) savePilot(this.pilotId, this.player);
+    if (this.pilotId) {
+      this.player.routeDest = this.routeDest;
+      savePilot(this.pilotId, this.player);
+    }
   }
 
   /** Apply a ship class's real stats to the player's ship. */
@@ -3216,13 +3226,18 @@ export class Game {
         if (slot.weap.sndId && !slot.weap.sndLoop)
           playSnd(slot.weap.sndId, 0.35);
         // turrets swivel onto the selected target; everything else fires ahead
-        const aim =
-          isTurret(slot.weap) && this.targetNpc
-            ? Math.atan2(
-                this.targetNpc.pos.y - this.ship.pos.y,
-                this.targetNpc.pos.x - this.ship.pos.x,
-              )
-            : undefined;
+        let aim: number | undefined;
+        if (isTurret(slot.weap) && this.targetNpc) {
+          // beams are instant — aim at current position; projectiles lead
+          const aimPos =
+            isBeam(slot.weap)
+              ? this.targetNpc.pos
+              : leadPoint(this.ship, this.targetNpc, slot.weap.speed);
+          aim = Math.atan2(
+            aimPos.y - this.ship.pos.y,
+            aimPos.x - this.ship.pos.x,
+          );
+        }
         if (isBeam(slot.weap)) {
           this.fireBeam(this.ship, slot.weap, volley, true, aim);
         } else {
@@ -3791,7 +3806,7 @@ export class Game {
     let prey: Ship | null = null;
     let best = reach;
     for (const other of this.npcs) {
-      if (!other.hostile || other === npc) continue;
+      if (!other.hostile || other.disabled || other === npc) continue;
       const d = Math.hypot(other.pos.x - anchor.x, other.pos.y - anchor.y);
       if (d < best) {
         best = d;
@@ -7385,12 +7400,7 @@ export class Game {
     // Nova's own target cursor (spïn 650) rides the selected ship; a selected
     // world gets the four blue corner marks the original drew.
     if (this.targetNpc) {
-      this.drawReticle(
-        ctx,
-        this.targetNpc.pos.x,
-        this.targetNpc.pos.y,
-        this.targetNpc.radius,
-      );
+      this.drawNpcTargetMarks(ctx, this.targetNpc);
     }
     if (this.targetPlanet) {
       this.drawStellarMarks(
@@ -7536,6 +7546,50 @@ export class Game {
     ctx.restore();
   }
 
+  /**
+   * Corner-mark target indicator for NPC ships, matching the stellar-mark
+   * style but coloured by ship status:
+   *   disabled → gray   hostile → red   ally → yellow   neutral → white
+   */
+  private drawNpcTargetMarks(
+    ctx: CanvasRenderingContext2D,
+    npc: NpcShip,
+  ): void {
+    const { x, y } = npc.pos;
+    const r = npc.radius + 6;
+    const arm = 9;
+    const color = npc.ally
+      ? "#40c060"
+      : npc.disabled
+        ? "#909090"
+        : npc.hostile
+          ? "#e04040"
+          : "#e0c040";
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as const) {
+      const cx = x + sx * r;
+      const cy = y + sy * r;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + sy * -arm);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + sx * -arm, cy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + sx * -arm * 0.55, cy + sy * -arm * 0.55);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   /** The four blue corner marks EV Nova draws around a selected stellar. */
   private drawStellarMarks(
     ctx: CanvasRenderingContext2D,
@@ -7569,38 +7623,6 @@ export class Game {
       ctx.stroke();
     }
     ctx.restore();
-  }
-
-  /** Nova's target cursor (spïn 650), animated and centred on the target. */
-  /**
-   * Nova's target cursor (spïn 650) is a 23px crosshair whose arrowheads sit on
-   * the edges of its own frame — drawn at native size it disappears into
-   * anything bigger than a shuttle, which is what a Pirate Enterprise did to
-   * it. Scaling it to the target's own radius puts the arrowheads back on the
-   * hull's edge where they read as a lock, whatever you have selected.
-   */
-  private drawReticle(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    radius: number,
-  ): void {
-    const sheet = CURSOR_SPRITE;
-    if (!sheet) return;
-    // Scaled to the hull so it frames the target, but capped: blown up to a
-    // capital ship's full width the crosshair's arrowheads turn into slabs of
-    // red that hide the thing you're aiming at.
-    const scale = Math.max(1, Math.min(3, (radius * 2 + 20) / sheet.w));
-    ctx.globalAlpha = 0.9;
-    drawSheetFrame(
-      ctx,
-      sheet,
-      Math.floor(this.time * 12) % sheet.frames,
-      x,
-      y,
-      scale,
-    );
-    ctx.globalAlpha = 1;
   }
 
   private drawShip(

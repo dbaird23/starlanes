@@ -683,6 +683,48 @@ function takeMounts(shooter: Ship, weapId: string, n: number): number {
   return at;
 }
 
+/**
+ * Compute where to aim a projectile weapon so it intercepts a moving target.
+ * Solves the quadratic: at time t, shooter fires at speed `projSpeed` and the
+ * target has moved by t × target.vel. Relative velocities are used so the
+ * shooter's own drift is factored in automatically.
+ *
+ * Falls back to the target's current position when no real solution exists
+ * (target moving faster than the projectile away from the shooter).
+ */
+export function leadPoint(
+  shooter: Ship,
+  target: Ship,
+  projSpeed: number,
+): { x: number; y: number } {
+  const dx = target.pos.x - shooter.pos.x;
+  const dy = target.pos.y - shooter.pos.y;
+  // relative velocity of target in the shooter's frame
+  const rvx = target.vel.x - shooter.vel.x;
+  const rvy = target.vel.y - shooter.vel.y;
+  // |d + t·rv|² = (projSpeed·t)²  →  at² + bt + c = 0
+  const a = rvx * rvx + rvy * rvy - projSpeed * projSpeed;
+  const b = 2 * (dx * rvx + dy * rvy);
+  const c = dx * dx + dy * dy;
+  let t: number;
+  if (Math.abs(a) < 1e-4) {
+    // degenerate: same closing speed as projectile, solve linearly
+    t = b !== 0 ? -c / b : 0;
+  } else {
+    const disc = b * b - 4 * a * c;
+    if (disc < 0) return { x: target.pos.x, y: target.pos.y };
+    const sq = Math.sqrt(disc);
+    const t1 = (-b - sq) / (2 * a);
+    const t2 = (-b + sq) / (2 * a);
+    t = t1 > 0 && t2 > 0 ? Math.min(t1, t2) : Math.max(t1, t2);
+  }
+  if (t <= 0) return { x: target.pos.x, y: target.pos.y };
+  return {
+    x: target.pos.x + target.vel.x * t,
+    y: target.pos.y + target.vel.y * t,
+  };
+}
+
 /** Spawn projectiles for one shot of a weapon from a ship. */
 export function fireWeapon(
   shooter: Ship,
