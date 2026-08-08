@@ -23,6 +23,46 @@ airlock/     where every run starts and ends
 damage/      breaches and scorching — why she is dead
 ```
 
+## Files
+
+All resized on commit — square assets to 1024, perspective reference to 1280
+wide. The whole folder is ~25 MB; images do not delta, so resize *before*
+committing a replacement rather than after.
+
+```
+corridors/corridor-lit.png        the reference look, powered
+corridors/corridor-dark.png       the same corridor dead — the resting state
+materials/wall-main.png           main bulkhead tile
+materials/wall-grimy.png          the same wall, unlit and oxidised
+materials/trim-light-channel.png  angled trim with a recessed light channel
+materials/deck-plate.png          diamond tread with a worn walkway
+materials/door-face.png           armoured door face, hazard band
+panels/breaker-dead.png           the switch, unpowered
+panels/breaker-live.png           the switch, powered — pixel-aligned with the above
+panels/locker-closed.png          loot, closed
+panels/locker-open.png            loot, open
+doors/bulkhead.png                what every sightline terminates on
+rooms/compartment.png             equipment compartment
+rooms/reactor.png                 two-deck reactor space
+rooms/bridge.png                  bridge with forward viewport
+props/crates.png                  cargo containers
+props/consoles.png                console, terminal, opened access panel
+props/conduit.png                 cabling, pipe, gas cylinder
+```
+
+### The breaker pair is a free emissive map
+
+`breaker-dead.png` and `breaker-live.png` are the same 1024x1024 render with
+identical framing and identical lighting — only the glowing elements differ.
+Subtracting dead from live yields a clean emissive layer (gauges, breaker
+slots, label strips, dials, lamps; 5.5% of the frame, everything else black).
+
+So the implementation of the reveal is: the dead image is the wall texture, the
+difference is an additive layer, and throwing the switch fades one over the
+other through the compositing path `raycast.ts` already has for explosions.
+**Any future panel pair must keep this property** — same framing, same
+lighting, only the emission changes.
+
 ## The spec, read off the first two corridor references
 
 Two images: a white greebled industrial corridor, and a navy one lit with cyan
@@ -94,27 +134,13 @@ not for the resting state.
 
 ## Still wanted
 
-- **Panels, in both states.** The whole game is walking up to one and holding a
-  key, so this is the most-looked-at object in the build and the dead-to-live
-  transition is the reward. Breaker, terminal, locker closed, locker open —
-  each unpowered and each lit.
 - **The airlock interior.** First and last thing seen every run.
 - **A breach.** Nothing else so far explains why the ship is dead, and a torn
   hull with starfield through it says it with no writing at all.
-- **Material close-ups.** Flat-on, filling the frame, evenly lit. There are none
-  yet, and perspective corridor shots cannot be cut into tiles — a tile with
-  perspective baked into it fights the perspective the renderer is drawing.
-  Four or five distinct materials covers a whole ship.
-- **A room that is not a corridor.** Both references are corridors; the deck
-  needs compartments, a reactor space and a bridge.
-- **A door or bulkhead, straight on.** Point 6 makes this load-bearing.
-- **Props.** Crates, consoles, conduit, spilled cargo — the second-biggest lever
-  against the boxy read after geometry.
-- **A dark or powered-down interior**, ideally as a matched pair with the same
-  corridor lit — that pair *is* the reveal when a panel comes up, and it shows
-  how much work the light is doing.
 - **Lower priority, only for capital hulls:** an air canister in a wall bracket,
   and a vertical ladder through a deck hatch.
+- **Later, if a second ship class is wanted:** the same set again in the navy
+  palette. The structure would not change, only the material.
 
 ## Audio needs nothing
 
