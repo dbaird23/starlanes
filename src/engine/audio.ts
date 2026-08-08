@@ -579,17 +579,20 @@ let sustainToken = 0;
  * Start a sustained sound under `key`, replacing whatever was there. Fades in
  * and out, because a four-second ambience or a beam hum that snaps on and off
  * at full amplitude clicks audibly.
+ * `playbackRate` > 1 shortens and pitches up (fast-jump warp spool); default 1.
  */
 export function startSustained(
   key: string,
   sndId: number,
   loop: boolean,
   volume: number,
+  playbackRate = 1,
 ): void {
   // already playing this, or still fetching it — asking again must not restart it
   if (sustained.get(key)?.sndId === sndId) return;
   stopSustained(key);
   const token = ++sustainToken;
+  const rate = Math.max(0.25, Math.min(4, playbackRate));
   const ac = audioCtx();
   if (!ac || missing.has(sndId)) return;
   // claim the slot before the fetch, so the next frame sees it and stays quiet
@@ -604,6 +607,7 @@ export function startSustained(
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.loop = loop;
+    src.playbackRate.value = rate;
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.12);
@@ -621,6 +625,15 @@ export function startSustained(
     void fetchSnd(sndId).then((buf) =>
       buf ? start(buf) : sustained.delete(key),
     );
+}
+
+/**
+ * Duration of a loaded snd buffer in seconds, or `fallback` if not yet warm.
+ * Used to size the hyperspace burn to the warp-up sample.
+ */
+export function sndDuration(sndId: number, fallback: number): number {
+  const d = buffers.get(sndId)?.duration;
+  return d && d > 0 ? d : fallback;
 }
 
 export function stopSustained(key: string): void {

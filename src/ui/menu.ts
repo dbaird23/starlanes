@@ -314,6 +314,33 @@ export class MainMenu {
         e.preventDefault();
         modal.classList.add("hidden");
         playMenuClose();
+        return;
+      }
+      // Keyboard nav for the Open Pilot list.
+      if (modal.querySelector(".pilot-list")) {
+        const pilots = listPilots();
+        if (pilots.length > 0) {
+          const idx = pilots.findIndex((p) => p.id === this.selected);
+          if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+            e.preventDefault();
+            const next =
+              e.code === "ArrowUp"
+                ? Math.max(0, idx - 1)
+                : Math.min(pilots.length - 1, idx + 1);
+            this.selected = pilots[next].id;
+            this.render();
+            this.openPilot();
+            return;
+          }
+          if (e.code === "Enter" || e.code === "NumpadEnter") {
+            e.preventDefault();
+            if (this.selected && !isPilotDead(this.selected)) {
+              this.hide();
+              this.handlers.loadPilot(this.selected);
+            }
+            return;
+          }
+        }
       }
       return;
     }

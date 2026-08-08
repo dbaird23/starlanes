@@ -1,5 +1,6 @@
 import {
   COMMODITIES,
+  GOVT_COMM_NAMES,
   INTERFACE,
   SHIPS,
   STR_LISTS,
@@ -480,13 +481,17 @@ export class HudUi {
     const tone = t.hostile ? "hostile" : t.personId !== null ? "named" : "";
     const status = t.disabled
       ? "Disabled"
-      : `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`;
+      : t.shield >= t.maxShield * 0.01 || !t.maxShield
+        ? `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`
+        : `Armor ${Math.round(100 * (t.maxArmor ? t.armor / t.maxArmor : 0))}%`;
     const affil =
       t.disabled && t.boarded
         ? "Plundered"
         : t.disabled
           ? "Derelict"
-          : g.govtLabel(t.govtId);
+          : t.govtId >= 128
+            ? (GOVT_COMM_NAMES[String(t.govtId)] || g.govtLabel(t.govtId))
+            : "Independent";
 
     setHtml(
       this.target,

@@ -84,7 +84,7 @@ export class Ship {
   }
 
   rechargeShields(dt: number): void {
-    if (this.shield < this.maxShield) {
+    if (!this.disabled && this.shield < this.maxShield) {
       this.shield = Math.min(
         this.maxShield,
         this.shield + this.shieldRechPerSec * dt,
@@ -326,6 +326,14 @@ export class NpcShip extends Ship {
   personId: number | null = null;
   /** already plundered — you only get the cargo once */
   boarded = false;
+  /** the ship that most recently dealt damage to this one — focus target */
+  lastAttacker: Ship | null = null;
+  /**
+   * Accumulated stray damage from the player when this ship is not targeted.
+   * Compared against a reputation-scaled tolerance to decide whether to turn
+   * hostile — friendly governments ignore more friendly fire than hostile ones.
+   */
+  strayDamage = 0;
   /** credits aboard, for boarding */
   booty = 0;
   bootyFlags = 0;

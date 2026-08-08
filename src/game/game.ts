@@ -117,6 +117,7 @@ import {
   preloadSnds,
   setVolume,
   SND,
+  sndDuration,
   startSustained,
   stopSustained,
   toggleMuted,
@@ -200,23 +201,32 @@ type Mode = "menu" | "flight" | "map" | "landed";
 
 /**
  * Hyperspace entry, as Nova plays it (and as the SDA notes spell out):
- *   1. brake — face retro and burn until nearly stopped, unless the hull or an
+ *   1. brake  — face retro and burn until nearly stopped, unless the hull or an
  *      outfit can "jump without slowing down" (shïp Flags2 0x0020 / oütf 37);
- *   2. turn  — point at the destination system on the map;
- *   3. burn  — accelerate well past cruise speed toward that heading, so you
+ *   2. turn   — point at the destination system on the map;
+ *   3. warm   — hold still while the warp-up sample spools (sound starts here);
+ *   4. burn   — accelerate well past cruise speed toward that heading, so you
  *      streak across the current system before the white flash and arrival.
- * shïp Flags 0x0001/2/4 scale the burn (75% / 125% / 150%); the Bible only
- * names those as "jumping speed", not the calendar travel-time ModType 22.
+ * Warm+burn wall time equals the warp sample (128 / 129), scaled by shïp
+ * Flags 0x0001/2/4 jumping speed which also pitches the sample.
  */
 interface JumpSequence {
-  phase: "braking" | "turning" | "burning";
+  phase: "braking" | "turning" | "warming" | "burning";
   /** map bearing of the destination system */
   targetAngle: number;
-  /** seconds left on the high-speed burn */
+  /** game-dt seconds left holding still while the drive spools */
+  warmLeft: number;
+  /** game-dt seconds left on the high-speed burn */
   burnLeft: number;
+  /** original burn length for white-out timing */
+  burnTotal: number;
   /** temporary maxSpeed / accel while burning into hyperspace */
   burnSpeed: number;
   burnAccel: number;
+  /** snd 128 (1× clock) or 129 (2× clock) */
+  warpSndId: number;
+  /** ship jump-speed mult — shortens spool and pitches the warp sample up */
+  playbackRate: number;
 }
 
 interface Message {
@@ -265,6 +275,13 @@ interface Mineral {
  */
 const MISSION_ARROW = "#e05a4a";
 const BRIEFING_ARROW = "#5ada54";
+
+/**
+ * Governments that board disabled ships rather than finishing them off.
+ * Pirates (137, 192), Houseless Warriors (170), Associated Guild of Free
+ * Traders / "Fr Trad" (169), Association of Free Traders / "Assoc" (176, 177).
+ */
+const BOARDER_GOVTS = new Set([137, 169, 170, 176, 177, 192]);
 
 const LAND_DIST = 2.4; // multiples of planet radius (from surface-ish)
 const LAND_SPEED = 130;
@@ -462,8 +479,8 @@ export class Game {
 
   route: string[] = []; // system ids to traverse, in order
   routeDest: string | null = null;
-  /** Prior frame's no-jump zone state — edge-detect clear-for-jump (snd 154). */
-  private wasInNoJumpZone = false;
+  /** Prior frame's jump-possible state — edge-detect ready-to-jump (snd 154). */
+  private wasJumpPossible = false;
   weaponSlots: WeaponSlot[] = [];
   /** afterburner fuel burn (units/sec); 0 when none is fitted */
   private afterburnerBurn = 0;
@@ -536,6 +553,8 @@ export class Game {
     x: number;
     y: number;
     nextFx: number;
+    /** seconds to wait after explosion before resolving (non-pod only) */
+    waitLeft: number;
   } | null = null;
 
   private messages: Message[] = [];
@@ -1324,6 +1343,20 @@ export class Game {
    * switch, or closing the tab discards it. Strict death only marks the index
    * entry deceased.
    */
+  /**
+   * Strip all ship-specific outfits, keeping only those the pilot carries
+   * across hulls — licenses and other outfits flagged 0x0004 (persistent).
+   * Call this before switching to a new ship so the old loadout doesn't
+   * transfer.
+   */
+  private keepPilotOutfits(): void {
+    const kept: Record<string, number> = {};
+    for (const [id, n] of Object.entries(this.player.outfits)) {
+      if (((OUTFITS[id]?.flags ?? 0) & 0x0004) !== 0) kept[id] = n;
+    }
+    this.player.outfits = kept;
+  }
+
   private commitPilot(): void {
     if (this.pilotId) savePilot(this.pilotId, this.player);
   }
@@ -1492,6 +1525,7 @@ export class Game {
       };
     }
     this.player.credits -= price;
+    this.keepPilotOutfits();
     grantHullOutfits(shipId, this.player.outfits);
     this.applyShipType(shipId);
     this.player.fuelJumps = type.fuelJumps; // delivered fully fueled
@@ -1699,14 +1733,18 @@ export class Game {
     }
 
     /*
-     * Leaving the gravity well with a course already plotted: the HUD address
-     * goes full opacity and we chirp 154 so you know J will take now.
+     * Jump becomes possible (course set, outside the well, fuel ≥ 1): the HUD
+     * address goes full opacity and we chirp 154 so you know J will take now.
+     * Does not fire on mid-route arrivals (wasJumpPossible stays true across
+     * the jump) or when the tank is dry.
      */
     const inWell = this.insideNoJumpZone();
-    if (this.route.length > 0 && this.wasInNoJumpZone && !inWell) {
+    const jumpPossible =
+      this.route.length > 0 && !inWell && this.player.fuelJumps >= 1;
+    if (jumpPossible && !this.wasJumpPossible) {
       playSnd(SND.DENY, 0.45); // 154
     }
-    this.wasInNoJumpZone = inWell;
+    this.wasJumpPossible = jumpPossible;
 
     /*
      * Gate enter flash: hull bleaches white on the pad, then transit. Controls
@@ -2609,6 +2647,8 @@ export class Game {
       const keepOld = room && old !== prize;
       if (keepOld)
         this.player.escorts.push({ shipId: old, wage: 0, captured: true });
+      this.keepPilotOutfits();
+      grantHullOutfits(prize, this.player.outfits);
       this.applyShipType(prize);
       this.player.fuelJumps = this.player.maxFuelJumps;
       // the crew you left behind flies her off the pad beside you, so the
@@ -3478,7 +3518,8 @@ export class Game {
     if (fromPlayer) {
       const npc = hit.ship as NpcShip;
       if (this.npcs.includes(npc)) {
-        if (!npc.hostile) this.provoke(npc);
+        npc.lastAttacker = this.ship;
+        this.maybeProvoke(npc, weap.shieldDmg * shots + weap.armorDmg * shots);
         if (npc.destroyed) this.destroyNpc(npc, true);
       }
     } else if (hit.ship === this.ship && this.ship.destroyed) {
@@ -3519,9 +3560,12 @@ export class Game {
       if (this.ship.destroyed) this.playerDestroyed();
     } else {
       const victim = hit.ship as NpcShip;
-      if (victim.destroyed && this.npcs.includes(victim)) {
-        // credit only when your escort made the kill
-        this.destroyNpc(victim, npc.ally, npc.ally ? npc : null);
+      if (this.npcs.includes(victim)) {
+        victim.lastAttacker = npc;
+        if (victim.destroyed) {
+          // credit only when your escort made the kill
+          this.destroyNpc(victim, npc.ally, npc.ally ? npc : null);
+        }
       }
     }
   }
@@ -3871,11 +3915,35 @@ export class Game {
       npc.updateAi(dt);
       return;
     }
+    // If a non-player ship recently hit us, focus on them until they are gone.
+    const a = npc.lastAttacker;
+    if (a && a !== this.ship) {
+      const npcA = a as NpcShip;
+      if (this.npcs.includes(npcA) && !npcA.done) {
+        this.attackAi(npc, dt, npcA);
+        return;
+      }
+      npc.lastAttacker = null; // stale — fall back to player
+    }
     this.attackAi(npc, dt, this.ship);
   }
 
   /** System-govt warships hunt hostiles; otherwise they go about their business. */
   private updateWarshipAi(npc: NpcShip, dt: number): void {
+    // Prefer whoever most recently hit us over raw proximity.
+    const a = npc.lastAttacker;
+    if (a) {
+      const npcA = a as NpcShip;
+      const valid =
+        a === this.ship
+          ? !this.ship.disabled && !this.playerDeath
+          : this.npcs.includes(npcA) && !npcA.done;
+      if (valid) {
+        this.attackAi(npc, dt, a);
+        return;
+      }
+      npc.lastAttacker = null;
+    }
     let prey: Ship | null = null;
     let best = 1600;
     for (const other of this.npcs) {
@@ -3907,8 +3975,41 @@ export class Game {
       return;
     }
     if ((target as NpcShip).disabled) {
-      npc.updateAi(dt);
-      return;
+      if (BOARDER_GOVTS.has(npc.govtId)) {
+        // Approach and hold on the disabled ship to board it.
+        const dx = target.pos.x - npc.pos.x;
+        const dy = target.pos.y - npc.pos.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 80) {
+          const facing = npc.steerToward(dt, Math.atan2(dy, dx));
+          npc.update(dt, 0, facing && dist > 120);
+        } else {
+          npc.update(dt, 0, false);
+        }
+        return;
+      }
+      // Non-boarder hostile: prefer any non-disabled active threat within
+      // 1400px before finishing off the disabled ship. Beyond that threshold
+      // it is faster to destroy the sitting target first and then move on.
+      let activeTarget: Ship | null = null;
+      let bestDist = 1400;
+      for (const other of this.npcs) {
+        if (other === npc || other.disabled || other.done) continue;
+        if (!govtEnemy(npc.govtId, other.govtId)) continue;
+        const d = Math.hypot(
+          other.pos.x - npc.pos.x,
+          other.pos.y - npc.pos.y,
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          activeTarget = other;
+        }
+      }
+      if (activeTarget) {
+        this.attackAi(npc, dt, activeTarget);
+        return;
+      }
+      // No active threats nearby — fall through and destroy the disabled ship.
     }
     const dx = target.pos.x - npc.pos.x;
     const dy = target.pos.y - npc.pos.y;
@@ -4033,6 +4134,7 @@ export class Game {
           npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
         if (pathHitsCircle(x0, y0, p.x, p.y, npc.pos.x, npc.pos.y, r)) {
           npc.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
+          npc.lastAttacker = p.fromPlayer ? this.ship : (p.owner as Ship);
           if (p.weap.ionization > 0) {
             npc.ion = Math.min(npc.maxIon, npc.ion + p.weap.ionization);
           }
@@ -4042,7 +4144,7 @@ export class Game {
           if (p.weap.explodBoom !== null) {
             this.spawnExplosion(p.x, p.y, 1, p.weap.explodBoom);
           }
-          if (p.fromPlayer && !npc.hostile) this.provoke(npc);
+          if (p.fromPlayer) this.maybeProvoke(npc, p.weap.shieldDmg + p.weap.armorDmg);
           if (npc.destroyed) {
             const owner = p.fromPlayer ? null : (p.owner as NpcShip);
             this.destroyNpc(
@@ -4109,8 +4211,10 @@ export class Game {
         if (!this.projectileCanHitNpc(p, npc)) continue;
         const before = npc.armor + npc.shield;
         hurt(npc);
-        // a blast that catches a bystander provokes them the same as a direct hit
-        if (p.fromPlayer && npc.armor + npc.shield < before) this.provoke(npc);
+        if (npc.armor + npc.shield < before) {
+          npc.lastAttacker = p.fromPlayer ? this.ship : (p.owner as Ship);
+          if (p.fromPlayer) this.maybeProvoke(npc, p.weap.shieldDmg + p.weap.armorDmg);
+        }
         if (npc.destroyed) {
           const owner = p.fromPlayer ? null : (p.owner as NpcShip);
           this.destroyNpc(
@@ -4209,6 +4313,37 @@ export class Game {
         continue;
       if (govtEnemy(other.govtId, npc.govtId)) continue; // they were enemies anyway
       this.setNpcHostile(other);
+    }
+  }
+
+  /**
+   * Provoke an NPC hit by the player, respecting stray-fire tolerance.
+   *
+   * If the player has the NPC explicitly targeted, a single shot is enough —
+   * they know exactly what they're shooting at. Otherwise the shot is treated
+   * as stray fire: damage is accumulated against a tolerance band that scales
+   * with the player's reputation with that government.
+   *
+   *   tolerance = (maxShield + maxArmor) × fraction
+   *   fraction  = clamp(0.06 + record × 0.001, 0.01, 0.40)
+   *
+   * At record 0 the band is 6% of total HP — a handful of grazing hits before
+   * they turn. At record +200 (trusted ally) it's 26%, absorbing quite a bit
+   * of crossfire. At record −50 (already suspect) it's down to 1%, one solid
+   * hit and they're hostile.
+   */
+  private maybeProvoke(npc: NpcShip, damage: number): void {
+    if (npc.ally || npc.hostile) return;
+    if (npc === this.targetNpc) {
+      this.provoke(npc);
+      return;
+    }
+    const record = getRecord(this.player, npc.govtId);
+    const maxHp = npc.maxShield + npc.maxArmor;
+    const fraction = Math.max(0.01, Math.min(0.4, 0.06 + record * 0.001));
+    npc.strayDamage += damage;
+    if (npc.strayDamage >= maxHp * fraction) {
+      this.provoke(npc);
     }
   }
 
@@ -5002,6 +5137,7 @@ export class Game {
       t: 0,
       duration,
       withPod,
+      waitLeft: withPod ? 0 : 1.0,
       x: this.ship.pos.x,
       y: this.ship.pos.y,
       nextFx: 0,
@@ -5043,7 +5179,13 @@ export class Game {
       this.spawnExplosion(d.x + ox, d.y + oy, scale, kind, true);
     }
 
-    if (d.t >= d.duration) this.finishPlayerDeath();
+    if (d.t >= d.duration) {
+      if (d.waitLeft > 0) {
+        d.waitLeft -= dt;
+      } else {
+        this.finishPlayerDeath();
+      }
+    }
   }
 
   private finishPlayerDeath(): void {
@@ -5119,16 +5261,7 @@ export class Game {
     this.infoUi.close();
     this.plunderUi.close();
     this.mode = "menu";
-    if (wasStrict) {
-      if (id) markPilotDead(id);
-      alert(
-        `${name} died in the ${systemName} system.\n\nStrict mode: this pilot is deceased and cannot be flown again.`,
-      );
-    } else {
-      alert(
-        `${name} died in the ${systemName} system.\n\nOpen the pilot from the main menu to resume from when you last left a planet.`,
-      );
-    }
+    if (wasStrict && id) markPilotDead(id);
     // pilotId is null → menu clears the selected pilot ("no pilot loaded")
     this.onMenu?.();
   }
@@ -5881,9 +6014,9 @@ export class Game {
     return Math.hypot(this.ship.pos.x, this.ship.pos.y) < this.noJumpRadius;
   }
 
-  /** HUD: dim the hyperspace address while the well is blocking the jump. */
+  /** HUD: dim the hyperspace address while the jump is blocked (well or no fuel). */
   get inNoJumpZone(): boolean {
-    return this.insideNoJumpZone();
+    return this.insideNoJumpZone() || this.player.fuelJumps < 1;
   }
 
   /**
@@ -5929,7 +6062,6 @@ export class Game {
         this.message(
           `No hyperspace course set. Press ${formatChord(getBinding("cycleJumpDest"))} to pick a neighbour, or ${formatChord(getBinding("map"))} for the map.`,
         );
-        playSnd(SND.DENY, 0.5); // 154 — no course
       }
       return;
     }
@@ -5963,9 +6095,23 @@ export class Game {
     const dx = next.mapPos.x - cur.mapPos.x;
     const dy = next.mapPos.y - cur.mapPos.y;
     const mult = this.jumpSpeedMult();
-    // base burn is long enough to streak across a typical system; faster
-    // jumpers finish sooner and hit a higher top speed while they do
-    const burnLeft = 1.7 / mult;
+    /*
+     * Warp-up audio spans warm (hold still) + burn (streak). Stock shuttle
+     * (mult 1): full sample — snd 128 ~6.08s at 1×, snd 129 ~4.21s at 2×.
+     * Faster jumpers shorten both and pitch the sample up. Times are game-dt
+     * (main multiplies dt by timeScale) so wall time matches sample / mult.
+     */
+    const clock2x = this.timeScale > 1;
+    const warpSndId = clock2x ? SND.WARP_IN_BIG : SND.WARP_IN;
+    const sampleSec = sndDuration(warpSndId, clock2x ? 3 : 6);
+    const playbackRate = mult;
+    const wallTotal = sampleSec / mult;
+    // Hold still for a short spool before the streak — ~1.1s wall, or 22% of
+    // the sample if that is shorter (fast jumpers).
+    const wallWarm = Math.min(1.1, wallTotal * 0.22);
+    const wallBurn = Math.max(0.35, wallTotal - wallWarm);
+    const warmLeft = wallWarm * this.timeScale;
+    const burnLeft = wallBurn * this.timeScale;
     const cruise = this.ship.stats.maxSpeed;
     const burnSpeed = Math.max(cruise * 4.5, 950) * mult;
     const burnAccel = Math.max(this.ship.stats.accel * 3.5, 600) * mult;
@@ -5975,35 +6121,51 @@ export class Game {
     this.jump = {
       phase: skipBrake ? "turning" : "braking",
       targetAngle: Math.atan2(dy, dx),
+      warmLeft,
       burnLeft,
+      burnTotal: burnLeft,
       burnSpeed,
       burnAccel,
+      warpSndId,
+      playbackRate,
     };
-    // Warp-up audio waits until the burn phase — see beginJumpBurn().
     this.message(
       skipBrake
         ? `Autopilot engaged: jumping to ${next.name}.`
         : `Autopilot engaged: braking for jump to ${next.name}.`,
     );
+
   }
 
   /**
-   * Enter the high-speed hyperspace burn and start the spool-up sample.
-   * "Warp up" is held on a key so executeJump can cut it off; starting it
-   * earlier made the retro-brake sound like the drive was already firing.
+   * Aligned and stopped: start the warp-up sample and hold station while it
+   * spools. Motion begins only when warmLeft runs out (beginJumpBurn).
    */
+  private beginJumpWarm(): void {
+    const j = this.jump;
+    if (!j || j.phase === "warming" || j.phase === "burning") return;
+    j.phase = "warming";
+    this.ship.vel = { x: 0, y: 0 };
+    this.ship.thrusting = false;
+    stopSustained(JUMP_SND_KEY);
+    startSustained(
+      JUMP_SND_KEY,
+      j.warpSndId,
+      false,
+      0.5,
+      j.playbackRate,
+    );
+    this.message("Hyperdrive spooling up...");
+  }
+
+  /** Leave the warm hold and streak into the jump (sound already running). */
   private beginJumpBurn(): void {
     const j = this.jump;
     if (!j || j.phase === "burning") return;
     j.phase = "burning";
-    startSustained(JUMP_SND_KEY, SND.WARP_IN, false, 0.5);
     this.message("Hyperdrive engaged...");
   }
 
-  /**
-   * Drive one frame of the hyperspace entry sequence. The stick is locked for
-   * the whole run — matching Nova, once the drive is engaged you ride it out.
-   */
   /** Abort a hyperspace entry in progress (disabled hull, Esc to menu, …). */
   private cancelJumpSequence(): void {
     if (!this.jump) return;
@@ -6038,7 +6200,17 @@ export class Game {
       const facing = this.ship.steerToward(dt, j.targetAngle);
       // coast while the nose swings onto the jump heading
       this.ship.update(dt, 0, false);
-      if (facing) this.beginJumpBurn();
+      if (facing) this.beginJumpWarm();
+      return;
+    }
+
+    if (j.phase === "warming") {
+      // hold still — sound is already spooling
+      this.ship.vel = { x: 0, y: 0 };
+      this.ship.thrusting = false;
+      this.ship.steerToward(dt, j.targetAngle);
+      j.warmLeft -= dt;
+      if (j.warmLeft <= 0) this.beginJumpBurn();
       return;
     }
 
@@ -6053,9 +6225,13 @@ export class Game {
     this.ship.update(dt, 0, true);
     this.ship.stats = base;
     j.burnLeft -= dt;
-    // white-out builds in the last fraction of a second of the burn
-    if (j.burnLeft < 0.22) {
-      this.jumpFlash = Math.max(this.jumpFlash, (0.22 - j.burnLeft) / 0.22);
+    // white-out in the last ~12% of the burn (scales with slow/fast jumpers)
+    const flashWindow = Math.max(0.2, j.burnTotal * 0.12);
+    if (j.burnLeft < flashWindow) {
+      this.jumpFlash = Math.max(
+        this.jumpFlash,
+        (flashWindow - j.burnLeft) / flashWindow,
+      );
     }
     if (j.burnLeft <= 0) this.executeJump();
   }
@@ -6095,7 +6271,9 @@ export class Game {
     this.ship.vel = { x: -ux * sp, y: -uy * sp };
 
     this.jump = null;
-    stopSustained(JUMP_SND_KEY); // the spool-up ends when the drive fires
+    // Burn was timed to the warp-up sample; stop the slot (sample should be
+    // ending anyway). Cancel paths also use JUMP_SND_KEY.
+    stopSustained(JUMP_SND_KEY);
     this.jumpFlash = 0.5;
     /*
      * A system's Message names an entry in STR# 1000 — the message buoy text
