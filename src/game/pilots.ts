@@ -12,6 +12,11 @@ export interface PilotSummary {
   id: string;
   name: string;
   savedAt: number;
+  /**
+   * Strict-mode death: the pilot remains on the list (and can be deleted or
+   * exported at their last leave-planet save) but cannot be flown again.
+   */
+  dead?: boolean;
 }
 
 interface PilotIndex {
@@ -68,6 +73,24 @@ export function savePilot(id: string, state: PlayerState): void {
   }
 }
 
+/** True when a strict pilot has died and may not be continued. */
+export function isPilotDead(id: string): boolean {
+  return !!readIndex().pilots.find((p) => p.id === id)?.dead;
+}
+
+/**
+ * Mark a pilot deceased (strict death). Leaves their last leave-planet save on
+ * disk for export / posterity; Continue refuses them.
+ */
+export function markPilotDead(id: string): void {
+  const index = readIndex();
+  const entry = index.pilots.find((p) => p.id === id);
+  if (!entry || entry.dead) return;
+  entry.dead = true;
+  entry.savedAt = Date.now();
+  writeIndex(index);
+}
+
 /**
  * Fill in fields a save predates. Pilots are long-lived and the engine keeps
  * growing new state, so anything the game iterates over has to exist even in a
@@ -90,6 +113,8 @@ function backfill(p: PlayerState): PlayerState {
   p.tributeDay ??= 0;
   p.salaryDay ??= 0;
   p.escortPayDay ??= 0;
+  // Older saves only knew landedOn; use that pad as the lift-off reference.
+  p.lastPad ??= p.landedOn ?? null;
   // Hulls used to carry their stock weapons implicitly, which meant the
   // Shuttle's Light Blaster could be flown but never sold. They are owned
   // outfits now, so a pilot saved before that has to be handed the ones their
@@ -149,6 +174,7 @@ export function importPilot(json: string): { id: string; name: string } {
 
 /** Where/what a pilot is, for the menu list. */
 export function describePilot(id: string): string {
+  if (isPilotDead(id)) return "Deceased";
   const state = loadPilot(id);
   if (!state) return "new pilot";
   const ship = SHIPS[state.shipId]?.name.split(";")[0] ?? "ship";

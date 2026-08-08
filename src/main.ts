@@ -21,7 +21,7 @@ async function boot(): Promise<void> {
   const menu = new MainMenu({
     // Enter ship resumes a session paused with Esc when the same pilot is up.
     enterShip: (pilotId, strict) => game.enterShip(pilotId, strict),
-    // Open Pilot / New Pilot always load from disk (last port save).
+    // Open Pilot / New Pilot load from disk (last leave-planet save only).
     loadPilot: (pilotId, strict) => game.startPilot(pilotId, strict),
     onDeletePilot: (pilotId) => game.clearPausedSession(pilotId),
   });

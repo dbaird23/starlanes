@@ -116,6 +116,12 @@ export interface PlayerState {
   cargoCap: number;
   systemId: string;
   landedOn: string | null;
+  /**
+   * Last pad the pilot lifted off from (or landed on). Saved on leave so a
+   * reload spawns over that world in flight; `landedOn` is only set while
+   * actually docked in a live session.
+   */
+  lastPad: string | null;
   /** shïp resource ID of the player's current ship */
   shipId: string;
   /** owned outfits: oütf resource ID -> count */

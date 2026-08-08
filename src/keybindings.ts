@@ -619,6 +619,27 @@ export function actionConsume(input: Input, id: ActionId): boolean {
 }
 
 /**
+ * Whether a keyboard event matches an action binding (code + modifiers).
+ * Used by DOM UIs that run on keydown ahead of the flight Input frame —
+ * e.g. opening the mission log while landed.
+ */
+export function actionMatchesKeydown(
+  e: KeyboardEvent,
+  id: ActionId,
+): boolean {
+  const c = getBinding(id);
+  if (isUnbound(c)) return false;
+  if (!codesFor(c).includes(e.code)) return false;
+  // Synthetic mods from the event; same rules as modsMatch on Input.
+  const mods = {
+    altDown: e.altKey,
+    shiftDown: e.shiftKey,
+    ctrlDown: e.ctrlKey,
+  };
+  return modsMatch(mods, c);
+}
+
+/**
  * Cycle-targets also accepts Tab when the bound key is still Backquote
  * (Nova's dual classic binding). If the player rebinds cycleTargets away
  * from `, Tab is left free for the map's link cycle.

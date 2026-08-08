@@ -138,12 +138,18 @@ theirs within 3000px to your side and calls the system's ReinfFleet in on your
 behalf, and **0x0800** (20 of 31) is free repair/refuel, the rank-granted twin
 of gövt Flags2 0x0010 Roadside Assistance.
 
+**Pilot files are only written when you leave a planet** (`depart` /
+`commitPilot`). Shopping, combat, mission accepts, jumps, and everything else
+mutate the live RAM session only. Death, loading another pilot, or closing the
+tab discards that session; Open Pilot reloads the last leave-planet save.
+
 **Death is the end of the run, and the pod is a handle you pull.** Being
 destroyed used to charge 10% of your credits and have a tug haul you in, which
 is not a Nova rule at all. Dying now stops the game and returns to the main
-menu, and the pilot file is rolled back to `portSnapshot` — the state captured
-on landing — so you resume from your last time in port; strict play deletes the
-pilot instead.
+menu with **no pilot loaded** (and does not write the live session). Non-strict
+pilots can Continue from the last leave-planet save. Strict pilots are marked
+`dead` on the pilot list (Continue disabled; still exportable/deletable) rather
+than deleted.
 
 The escape pod does **not** fire by itself. oütf ModType 20 is "auto-eject
 (requires escape pod to work)" and outfit 187's own text says why it is worth
@@ -254,16 +260,17 @@ grids and the two-column spaceport) step the selection; Enter activates
 Accept / Buy / Hire / the focused port button. Covers spaceport, trade, BBS,
 shipyard (3-col), outfitter and hire hall (4-col), bar actions, and gamble
 racers. Hypergate destinations use the canvas map chooser (Tab cycles links;
-see hypergate note above). Letter shortcuts (B/N/T/S/O/I/R/L) and Esc-to-back
+see hypergate note above). Letter shortcuts (B/N/T/S/O/R/L) and Esc-to-back
 are unchanged. Keys the handler acts on must still call `game.swallowKey`.
 
 **Landing / mission dialogs** (`events`, `offer`): Enter fires the affirmative
 (`data-modal-default` — Accept / Continue); Esc fires the negative
 (`data-modal-cancel` — Refuse / Decline) or the sole Continue. The Bible never
 names these keys. Can't-refuse offers have no cancel; Esc must not Accept.
-I in flight opens `InfoUi`; I while landed opens the spaceport Mission Log
-(inert with no active missions) — do not route landed I through
-`openMissionInfo`.
+**Mission log is one panel.** The `missionInfo` keybinding (Classic **I**)
+opens `InfoUi` in flight **and** while landed — there is no spaceport Mission
+Log button or landed `"log"` view. Abort (when mïsn CanAbort allows) lives on
+that panel with a custom confirm overlay.
 
 **In-flight info panels (I / P / Alt-K) must not sit in the full-viewport
 force rule.** A PWA pass put `#info-ui`, `#hail-ui` and `#plunder-ui` under

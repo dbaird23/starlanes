@@ -25,8 +25,10 @@ import { ratingName } from "../game/reputation";
 import {
   createPilot,
   deletePilot,
+  describePilot,
   exportPilot,
   importPilot,
+  isPilotDead,
   listPilots,
   loadPilot,
 } from "../game/pilots";
@@ -251,17 +253,27 @@ export class MainMenu {
 
   /**
    * @param preferPilotId when Esc pauses a live run, keep that pilot selected
-   *   so Enter ship resumes it without hunting the list.
+   *   so Enter ship resumes it without hunting the list. Pass `null` after a
+   *   death so the panel reads "No pilot loaded".
    */
   show(preferPilotId?: string | null): void {
     this.root.classList.remove("hidden");
     playMusic();
     preloadCoreSnds();
     const pilots = listPilots();
-    if (preferPilotId && pilots.some((p) => p.id === preferPilotId)) {
+    if (preferPilotId === null) {
+      // Death (or any explicit unload): nothing selected on the title screen.
+      this.selected = null;
+    } else if (
+      preferPilotId &&
+      pilots.some((p) => p.id === preferPilotId && !p.dead)
+    ) {
       this.selected = preferPilotId;
-    } else if (!this.selected || !pilots.some((p) => p.id === this.selected)) {
-      this.selected = pilots[0]?.id ?? null;
+    } else if (
+      !this.selected ||
+      !pilots.some((p) => p.id === this.selected && !p.dead)
+    ) {
+      this.selected = pilots.find((p) => !p.dead)?.id ?? null;
     }
     this.revealDone = false;
     this.revealSfxPlayed = false;
@@ -577,9 +589,14 @@ export class MainMenu {
         this.newPilot();
         break;
       case "enter":
-        if (this.selected) {
+        if (this.selected && !isPilotDead(this.selected)) {
           this.hide();
           this.handlers.enterShip(this.selected);
+        } else if (this.selected && isPilotDead(this.selected)) {
+          this.notice(
+            "Pilot deceased",
+            "This pilot died in strict mode and cannot be flown again. Open Pilot to delete them, or start a new pilot.",
+          );
         } else {
           this.newPilot();
         }
@@ -596,7 +613,7 @@ export class MainMenu {
       case "quit":
         this.notice(
           "Quit Nova",
-          "There's no quitting a browser tab from inside it — close the tab when you're done. Your pilot is already saved.",
+          "There's no quitting a browser tab from inside it — close the tab when you're done. Progress is saved only when you leave a planet.",
         );
         break;
     }
@@ -658,21 +675,20 @@ export class MainMenu {
   private openPilot(): void {
     const pilots = listPilots();
     const rows = pilots
-      .map(
-        (
-          p,
-        ) => `<div class="pilot-row${p.id === this.selected ? " sel" : ""}" data-pick="${p.id}">
+      .map((p) => {
+        const dead = !!p.dead;
+        return `<div class="pilot-row${p.id === this.selected ? " sel" : ""}${dead ? " dead" : ""}" data-pick="${p.id}">
           <div class="pilot-info">
-            <div class="pilot-name">${p.name}</div>
-            <div class="pilot-desc">${describeShort(p.id)}</div>
+            <div class="pilot-name">${p.name}${dead ? " †" : ""}</div>
+            <div class="pilot-desc">${describePilot(p.id)}</div>
           </div>
           <div class="pilot-actions">
-            <button class="evbtn primary" data-start="${p.id}">Continue</button>
+            <button class="evbtn primary" data-start="${p.id}" ${dead ? "disabled title=\"This pilot is deceased\"" : ""}>Continue</button>
             <button class="evbtn" data-export="${p.id}">Export</button>
             <button class="evbtn" data-delete="${p.id}">Delete</button>
           </div>
-        </div>`,
-      )
+        </div>`;
+      })
       .join("");
 
     const m = this.modal(`
@@ -696,9 +712,11 @@ export class MainMenu {
     m.querySelectorAll<HTMLButtonElement>("[data-start]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        const id = btn.dataset.start!;
+        if (isPilotDead(id) || btn.disabled) return;
         this.hide();
-        // Explicit load — even the pilot you just paused restarts from its save.
-        this.handlers.loadPilot(btn.dataset.start!);
+        // Explicit load from the last leave-planet save (discards any paused RAM session).
+        this.handlers.loadPilot(id);
       });
     });
     m.querySelectorAll<HTMLButtonElement>("[data-export]").forEach((btn) => {
@@ -1127,15 +1145,4 @@ export class MainMenu {
   }
 }
 
-function describeShort(id: string): string {
-  const state = loadPilot(id);
-  if (!state) return "new pilot";
-  const ship = SHIPS[state.shipId]?.name.split(";")[0] ?? "ship";
-  let place: string;
-  try {
-    place = getSystem(state.systemId).name;
-  } catch {
-    place = "deep space";
-  }
-  return `${ship} · ${place} · ${state.credits.toLocaleString()} cr`;
-}
+

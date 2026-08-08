@@ -16,7 +16,7 @@ import {
   SHIPS,
   shipyardPict,
   shipInfoPict,
-  SPOB_INDEX,
+  WEAPONS,
 } from "../data/universe";
 import type { Game, GateDestination } from "../game/game";
 import {
@@ -35,7 +35,6 @@ import {
   testContext,
   type MissionEvent,
 } from "../game/missions";
-import { MISSIONS, WEAPONS, getSystem } from "../data/universe";
 import {
   playAmbient,
   playMenuClose,
@@ -51,11 +50,12 @@ import type {
 import { oopsPriceDelta, oopsesAt } from "../game/oops";
 import { evalTest } from "../game/bits";
 import { formatDate } from "../game/calendar";
+import { actionMatchesKeydown } from "../keybindings";
 
 /**
- * Spaceport keyboard shortcuts. M is already the star map, so the mission BBS
- * takes N; the rest are the first letter of the counter. R refuels and I opens
- * the mission log, both handled alongside these.
+ * Spaceport keyboard shortcuts. The star map uses the prefs `map` binding
+ * (Classic M), so the mission BBS takes N; the rest are the first letter of
+ * the counter. R refuels. Mission log is the missionInfo binding.
  */
 const PORT_KEYS: Record<string, View> = {
   KeyB: "bar",
@@ -63,15 +63,14 @@ const PORT_KEYS: Record<string, View> = {
   KeyT: "trade",
   KeyS: "shipyard",
   KeyO: "outfitter",
-  KeyI: "log",
 };
 
 /**
  * Screens Esc backs out of. Each one already carries its own Back button, so
- * Esc presses that rather than setting the view itself — the bar's button
- * knows to return to the spaceport, and any screen with a different notion of
- * "back" keeps it. The spaceport and a gate are not in here: Esc leaves the
- * planet from those, which is Nova's own behaviour and predates this.
+ * Esc presses that rather than setting the view itself — hire escorts / holovid
+ * / gamble return to the bar, and the bar returns to the spaceport. The
+ * spaceport and a gate are not in here: Esc leaves the planet from those,
+ * which is Nova's own behaviour and predates this.
  */
 const ESC_CLOSES = new Set<View>([
   "bar",
@@ -79,7 +78,9 @@ const ESC_CLOSES = new Set<View>([
   "trade",
   "outfitter",
   "shipyard",
-  "log",
+  "escorts",
+  "holovid",
+  "gamble",
 ]);
 
 /** The screens those keys work from: the counters, not the modal panels. */
@@ -90,7 +91,6 @@ const PORT_KEY_VIEWS = new Set<View>([
   "outfitter",
   "bar",
   "bbs",
-  "log",
   "escorts",
 ]);
 
@@ -110,7 +110,6 @@ type View =
   | "bar"
   | "bbs"
   | "offer"
-  | "log"
   | "events"
   | "gate"
   | "shipOffer"
@@ -144,14 +143,6 @@ const OUTF_HIDE_UNLESS_REQUIRE = 0x0100;
 const OUTF_SELL_ANYWHERE = 0x0800;
 const OUTF_SUPPRESS_EQUAL_WEIGHT = 0x1000;
 const OUTF_HIDE_UNLESS_AVAIL = 0x4000;
-
-function safeSystemName(systemId: string): string {
-  try {
-    return getSystem(systemId).name;
-  } catch {
-    return "parts unknown";
-  }
-}
 
 const BAR_LINES = [
   "The bar is loud tonight, full of dock workers arguing about freight rates.",
@@ -219,6 +210,67 @@ export class LandedUi {
       const typing = document.activeElement?.tagName === "INPUT";
       // anything this handler acts on must not reach the game loop as well
       const handled = (): void => this.game.swallowKey(e.code);
+      /*
+       * Mission log (I) is the shared InfoUi panel — not a landed counter.
+       * When it is up, Esc / I / Enter go there; every other key is blocked so
+       * port shortcuts cannot fire underneath. When it is closed, the
+       * missionInfo binding opens it from any counter (not over a focused
+       * text field).
+       */
+      if (this.game.infoOpen) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          handled();
+          this.game.escapeInfo();
+          return;
+        }
+        if (actionMatchesKeydown(e, "missionInfo")) {
+          e.preventDefault();
+          handled();
+          this.game.openMissionInfo();
+          return;
+        }
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          handled();
+          // abort confirm accepts Enter; otherwise inert
+          this.game.enterInfo();
+          return;
+        }
+        if (e.code === "KeyA" && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          handled();
+          this.game.abortInfo();
+          return;
+        }
+        if (e.code === "ArrowDown") {
+          e.preventDefault();
+          handled();
+          this.game.arrowInfo(1);
+          return;
+        }
+        if (e.code === "ArrowUp") {
+          e.preventDefault();
+          handled();
+          this.game.arrowInfo(-1);
+          return;
+        }
+        if (
+          e.code.startsWith("Key") ||
+          e.code.startsWith("Arrow") ||
+          e.code === "Tab"
+        ) {
+          e.preventDefault();
+          handled();
+        }
+        return;
+      }
+      if (!typing && actionMatchesKeydown(e, "missionInfo")) {
+        e.preventDefault();
+        handled();
+        this.game.openMissionInfo();
+        return;
+      }
       /*
        * Trade quantity dialog is modal over the exchange. Esc cancels; Enter
        * confirms even while the number field is focused. Other keys still
@@ -328,12 +380,28 @@ export class LandedUi {
         }
         return;
       }
+      // Mission BBS: A accepts the selected posting (Enter does not).
+      if (
+        this.planet &&
+        this.view === "bbs" &&
+        e.code === "KeyA" &&
+        !e.altKey &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        e.preventDefault();
+        handled();
+        const btn =
+          this.root.querySelector<HTMLButtonElement>("#btn-bbs-accept");
+        if (btn && !btn.disabled) btn.click();
+        return;
+      }
       /*
        * The spaceport's own keys. Nova lets you reach every counter from the
        * keyboard rather than the buttons, and these work from any of the port
        * screens, so you can go straight from the outfitter to the shipyard
-       * without stopping at the spaceport in between. M is the map, so the
-       * mission BBS takes N.
+       * without stopping at the spaceport in between. The map binding is
+       * owned by prefs (not a PORT_KEYS letter), so the mission BBS takes N.
        */
       if (this.planet && PORT_KEY_VIEWS.has(this.view)) {
         const target = PORT_KEYS[e.code];
@@ -351,9 +419,10 @@ export class LandedUi {
           return;
         }
       }
-      // M opens the map from a landed screen too, carrying the posting you
-      // are reading so you can see where it would send you
-      if (this.planet && e.code === "KeyM") {
+      // Map binding from prefs — same action as in flight. On the board or a
+      // mission offer, preview that job's destination.
+      if (this.planet && actionMatchesKeydown(e, "map")) {
+        e.preventDefault();
         handled();
         const sel =
           this.view === "offer"
@@ -541,7 +610,7 @@ export class LandedUi {
         // two columns of services — Up/Down move within a column, Left/Right
         // hop to the same slot on the other side
         const leftIds = ids.filter((id) =>
-          ["btn-bar", "btn-bbs", "btn-trade", "btn-log"].includes(id),
+          ["btn-bar", "btn-bbs", "btn-trade"].includes(id),
         );
         const rightIds = ids.filter((id) =>
           [
@@ -624,45 +693,22 @@ export class LandedUi {
     }
   }
 
-  /** Enter on the focused item — same as clicking Accept / Buy / the port button. */
+  /**
+   * Enter on the focused item. Spaceport / bar / gate act on the selection.
+   * Shop counters do not buy on Enter (B / S); the mission BBS does not
+   * accept on Enter (A does).
+   */
   private activateSelection(): boolean {
     switch (this.view) {
-      case "bbs": {
-        const btn =
-          this.root.querySelector<HTMLButtonElement>("#btn-bbs-accept");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
+      // BBS accept is A only — Enter must not take a job by accident.
+      case "bbs":
+      // Trade / outfitter / shipyard: never buy on Enter (use B / S).
+      case "trade":
+      case "outfitter":
+      case "shipyard":
         return false;
-      }
-      case "shipyard": {
-        const btn = this.root.querySelector<HTMLButtonElement>("#btn-buy-ship");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
-      case "outfitter": {
-        const btn =
-          this.root.querySelector<HTMLButtonElement>("#btn-buy-outfit");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
       case "escorts": {
         const btn = this.root.querySelector<HTMLButtonElement>("#btn-hire-sel");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
-      case "trade": {
-        const btn = this.root.querySelector<HTMLButtonElement>("#tc-buy");
         if (btn && !btn.disabled) {
           btn.click();
           return true;
@@ -808,8 +854,7 @@ export class LandedUi {
       (view === "trade" && !p.exchange) ||
       (view === "shipyard" && !p.shipyard) ||
       (view === "outfitter" && !p.outfitter) ||
-      (view === "bbs" && p.uninhabited) ||
-      (view === "log" && this.game.player.activeMissions.length === 0);
+      (view === "bbs" && p.uninhabited);
     if (missing) return;
     this.setView(view);
   }
@@ -826,6 +871,8 @@ export class LandedUi {
     }
     if (view === "spaceport") playMenuClose();
     else playMenuOpen();
+    // Opening the bar focuses Leave so Enter gets you out without an arrow hop.
+    if (view === "bar") this.selectedBar = "btn-back";
     this.view = view;
     this.render();
     this.maybeCounterOffer(view);
@@ -841,7 +888,6 @@ export class LandedUi {
 
     // mission processing happens the moment you land
     this.events = this.game.collectLandingEvents(planet.id);
-    this.game.save();
     this.offers.clear();
     this.bbsMissions = planet.uninhabited
       ? []
@@ -871,6 +917,8 @@ export class LandedUi {
       );
 
     this.view = this.events.length > 0 ? "events" : "spaceport";
+    // Fresh landings focus Leave so Enter gets you back in the air quickly.
+    this.selectedPort = "btn-depart";
     this.root.classList.remove("hidden");
     playMenuOpen();
     if (this.view === "spaceport") this.maybeSpaceportOffer();
@@ -1055,7 +1103,6 @@ export class LandedUi {
     else if (this.view === "bar") this.renderBar();
     else if (this.view === "bbs") this.renderBbs();
     else if (this.view === "offer") this.renderOffer();
-    else if (this.view === "log") this.renderLog();
     else if (this.view === "gate") this.renderGate();
     else if (this.view === "escorts") this.renderEscorts();
     else if (this.view === "holovid") this.renderHolovid();
@@ -1350,64 +1397,6 @@ export class LandedUi {
     }
   }
 
-  private renderLog(): void {
-    const g = this.game;
-    const rows = g.player.activeMissions
-      .map((a, i) => {
-        const m = MISSIONS[String(a.misnId)];
-        const dest = a.travelDone ? a.returnSpobId : a.travelSpobId;
-        const entry = dest ? SPOB_INDEX.get(dest) : null;
-        const destText = entry
-          ? `${entry.planet.name}, ${safeSystemName(entry.systemId)}`
-          : "wherever the job ends";
-        const daysLeft =
-          a.timeLimit > 0
-            ? `${Math.max(0, a.timeLimit - (g.player.date - a.acceptedDay))} days left`
-            : "";
-        /*
-         * QuickBrief is the dësc Nova shows when you ask a mission for its
-         * briefing — a one-line restatement of the job ("Take <CQ> tons of
-         * <CT> to <RST>") as against the full offer text in BriefText. 687 of
-         * the 791 missions carry one, and it is what belongs in the log.
-         */
-        const quick = m ? descText(m.quickBrief) : "";
-        const brief = quick
-          ? substituteTags(quick, m!, a, g.pilotName, g.rankTags())
-          : "";
-        return `<div class="ship-card">
-          <div class="ship-info">
-            <div class="ship-name">${a.name}</div>
-            ${brief ? `<div class="ship-brief">${escapeHtml(brief)}</div>` : ""}
-            <div class="ship-stats">Destination: ${destText}${a.cargoLoaded && a.cargoName ? ` · carrying ${a.cargoQty}t ${a.cargoName}` : ""}${daysLeft ? ` · ${daysLeft}` : ""}</div>
-          </div>
-          <div class="ship-buy">${m && m.canAbort ? `<button class="evbtn" data-abort="${i}">Abort</button>` : ""}</div>
-        </div>`;
-      })
-      .join("");
-    this.root.innerHTML = `
-      <div class="panel">
-        <h1>Mission Log</h1>
-        ${this.statusBar()}
-        <div class="ship-list">${rows || '<p class="desc">No active missions.</p>'}</div>
-        <div class="btnrow">
-          <button class="evbtn" id="btn-back">Back to Spaceport</button>
-        </div>
-      </div>`;
-    this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.setView("spaceport");
-    });
-    this.root.querySelectorAll("button[data-abort]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt((btn as HTMLButtonElement).dataset.abort!, 10);
-        const active = this.game.player.activeMissions[idx];
-        if (active && confirm(`Abort mission "${active.name}"?`)) {
-          this.game.abortMission(active);
-          this.render();
-        }
-      });
-    });
-  }
-
   /**
    * The hiring hall. Nova lets you take on escorts wherever there are pilots to
    * hire; the lot is drawn from the hulls this world's tech level supports, the
@@ -1598,7 +1587,7 @@ export class LandedUi {
       ["btn-back", btnLabel(0, "Leave")],
     ];
     if (!this.selectedBar || !barBtns.some(([id]) => id === this.selectedBar)) {
-      this.selectedBar = barBtns[0][0];
+      this.selectedBar = "btn-back";
     }
     const barBtnHtml = barBtns
       .map(
@@ -1843,9 +1832,6 @@ export class LandedUi {
       p.exchange
         ? portBtn("btn-trade", "Trade Center (T)", "Trade Center")
         : "",
-      g.player.activeMissions.length > 0
-        ? portBtn("btn-log", "Mission Log (I)", "Mission Log")
-        : "",
     ].join("");
     const right = [
       p.shipyard ? portBtn("btn-shipyard", "Shipyard (S)", "Shipyard") : "",
@@ -1872,7 +1858,9 @@ export class LandedUi {
     // keep arrow focus on a live button after refuel or when a service is missing
     const live = this.portButtonIds();
     if (!this.selectedPort || !live.includes(this.selectedPort)) {
-      this.selectedPort = live[0] ?? null;
+      this.selectedPort = live.includes("btn-depart")
+        ? "btn-depart"
+        : (live[0] ?? null);
       if (this.selectedPort) {
         this.root.querySelectorAll(".portbtn").forEach((b) => {
           b.classList.toggle("sel", b.id === this.selectedPort);
@@ -1895,9 +1883,6 @@ export class LandedUi {
     this.root
       .querySelector("#btn-bbs")
       ?.addEventListener("click", () => this.setView("bbs"));
-    this.root
-      .querySelector("#btn-log")
-      ?.addEventListener("click", () => this.setView("log"));
     this.root
       .querySelector("#btn-escorts")
       ?.addEventListener("click", () => this.setView("escorts"));
