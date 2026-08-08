@@ -15,9 +15,12 @@ ignored by git**. Use hyphens or underscores: `corridor-1.png`, `corridor_01.png
 ```
 corridors/   perspective shots that set proportion, rhythm and lighting
 materials/   flat, straight-on close-ups that get cut into wall tiles
+panels/      breakers, terminals and lockers — dead and live. The verb.
 props/       what's lying around: crates, consoles, conduit, cabling
 rooms/       spaces that are not corridors
 doors/       bulkheads and hatches — the view always terminates on one
+airlock/     where every run starts and ends
+damage/      breaches and scorching — why she is dead
 ```
 
 ## The spec, read off the first two corridor references
@@ -91,6 +94,13 @@ not for the resting state.
 
 ## Still wanted
 
+- **Panels, in both states.** The whole game is walking up to one and holding a
+  key, so this is the most-looked-at object in the build and the dead-to-live
+  transition is the reward. Breaker, terminal, locker closed, locker open —
+  each unpowered and each lit.
+- **The airlock interior.** First and last thing seen every run.
+- **A breach.** Nothing else so far explains why the ship is dead, and a torn
+  hull with starfield through it says it with no writing at all.
 - **Material close-ups.** Flat-on, filling the frame, evenly lit. There are none
   yet, and perspective corridor shots cannot be cut into tiles — a tile with
   perspective baked into it fights the perspective the renderer is drawing.
@@ -100,5 +110,17 @@ not for the resting state.
 - **A door or bulkhead, straight on.** Point 6 makes this load-bearing.
 - **Props.** Crates, consoles, conduit, spilled cargo — the second-biggest lever
   against the boxy read after geometry.
-- **A dark or powered-down interior**, if one exists. The resting state is most
-  of the run, and it is currently specified only by inference.
+- **A dark or powered-down interior**, ideally as a matched pair with the same
+  corridor lit — that pair *is* the reveal when a panel comes up, and it shows
+  how much work the light is doing.
+- **Lower priority, only for capital hulls:** an air canister in a wall bracket,
+  and a vertical ladder through a deck hatch.
+
+## Audio needs nothing
+
+Nova's own bank covers it: `snd-390` Airlock for doors, `snd-150..154` for
+interaction beeps, `snd-371` Klaxxon and `snd-370` Red Alert for the low-air
+warning, `snd-10034` "Rundown station" as room tone, and `snd-380`/`snd-381`
+Cloak Off/On — a 1.25s falling and rising energy swell that is very close to a
+panel powering down and up. Footsteps and breathing are the only gaps and are
+cheaper synthesised in Web Audio than shipped as files.
