@@ -9,7 +9,6 @@ import {
   targetPict,
 } from "../data/universe";
 import { asset } from "../asset";
-import { formatChordShort, getBinding } from "../keybindings";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
@@ -77,7 +76,7 @@ export const HUD_W = 192;
  */
 const PLATE_W = 481;
 /** x extent of every opening, in the art's pixels */
-const OPEN_X = 43;
+const OPEN_X = 30;
 const OPEN_R = 435;
 
 /**
@@ -100,8 +99,8 @@ const OPENINGS = {
   pri: [748, 799],
   sec: [842, 893],
   target: [936, 1220],
-  ledger: [1263, 1352],
-  hints: [1395, 1649],
+  spare: [1263, 1352], // old cargo/credits hole — repurposed TBD
+  ledger: [1395, 1649], 
 } as const satisfies Record<string, readonly [number, number]>;
 
 /**
@@ -147,11 +146,9 @@ export class HudUi {
   private weapSec!: HTMLElement;
   private target!: HTMLElement;
   private ledger!: HTMLElement;
-  private hints!: HTMLElement;
   private speedBadge!: HTMLElement;
 
   private ledgerRows: LedgerRow[] = [];
-  private lastHints = "";
   /** StatusBkgnd id the plate art is currently showing, so it loads once */
   private plateArtId = -1;
 
@@ -193,9 +190,9 @@ export class HudUi {
 
         <div class="hud-well hud-target" style="${boxStyle(OPENINGS.target)}"></div>
 
-        <div class="hud-well hud-ledger" style="${boxStyle(OPENINGS.ledger)}"></div>
+        <div class="hud-well hud-spare" style="${boxStyle(OPENINGS.spare)}"></div>
 
-        <div class="hud-well hud-hints" style="${boxStyle(OPENINGS.hints)}"></div>
+        <div class="hud-well hud-ledger" style="${boxStyle(OPENINGS.ledger)}"></div>
       </div>`;
 
     const q = <T extends HTMLElement>(sel: string) =>
@@ -211,7 +208,6 @@ export class HudUi {
     this.weapSec = q(".hud-weap-sec");
     this.target = q(".hud-target");
     this.ledger = q(".hud-ledger");
-    this.hints = q(".hud-hints");
     this.speedBadge = q(".speed-badge");
   }
 
@@ -263,7 +259,6 @@ export class HudUi {
     this.drawWeapons(g);
     this.drawTarget(g);
     this.drawLedger(g);
-    this.drawHints(g);
   }
 
   // ---------------- scanner ----------------
@@ -576,37 +571,6 @@ export class HudUi {
       const want = `hud-led-v ${cls}`.trim();
       if (row.value.className !== want) row.value.className = want;
     });
-  }
-
-  // ---------------- hints ----------------
-
-  private drawHints(g: Game): void {
-    const b = (id: Parameters<typeof getBinding>[0]) =>
-      formatChordShort(getBinding(id));
-    const fly = `${b("accelerate")}${b("reverse")}${b("turnLeft")}${b("turnRight")} fly`;
-    // Eight pairs — the key-hints well has sixteen slots and no more.
-    const keys: [string, string][] = [
-      [fly, g.afterburnerFuel > 0 ? `${b("afterburner")} burn` : ""],
-      [`${b("aimAssist")} aim`, `${b("firePrimary")} fire`],
-      [`${b("cycleTargets")} target`, `${b("targetClosest")} hostile`],
-      [`${b("hail")} hail`, `${b("board")} board`],
-      [`${b("land")} land`, `${b("cycleStellars")} body`],
-      [
-        g.cloakBits > 0
-          ? `${b("cloak")} cloak`
-          : `${b("recallFighters")} recall`,
-        `${b("jump")} jump`,
-      ],
-      [`${b("hyperSelect")} peek`, `${b("map")} map`],
-      [`${b("selectSecondary")} select`, "Esc menu"],
-    ];
-    const html = keys
-      .map(([a, b]) => `<span>${a}</span><span>${b}</span>`)
-      .join("");
-    if (html !== this.lastHints) {
-      this.lastHints = html;
-      this.hints.innerHTML = html;
-    }
   }
 }
 

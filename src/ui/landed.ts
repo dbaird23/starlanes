@@ -2474,17 +2474,12 @@ export class LandedUi {
       return dailyRoll(`${p.id}|o${id}|${outfitDay}`) * 100 < o.buyRandom;
     };
     /*
-     * The shelf is what this world trades plus everything you already carry.
-     * Owned items have to stay listed wherever you land — an item bought on
-     * its one special-tech world (the three Maps are techs 80/81/82) would
-     * otherwise vanish the moment you left, and no other screen shows what you
-     * own. Whether you can sell it here is a separate question: Flags 0x0800
-     * is "can be sold anywhere, regardless of tech level", so without it the
-     * counter only takes back what it stocks.
+     * The shelf is what this world trades. Items the player owns but that
+     * aren't stocked here do not appear. Flags 0x0800 "can be sold anywhere,
+     * regardless of tech level" is still honoured at buy/sell time for items
+     * that happen to appear via the tech filter.
      */
-    const inStock = OUTFIT_ORDER.filter(
-      (id) => tradedHere(id) || (g.player.outfits[id] ?? 0) > 0,
-    );
+    const inStock = OUTFIT_ORDER.filter((id) => tradedHere(id));
     /*
      * 0x1000: "When this item is available for sale, it prevents all
      * higher-numbered items with equal DispWeight from being made available at

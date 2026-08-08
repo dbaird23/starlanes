@@ -1681,14 +1681,18 @@ export class Game {
 
     this.time += dt;
 
-    if (actionConsume(this.input, "map")) {
-      if (this.mode === "map") this.closeMap();
-      else if (this.mode === "flight") this.openMap();
-    }
+    // Gate chooser keys run first so Tab cycles destinations even when Tab is
+    // also the map binding (e.g. Starsector preset). updateGateChooserKeys
+    // consumes Tab only when the gate chooser is open; otherwise it's a no-op
+    // and the map binding below can consume it normally.
     if (this.mode === "map") {
       this.updateGates(dt);
       this.updateGateChooserKeys();
       if (this.input.consume("Escape")) this.closeMap();
+    }
+    if (actionConsume(this.input, "map")) {
+      if (this.mode === "map") this.closeMap();
+      else if (this.mode === "flight") this.openMap();
     }
 
     // flight controls (also run under the map, EV-style time keeps passing? No — pause under map)
@@ -1710,7 +1714,6 @@ export class Game {
       idx = this.input.shiftDown
         ? (idx - 1 + links.length) % links.length
         : (idx + 1) % links.length;
-      // highlight only — do not pan the chart
       this.mapSelected = links[idx];
     }
     if (this.input.consume("Enter") || this.input.consume("NumpadEnter")) {
@@ -2038,6 +2041,14 @@ export class Game {
    */
   private selectedAimPoint(): { x: number; y: number } | null {
     if (this.targetNpc && !this.targetNpc.done) {
+      // Lead the target using the first forward-firing primary's speed so
+      // hold-A steers toward the intercept point rather than current position.
+      const fwdPrimary = this.weaponSlots.find(
+        (s) => isPrimary(s.weap) && !isTurret(s.weap) && !isBeam(s.weap) && s.weap.speed > 0,
+      );
+      if (fwdPrimary) {
+        return leadPoint(this.ship, this.targetNpc, fwdPrimary.weap.speed);
+      }
       return this.targetNpc.pos;
     }
     if (this.targetPlanet) return this.targetPlanet.pos;
@@ -5957,6 +5968,8 @@ export class Game {
     );
     if (planet) this.player.lastPad = planet.id;
     this.player.landedOn = null;
+    // Landing consumes a day — the same unit hyperspace jumps cost.
+    this.advanceDays(1);
     /*
      * Sole durable checkpoint. Everything bought, sold, accepted, or killed
      * since the previous takeoff is committed here; death before the next

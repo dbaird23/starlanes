@@ -99,8 +99,8 @@ body {
    * whichever ïntf the player is flying behind.
    */
   --hud-font: "Geneva";
-  --hud-size: 12px;
-  --hud-sub-size: 10px;
+  --hud-size: 14px;
+  --hud-sub-size: 12px;
   --hud-bright: #ffffff;
   --hud-dim: #888888;
   --hud-shield: #bd0000;
@@ -240,7 +240,7 @@ body {
 
 /* ---- gauges ---- */
 .hud-gauges {
-  padding: 0 5px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -319,7 +319,7 @@ body {
   line-height: 11px;
   font-family: var(--hud-mono);
   font-weight: 400;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 0.06em;
   /* it rides over both the near-white armor fill and the bare trough, so the
      halo has to carry it rather than the colour */
@@ -451,18 +451,13 @@ body {
 }
 
 /* ---- cargo / credits ---- */
-/*
- * The artwork's hole is 36px, which is three lines and no more, so this runs
- * at SubtitleSize rather than StatFontSize and anything past the third row is
- * clipped. Free and Credits are emitted first for that reason — the
- * per-commodity manifest is ours, not Nova's, and is what gets cut. The date
- * was a third line here until it moved to the map screen.
- */
+/* Occupies the old controls hole (102 CSS px), giving plenty of room for a
+ * full commodity manifest. The old cargo/credits hole above it is spare. */
 .hud-ledger {
-  padding: 1px 7px;
+  padding: 1px 2px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-around;
   font-size: var(--hud-sub-size);
 }
 .hud-led-row {
@@ -490,21 +485,6 @@ body {
 }
 .hud-led-v.special {
   color: #c9a86a;
-}
-
-/* ---- controls ---- */
-/* eight rows in a 102px hole: 9px mono at 1.1 leading is 86px, which clears it */
-.hud-hints {
-  padding: 2px 6px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-content: center;
-  gap: 1px 6px;
-  font-family: var(--hud-mono);
-  font-size: 9px;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-  color: #9ba1a6;
 }
 
 /* ---- machinery (CSS-metal fallback only) ---- */
@@ -754,14 +734,14 @@ body {
 }
 
 .panel h1 {
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 600;
   color: #e8eef6;
   letter-spacing: 0.5px;
 }
 
 .panel h1 .sys {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
   color: #7d90aa;
   margin-left: 10px;
@@ -770,14 +750,14 @@ body {
 .panel .desc {
   margin: 12px 0 16px;
   line-height: 1.5;
-  font-size: 14px;
+  font-size: 15px;
   color: #aebbcc;
 }
 
 /* section heading inside a panel, e.g. the hiring hall's two lists */
 .panel h2.sub {
   margin: 18px 0 2px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -790,14 +770,14 @@ body {
   border-radius: 3px;
   background: #16203a;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   color: #cfe0f5;
 }
 
 .statusbar {
   display: flex;
   gap: 18px;
-  font-size: 13px;
+  font-size: 14px;
   color: #9fb2c8;
   padding: 8px 0 14px;
   border-bottom: 1px solid #2a3a52;
@@ -854,7 +834,7 @@ button.evbtn.sel {
 table.trade {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 table.trade th {
   text-align: left;
@@ -891,7 +871,7 @@ td.actions button {
   border-radius: 3px;
   padding: 3px 9px;
   margin-left: 4px;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
 }
 td.actions button:hover {
@@ -904,7 +884,7 @@ td.actions button:disabled {
 
 .hint {
   margin-top: 14px;
-  font-size: 12px;
+  font-size: 13px;
   color: #62748c;
 }
 .hint.warn {
@@ -942,7 +922,7 @@ td.actions button:disabled {
 .comms-reply {
   min-height: 62px;
   padding: 8px 10px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.45;
   color: #d6dfea;
   background: #05080f;
@@ -951,7 +931,7 @@ td.actions button:disabled {
 }
 .comms-info {
   padding: 6px 10px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   background: #05080f;
   border: 1px solid #2a3a52;
   border-radius: 3px;
@@ -998,7 +978,7 @@ td.actions button:disabled {
   object-fit: contain;
 }
 .comms-noPic {
-  font-size: 12px;
+  font-size: 13px;
   color: #5b6c84;
   padding: 12px;
   text-align: center;
@@ -1129,7 +1109,7 @@ td.actions button:disabled {
 .ttl-field span {
   display: block;
   color: #8a2626;
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.4px;
 }
 .ttl-field b {
@@ -1160,19 +1140,19 @@ td.actions button:disabled {
   padding: 22px 24px 18px;
 }
 .ttl-dialog h2 {
-  font-size: 18px;
+  font-size: 19px;
   color: #eaf3ff;
   margin-bottom: 12px;
 }
 .ttl-dialog p {
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.5;
   color: #9fb0c6;
   margin-bottom: 10px;
 }
 .ttl-label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   color: #9fb0c6;
   margin-bottom: 12px;
 }
@@ -1192,7 +1172,7 @@ td.actions button:disabled {
 .ttl-check {
   display: flex;
   gap: 7px;
-  font-size: 12px;
+  font-size: 13px;
   color: #9fb0c6;
   margin-bottom: 14px;
 }
@@ -1204,7 +1184,7 @@ td.actions button:disabled {
 }
 .ttl-fieldset legend {
   padding: 0 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: #cfd8e3;
 }
 .ttl-fieldset .ttl-check {
@@ -1218,7 +1198,7 @@ td.actions button:disabled {
 }
 .keytable {
   width: 100%;
-  font-size: 12px;
+  font-size: 13px;
   color: #9fb0c6;
   border-collapse: collapse;
 }
@@ -1305,7 +1285,7 @@ td.actions button:disabled {
   margin: 0 0 10px;
 }
 .pref-preset-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #cfd8e3;
   flex-shrink: 0;
 }
@@ -1400,7 +1380,7 @@ td.actions button:disabled {
 .pref-confirm-card p {
   margin-bottom: 14px;
   color: #cfd8e3;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.45;
 }
 .pref-confirm-card .btnrow {
@@ -1433,12 +1413,12 @@ td.actions button:disabled {
   color: var(--ev-list-text, #fff);
 }
 .pilot-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #e2eaf4;
 }
 .pilot-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: #8fa2ba;
   margin-top: 2px;
 }
@@ -1448,14 +1428,14 @@ td.actions button:disabled {
   flex: 0 0 auto;
 }
 .menu-empty {
-  font-size: 13px;
+  font-size: 14px;
   color: #62748c;
   text-align: center;
   padding: 12px 0;
 }
 .menu-hint {
   margin-top: 4px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #4e6078;
 }
 
@@ -1478,7 +1458,7 @@ td.actions button:disabled {
   margin: 0 auto 12px;
 }
 .shop-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: #e8eef6;
   margin-bottom: 8px;
@@ -1487,7 +1467,7 @@ td.actions button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 10px;
 }
 .shop-stats-grid .stat {
@@ -1502,7 +1482,7 @@ td.actions button:disabled {
   font-weight: 600;
 }
 .shop-desc {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: #aebbcc;
   margin-bottom: 14px;
@@ -1546,28 +1526,28 @@ td.actions button:disabled {
   min-width: 0;
 }
 .ship-name {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #e2eaf4;
 }
 .ship-name .current {
   color: #7fd18b;
   font-weight: 400;
-  font-size: 12px;
+  font-size: 13px;
 }
 .ship-name .subtitle {
   color: #8fa2ba;
   font-weight: 400;
-  font-size: 12px;
+  font-size: 13px;
   font-style: italic;
 }
 .ship-stats {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #8fa2ba;
   margin: 2px 0 4px;
 }
 .ship-desc {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #6e8098;
   line-height: 1.35;
 }
@@ -1576,7 +1556,7 @@ td.actions button:disabled {
   flex: 0 0 auto;
 }
 .ship-price {
-  font-size: 13px;
+  font-size: 14px;
   color: #ffd479;
   margin-bottom: 6px;
   font-variant-numeric: tabular-nums;
@@ -1638,7 +1618,7 @@ td.actions button:disabled {
 }
 .oi-name {
   margin-top: 3px;
-  font-size: 9.5px;
+  font-size: 10.5px;
   line-height: 1.1;
   text-align: center;
   color: #d6dfea;
@@ -1647,7 +1627,7 @@ td.actions button:disabled {
   position: absolute;
   top: 2px;
   right: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 2px #000;
@@ -1655,7 +1635,7 @@ td.actions button:disabled {
 .oi-desc {
   overflow-y: auto;
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   color: #b9c7da;
   background: rgba(8, 13, 24, 0.6);
@@ -1680,13 +1660,13 @@ td.actions button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   color: #5b6c84;
 }
 .oi-info {
   flex: 1;
   padding: 8px 10px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   background: rgba(8, 13, 24, 0.6);
   border: 1px solid #263850;
   border-radius: 4px;
@@ -1710,7 +1690,7 @@ td.actions button:disabled {
   display: block !important;
   margin-top: 10px;
   color: #e04a4a;
-  font-size: 11px;
+  font-size: 12px;
 }
 .oi-bar {
   display: flex;
@@ -1729,7 +1709,7 @@ td.actions button:disabled {
   border-radius: 13px;
   background: linear-gradient(180deg, #8e1414, #4d0a0a);
   color: #ffdede;
-  font-size: 10px;
+  font-size: 11px;
   cursor: pointer;
 }
 .oi-arrow:hover {
@@ -1747,7 +1727,7 @@ td.actions button:disabled {
   gap: 12px;
   padding: 6px 10px;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: #d6dfea;
   background: rgba(20, 30, 48, 0.7);
   border: 1px solid #263850;
@@ -1755,7 +1735,7 @@ td.actions button:disabled {
 }
 .misn-date {
   color: #8fa2ba;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 .misn-body {
   display: grid;
@@ -1772,7 +1752,7 @@ td.actions button:disabled {
 }
 .misn-item {
   padding: 4px 8px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: #d6dfea;
   white-space: nowrap;
   overflow: hidden;
@@ -1797,7 +1777,7 @@ td.actions button:disabled {
 }
 .misn-head {
   padding: 6px 12px;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   color: #e04a4a;
   border-bottom: 1px solid #263850;
@@ -1808,14 +1788,14 @@ td.actions button:disabled {
   padding: 10px 12px;
 }
 .misn-text p {
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.5;
   color: #b9c7da;
   margin-bottom: 8px;
 }
 .misn-text p.hint {
   color: #8fa2ba;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 .misn-text p.hint.warn {
   color: #e0a04a;
@@ -1838,13 +1818,13 @@ td.actions button:disabled {
 .port-name {
   padding: 6px 0 2px;
   text-align: center;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: #eaf3ff;
 }
 .port-sub {
   text-align: center;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #8fa2ba;
   margin-bottom: 6px;
 }
@@ -1894,7 +1874,7 @@ td.actions button:disabled {
   max-height: 200px;
   overflow-y: auto;
   padding: 10px 12px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.5;
   color: #b9c7da;
   background: rgba(8, 13, 24, 0.6);
@@ -1928,7 +1908,7 @@ td.actions button:disabled {
 .sy-fullname {
   padding: 6px 10px;
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #eaf3ff;
   background: rgba(20, 30, 48, 0.8);
@@ -1940,7 +1920,7 @@ td.actions button:disabled {
   grid-template-columns: 1fr 1fr 1.1fr;
   gap: 10px;
   padding: 10px 12px;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 .sy-col > div {
   display: flex;
@@ -1965,7 +1945,7 @@ td.actions button:disabled {
 }
 .sy-desc {
   padding: 0 12px 12px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   color: #b9c7da;
 }
@@ -1992,13 +1972,13 @@ td.actions button:disabled {
   box-shadow: 0 6px 34px rgba(0, 0, 0, 0.7);
 }
 .pl-head {
-  font-size: 12px;
+  font-size: 13px;
   color: #d6dfea;
   margin-bottom: 8px;
 }
 .pl-manifest {
   padding: 7px 10px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   background: #05080f;
   border: 1px solid #2a3a52;
   border-radius: 3px;
@@ -2028,7 +2008,7 @@ td.actions button:disabled {
 }
 .pl-note {
   margin-top: 7px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #a8d9b0;
 }
 .pl-buttons {
@@ -2040,7 +2020,7 @@ td.actions button:disabled {
 .pl-buttons .portbtn {
   text-align: center;
   padding: 6px 4px;
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 .pl-buttons #pl-capture {
   grid-column: 1 / 3;
@@ -2062,7 +2042,7 @@ td.actions button:disabled {
 .gatemap.empty {
   padding: 22px 12px;
   text-align: center;
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: #62748c;
   font-style: italic;
 }
@@ -2096,7 +2076,7 @@ td.actions button:disabled {
 }
 .gm-label {
   fill: #7d90aa;
-  font-size: 10px;
+  font-size: 11px;
   text-anchor: middle;
   pointer-events: none;
   /* systems can sit close enough that labels touch; a halo keeps them legible */
@@ -2147,7 +2127,7 @@ td.actions button:disabled {
   width: min(440px, 92vw);
 }
 .if-head {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #e8eef6;
   margin-bottom: 10px;
@@ -2156,13 +2136,13 @@ td.actions button:disabled {
 .if-section {
   padding: 7px 10px;
   margin-bottom: 7px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   background: #05080f;
   border: 1px solid #2a3a52;
   border-radius: 3px;
 }
 .if-title {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #7d90aa;
@@ -2229,7 +2209,7 @@ td.actions button:disabled {
   color: inherit;
 }
 .if-pick-sub {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 400;
   color: #8fa2ba;
   line-height: 1.3;
@@ -2254,7 +2234,7 @@ td.actions button:disabled {
   border-top: 1px solid #2a3a52;
 }
 .if-pick-body .if-row {
-  font-size: 11.5px;
+  font-size: 12.5px;
 }
 .if-body {
   margin-top: 8px;
@@ -2280,7 +2260,7 @@ td.actions button:disabled {
 }
 .if-jrow .portbtn {
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
 }
 .if-buttons {
@@ -2291,7 +2271,7 @@ td.actions button:disabled {
 }
 .if-buttons .portbtn {
   padding: 6px 16px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   text-align: center;
 }
 
@@ -2377,13 +2357,13 @@ td.actions button:disabled {
 /* the pilot standing beside a hull in the hiring hall */
 .ship-pilot {
   color: #8fa2ba;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
   margin-top: 4px;
 }
 .ship-tag {
   color: #7d90aa;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -2391,7 +2371,7 @@ td.actions button:disabled {
 .oi-name .oi-sub {
   display: block;
   color: #7d90aa;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 400;
 }
 
@@ -2418,14 +2398,14 @@ td.actions button:disabled {
   border-radius: 3px;
 }
 .oi-side .sy-fullname {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: #d6e2f0;
   text-align: center;
   padding: 4px 2px;
 }
 .sy-prices {
   padding: 8px 10px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   background: rgba(8, 13, 24, 0.6);
   border: 1px solid #263850;
   border-radius: 4px;
@@ -2484,7 +2464,7 @@ td.actions button:disabled {
 .sy-info-name {
   padding: 8px 12px;
   text-align: center;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #eaf3ff;
   background: rgba(20, 30, 48, 0.8);
@@ -2493,7 +2473,7 @@ td.actions button:disabled {
 .sy-info-sub {
   display: block;
   margin-top: 2px;
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 400;
   color: #8fa2ba;
 }
@@ -2518,7 +2498,7 @@ td.actions button:disabled {
   grid-template-columns: 1fr 90px 70px 90px;
   gap: 8px;
   padding: 3px 10px;
-  font-size: 13px;
+  font-size: 14px;
   align-items: baseline;
 }
 .tc-head {
@@ -2571,7 +2551,7 @@ td.actions button:disabled {
   border-radius: 3px;
   padding: 8px 10px;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: #c9d4e0;
   min-height: 34px;
 }
@@ -2592,7 +2572,7 @@ td.actions button:disabled {
 }
 .panel.tc-qty h2 {
   margin: 0 0 6px;
-  font-size: 16px;
+  font-size: 17px;
   color: #eaf3ff;
 }
 .panel.tc-qty .menu-hint {
@@ -2601,7 +2581,7 @@ td.actions button:disabled {
 .tc-qty-label {
   display: block;
   margin-bottom: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: #8fa2ba;
 }
 .tc-qty-row {
@@ -2630,7 +2610,7 @@ td.actions button:disabled {
 }
 .tc-qty-total {
   margin: 0 0 14px;
-  font-size: 13px;
+  font-size: 14px;
   color: #d6e2f0;
   font-variant-numeric: tabular-nums;
 }
@@ -2665,7 +2645,7 @@ td.actions button:disabled {
 }
 .if-abort-card p {
   margin: 0 0 12px;
-  font-size: 12.5px;
+  font-size: 13.5px;
   line-height: 1.45;
   color: #cfd8e3;
 }
@@ -2711,7 +2691,7 @@ td.actions button:disabled {
   max-width: 640px;
   padding: 32px;
   color: #d8e4f2;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.6;
 }
 .intro-text p {
