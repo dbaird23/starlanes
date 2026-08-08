@@ -1,0 +1,1 @@
+Drop reference images here. Use hyphens, not spaces-plus-digits: .gitignore's `* [0-9].*` rule silently swallows "name 1.png".
