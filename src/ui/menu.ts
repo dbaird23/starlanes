@@ -25,14 +25,38 @@ import { ratingName } from "../game/reputation";
 import {
   createPilot,
   deletePilot,
+  describePilot,
   exportPilot,
   importPilot,
+  isPilotDead,
   listPilots,
   loadPilot,
 } from "../game/pilots";
 import {
+  ACTION_IDS,
+  ACTIONS,
+  bindingsForPreset,
+  chordFromEvent,
+  chordFromMouseEvent,
+  chordsEqual,
+  cloneBindings,
+  customPresetLabel,
+  CUSTOM_PRESET_VALUE,
+  exportKeybindings,
+  findCollisions,
+  formatChord,
+  KEYBINDING_PRESETS,
+  matchPresetId,
+  resolvePresetId,
+  UNBOUND,
+  type ActionId,
+} from "../keybindings";
+import {
   capsLockFastWhen,
+  getKeybindingBasePreset,
+  getKeybindings,
   setCapsLockFastWhen,
+  setKeybindings,
   type CapsLockFastWhen,
 } from "../settings";
 
@@ -55,8 +79,6 @@ interface Overlay {
   h: number;
   frames: number;
 }
-
-const INTRO_PAGES = ["8200", "8201", "8202"];
 
 /*
  * Sizes and frame counts come from the sprites; every position on this screen
@@ -146,18 +168,75 @@ const EMBLEM_IDLE_FRAME = 6;
  * "enter" where "open" belongs.
  */
 const BUTTONS = [
-  { id: "new", sprite: "8050", x: 349, y: 400, emblem: 0, colr: 0 },
-  { id: "enter", sprite: "8053", x: 555, y: 401, emblem: 3, colr: 3 },
-  { id: "open", sprite: "8051", x: 344, y: 464, emblem: 1, colr: 1 },
-  { id: "prefs", sprite: "8054", x: 581, y: 464, emblem: 4, colr: 4 },
-  { id: "quit", sprite: "8052", x: 345, y: 528, emblem: 2, colr: 2 },
-  { id: "about", sprite: "8055", x: 580, y: 528, emblem: 5, colr: 5 },
+  {
+    id: "new",
+    sprite: "8050",
+    x: 349,
+    y: 400,
+    emblem: 0,
+    colr: 0,
+    key: "N",
+  },
+  {
+    id: "enter",
+    sprite: "8053",
+    x: 555,
+    y: 401,
+    emblem: 3,
+    colr: 3,
+    key: "E",
+  },
+  {
+    id: "open",
+    sprite: "8051",
+    x: 344,
+    y: 464,
+    emblem: 1,
+    colr: 1,
+    key: "O",
+  },
+  {
+    id: "prefs",
+    sprite: "8054",
+    x: 581,
+    y: 464,
+    emblem: 4,
+    colr: 4,
+    key: "P",
+  },
+  {
+    id: "quit",
+    sprite: "8052",
+    x: 345,
+    y: 528,
+    emblem: 2,
+    colr: 2,
+    key: "Q",
+  },
+  {
+    id: "about",
+    sprite: "8055",
+    x: 580,
+    y: 528,
+    emblem: 5,
+    colr: 5,
+    key: "A",
+  },
 ];
+
+export interface MainMenuHandlers {
+  /** Title "Enter ship" — resume paused session if any, else load. */
+  enterShip: (pilotId: string, strict?: boolean) => void;
+  /** Open Pilot / New Pilot — always load from the saved pilot file. */
+  loadPilot: (pilotId: string, strict?: boolean) => void;
+  /** Forget a paused session if that pilot file is deleted. */
+  onDeletePilot?: (pilotId: string) => void;
+}
 
 /** Title screen / pilot management, shown over the starfield. */
 export class MainMenu {
   private root: HTMLElement;
-  private onStart: (pilotId: string, strict?: boolean) => void;
+  private handlers: MainMenuHandlers;
   private selected: string | null = null;
   private animRaf: number | null = null;
   private animStart = 0;
@@ -166,18 +245,35 @@ export class MainMenu {
   /** plate whoosh (602+603) already fired for this open */
   private revealSfxPlayed = false;
 
-  constructor(onStart: (pilotId: string, strict?: boolean) => void) {
+  constructor(handlers: MainMenuHandlers) {
     this.root = document.getElementById("menu-ui")!;
-    this.onStart = onStart;
+    this.handlers = handlers;
+    window.addEventListener("keydown", this.onTitleKey);
   }
 
-  show(): void {
+  /**
+   * @param preferPilotId when Esc pauses a live run, keep that pilot selected
+   *   so Enter ship resumes it without hunting the list. Pass `null` after a
+   *   death so the panel reads "No pilot loaded".
+   */
+  show(preferPilotId?: string | null): void {
     this.root.classList.remove("hidden");
     playMusic();
     preloadCoreSnds();
     const pilots = listPilots();
-    if (!this.selected || !pilots.some((p) => p.id === this.selected)) {
-      this.selected = pilots[0]?.id ?? null;
+    if (preferPilotId === null) {
+      // Death (or any explicit unload): nothing selected on the title screen.
+      this.selected = null;
+    } else if (
+      preferPilotId &&
+      pilots.some((p) => p.id === preferPilotId && !p.dead)
+    ) {
+      this.selected = preferPilotId;
+    } else if (
+      !this.selected ||
+      !pilots.some((p) => p.id === this.selected && !p.dead)
+    ) {
+      this.selected = pilots.find((p) => !p.dead)?.id ?? null;
     }
     this.revealDone = false;
     this.revealSfxPlayed = false;
@@ -200,6 +296,71 @@ export class MainMenu {
     this.root.innerHTML = "";
     stopMusic();
   }
+
+  /**
+   * Title-screen letter shortcuts (Nova-style). Only while the bare menu is
+   * up — not over a modal, the intro, or a focused text field.
+   * Esc closes simple modals (Open Pilot, About, New Pilot, notices).
+   * Preferences installs its own capture-phase Esc handler for dirty confirm.
+   */
+  private onTitleKey = (e: KeyboardEvent): void => {
+    if (this.root.classList.contains("hidden") || e.repeat) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const modal = this.root.querySelector<HTMLElement>("#ttl-modal");
+    if (modal && !modal.classList.contains("hidden")) {
+      // Preferences owns Escape (rebind cancel + unsaved-discard confirm).
+      if (modal.querySelector(".prefs-dialog")) return;
+      if (e.code === "Escape") {
+        e.preventDefault();
+        modal.classList.add("hidden");
+        playMenuClose();
+        return;
+      }
+      // Keyboard nav for the Open Pilot list.
+      if (modal.querySelector(".pilot-list")) {
+        const pilots = listPilots();
+        if (pilots.length > 0) {
+          const idx = pilots.findIndex((p) => p.id === this.selected);
+          if (e.code === "ArrowUp" || e.code === "ArrowDown") {
+            e.preventDefault();
+            const next =
+              e.code === "ArrowUp"
+                ? Math.max(0, idx - 1)
+                : Math.min(pilots.length - 1, idx + 1);
+            this.selected = pilots[next].id;
+            this.render();
+            this.openPilot();
+            return;
+          }
+          if (e.code === "Enter" || e.code === "NumpadEnter") {
+            e.preventDefault();
+            if (this.selected && !isPilotDead(this.selected)) {
+              this.hide();
+              this.handlers.loadPilot(this.selected);
+            }
+            return;
+          }
+        }
+      }
+      return;
+    }
+    if (this.root.querySelector(".ttl-stage.intro")) return;
+    const tag = (e.target as HTMLElement | null)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+    const map: Record<string, string> = {
+      KeyE: "enter",
+      KeyO: "open",
+      KeyP: "prefs",
+      KeyN: "new",
+      KeyA: "about",
+      KeyQ: "quit",
+    };
+    const id = map[e.code];
+    if (!id) return;
+    e.preventDefault();
+    this.onMenu(id);
+  };
 
   /**
    * Plate whoosh: "Menu button start" then "Menu button end" abutted. Defers
@@ -372,7 +533,19 @@ export class MainMenu {
       const spr = MENU_SPRITES[b.sprite];
       if (!spr) return "";
       const at = buttonPos(b);
-      return `<button class="ttl-btn" data-menu="${b.id}" data-emblem="${b.emblem}" title="${b.id}" style="
+      const label =
+        b.id === "enter"
+          ? "Enter ship"
+          : b.id === "open"
+            ? "Open pilot"
+            : b.id === "prefs"
+              ? "Set prefs"
+              : b.id === "new"
+                ? "New pilot"
+                : b.id === "about"
+                  ? "About"
+                  : "Quit Nova";
+      return `<button class="ttl-btn" data-menu="${b.id}" data-emblem="${b.emblem}" title="${label} (${b.key})" style="
         left:${at.x}px; top:${at.y}px; width:${spr.w}px; height:${spr.h}px;
         background-image:url('${asset(`nova/sprites/${spr.file}`)}');
         --hover-x:${-spr.w}px"></button>`;
@@ -443,9 +616,14 @@ export class MainMenu {
         this.newPilot();
         break;
       case "enter":
-        if (this.selected) {
+        if (this.selected && !isPilotDead(this.selected)) {
           this.hide();
-          this.onStart(this.selected);
+          this.handlers.enterShip(this.selected);
+        } else if (this.selected && isPilotDead(this.selected)) {
+          this.notice(
+            "Pilot deceased",
+            "This pilot died in strict mode and cannot be flown again. Open Pilot to delete them, or start a new pilot.",
+          );
         } else {
           this.newPilot();
         }
@@ -462,7 +640,7 @@ export class MainMenu {
       case "quit":
         this.notice(
           "Quit Nova",
-          "There's no quitting a browser tab from inside it — close the tab when you're done. Your pilot is already saved.",
+          "There's no quitting a browser tab from inside it — close the tab when you're done. Progress is saved only when you leave a planet.",
         );
         break;
     }
@@ -508,87 +686,36 @@ export class MainMenu {
       const strict = m.querySelector<HTMLInputElement>("#np-strict")!.checked;
       const name = nameEl.value.trim() || "Captain";
       const id = createPilot(strict ? `${name} †` : name);
-      this.playIntro(() => {
-        this.hide();
-        this.onStart(id, strict);
-      });
+      /*
+       * The chär opening sequence is not played here. The menu used to run
+       * its own hardcoded PICT 8200-8202 slideshow before handing over, and
+       * `Game.startPilot` plays the same pictures again from the chär
+       * template (IntroPict1-4 / PictDelay1-4 / IntroTextID) — so a new pilot
+       * sat through the preamble twice. The data-driven one wins; it also
+       * shows the IntroTextID dësc and follows a plug-in's own template.
+       */
+      this.hide();
+      this.handlers.loadPilot(id, strict);
     });
-  }
-
-  /**
-   * Nova's preamble: three full-page spreads of history that play once, when
-   * a pilot is created. They're PICT 8200-8202, complete composites — text,
-   * screens and chrome all baked in — so they only need showing at the
-   * original 1024x768 and scaling to fit.
-   */
-  private playIntro(done: () => void): void {
-    const pages = INTRO_PAGES.map((id) => UI_PICTS[id]).filter(Boolean);
-    if (pages.length === 0) {
-      done();
-      return;
-    }
-    let page = 0;
-
-    const draw = () => {
-      const pic = pages[page];
-      this.root.innerHTML = `
-        <div class="ttl-stage intro" style="background-image:url('${asset(`nova/picts/${pic.file}`)}')">
-          <div class="intro-foot">
-            <span>${page + 1} / ${pages.length}</span>
-            <span class="intro-hint">click or press space to continue · esc to skip</span>
-          </div>
-        </div>`;
-      this.fitStage();
-      // Bind to the page element, not the root: the click that opened the
-      // intro is still bubbling up through the root when we get here, and a
-      // root listener would eat it and skip straight to page two.
-      this.root
-        .querySelector<HTMLElement>(".ttl-stage.intro")!
-        .addEventListener("click", () => advance());
-    };
-
-    const finish = () => {
-      window.removeEventListener("keydown", onKey, true);
-      done();
-    };
-    const advance = () => {
-      page++;
-      if (page >= pages.length) finish();
-      else draw();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        finish();
-      } else if (e.key === " " || e.key === "Enter" || e.key === "ArrowRight") {
-        e.preventDefault();
-        advance();
-      }
-    };
-
-    // the intro owns the screen, so intercept keys before the flight loop
-    window.addEventListener("keydown", onKey, true);
-    draw();
   }
 
   private openPilot(): void {
     const pilots = listPilots();
     const rows = pilots
-      .map(
-        (
-          p,
-        ) => `<div class="pilot-row${p.id === this.selected ? " sel" : ""}" data-pick="${p.id}">
+      .map((p) => {
+        const dead = !!p.dead;
+        return `<div class="pilot-row${p.id === this.selected ? " sel" : ""}${dead ? " dead" : ""}" data-pick="${p.id}">
           <div class="pilot-info">
-            <div class="pilot-name">${p.name}</div>
-            <div class="pilot-desc">${describeShort(p.id)}</div>
+            <div class="pilot-name">${p.name}${dead ? " †" : ""}</div>
+            <div class="pilot-desc">${describePilot(p.id)}</div>
           </div>
           <div class="pilot-actions">
-            <button class="evbtn primary" data-start="${p.id}">Continue</button>
+            <button class="evbtn primary" data-start="${p.id}" ${dead ? "disabled title=\"This pilot is deceased\"" : ""}>Continue</button>
             <button class="evbtn" data-export="${p.id}">Export</button>
             <button class="evbtn" data-delete="${p.id}">Delete</button>
           </div>
-        </div>`,
-      )
+        </div>`;
+      })
       .join("");
 
     const m = this.modal(`
@@ -612,8 +739,11 @@ export class MainMenu {
     m.querySelectorAll<HTMLButtonElement>("[data-start]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
+        const id = btn.dataset.start!;
+        if (isPilotDead(id) || btn.disabled) return;
         this.hide();
-        this.onStart(btn.dataset.start!);
+        // Explicit load from the last leave-planet save (discards any paused RAM session).
+        this.handlers.loadPilot(id);
       });
     });
     m.querySelectorAll<HTMLButtonElement>("[data-export]").forEach((btn) => {
@@ -636,6 +766,7 @@ export class MainMenu {
         e.stopPropagation();
         const id = btn.dataset.delete!;
         deletePilot(id);
+        this.handlers.onDeletePilot?.(id);
         if (this.selected === id) this.selected = listPilots()[0]?.id ?? null;
         this.render();
         this.openPilot();
@@ -644,71 +775,369 @@ export class MainMenu {
   }
 
   private prefs(): void {
-    const keys: [string, string][] = [
-      ["Turn left / right", "← →"],
-      ["Accelerate", "↑"],
-      ["Reverse (turn about)", "↓"],
-      ["Aim toward target (hold)", "A"],
-      ["Afterburner", "Z"],
-      ["Fire primary", "Space"],
-      ["Fire secondary", "Left Ctrl"],
-      ["Select secondary", "W"],
-      ["Cycle targets", "` or Tab"],
-      ["Target nearest ship", "R"],
-      ["Target / cycle worlds", "L"],
-      ["Land / dock", "L (again, in range)"],
-      ["Hyperspace jump", "J"],
-      ["Hyper select (floating map)", "H"],
-      ["Select jump destination", "H or \\"],
-      ["Star map", "M"],
-      ["Communicate", "Y"],
-      ["Board disabled ship", "B"],
-      ["Engage cloak", "U"],
-      ["Recall fighters", "C"],
-      ["Autopilot", "Q"],
-      ["Nav system off", "N"],
-      ["Escorts: attack my target", "E"],
-      ["Escorts: form up", "F"],
-      ["Escorts: hold position", "V"],
-      ["Player info", "P"],
-      ["Mission info", "I"],
-      ["Jettison cargo", "Alt-K"],
-      ["Eject (escape pod)", "Alt-X"],
-      ["Self-destruct", "Shift-Q"],
-      ["Return to title screen", "Esc"],
-      ["Double game speed", "Caps Lock"],
-    ];
     const fastWhen = capsLockFastWhen();
     const musicOn = isTitleMusicEnabled();
+    const saved = cloneBindings(getKeybindings());
+    let draft = cloneBindings(saved);
+    /** Named preset this draft was last loaded from / matched (for "Custom (…)"). */
+    let basePresetId = resolvePresetId(
+      matchPresetId(draft) ?? getKeybindingBasePreset(),
+    );
+    let listening: ActionId | null = null;
+    /** Pure modifier held while composing a chord; bound alone on release if unused. */
+    let pendingModifier: string | null = null;
+    let confirmOpen = false;
+
     const m = this.modal(`
-      <h2>Preferences</h2>
-      <fieldset class="ttl-fieldset">
-        <legend>Title music</legend>
-        <p class="menu-hint">Theme that loops on this screen. Defaults off under a dev server, on in a production build; your choice is saved.</p>
-        <label class="ttl-check"><input type="radio" name="pref-title-music" value="1"${
-          musicOn ? " checked" : ""
-        }> <strong>On</strong></label>
-        <label class="ttl-check"><input type="radio" name="pref-title-music" value="0"${
-          !musicOn ? " checked" : ""
-        }> <strong>Off</strong></label>
-      </fieldset>
-      <fieldset class="ttl-fieldset">
-        <legend>Caps Lock 2× speed</legend>
-        <p class="menu-hint">Caps Lock always toggles double game speed. Choose which lock state is fast.</p>
-        <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="on"${
-          fastWhen === "on" ? " checked" : ""
-        }> Fast when Caps Lock is <strong>on</strong>
-          <span class="menu-hint"> — Nova default</span></label>
-        <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="off"${
-          fastWhen === "off" ? " checked" : ""
-        }> Fast when Caps Lock is <strong>off</strong>
-          <span class="menu-hint"> — if you leave Caps Lock on for typing</span></label>
-      </fieldset>
-      <p class="menu-hint">Nova's original bindings, with the arrow keys for flight.</p>
-      <table class="keytable">${keys
-        .map(([k, v]) => `<tr><td>${k}</td><td><kbd>${v}</kbd></td></tr>`)
-        .join("")}</table>
-      <div class="btnrow"><button class="evbtn primary" data-close>Done</button></div>`);
+      <div class="prefs-shell">
+        <h2>Preferences</h2>
+        <div class="prefs-body">
+          <fieldset class="ttl-fieldset">
+            <legend>Title music</legend>
+            <p class="menu-hint">Theme that loops on this screen. Defaults off under a dev server, on in a production build; your choice is saved.</p>
+            <label class="ttl-check"><input type="radio" name="pref-title-music" value="1"${
+              musicOn ? " checked" : ""
+            }> <strong>On</strong></label>
+            <label class="ttl-check"><input type="radio" name="pref-title-music" value="0"${
+              !musicOn ? " checked" : ""
+            }> <strong>Off</strong></label>
+          </fieldset>
+          <fieldset class="ttl-fieldset">
+            <legend>Caps Lock 2× speed</legend>
+            <p class="menu-hint">Caps Lock always toggles double game speed. Choose which lock state is fast.</p>
+            <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="on"${
+              fastWhen === "on" ? " checked" : ""
+            }> Fast when Caps Lock is <strong>on</strong>
+              <span class="menu-hint"> — Nova default</span></label>
+            <label class="ttl-check"><input type="radio" name="pref-caps-fast" value="off"${
+              fastWhen === "off" ? " checked" : ""
+            }> Fast when Caps Lock is <strong>off</strong>
+              <span class="menu-hint"> — if you leave Caps Lock on for typing</span></label>
+          </fieldset>
+          <fieldset class="ttl-fieldset">
+            <legend>Keybindings</legend>
+            <div class="pref-preset-row">
+              <label class="pref-preset-label" for="pref-preset">Preset</label>
+              <select id="pref-preset" class="pref-preset-select" title="Load a named layout into the draft">
+                ${KEYBINDING_PRESETS.map(
+                  (p) =>
+                    `<option value="${p.id}">${p.name}</option>`,
+                ).join("")}
+                <option value="${CUSTOM_PRESET_VALUE}" disabled id="pref-preset-custom">${customPresetLabel(basePresetId)}</option>
+              </select>
+              <button class="evbtn" id="pref-export-keys" type="button" title="Download the current layout as a JSON file">Export…</button>
+            </div>
+            <p class="menu-hint">Choose a preset to load it, or click a binding and press a key or mouse button (with Opt / Shift / Ctrl for a chord). Delete clears a binding. A bare Shift/Opt/Ctrl key collides with any chord that uses that modifier — free it first, then holding the bare key will not block other binds. Esc and Caps Lock are fixed.</p>
+            <div id="pref-bind-status" class="menu-hint pref-bind-status"></div>
+            <table class="keytable keytable-bind" id="pref-keytable"></table>
+            <p class="menu-hint pref-fixed-keys">Also fixed: <kbd>Esc</kbd> menu · <kbd>Caps Lock</kbd> 2× speed · <kbd>−</kbd>/<kbd>=</kbd>/<kbd>0</kbd> volume</p>
+          </fieldset>
+        </div>
+        <div class="btnrow prefs-actions">
+          <button class="evbtn" id="pref-cancel" type="button">Cancel</button>
+          <button class="evbtn primary" id="pref-save" type="button">Save</button>
+        </div>
+        <div class="pref-confirm hidden" id="pref-confirm" role="dialog" aria-label="Discard changes">
+          <div class="pref-confirm-card">
+            <p>You have unsaved keybinding changes. Discard them?</p>
+            <div class="btnrow">
+              <button class="evbtn primary" id="pref-discard" type="button">Discard</button>
+              <button class="evbtn" id="pref-keep" type="button">Keep editing</button>
+            </div>
+          </div>
+        </div>
+      </div>`);
+
+    // Mark the dialog shell so layout can pin the action row.
+    m.querySelector(".ttl-dialog")?.classList.add("prefs-dialog");
+
+    const table = m.querySelector<HTMLTableElement>("#pref-keytable")!;
+    const status = m.querySelector<HTMLElement>("#pref-bind-status")!;
+    const presetSelect = m.querySelector<HTMLSelectElement>("#pref-preset")!;
+    const customOption = m.querySelector<HTMLOptionElement>(
+      "#pref-preset-custom",
+    )!;
+    const saveBtn = m.querySelector<HTMLButtonElement>("#pref-save")!;
+    const cancelBtn = m.querySelector<HTMLButtonElement>("#pref-cancel")!;
+    const exportKeysBtn = m.querySelector<HTMLButtonElement>(
+      "#pref-export-keys",
+    )!;
+    const confirmEl = m.querySelector<HTMLElement>("#pref-confirm")!;
+    const discardBtn = m.querySelector<HTMLButtonElement>("#pref-discard")!;
+    const keepBtn = m.querySelector<HTMLButtonElement>("#pref-keep")!;
+
+    const isDirty = (): boolean =>
+      ACTION_IDS.some((id) => !chordsEqual(draft[id], saved[id]));
+
+    // Filled in after key/mouse listeners are declared (closePrefs runs later).
+    let cleanup = (): void => {
+      listening = null;
+      pendingModifier = null;
+      confirmOpen = false;
+    };
+
+    const closePrefs = (): void => {
+      cleanup();
+      if (!m.classList.contains("hidden")) {
+        m.classList.add("hidden");
+        playMenuClose();
+      }
+    };
+
+    const hideConfirm = (): void => {
+      confirmOpen = false;
+      confirmEl.classList.add("hidden");
+    };
+
+    const showConfirm = (): void => {
+      // Stop mid-rebind so Esc in the confirm means "keep editing".
+      listening = null;
+      pendingModifier = null;
+      confirmOpen = true;
+      confirmEl.classList.remove("hidden");
+      paint();
+      discardBtn.focus();
+    };
+
+    const requestCancel = (): void => {
+      if (confirmOpen) {
+        hideConfirm();
+        return;
+      }
+      if (listening) {
+        listening = null;
+        pendingModifier = null;
+        paint();
+        return;
+      }
+      if (isDirty()) {
+        showConfirm();
+        return;
+      }
+      closePrefs();
+    };
+
+    const paint = (): void => {
+      const collisions = findCollisions(draft);
+      const rows = ACTIONS.map(({ id, label }) => {
+        const chord = draft[id];
+        const clash = collisions.has(id);
+        const listen = listening === id;
+        const kbdClass = [
+          "keybind-kbd",
+          clash ? "collision" : "",
+          listen ? "listening" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const title = listen
+          ? "Press a key or mouse button… Esc/Delete unbind"
+          : clash
+            ? "Conflicts with another action"
+            : "Click to rebind";
+        return `<tr class="${clash ? "collision-row" : ""}${listen ? " listening-row" : ""}" data-action="${id}">
+          <td>${label}</td>
+          <td><button type="button" class="${kbdClass}" data-bind="${id}" title="${title}">${
+            listen ? "…" : formatChord(chord)
+          }</button></td>
+        </tr>`;
+      }).join("");
+      table.innerHTML = rows;
+      if (listening) {
+        status.textContent =
+          "Press a key or mouse button · Esc / Delete / Backspace to unbind · click the slot again to cancel.";
+        status.classList.remove("error");
+      } else if (collisions.size > 0) {
+        status.textContent = `${collisions.size} binding${
+          collisions.size === 1 ? "" : "s"
+        } conflict — resolve them before saving.`;
+        status.classList.add("error");
+      } else {
+        status.textContent = "";
+        status.classList.remove("error");
+      }
+      saveBtn.disabled =
+        collisions.size > 0 || listening !== null || confirmOpen;
+
+      // Named preset when exact; otherwise Custom (parent preset name).
+      const matched = matchPresetId(draft);
+      if (matched) basePresetId = matched;
+      customOption.textContent = customPresetLabel(basePresetId);
+      presetSelect.value = matched ?? CUSTOM_PRESET_VALUE;
+      presetSelect.disabled = confirmOpen;
+
+      table.querySelectorAll<HTMLButtonElement>("[data-bind]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (confirmOpen) return;
+          const id = btn.dataset.bind as ActionId;
+          listening = listening === id ? null : id;
+          pendingModifier = null;
+          paint();
+        });
+      });
+    };
+
+    const isModCode = (code: string): boolean =>
+      code === "ShiftLeft" ||
+      code === "ShiftRight" ||
+      code === "AltLeft" ||
+      code === "AltRight" ||
+      code === "ControlLeft" ||
+      code === "ControlRight" ||
+      code === "MetaLeft" ||
+      code === "MetaRight";
+
+    const onKeyDown = (e: KeyboardEvent): void => {
+      if (m.classList.contains("hidden")) return;
+      if (e.repeat) return;
+
+      // Confirm overlay: Esc keeps editing; Enter discards.
+      if (confirmOpen) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          hideConfirm();
+          return;
+        }
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          e.stopPropagation();
+          closePrefs();
+          return;
+        }
+        return;
+      }
+
+      if (listening) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Esc / Delete / Backspace clear the binding (not dialog cancel).
+        if (
+          e.code === "Escape" ||
+          e.code === "Backspace" ||
+          e.code === "Delete"
+        ) {
+          draft = { ...draft, [listening]: { ...UNBOUND } };
+          listening = null;
+          pendingModifier = null;
+          paint();
+          return;
+        }
+        // Hold modifiers to build Opt/Shift/Ctrl chords; alone they bind on keyup.
+        if (isModCode(e.code)) {
+          if (e.code !== "MetaLeft" && e.code !== "MetaRight") {
+            pendingModifier = e.code;
+          }
+          return;
+        }
+        pendingModifier = null;
+        const chord = chordFromEvent(e);
+        if (!chord) return;
+        draft = { ...draft, [listening]: chord };
+        listening = null;
+        paint();
+        return;
+      }
+
+      // Esc cancels the whole dialog (with dirty confirm when needed).
+      if (e.code === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        requestCancel();
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent): void => {
+      if (!listening || !pendingModifier || confirmOpen) return;
+      if (e.code !== pendingModifier) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Modifier released without another key → bind that key alone (e.g. Left Ctrl).
+      draft = { ...draft, [listening]: { code: e.code } };
+      listening = null;
+      pendingModifier = null;
+      paint();
+    };
+
+    /**
+     * Mouse buttons rebind while listening. Dialog chrome (Save, radios, other
+     * bind rows) is ignored so the UI still works; the listening row itself
+     * and empty dialog surface count as a mouse bind.
+     */
+    const onMouseDown = (e: MouseEvent): void => {
+      if (!listening || confirmOpen || m.classList.contains("hidden")) return;
+      const t = e.target as HTMLElement | null;
+      const bindBtn = t?.closest("button[data-bind]") as HTMLElement | null;
+      if (bindBtn && bindBtn.dataset.bind !== listening) return;
+      if (
+        !bindBtn &&
+        t?.closest("button, select, input, a, label, textarea")
+      ) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      pendingModifier = null;
+      draft = { ...draft, [listening]: chordFromMouseEvent(e) };
+      listening = null;
+      paint();
+    };
+
+    const onContextMenu = (e: MouseEvent): void => {
+      if (!listening || confirmOpen) return;
+      // Right-click is a valid bind; don't open the browser menu mid-rebind.
+      e.preventDefault();
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    window.addEventListener("mousedown", onMouseDown, true);
+    window.addEventListener("contextmenu", onContextMenu, true);
+
+    cleanup = (): void => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+      window.removeEventListener("mousedown", onMouseDown, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
+      listening = null;
+      pendingModifier = null;
+      confirmOpen = false;
+    };
+
+    saveBtn.addEventListener("click", () => {
+      if (findCollisions(draft).size > 0 || listening || confirmOpen) return;
+      setKeybindings(draft, basePresetId);
+      closePrefs();
+    });
+    cancelBtn.addEventListener("click", () => requestCancel());
+    exportKeysBtn.addEventListener("click", () => {
+      if (confirmOpen) return;
+      // Export the draft on screen, including unsaved edits.
+      const data = exportKeybindings(draft, basePresetId);
+      const url = URL.createObjectURL(
+        new Blob([data.json], { type: "application/json" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    presetSelect.addEventListener("change", () => {
+      if (confirmOpen) return;
+      const id = presetSelect.value;
+      if (id === CUSTOM_PRESET_VALUE) return;
+      basePresetId = resolvePresetId(id);
+      draft = cloneBindings(bindingsForPreset(id));
+      listening = null;
+      pendingModifier = null;
+      paint();
+    });
+    discardBtn.addEventListener("click", () => closePrefs());
+    keepBtn.addEventListener("click", () => hideConfirm());
+
     for (const radio of m.querySelectorAll<HTMLInputElement>(
       'input[name="pref-caps-fast"]',
     )) {
@@ -726,6 +1155,8 @@ export class MainMenu {
         setTitleMusicEnabled(radio.value === "1");
       });
     }
+
+    paint();
   }
 
   private about(): void {
@@ -741,15 +1172,4 @@ export class MainMenu {
   }
 }
 
-function describeShort(id: string): string {
-  const state = loadPilot(id);
-  if (!state) return "new pilot";
-  const ship = SHIPS[state.shipId]?.name.split(";")[0] ?? "ship";
-  let place: string;
-  try {
-    place = getSystem(state.systemId).name;
-  } catch {
-    place = "deep space";
-  }
-  return `${ship} · ${place} · ${state.credits.toLocaleString()} cr`;
-}
+

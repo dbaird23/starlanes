@@ -16,7 +16,7 @@ import {
   SHIPS,
   shipyardPict,
   shipInfoPict,
-  SPOB_INDEX,
+  WEAPONS,
 } from "../data/universe";
 import type { Game, GateDestination } from "../game/game";
 import {
@@ -35,7 +35,6 @@ import {
   testContext,
   type MissionEvent,
 } from "../game/missions";
-import { MISSIONS, WEAPONS, getSystem } from "../data/universe";
 import {
   playAmbient,
   playMenuClose,
@@ -51,11 +50,12 @@ import type {
 import { oopsPriceDelta, oopsesAt } from "../game/oops";
 import { evalTest } from "../game/bits";
 import { formatDate } from "../game/calendar";
+import { actionMatchesKeydown } from "../keybindings";
 
 /**
- * Spaceport keyboard shortcuts. M is already the star map, so the mission BBS
- * takes N; the rest are the first letter of the counter. R refuels and I opens
- * the mission log, both handled alongside these.
+ * Spaceport keyboard shortcuts. The star map uses the prefs `map` binding
+ * (Classic M), so the mission BBS takes N; the rest are the first letter of
+ * the counter. R refuels. Mission log is the missionInfo binding.
  */
 const PORT_KEYS: Record<string, View> = {
   KeyB: "bar",
@@ -63,15 +63,14 @@ const PORT_KEYS: Record<string, View> = {
   KeyT: "trade",
   KeyS: "shipyard",
   KeyO: "outfitter",
-  KeyI: "log",
 };
 
 /**
  * Screens Esc backs out of. Each one already carries its own Back button, so
- * Esc presses that rather than setting the view itself — the bar's button
- * knows to return to the spaceport, and any screen with a different notion of
- * "back" keeps it. The spaceport and a gate are not in here: Esc leaves the
- * planet from those, which is Nova's own behaviour and predates this.
+ * Esc presses that rather than setting the view itself — hire escorts / holovid
+ * / gamble return to the bar, and the bar returns to the spaceport. The
+ * spaceport and a gate are not in here: Esc leaves the planet from those,
+ * which is Nova's own behaviour and predates this.
  */
 const ESC_CLOSES = new Set<View>([
   "bar",
@@ -79,7 +78,9 @@ const ESC_CLOSES = new Set<View>([
   "trade",
   "outfitter",
   "shipyard",
-  "log",
+  "escorts",
+  "holovid",
+  "gamble",
 ]);
 
 /** The screens those keys work from: the counters, not the modal panels. */
@@ -90,7 +91,6 @@ const PORT_KEY_VIEWS = new Set<View>([
   "outfitter",
   "bar",
   "bbs",
-  "log",
   "escorts",
 ]);
 
@@ -110,7 +110,6 @@ type View =
   | "bar"
   | "bbs"
   | "offer"
-  | "log"
   | "events"
   | "gate"
   | "shipOffer"
@@ -144,14 +143,6 @@ const OUTF_HIDE_UNLESS_REQUIRE = 0x0100;
 const OUTF_SELL_ANYWHERE = 0x0800;
 const OUTF_SUPPRESS_EQUAL_WEIGHT = 0x1000;
 const OUTF_HIDE_UNLESS_AVAIL = 0x4000;
-
-function safeSystemName(systemId: string): string {
-  try {
-    return getSystem(systemId).name;
-  } catch {
-    return "parts unknown";
-  }
-}
 
 const BAR_LINES = [
   "The bar is loud tonight, full of dock workers arguing about freight rates.",
@@ -217,9 +208,102 @@ export class LandedUi {
     window.addEventListener("keydown", (e) => {
       if (this.root.classList.contains("hidden")) return;
       const typing = document.activeElement?.tagName === "INPUT";
-      if (typing) return;
       // anything this handler acts on must not reach the game loop as well
       const handled = (): void => this.game.swallowKey(e.code);
+      /*
+       * Mission log (I) is the shared InfoUi panel — not a landed counter.
+       * When it is up, Esc / I / Enter go there; every other key is blocked so
+       * port shortcuts cannot fire underneath. When it is closed, the
+       * missionInfo binding opens it from any counter (not over a focused
+       * text field).
+       */
+      if (this.game.infoOpen) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          handled();
+          this.game.escapeInfo();
+          return;
+        }
+        if (actionMatchesKeydown(e, "missionInfo")) {
+          e.preventDefault();
+          handled();
+          this.game.openMissionInfo();
+          return;
+        }
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          handled();
+          // abort confirm accepts Enter; otherwise inert
+          this.game.enterInfo();
+          return;
+        }
+        if (e.code === "KeyA" && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          handled();
+          this.game.abortInfo();
+          return;
+        }
+        if (e.code === "ArrowDown") {
+          e.preventDefault();
+          handled();
+          this.game.arrowInfo(1);
+          return;
+        }
+        if (e.code === "ArrowUp") {
+          e.preventDefault();
+          handled();
+          this.game.arrowInfo(-1);
+          return;
+        }
+        if (
+          e.code.startsWith("Key") ||
+          e.code.startsWith("Arrow") ||
+          e.code === "Tab"
+        ) {
+          e.preventDefault();
+          handled();
+        }
+        return;
+      }
+      if (!typing && actionMatchesKeydown(e, "missionInfo")) {
+        e.preventDefault();
+        handled();
+        this.game.openMissionInfo();
+        return;
+      }
+      /*
+       * Trade quantity dialog is modal over the exchange. Esc cancels; Enter
+       * confirms even while the number field is focused. Other keys still
+       * type into the input when it has focus; they are otherwise swallowed
+       * so B/S/T cannot re-fire under the overlay.
+       */
+      if (this.tradeQty) {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          handled();
+          this.tradeQty = null;
+          this.render();
+          return;
+        }
+        if (e.code === "Enter" || e.code === "NumpadEnter") {
+          e.preventDefault();
+          handled();
+          this.root.querySelector<HTMLButtonElement>("#tc-qty-ok")?.click();
+          return;
+        }
+        if (typing) return;
+        // block port / list keys under the overlay
+        if (
+          e.code.startsWith("Key") ||
+          e.code.startsWith("Arrow") ||
+          e.code === "Tab"
+        ) {
+          e.preventDefault();
+          handled();
+        }
+        return;
+      }
+      if (typing) return;
       /*
        * The shipyard's Info dialog is modal: Esc closes it, and nothing else
        * reaches the counter underneath — otherwise Esc would leave the
@@ -262,11 +346,62 @@ export class LandedUi {
         return;
       }
       /*
+       * Trade / outfitter / shipyard: B buys and S sells the focused item.
+       * These take priority over the port-letter shortcuts (B → bar, S →
+       * shipyard) while you are already at the counter — otherwise B would
+       * leave for the bar mid-purchase. Shipyard has no Sell button, so S is
+       * inert there.
+       */
+      if (
+        this.planet &&
+        (this.view === "trade" ||
+          this.view === "outfitter" ||
+          this.view === "shipyard") &&
+        (e.code === "KeyB" || e.code === "KeyS")
+      ) {
+        e.preventDefault();
+        handled();
+        const buySel =
+          this.view === "trade"
+            ? "#tc-buy"
+            : this.view === "outfitter"
+              ? "#btn-buy-outfit"
+              : "#btn-buy-ship";
+        const sellSel =
+          this.view === "trade"
+            ? "#tc-sell"
+            : this.view === "outfitter"
+              ? "#btn-sell-outfit"
+              : null;
+        const sel = e.code === "KeyB" ? buySel : sellSel;
+        if (sel) {
+          const btn = this.root.querySelector<HTMLButtonElement>(sel);
+          if (btn && !btn.disabled) btn.click();
+        }
+        return;
+      }
+      // Mission BBS: A accepts the selected posting (Enter does not).
+      if (
+        this.planet &&
+        this.view === "bbs" &&
+        e.code === "KeyA" &&
+        !e.altKey &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        e.preventDefault();
+        handled();
+        const btn =
+          this.root.querySelector<HTMLButtonElement>("#btn-bbs-accept");
+        if (btn && !btn.disabled) btn.click();
+        return;
+      }
+      /*
        * The spaceport's own keys. Nova lets you reach every counter from the
        * keyboard rather than the buttons, and these work from any of the port
        * screens, so you can go straight from the outfitter to the shipyard
-       * without stopping at the spaceport in between. M is the map, so the
-       * mission BBS takes N.
+       * without stopping at the spaceport in between. The map binding is
+       * owned by prefs (not a PORT_KEYS letter), so the mission BBS takes N.
        */
       if (this.planet && PORT_KEY_VIEWS.has(this.view)) {
         const target = PORT_KEYS[e.code];
@@ -284,9 +419,10 @@ export class LandedUi {
           return;
         }
       }
-      // M opens the map from a landed screen too, carrying the posting you
-      // are reading so you can see where it would send you
-      if (this.planet && e.code === "KeyM") {
+      // Map binding from prefs — same action as in flight. On the board or a
+      // mission offer, preview that job's destination.
+      if (this.planet && actionMatchesKeydown(e, "map")) {
+        e.preventDefault();
         handled();
         const sel =
           this.view === "offer"
@@ -474,7 +610,7 @@ export class LandedUi {
         // two columns of services — Up/Down move within a column, Left/Right
         // hop to the same slot on the other side
         const leftIds = ids.filter((id) =>
-          ["btn-bar", "btn-bbs", "btn-trade", "btn-log"].includes(id),
+          ["btn-bar", "btn-bbs", "btn-trade"].includes(id),
         );
         const rightIds = ids.filter((id) =>
           [
@@ -558,45 +694,22 @@ export class LandedUi {
     }
   }
 
-  /** Enter on the focused item — same as clicking Accept / Buy / the port button. */
+  /**
+   * Enter on the focused item. Spaceport / bar / gate act on the selection.
+   * Shop counters do not buy on Enter (B / S); the mission BBS does not
+   * accept on Enter (A does).
+   */
   private activateSelection(): boolean {
     switch (this.view) {
-      case "bbs": {
-        const btn =
-          this.root.querySelector<HTMLButtonElement>("#btn-bbs-accept");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
+      // BBS accept is A only — Enter must not take a job by accident.
+      case "bbs":
+      // Trade / outfitter / shipyard: never buy on Enter (use B / S).
+      case "trade":
+      case "outfitter":
+      case "shipyard":
         return false;
-      }
-      case "shipyard": {
-        const btn = this.root.querySelector<HTMLButtonElement>("#btn-buy-ship");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
-      case "outfitter": {
-        const btn =
-          this.root.querySelector<HTMLButtonElement>("#btn-buy-outfit");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
       case "escorts": {
         const btn = this.root.querySelector<HTMLButtonElement>("#btn-hire-sel");
-        if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
-      case "trade": {
-        const btn = this.root.querySelector<HTMLButtonElement>("#tc-buy");
         if (btn && !btn.disabled) {
           btn.click();
           return true;
@@ -742,8 +855,7 @@ export class LandedUi {
       (view === "trade" && !p.exchange) ||
       (view === "shipyard" && !p.shipyard) ||
       (view === "outfitter" && !p.outfitter) ||
-      (view === "bbs" && p.uninhabited) ||
-      (view === "log" && this.game.player.activeMissions.length === 0);
+      (view === "bbs" && p.uninhabited);
     if (missing) return;
     this.setView(view);
   }
@@ -760,6 +872,8 @@ export class LandedUi {
     }
     if (view === "spaceport") playMenuClose();
     else playMenuOpen();
+    // Opening the bar focuses Leave so Enter gets you out without an arrow hop.
+    if (view === "bar") this.selectedBar = "btn-back";
     this.view = view;
     this.render();
     this.maybeCounterOffer(view);
@@ -775,7 +889,6 @@ export class LandedUi {
 
     // mission processing happens the moment you land
     this.events = this.game.collectLandingEvents(planet.id);
-    this.game.save();
     this.offers.clear();
     this.bbsMissions = planet.uninhabited
       ? []
@@ -805,6 +918,8 @@ export class LandedUi {
       );
 
     this.view = this.events.length > 0 ? "events" : "spaceport";
+    // Fresh landings focus Leave so Enter gets you back in the air quickly.
+    this.selectedPort = "btn-depart";
     this.root.classList.remove("hidden");
     playMenuOpen();
     if (this.view === "spaceport") this.maybeSpaceportOffer();
@@ -980,6 +1095,8 @@ export class LandedUi {
     if (!this.planet || !this.system) return;
     // the Info dialog belongs to the shipyard; anything that leaves closes it
     if (this.view !== "shipyard") this.shipInfoOpen = false;
+    // quantity chooser is trade-only
+    if (this.view !== "trade") this.tradeQty = null;
     if (this.view === "spaceport") this.renderSpaceport();
     else if (this.view === "trade") this.renderTrade();
     else if (this.view === "shipyard") this.renderShipyard();
@@ -987,7 +1104,6 @@ export class LandedUi {
     else if (this.view === "bar") this.renderBar();
     else if (this.view === "bbs") this.renderBbs();
     else if (this.view === "offer") this.renderOffer();
-    else if (this.view === "log") this.renderLog();
     else if (this.view === "gate") this.renderGate();
     else if (this.view === "escorts") this.renderEscorts();
     else if (this.view === "holovid") this.renderHolovid();
@@ -1282,64 +1398,6 @@ export class LandedUi {
     }
   }
 
-  private renderLog(): void {
-    const g = this.game;
-    const rows = g.player.activeMissions
-      .map((a, i) => {
-        const m = MISSIONS[String(a.misnId)];
-        const dest = a.travelDone ? a.returnSpobId : a.travelSpobId;
-        const entry = dest ? SPOB_INDEX.get(dest) : null;
-        const destText = entry
-          ? `${entry.planet.name}, ${safeSystemName(entry.systemId)}`
-          : "wherever the job ends";
-        const daysLeft =
-          a.timeLimit > 0
-            ? `${Math.max(0, a.timeLimit - (g.player.date - a.acceptedDay))} days left`
-            : "";
-        /*
-         * QuickBrief is the dësc Nova shows when you ask a mission for its
-         * briefing — a one-line restatement of the job ("Take <CQ> tons of
-         * <CT> to <RST>") as against the full offer text in BriefText. 687 of
-         * the 791 missions carry one, and it is what belongs in the log.
-         */
-        const quick = m ? descText(m.quickBrief) : "";
-        const brief = quick
-          ? substituteTags(quick, m!, a, g.pilotName, g.rankTags())
-          : "";
-        return `<div class="ship-card">
-          <div class="ship-info">
-            <div class="ship-name">${a.name}</div>
-            ${brief ? `<div class="ship-brief">${escapeHtml(brief)}</div>` : ""}
-            <div class="ship-stats">Destination: ${destText}${a.cargoLoaded && a.cargoName ? ` · carrying ${a.cargoQty}t ${a.cargoName}` : ""}${daysLeft ? ` · ${daysLeft}` : ""}</div>
-          </div>
-          <div class="ship-buy">${m && m.canAbort ? `<button class="evbtn" data-abort="${i}">Abort</button>` : ""}</div>
-        </div>`;
-      })
-      .join("");
-    this.root.innerHTML = `
-      <div class="panel">
-        <h1>Mission Log</h1>
-        ${this.statusBar()}
-        <div class="ship-list">${rows || '<p class="desc">No active missions.</p>'}</div>
-        <div class="btnrow">
-          <button class="evbtn" id="btn-back">Back to Spaceport</button>
-        </div>
-      </div>`;
-    this.root.querySelector("#btn-back")!.addEventListener("click", () => {
-      this.setView("spaceport");
-    });
-    this.root.querySelectorAll("button[data-abort]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt((btn as HTMLButtonElement).dataset.abort!, 10);
-        const active = this.game.player.activeMissions[idx];
-        if (active && confirm(`Abort mission "${active.name}"?`)) {
-          this.game.abortMission(active);
-          this.render();
-        }
-      });
-    });
-  }
-
   /**
    * The hiring hall. Nova lets you take on escorts wherever there are pilots to
    * hire; the lot is drawn from the hulls this world's tech level supports, the
@@ -1537,7 +1595,7 @@ export class LandedUi {
       ["btn-back", btnLabel(0, "Leave")],
     ];
     if (!this.selectedBar || !barBtns.some(([id]) => id === this.selectedBar)) {
-      this.selectedBar = barBtns[0][0];
+      this.selectedBar = "btn-back";
     }
     const barBtnHtml = barBtns
       .map(
@@ -1785,9 +1843,6 @@ export class LandedUi {
       p.exchange
         ? portBtn("btn-trade", "Trade Center (T)", "Trade Center")
         : "",
-      g.player.activeMissions.length > 0
-        ? portBtn("btn-log", "Mission Log (I)", "Mission Log")
-        : "",
     ].join("");
     const right = [
       p.shipyard ? portBtn("btn-shipyard", "Shipyard (S)", "Shipyard") : "",
@@ -1814,7 +1869,9 @@ export class LandedUi {
     // keep arrow focus on a live button after refuel or when a service is missing
     const live = this.portButtonIds();
     if (!this.selectedPort || !live.includes(this.selectedPort)) {
-      this.selectedPort = live[0] ?? null;
+      this.selectedPort = live.includes("btn-depart")
+        ? "btn-depart"
+        : (live[0] ?? null);
       if (this.selectedPort) {
         this.root.querySelectorAll(".portbtn").forEach((b) => {
           b.classList.toggle("sel", b.id === this.selectedPort);
@@ -1837,9 +1894,6 @@ export class LandedUi {
     this.root
       .querySelector("#btn-bbs")
       ?.addEventListener("click", () => this.setView("bbs"));
-    this.root
-      .querySelector("#btn-log")
-      ?.addEventListener("click", () => this.setView("log"));
     this.root
       .querySelector("#btn-escorts")
       ?.addEventListener("click", () => this.setView("escorts"));
@@ -1972,53 +2026,150 @@ export class LandedUi {
           <button class="evbtn" id="tc-sell" ${sel?.canSell ? "" : "disabled"}>${btnLabel(2, "Sell")}</button>
           <button class="evbtn primary" id="btn-back">${btnLabel(4, "Done")}</button>
         </div>
-      </div>`;
+      </div>
+      ${this.tradeQtyDialog()}`;
 
     this.root
       .querySelectorAll<HTMLElement>(".tc-row[data-id]")
       .forEach((row) => {
         row.addEventListener("click", () => {
+          if (this.tradeQty) return;
           this.selectedGood = row.dataset.id!;
           this.tradeNote = "";
           this.render();
         });
       });
-    const trade = (dir: "buy" | "sell") => {
+    const openQty = (dir: "buy" | "sell") => {
       if (!sel) return;
       const most =
         dir === "buy"
           ? Math.min(space, Math.floor(g.player.credits / sel.price))
           : sel.have;
-      const asked = prompt(
-        `${STR_LISTS["2002"]?.[370] ?? "Enter quantity:"} (max ${most})`,
-        String(most),
-      );
-      if (asked === null) return;
-      const qty = Math.max(0, Math.min(most, parseInt(asked, 10) || 0));
-      if (qty <= 0) return;
-      const before = g.player.cargo[sel.key] ?? 0;
-      if (dir === "buy") g.buy(sel.key, qty, sel.price);
-      else g.sell(sel.key, qty, sel.price);
-      const moved = Math.abs((g.player.cargo[sel.key] ?? 0) - before);
-      this.tradeNote = moved
-        ? `You ${dir === "buy" ? "bought" : "sold"} ${moved} ton${moved === 1 ? "" : "s"} of ${sel.name}.`
-        : "";
+      if (most <= 0) return;
+      this.tradeQty = {
+        dir,
+        key: sel.key,
+        name: sel.name,
+        price: sel.price,
+        max: most,
+      };
       this.render();
     };
     this.root
       .querySelector("#tc-buy")
-      ?.addEventListener("click", () => trade("buy"));
+      ?.addEventListener("click", () => openQty("buy"));
     this.root
       .querySelector("#tc-sell")
-      ?.addEventListener("click", () => trade("sell"));
+      ?.addEventListener("click", () => openQty("sell"));
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.tradeNote = "";
+      this.tradeQty = null;
       this.setView("spaceport");
+    });
+    this.bindTradeQtyDialog();
+  }
+
+  /**
+   * Quantity chooser for Buy / Sell — replaces the browser `prompt`. Mirrors
+   * Nova's "Enter quantity" line (STR# 2002/370) inside the landed UI chrome.
+   */
+  private tradeQtyDialog(): string {
+    const q = this.tradeQty;
+    if (!q) return "";
+    const verb = q.dir === "buy" ? "Buy" : "Sell";
+    const prompt =
+      STR_LISTS["2002"]?.[370] ?? "Enter quantity:";
+    const total = q.price * q.max;
+    return `
+      <div class="tc-qty-back" role="dialog" aria-label="${escapeHtml(prompt)}">
+        <div class="panel tc-qty">
+          <h2>${verb} ${escapeHtml(q.name)}</h2>
+          <p class="menu-hint">${q.price.toLocaleString()} cr each · max ${q.max.toLocaleString()} ton${q.max === 1 ? "" : "s"}</p>
+          <label class="tc-qty-label" for="tc-qty-input">${escapeHtml(prompt)}</label>
+          <div class="tc-qty-row">
+            <input id="tc-qty-input" type="number" min="1" max="${q.max}" value="${q.max}" inputmode="numeric">
+            <button class="evbtn" type="button" id="tc-qty-max">Max</button>
+          </div>
+          <p class="tc-qty-total" id="tc-qty-total">${verb === "Buy" ? "Cost" : "Proceeds"}: ${total.toLocaleString()} cr</p>
+          <div class="btnrow">
+            <button class="evbtn" type="button" id="tc-qty-cancel">Cancel</button>
+            <button class="evbtn primary" type="button" id="tc-qty-ok">${verb}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  private bindTradeQtyDialog(): void {
+    const q = this.tradeQty;
+    if (!q) return;
+    const input = this.root.querySelector<HTMLInputElement>("#tc-qty-input");
+    const totalEl = this.root.querySelector<HTMLElement>("#tc-qty-total");
+    if (!input || !totalEl) return;
+
+    const clamp = (): number => {
+      const raw = parseInt(input.value, 10);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.min(q.max, raw));
+    };
+    const paintTotal = (): void => {
+      const n = clamp();
+      const verb = q.dir === "buy" ? "Cost" : "Proceeds";
+      totalEl.textContent = `${verb}: ${(n * q.price).toLocaleString()} cr`;
+    };
+    input.addEventListener("input", paintTotal);
+    input.addEventListener("change", () => {
+      const n = clamp();
+      input.value = n > 0 ? String(n) : "";
+      paintTotal();
+    });
+    this.root.querySelector("#tc-qty-max")!.addEventListener("click", () => {
+      input.value = String(q.max);
+      paintTotal();
+      input.focus();
+      input.select();
+    });
+    this.root.querySelector("#tc-qty-cancel")!.addEventListener("click", () => {
+      this.tradeQty = null;
+      this.render();
+    });
+    this.root.querySelector("#tc-qty-ok")!.addEventListener("click", () => {
+      const qty = clamp();
+      if (qty <= 0) {
+        input.focus();
+        input.select();
+        return;
+      }
+      const g = this.game;
+      const before = g.player.cargo[q.key] ?? 0;
+      if (q.dir === "buy") g.buy(q.key, qty, q.price);
+      else g.sell(q.key, qty, q.price);
+      const moved = Math.abs((g.player.cargo[q.key] ?? 0) - before);
+      this.tradeNote = moved
+        ? `You ${q.dir === "buy" ? "bought" : "sold"} ${moved} ton${moved === 1 ? "" : "s"} of ${q.name}.`
+        : "";
+      this.tradeQty = null;
+      this.render();
+    });
+    // Focus after the DOM is live so Enter confirms without an extra click.
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
     });
   }
 
   private selectedGood: string | null = null;
   private tradeNote = "";
+  /**
+   * Open quantity dialog for a Buy/Sell. Null when the exchange list is free
+   * to use. Cleared when leaving the trade centre or cancelling.
+   */
+  private tradeQty: {
+    dir: "buy" | "sell";
+    key: string;
+    name: string;
+    price: number;
+    max: number;
+  } | null = null;
   private selectedShip: string | null = null;
   /** whether the shipyard's Info dialog is up over the showroom */
   private shipInfoOpen = false;
@@ -2334,17 +2485,12 @@ export class LandedUi {
       return dailyRoll(`${p.id}|o${id}|${outfitDay}`) * 100 < o.buyRandom;
     };
     /*
-     * The shelf is what this world trades plus everything you already carry.
-     * Owned items have to stay listed wherever you land — an item bought on
-     * its one special-tech world (the three Maps are techs 80/81/82) would
-     * otherwise vanish the moment you left, and no other screen shows what you
-     * own. Whether you can sell it here is a separate question: Flags 0x0800
-     * is "can be sold anywhere, regardless of tech level", so without it the
-     * counter only takes back what it stocks.
+     * The shelf is what this world trades. Items the player owns but that
+     * aren't stocked here do not appear. Flags 0x0800 "can be sold anywhere,
+     * regardless of tech level" is still honoured at buy/sell time for items
+     * that happen to appear via the tech filter.
      */
-    const inStock = OUTFIT_ORDER.filter(
-      (id) => tradedHere(id) || (g.player.outfits[id] ?? 0) > 0,
-    );
+    const inStock = OUTFIT_ORDER.filter((id) => tradedHere(id));
     /*
      * 0x1000: "When this item is available for sale, it prevents all
      * higher-numbered items with equal DispWeight from being made available at

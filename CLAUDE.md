@@ -142,6 +142,24 @@ Structural notes that are easy to get wrong:
   the resource and do translate; the damage is summed and scaled once
   (`FOOT_DAMAGE`) because Nova's numbers are hull-scale.
 
+**The opening sequence has exactly one player, and it is `IntroUi`.** A new
+pilot sat through PICT 8200-8202 twice: `menu.ts` ran its own hardcoded
+slideshow (`INTRO_PAGES` + `playIntro`) before handing over, and
+`Game.startPilot` then played the same pictures from the chär template. The
+menu's copy is gone. `IntroUi` wins because it is data-driven — IntroPict1-4,
+their PictDelay dwell times and the IntroTextID dësc — so a plug-in template
+plays. It kept what the menu version had that the other lacked: a page
+counter, the click/space/esc hint, and **Esc skipping the whole sequence**
+rather than one page. Its keydown listener is now **capture-phase with
+`stopPropagation`**, because unlike the menu's version it plays over a system
+that is already flying (`Input` listens on window too) — without that, Space
+advanced the picture *and* fired a weapon behind it.
+
+**Opening a pilot puts you over the world you left, not beside it.**
+`startPilot` parked the ship at `planet.pos + (radius*2.2, radius*1.4)`, which
+reads as starting off to the right of the planet. It now uses `{...home.pos}`,
+the same rule `depart()` already states: you resume on the pad and fly clear
+under your own power.
 
 **Boarding money is 4% of the hull's cost.** düde Flags **0x0040** is "carries
 money (amount depends on the ship's purchase price)" and the Bible never says
@@ -177,12 +195,18 @@ theirs within 3000px to your side and calls the system's ReinfFleet in on your
 behalf, and **0x0800** (20 of 31) is free repair/refuel, the rank-granted twin
 of gövt Flags2 0x0010 Roadside Assistance.
 
+**Pilot files are only written when you leave a planet** (`depart` /
+`commitPilot`). Shopping, combat, mission accepts, jumps, and everything else
+mutate the live RAM session only. Death, loading another pilot, or closing the
+tab discards that session; Open Pilot reloads the last leave-planet save.
+
 **Death is the end of the run, and the pod is a handle you pull.** Being
 destroyed used to charge 10% of your credits and have a tug haul you in, which
 is not a Nova rule at all. Dying now stops the game and returns to the main
-menu, and the pilot file is rolled back to `portSnapshot` — the state captured
-on landing — so you resume from your last time in port; strict play deletes the
-pilot instead.
+menu with **no pilot loaded** (and does not write the live session). Non-strict
+pilots can Continue from the last leave-planet save. Strict pilots are marked
+`dead` on the pilot list (Continue disabled; still exportable/deletable) rather
+than deleted.
 
 The escape pod does **not** fire by itself. oütf ModType 20 is "auto-eject
 (requires escape pod to work)" and outfit 187's own text says why it is worth
@@ -293,16 +317,17 @@ grids and the two-column spaceport) step the selection; Enter activates
 Accept / Buy / Hire / the focused port button. Covers spaceport, trade, BBS,
 shipyard (3-col), outfitter and hire hall (4-col), bar actions, and gamble
 racers. Hypergate destinations use the canvas map chooser (Tab cycles links;
-see hypergate note above). Letter shortcuts (B/N/T/S/O/I/R/L) and Esc-to-back
+see hypergate note above). Letter shortcuts (B/N/T/S/O/R/L) and Esc-to-back
 are unchanged. Keys the handler acts on must still call `game.swallowKey`.
 
 **Landing / mission dialogs** (`events`, `offer`): Enter fires the affirmative
 (`data-modal-default` — Accept / Continue); Esc fires the negative
 (`data-modal-cancel` — Refuse / Decline) or the sole Continue. The Bible never
 names these keys. Can't-refuse offers have no cancel; Esc must not Accept.
-I in flight opens `InfoUi`; I while landed opens the spaceport Mission Log
-(inert with no active missions) — do not route landed I through
-`openMissionInfo`.
+**Mission log is one panel.** The `missionInfo` keybinding (Classic **I**)
+opens `InfoUi` in flight **and** while landed — there is no spaceport Mission
+Log button or landed `"log"` view. Abort (when mïsn CanAbort allows) lives on
+that panel with a custom confirm overlay.
 
 **In-flight info panels (I / P / Alt-K) must not sit in the full-viewport
 force rule.** A PWA pass put `#info-ui`, `#hail-ui` and `#plunder-ui` under
@@ -379,8 +404,10 @@ Consequences worth knowing:
   and systematic, i.e. how hard each one's bevel is drawn, not a hole in the
   wrong place. Two holes are tight and the code works around them: the
   primary hole is one line, so four primary slots collapse to "name +3", and
-  the cargo hole is three lines, so Free/Credits/Date are emitted first and
-  the per-commodity manifest (ours, not Nova's) is what gets clipped.
+  the cargo hole is three lines, so Free and Credits are emitted first and
+  the per-commodity manifest (ours, not Nova's) is what gets clipped. The
+  date was a third line here until it moved to the map (see below), which
+  buys the manifest one line back.
 - **There is no EJECT button, by choice.** The plate is instrument holes and
   decorative tail with nowhere to put one, so pulling the pod's handle is
   Alt-X and only Alt-X. `playerDestroyed(deliberate)` and oütf ModType 20's
@@ -407,8 +434,26 @@ Consequences worth knowing:
   else locally and should not need the network to look right.
 - **The plate carries no pilot name, no government and no scanner labels.**
   3a's scope is bare glass and so is Nova's; those were 2a's and were removed
-  on request. The remaining non-Nova blocks — the primary-weapon lines, DATE,
-  the key hints and EJECT — are kept but drawn in the same idiom.
+  on request. The remaining non-Nova blocks — the primary-weapon lines and
+  the key hints — are kept but drawn in the same idiom.
+- **The date is not on the plate.** It was a third line in the cargo well and
+  now closes out the map's destination panel (`drawMapPanel`), ruled off below
+  Goods Traded / Services in that panel's own label-over-value idiom. It is
+  anchored to the foot of the box rather than following the content's `ty`,
+  because how far the goods and services lists run depends on which system is
+  selected. Days pass by jumping, so it belongs on the chart you plan the jump
+  from.
+  `formatDateShort` in `game/calendar.ts` has no caller left; it is kept
+  because it is the plate-width form, should anything want it back.
+- **The full-screen map lays out left of the plate, not under it.** The
+  sidebar stays up in map mode (`setVisible(flight || map)`) and is opaque,
+  so `renderMap` taking the whole canvas width hid 176 of the 186 columns of
+  its right-hand readout — government, standing, goods, services — and the
+  map looked like it had no panel. It now paints its backdrop the full width
+  (nothing of the flight scene shows through beside the bar) and lays the
+  chart, panel, footer and buttons out in `fullW - SIDEBAR_W`. Everything
+  clickable — `mapNodes`, `mapButtons` — is recorded during that same pass in
+  canvas coordinates, so the hit tests followed the change for free.
 - **Fuel is one continuous bar, with no jump count.** It used to be a segment
   per jump with "N JUMPS" printed beside it; 3a's plate has neither, and both
   were removed on request. The ïntf's two fuel colours survive the change —

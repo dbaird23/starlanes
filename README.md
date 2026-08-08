@@ -52,7 +52,7 @@ EV Nova's own keys, with the arrow keys flying the ship instead of WASD.
 | R | Target closest ship |
 | Y | Communicate — hail a ship, or a world's traffic control |
 | B | Board a disabled ship |
-| C | Recall fighters |
+| Opt-C (Alt-C) | Recall fighters |
 | U | Engage cloak |
 | L | Land/dock — targets worlds, cycles them, lands on the second press |
 | J | Hyper jump along your plotted course |
@@ -60,13 +60,15 @@ EV Nova's own keys, with the arrow keys flying the ship instead of WASD.
 | Q | Autopilot — flies to your targeted world and lands, or runs your plotted course |
 | \ | Select jump destination — steps through this system's hyperlanes |
 | N | Nav system off — clears the course and drops the autopilot |
-| E · F · V | Escort orders — attack my target · form up · hold position |
+| F · C · V | Escort orders — attack my target · form up · hold position |
 | P | Player info |
 | I | Mission info |
 | Alt-K | Jettison cargo |
 | Alt-X | Eject in your escape pod |
 | Shift-Q | Self-destruct |
 | Esc | Menu |
+
+These are the defaults. Rebind any of them under **Set Preferences** (collisions block Save).
 
 Demanding tribute from a world is a comms option (**Y** with the world targeted), as in the
 original. Still unbound: Nova's separate escort-dismissal key (escorts are released from

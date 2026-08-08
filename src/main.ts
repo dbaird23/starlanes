@@ -18,10 +18,14 @@ async function boot(): Promise<void> {
   migrateLegacySave();
 
   const game = new Game(canvas);
-  const menu = new MainMenu((pilotId, strict) =>
-    game.startPilot(pilotId, strict),
-  );
-  game.onMenu = () => menu.show();
+  const menu = new MainMenu({
+    // Enter ship resumes a session paused with Esc when the same pilot is up.
+    enterShip: (pilotId, strict) => game.enterShip(pilotId, strict),
+    // Open Pilot / New Pilot load from disk (last leave-planet save only).
+    loadPilot: (pilotId, strict) => game.startPilot(pilotId, strict),
+    onDeletePilot: (pilotId) => game.clearPausedSession(pilotId),
+  });
+  game.onMenu = () => menu.show(game.pilotId);
   menu.show();
 
   // debug handles (harmless in production; useful for automated testing)

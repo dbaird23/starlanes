@@ -1,5 +1,6 @@
 import {
   COMMODITIES,
+  GOVT_COMM_NAMES,
   INTERFACE,
   SHIPS,
   STR_LISTS,
@@ -8,7 +9,6 @@ import {
   targetPict,
 } from "../data/universe";
 import { asset } from "../asset";
-import { formatDateShort } from "../game/calendar";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
@@ -76,7 +76,7 @@ export const HUD_W = 192;
  */
 const PLATE_W = 481;
 /** x extent of every opening, in the art's pixels */
-const OPEN_X = 43;
+const OPEN_X = 30;
 const OPEN_R = 435;
 
 /**
@@ -99,8 +99,8 @@ const OPENINGS = {
   pri: [748, 799],
   sec: [842, 893],
   target: [936, 1220],
-  ledger: [1263, 1352],
-  hints: [1395, 1649],
+  spare: [1263, 1352], // old cargo/credits hole — repurposed TBD
+  ledger: [1395, 1649], 
 } as const satisfies Record<string, readonly [number, number]>;
 
 /**
@@ -122,22 +122,6 @@ function boxStyle([y0, y1]: readonly [number, number]): string {
     `height:${((y1 - y0 + 1) * K).toFixed(1)}px`
   );
 }
-
-/** Decorative starfield, fixed so it doesn't crawl between frames. */
-const STARS: [number, number, number, string][] = [
-  [0.14, 0.11, 2, "#dff2f7"],
-  [0.28, 0.24, 1, "#a8c4cf"],
-  [0.44, 0.08, 2, "#ffffff"],
-  [0.63, 0.19, 1, "#c7d8de"],
-  [0.82, 0.33, 2, "#eaf4f7"],
-  [0.09, 0.46, 1, "#b9ccd4"],
-  [0.36, 0.57, 2, "#f3fafc"],
-  [0.71, 0.52, 1, "#a8c4cf"],
-  [0.22, 0.71, 2, "#dff2f7"],
-  [0.56, 0.78, 1, "#c7d8de"],
-  [0.88, 0.69, 2, "#ffffff"],
-  [0.48, 0.9, 1, "#a8c4cf"],
-];
 
 const RADAR_RANGE = 2400;
 const CLOAK_VISIBLE_ON_RADAR = 0x0001;
@@ -162,11 +146,9 @@ export class HudUi {
   private weapSec!: HTMLElement;
   private target!: HTMLElement;
   private ledger!: HTMLElement;
-  private hints!: HTMLElement;
   private speedBadge!: HTMLElement;
 
   private ledgerRows: LedgerRow[] = [];
-  private lastHints = "";
   /** StatusBkgnd id the plate art is currently showing, so it loads once */
   private plateArtId = -1;
 
@@ -208,9 +190,9 @@ export class HudUi {
 
         <div class="hud-well hud-target" style="${boxStyle(OPENINGS.target)}"></div>
 
-        <div class="hud-well hud-ledger" style="${boxStyle(OPENINGS.ledger)}"></div>
+        <div class="hud-well hud-spare" style="${boxStyle(OPENINGS.spare)}"></div>
 
-        <div class="hud-well hud-hints" style="${boxStyle(OPENINGS.hints)}"></div>
+        <div class="hud-well hud-ledger" style="${boxStyle(OPENINGS.ledger)}"></div>
       </div>`;
 
     const q = <T extends HTMLElement>(sel: string) =>
@@ -226,7 +208,6 @@ export class HudUi {
     this.weapSec = q(".hud-weap-sec");
     this.target = q(".hud-target");
     this.ledger = q(".hud-ledger");
-    this.hints = q(".hud-hints");
     this.speedBadge = q(".speed-badge");
   }
 
@@ -278,7 +259,6 @@ export class HudUi {
     this.drawWeapons(g);
     this.drawTarget(g);
     this.drawLedger(g);
-    this.drawHints(g);
   }
 
   // ---------------- scanner ----------------
@@ -299,14 +279,6 @@ export class HudUi {
     const ctx = this.scanCtx;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-
-    for (const [sx, sy, r, col] of STARS) {
-      ctx.fillStyle = col;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.arc(sx * w, sy * h, r / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
     ctx.globalAlpha = 1;
 
     const cx = w / 2;
@@ -444,6 +416,9 @@ export class HudUi {
         : "Navigation";
     const value = dest ?? g.targetPlanet?.name ?? "Offline";
     this.navBox.classList.toggle("off", !dest && !g.targetPlanet);
+    // Course set but the no-jump well is still holding you — dim the address
+    // so the HUD shows why J is not engaging.
+    this.navBox.classList.toggle("nojump", !!(dest && g.inNoJumpZone));
     setText(this.navKind, kind);
     setText(this.navValue, value);
   }
@@ -501,13 +476,17 @@ export class HudUi {
     const tone = t.hostile ? "hostile" : t.personId !== null ? "named" : "";
     const status = t.disabled
       ? "Disabled"
-      : `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`;
+      : t.shield >= t.maxShield * 0.01 || !t.maxShield
+        ? `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`
+        : `Armor ${Math.round(100 * (t.maxArmor ? t.armor / t.maxArmor : 0))}%`;
     const affil =
       t.disabled && t.boarded
         ? "Plundered"
         : t.disabled
           ? "Derelict"
-          : g.govtLabel(t.govtId);
+          : t.govtId >= 128
+            ? (GOVT_COMM_NAMES[String(t.govtId)] || g.govtLabel(t.govtId))
+            : "Independent";
 
     setHtml(
       this.target,
@@ -546,14 +525,14 @@ export class HudUi {
     const abbrev = STR_LISTS["4002"] ?? [];
     /*
      * The artwork's hole is three lines tall and the rest is clipped, so the
-     * three the opening is named for go first. Nova's own plate prints only
+     * two the opening is named for go first. Nova's own plate prints only
      * these; the per-commodity manifest below them is ours, and is what a
-     * loaded hold loses.
+     * loaded hold loses. The date used to sit here as a third line and now
+     * lives on the map screen, which buys the manifest a line back.
      */
     const rows: [string, string, string][] = [
       ["FREE", String(Math.max(0, g.player.cargoCap - g.cargoUsed())), ""],
       ["CREDITS", g.player.credits.toLocaleString(), "credits"],
-      ["DATE", formatDateShort(g.player.date), ""],
     ];
     const special = g.player.activeMissions.find(
       (a) => a.cargoLoaded && a.cargoName,
@@ -592,28 +571,6 @@ export class HudUi {
       const want = `hud-led-v ${cls}`.trim();
       if (row.value.className !== want) row.value.className = want;
     });
-  }
-
-  // ---------------- hints ----------------
-
-  private drawHints(g: Game): void {
-    const keys: [string, string][] = [
-      ["↑↓←→ fly", g.afterburnerFuel > 0 ? "Z burn" : ""],
-      ["A aim", "Space fire"],
-      ["` target", "R closest"],
-      ["Y hail", "B board"],
-      ["L land", g.cloakBits > 0 ? "U cloak" : "C recall"],
-      ["J jump", "H course"],
-      ["M map", "W select"],
-      ["Esc menu", "Caps 2×"],
-    ];
-    const html = keys
-      .map(([a, b]) => `<span>${a}</span><span>${b}</span>`)
-      .join("");
-    if (html !== this.lastHints) {
-      this.lastHints = html;
-      this.hints.innerHTML = html;
-    }
   }
 }
 

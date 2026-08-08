@@ -74,15 +74,39 @@ export interface WeaponSlot {
 }
 
 /**
+ * Projectiles (or beam emitters) per trigger tick.
+ *
+ * wëap Flags 0x0040 "Multiple weapons of this type fire simultaneously" → all
+ * copies go off together. Otherwise copies fire in series: one shot per tick,
+ * mounts alternating, so N of a weapon is N× the fire rate rather than N× the
+ * shot count in a single volley.
+ */
+export function volleyCount(weap: WeaponType, fitted: number): number {
+  const n = Math.max(1, fitted | 0);
+  if (weap.simultaneous) return Math.min(n, 4);
+  return 1;
+}
+
+/**
+ * Reload interval after one trigger tick (no burst). Series multiplies ROF by
+ * fitted count; simultaneous keeps the weapon's Reload between full volleys.
+ */
+export function reloadInterval(weap: WeaponType, fitted: number): number {
+  const n = Math.max(1, fitted | 0);
+  return weap.simultaneous ? weap.reloadSec : weap.reloadSec / n;
+}
+
+/**
  * The reload to impose after a shot. A weapon with a BurstCount fires that
  * many rounds at its normal Reload and then pays the longer BurstReload —
  * which is what makes a chaingun a chaingun rather than a fast cannon. The
  * Bible multiplies the burst budget by how many of the weapon the ship
- * carries, for weapons that don't fire simultaneously.
+ * carries, for weapons that don't fire simultaneously. Non-burst series
+ * shortens the cooldown instead (N copies → Reload/N).
  */
 export function applyReload(slot: WeaponSlot): void {
   if (slot.weap.burstCount <= 0) {
-    slot.cooldown = slot.weap.reloadSec;
+    slot.cooldown = reloadInterval(slot.weap, slot.count);
     return;
   }
   // Flags 0x0040: all barrels fire together, so the budget is not multiplied.
@@ -91,6 +115,8 @@ export function applyReload(slot: WeaponSlot): void {
     (slot.weap.simultaneous ? 1 : Math.max(1, slot.count));
   if (slot.burstLeft <= 0) slot.burstLeft = budget;
   slot.burstLeft--;
+  // Within a burst, series still fires one round per tick at full Reload;
+  // the multiplied budget already gives N× shots before BurstReload.
   slot.cooldown =
     slot.burstLeft <= 0
       ? Math.max(slot.weap.burstReloadSec, slot.weap.reloadSec)
@@ -655,6 +681,48 @@ function takeMounts(shooter: Ship, weapId: string, n: number): number {
   const at = byWeap.get(weapId) ?? 0;
   byWeap.set(weapId, (at + n) % 4);
   return at;
+}
+
+/**
+ * Compute where to aim a projectile weapon so it intercepts a moving target.
+ * Solves the quadratic: at time t, shooter fires at speed `projSpeed` and the
+ * target has moved by t × target.vel. Relative velocities are used so the
+ * shooter's own drift is factored in automatically.
+ *
+ * Falls back to the target's current position when no real solution exists
+ * (target moving faster than the projectile away from the shooter).
+ */
+export function leadPoint(
+  shooter: Ship,
+  target: Ship,
+  projSpeed: number,
+): { x: number; y: number } {
+  const dx = target.pos.x - shooter.pos.x;
+  const dy = target.pos.y - shooter.pos.y;
+  // relative velocity of target in the shooter's frame
+  const rvx = target.vel.x - shooter.vel.x;
+  const rvy = target.vel.y - shooter.vel.y;
+  // |d + t·rv|² = (projSpeed·t)²  →  at² + bt + c = 0
+  const a = rvx * rvx + rvy * rvy - projSpeed * projSpeed;
+  const b = 2 * (dx * rvx + dy * rvy);
+  const c = dx * dx + dy * dy;
+  let t: number;
+  if (Math.abs(a) < 1e-4) {
+    // degenerate: same closing speed as projectile, solve linearly
+    t = b !== 0 ? -c / b : 0;
+  } else {
+    const disc = b * b - 4 * a * c;
+    if (disc < 0) return { x: target.pos.x, y: target.pos.y };
+    const sq = Math.sqrt(disc);
+    const t1 = (-b - sq) / (2 * a);
+    const t2 = (-b + sq) / (2 * a);
+    t = t1 > 0 && t2 > 0 ? Math.min(t1, t2) : Math.max(t1, t2);
+  }
+  if (t <= 0) return { x: target.pos.x, y: target.pos.y };
+  return {
+    x: target.pos.x + target.vel.x * t,
+    y: target.pos.y + target.vel.y * t,
+  };
 }
 
 /** Spawn projectiles for one shot of a weapon from a ship. */

@@ -31,7 +31,6 @@ import {
   landingGovtId,
   MIN_STATUS_NEVER,
   COMMODITIES,
-  CURSOR_SPRITE,
   INTERFACE,
   setInterfaceForGovt,
   UI_PICTS,
@@ -89,7 +88,13 @@ import {
   testContext,
   type MissionEvent,
 } from "./missions";
-import { deletePilot, listPilots, loadPilot, savePilot } from "./pilots";
+import {
+  isPilotDead,
+  listPilots,
+  loadPilot,
+  markPilotDead,
+  savePilot,
+} from "./pilots";
 import {
   applyCompReward,
   applyCrime,
@@ -111,6 +116,7 @@ import {
   preloadSnds,
   setVolume,
   SND,
+  sndDuration,
   startSustained,
   stopSustained,
   toggleMuted,
@@ -132,9 +138,12 @@ import {
   ammoCapped,
   inherentCombatGovt,
   applyReload,
+  reloadInterval,
+  volleyCount,
   W3_AMMO_AT_BURST_END,
   W3_TRANSLUCENT,
   fireWeapon,
+  leadPoint,
   isBeam,
   isFighterBay,
   isPointDefense,
@@ -158,8 +167,15 @@ import {
   type WeaponSlot,
 } from "./combat";
 import { Input } from "../engine/input";
+import {
+  actionConsume,
+  actionDown,
+  consumeCycleTargets,
+  formatChord,
+  getBinding,
+} from "../keybindings";
 import { simFastForCapsLock } from "../settings";
-import { InfoUi, type InfoRow } from "../ui/info";
+import { InfoUi, type InfoPickItem, type InfoRow } from "../ui/info";
 import { drawStarfield } from "../engine/starfield";
 import type {
   ActiveMission,
@@ -188,23 +204,32 @@ type Mode = "menu" | "flight" | "map" | "landed" | "fps";
 
 /**
  * Hyperspace entry, as Nova plays it (and as the SDA notes spell out):
- *   1. brake — face retro and burn until nearly stopped, unless the hull or an
+ *   1. brake  — face retro and burn until nearly stopped, unless the hull or an
  *      outfit can "jump without slowing down" (shïp Flags2 0x0020 / oütf 37);
- *   2. turn  — point at the destination system on the map;
- *   3. burn  — accelerate well past cruise speed toward that heading, so you
+ *   2. turn   — point at the destination system on the map;
+ *   3. warm   — hold still while the warp-up sample spools (sound starts here);
+ *   4. burn   — accelerate well past cruise speed toward that heading, so you
  *      streak across the current system before the white flash and arrival.
- * shïp Flags 0x0001/2/4 scale the burn (75% / 125% / 150%); the Bible only
- * names those as "jumping speed", not the calendar travel-time ModType 22.
+ * Warm+burn wall time equals the warp sample (128 / 129), scaled by shïp
+ * Flags 0x0001/2/4 jumping speed which also pitches the sample.
  */
 interface JumpSequence {
-  phase: "braking" | "turning" | "burning";
+  phase: "braking" | "turning" | "warming" | "burning";
   /** map bearing of the destination system */
   targetAngle: number;
-  /** seconds left on the high-speed burn */
+  /** game-dt seconds left holding still while the drive spools */
+  warmLeft: number;
+  /** game-dt seconds left on the high-speed burn */
   burnLeft: number;
+  /** original burn length for white-out timing */
+  burnTotal: number;
   /** temporary maxSpeed / accel while burning into hyperspace */
   burnSpeed: number;
   burnAccel: number;
+  /** snd 128 (1× clock) or 129 (2× clock) */
+  warpSndId: number;
+  /** ship jump-speed mult — shortens spool and pitches the warp sample up */
+  playbackRate: number;
 }
 
 interface Message {
@@ -253,6 +278,13 @@ interface Mineral {
  */
 const MISSION_ARROW = "#e05a4a";
 const BRIEFING_ARROW = "#5ada54";
+
+/**
+ * Governments that board disabled ships rather than finishing them off.
+ * Pirates (137, 192), Houseless Warriors (170), Associated Guild of Free
+ * Traders / "Fr Trad" (169), Association of Free Traders / "Assoc" (176, 177).
+ */
+const BOARDER_GOVTS = new Set([137, 169, 170, 176, 177, 192]);
 
 const LAND_DIST = 2.4; // multiples of planet radius (from surface-ish)
 const LAND_SPEED = 130;
@@ -313,6 +345,7 @@ function defaultPlayer(): PlayerState {
     cargoCap: 10,
     systemId: pickStartSystemId(),
     landedOn: null,
+    lastPad: null,
     shipId: startShip,
     // A new pilot owns the hull's armament outright rather than having it
     // welded on: the Shuttle's Light Blaster is a Light Blaster outfit, so it
@@ -421,6 +454,11 @@ export class Game {
   pilotId: string | null = null;
   pilotName = "Captain";
   /**
+   * Mode to restore after Esc → title → Enter ship. Null when there is no
+   * live session (cold title, or the pilot was explicitly reloaded/killed).
+   */
+  private resumeMode: Mode | null = null;
+  /**
    * Simulation clock multiplier. Caps Lock always toggles 2×; Preferences
    * only choose which lock state is fast (on or off). The frame loop
    * multiplies dt by this so physics, AI and cooldowns all race.
@@ -447,6 +485,8 @@ export class Game {
 
   route: string[] = []; // system ids to traverse, in order
   routeDest: string | null = null;
+  /** Prior frame's jump-possible state — edge-detect ready-to-jump (snd 154). */
+  private wasJumpPossible = false;
   weaponSlots: WeaponSlot[] = [];
   /** afterburner fuel burn (units/sec); 0 when none is fitted */
   private afterburnerBurn = 0;
@@ -519,6 +559,8 @@ export class Game {
     x: number;
     y: number;
     nextFx: number;
+    /** seconds to wait after explosion before resolving (non-pod only) */
+    waitLeft: number;
   } | null = null;
 
   private messages: Message[] = [];
@@ -551,9 +593,9 @@ export class Game {
   private mapCenter = { x: 0, y: 0 };
   private mapScale = 1; // effective px per map unit, set during render
   /**
-   * Nova's H "hyper select" / hyperjump-coordinates overlay. Deadline for the
-   * overlay (including its fade-out tail). Refreshed by H / \ and held open
-   * while H is down; after release it lingers fully then fades away.
+   * Floating mini-map overlay deadline (including fade-out). Refreshed by the
+   * display-mini-map bind (held open while down) and by cycle-jump-dest peeks;
+   * after release it lingers fully then fades away.
    */
   private floatingMapUntil = 0;
   private mouse = { x: 0, y: 0 };
@@ -593,7 +635,9 @@ export class Game {
       this.lastDragMoved = this.drag?.moved ?? 0;
       this.drag = null;
     });
-    canvas.addEventListener("mousemove", (e) => {
+    // Track cursor over the whole window so aim-cursor stays live when the
+    // pointer crosses the HUD or leaves the canvas briefly.
+    window.addEventListener("mousemove", (e) => {
       const rect = canvas.getBoundingClientRect();
       this.mouse = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       if (this.drag && this.mode === "map") {
@@ -616,8 +660,59 @@ export class Game {
   }
 
   /** Begin playing as a pilot (new or loaded). Called from the main menu. */
+  /**
+   * Title "Enter ship": resume a session paused with Esc when the same pilot
+   * is still selected; otherwise load that pilot from disk (as Open Pilot does).
+   */
+  enterShip(pilotId: string, strict?: boolean): void {
+    if (this.tryResume(pilotId)) return;
+    this.startPilot(pilotId, strict);
+  }
+
+  /** True if a live session for this pilot is sitting under the title menu. */
+  hasPausedSession(pilotId?: string | null): boolean {
+    if (!this.resumeMode || !this.pilotId) return false;
+    if (pilotId != null && pilotId !== this.pilotId) return false;
+    return true;
+  }
+
+  /**
+   * Restore the mode Esc interrupted. Returns false if there is nothing to
+   * resume (caller should load the pilot instead).
+   */
+  tryResume(pilotId: string): boolean {
+    if (!this.hasPausedSession(pilotId) || !this.resumeMode) return false;
+    const mode = this.resumeMode;
+    this.resumeMode = null;
+    if (mode === "landed" && this.player.landedOn) {
+      const home = this.system.planets.find(
+        (p) => p.id === this.player.landedOn,
+      );
+      if (home) {
+        this.mode = "landed";
+        this.landedUi.show(home, this.system);
+        return true;
+      }
+    }
+    if (mode === "map") {
+      this.mode = "map";
+      return true;
+    }
+    // flight (default), or landed without a pad to re-open
+    this.mode = "flight";
+    return true;
+  }
+
   startPilot(pilotId: string, strict?: boolean): void {
     preloadCoreSnds();
+    this.resumeMode = null;
+    if (isPilotDead(pilotId)) {
+      // Strict deaths stay on the list but never fly again.
+      this.pilotId = null;
+      this.mode = "menu";
+      this.onMenu?.();
+      return;
+    }
     this.pilotId = pilotId;
     this.pilotName =
       listPilots().find((p) => p.id === pilotId)?.name ?? "Captain";
@@ -632,7 +727,6 @@ export class Game {
       if (onStart) applySet(onStart, this.player.bits, this.bitHandlers());
     }
     this.markExplored(this.player.systemId);
-    this.markPort(); // a freshly loaded pilot is its own last save point
     for (const [outfId, owned] of Object.entries(this.player.outfits)) {
       if (owned > 0) this.chartFromOutfit(outfId, false);
     }
@@ -642,6 +736,13 @@ export class Game {
     this.ship.vel = { x: 0, y: 0 };
     this.route = [];
     this.routeDest = null;
+    if (this.player.routeDest && this.player.routeDest !== this.player.systemId) {
+      const restored = findRoute(this.player.systemId, this.player.routeDest);
+      if (restored) {
+        this.route = restored;
+        this.routeDest = this.player.routeDest;
+      }
+    }
     this.jump = null;
     stopSustained(JUMP_SND_KEY); // a pilot switch mid-charge leaves nothing humming
     this.projectiles = [];
@@ -650,14 +751,15 @@ export class Game {
     this.messages = [];
 
     const sys = this.system;
-    const home = this.player.landedOn
-      ? sys.planets.find((p) => p.id === this.player.landedOn)
+    // Disk saves are written on leave, so a load is almost always in flight
+    // over lastPad. landedOn is only non-null mid-session (or in old saves).
+    const padId = this.player.landedOn ?? this.player.lastPad;
+    const home = padId
+      ? (sys.planets.find((p) => p.id === padId) ?? sys.planets[0])
       : sys.planets[0];
     if (home) {
-      this.ship.pos = {
-        x: home.pos.x + home.radius * 2.2,
-        y: home.pos.y + home.radius * 1.4,
-      };
+      // Same rule as depart(): on the pad, not parked off to one side.
+      this.ship.pos = { ...home.pos };
     } else {
       this.ship.pos = { x: 900, y: 600 };
     }
@@ -695,7 +797,7 @@ export class Game {
         `Welcome to the ${sys.name} system. Press M for the map, L to land.`,
       );
     }
-    this.save();
+    // No disk write — progress is RAM until the next leave-planet commit.
   }
 
   /**
@@ -1010,7 +1112,6 @@ export class Game {
     this.populateNpcs();
     this.spawnMissionShips();
     playSnd(153, 0.5);
-    this.save();
     this.message(
       dest.isWormhole
         ? `The wormhole flings you into the ${this.system.name} system.`
@@ -1018,16 +1119,33 @@ export class Game {
     );
   }
 
-  /** Save and return to the title menu. */
+  /** Drop a paused session (deleted pilot, etc.) so Enter ship cannot resume it. */
+  clearPausedSession(pilotId?: string | null): void {
+    if (pilotId != null && this.pilotId !== pilotId) return;
+    this.resumeMode = null;
+    this.pilotId = null;
+  }
+
+  /**
+   * Esc from flight: pause and show the title menu. The live session stays in
+   * memory so Enter ship resumes where you left off. Open Pilot / New Pilot
+   * still load from disk (and replace this session). Death also clears it.
+   */
   exitToMenu(): void {
-    this.save();
+    if (this.mode !== "menu" && this.pilotId) {
+      this.resumeMode = this.mode;
+    } else {
+      this.resumeMode = null;
+    }
     this.landedUi.hide();
     this.hailUi.close();
+    this.infoUi.close();
+    this.plunderUi.close();
     // a jump abandoned mid-charge must not go on spooling over the menu
     this.jump = null;
     stopSustained(JUMP_SND_KEY);
     this.mode = "menu";
-    this.pilotId = null;
+    // keep pilotId — Enter ship for this pilot resumes instead of reloading
     this.onMenu?.();
   }
 
@@ -1272,19 +1390,31 @@ export class Game {
 
   // ---------------- persistence ----------------
 
-  save(): void {
-    if (this.pilotId) savePilot(this.pilotId, this.player);
+  /**
+   * Write the live pilot to disk. Only used when leaving a planet: that is the
+   * sole durable checkpoint. Mid-session progress is RAM-only; death, a pilot
+   * switch, or closing the tab discards it. Strict death only marks the index
+   * entry deceased.
+   */
+  /**
+   * Strip all ship-specific outfits, keeping only those the pilot carries
+   * across hulls — licenses and other outfits flagged 0x0004 (persistent).
+   * Call this before switching to a new ship so the old loadout doesn't
+   * transfer.
+   */
+  private keepPilotOutfits(): void {
+    const kept: Record<string, number> = {};
+    for (const [id, n] of Object.entries(this.player.outfits)) {
+      if (((OUTFITS[id]?.flags ?? 0) & 0x0004) !== 0) kept[id] = n;
+    }
+    this.player.outfits = kept;
   }
 
-  /**
-   * The pilot as it stood the last time it was safely in port, kept as JSON so
-   * a death can put the file back the way Nova does — you resume from your last
-   * landing, not from the wreck. Taken on landing and on loading a pilot.
-   */
-  private portSnapshot: string | null = null;
-
-  private markPort(): void {
-    this.portSnapshot = JSON.stringify(this.player);
+  private commitPilot(): void {
+    if (this.pilotId) {
+      this.player.routeDest = this.routeDest;
+      savePilot(this.pilotId, this.player);
+    }
   }
 
   /** Apply a ship class's real stats to the player's ship. */
@@ -1451,6 +1581,7 @@ export class Game {
       };
     }
     this.player.credits -= price;
+    this.keepPilotOutfits();
     grantHullOutfits(shipId, this.player.outfits);
     this.applyShipType(shipId);
     this.player.fuelJumps = type.fuelJumps; // delivered fully fueled
@@ -1461,35 +1592,73 @@ export class Game {
         Math.max(this.player.ammo[weapId] ?? 0, count),
       );
     }
-    this.save();
     return { ok: true };
   }
 
   // ---------------- update ----------------
 
+  /**
+   * In-flight DOM overlays that freeze the sim (boarding, hail, P/I/jettison).
+   * The H floating minimap is canvas-only and does *not* count — flight keeps
+   * running under it.
+   */
+  private flightOverlayOpen(): boolean {
+    return this.infoUi.open || this.hailUi.open || this.plunderUi.open;
+  }
+
   update(dt: number): void {
-    this.time += dt;
     // held weapon sounds are driven from here, not from the firing branch, so
     // that landing, jumping or dying with the trigger down still cuts them off
     this.updateFiringLoops();
 
     if (this.mode === "menu") {
-      // living backdrop: traffic keeps drifting behind the title. Nobody comes
-      // back from a landing here — the title screen is not a live system.
-      for (const npc of this.npcs) {
-        npc.updateAi(dt);
-        if (npc.landing) npc.done = true;
+      /*
+       * Cold title (no paused pilot): living backdrop traffic. A session
+       * paused with Esc freezes in place so Enter ship restores it unchanged.
+       */
+      if (!this.resumeMode) {
+        this.time += dt;
+        for (const npc of this.npcs) {
+          npc.updateAi(dt);
+          if (npc.landing) npc.done = true;
+        }
+        this.npcs = this.npcs.filter((n) => !n.done);
+        if (this.npcs.length < 2) this.spawnNpc();
       }
-      this.npcs = this.npcs.filter((n) => !n.done);
-      if (this.npcs.length < 2) this.spawnNpc();
       this.input.endFrame();
       return;
     }
 
     if (this.mode === "landed") {
+      this.time += dt;
       this.updateGates(dt);
+      /*
+       * Mission log (I) is the same panel landed or in flight. LandedUi's
+       * keydown also opens it (and swallows the key); this path covers a
+       * mouse-bound missionInfo and any press that was not swallowed.
+       */
+      if (this.infoUi.open) {
+        if (this.input.consume("Escape")) {
+          if (!this.infoUi.handleEscape()) this.infoUi.close();
+        } else if (actionConsume(this.input, "missionInfo")) {
+          this.infoUi.close();
+        } else if (
+          this.input.consume("Enter") ||
+          this.input.consume("NumpadEnter")
+        ) {
+          this.infoUi.handleEnter();
+        } else if (this.input.consume("KeyA")) {
+          this.infoUi.handleAbort();
+        } else if (this.input.consume("ArrowDown")) {
+          this.infoUi.handleArrow(1);
+        } else if (this.input.consume("ArrowUp")) {
+          this.infoUi.handleArrow(-1);
+        }
+      } else if (actionConsume(this.input, "missionInfo")) {
+        this.openMissionInfo();
+      }
       this.input.endFrame();
-      return; // DOM UI handles everything
+      return; // DOM UI handles the counters
     }
 
     /*
@@ -1510,15 +1679,37 @@ export class Game {
       return;
     }
 
-    if (
-      this.mode === "flight" &&
-      this.input.consume("Escape") &&
-      !this.jump &&
-      !this.pendingGateDest
-    ) {
-      // an open info panel takes Esc first, before it means "leave the game"
+    if (this.mode === "flight" && this.input.consume("Escape")) {
+      // open overlays take Esc first (close them, don't quit to title)
       if (this.infoUi.open) {
-        this.infoUi.close();
+        if (!this.infoUi.handleEscape()) this.infoUi.close();
+        this.input.endFrame();
+        return;
+      }
+      if (this.hailUi.open) {
+        this.hailUi.close();
+        this.input.endFrame();
+        return;
+      }
+      if (this.plunderUi.open) {
+        this.plunderUi.dismiss();
+        this.input.endFrame();
+        return;
+      }
+      /*
+       * Mid-jump / gate bleach normally rides out without Esc (Nova). But a
+       * disabled hull can get stuck in the jump align forever (no steering),
+       * and you must always be able to open the menu when dead in space.
+       */
+      if (this.ship.disabled) {
+        this.cancelJumpSequence();
+        this.pendingGateDest = null;
+        this.ship.gateFlash = 0;
+        this.exitToMenu();
+        this.input.endFrame();
+        return;
+      }
+      if (this.jump || this.pendingGateDest) {
         this.input.endFrame();
         return;
       }
@@ -1527,14 +1718,45 @@ export class Game {
       return;
     }
 
-    if (this.input.consume("KeyM")) {
-      if (this.mode === "map") this.closeMap();
-      else if (this.mode === "flight") this.openMap();
+    /*
+     * Boarding / hail / info freeze the flight sim. Map mode also freezes
+     * flight (handled below). The H floating minimap does not — it peeks
+     * over a still-running system.
+     */
+    if (this.mode === "flight" && this.flightOverlayOpen()) {
+      // Mission log keys while the panel freezes flight.
+      if (this.infoUi.open) {
+        if (
+          this.input.consume("Enter") ||
+          this.input.consume("NumpadEnter")
+        ) {
+          this.infoUi.handleEnter();
+        } else if (this.input.consume("KeyA")) {
+          this.infoUi.handleAbort();
+        } else if (this.input.consume("ArrowDown")) {
+          this.infoUi.handleArrow(1);
+        } else if (this.input.consume("ArrowUp")) {
+          this.infoUi.handleArrow(-1);
+        }
+      }
+      this.input.endFrame();
+      return;
     }
+
+    this.time += dt;
+
+    // Gate chooser keys run first so Tab cycles destinations even when Tab is
+    // also the map binding (e.g. Starsector preset). updateGateChooserKeys
+    // consumes Tab only when the gate chooser is open; otherwise it's a no-op
+    // and the map binding below can consume it normally.
     if (this.mode === "map") {
       this.updateGates(dt);
       this.updateGateChooserKeys();
       if (this.input.consume("Escape")) this.closeMap();
+    }
+    if (actionConsume(this.input, "map")) {
+      if (this.mode === "map") this.closeMap();
+      else if (this.mode === "flight") this.openMap();
     }
 
     // flight controls (also run under the map, EV-style time keeps passing? No — pause under map)
@@ -1556,7 +1778,6 @@ export class Game {
       idx = this.input.shiftDown
         ? (idx - 1 + links.length) % links.length
         : (idx + 1) % links.length;
-      // highlight only — do not pan the chart
       this.mapSelected = links[idx];
     }
     if (this.input.consume("Enter") || this.input.consume("NumpadEnter")) {
@@ -1589,6 +1810,20 @@ export class Game {
     }
 
     /*
+     * Jump becomes possible (course set, outside the well, fuel ≥ 1): the HUD
+     * address goes full opacity and we chirp 154 so you know J will take now.
+     * Does not fire on mid-route arrivals (wasJumpPossible stays true across
+     * the jump) or when the tank is dry.
+     */
+    const inWell = this.insideNoJumpZone();
+    const jumpPossible =
+      this.route.length > 0 && !inWell && this.player.fuelJumps >= 1;
+    if (jumpPossible && !this.wasJumpPossible) {
+      playSnd(SND.DENY, 0.45); // 154
+    }
+    this.wasJumpPossible = jumpPossible;
+
+    /*
      * Gate enter flash: hull bleaches white on the pad, then transit. Controls
      * are locked so you stay centred on the ring.
      */
@@ -1619,17 +1854,27 @@ export class Game {
     if (this.jump) {
       this.updateJumpSequence(dt);
     } else {
-      let turn =
-        (this.input.isDown("ArrowLeft") ? -1 : 0) +
-        (this.input.isDown("ArrowRight") ? 1 : 0);
-      const thrust = this.input.isDown("ArrowUp");
+      // Hold aim-cursor: steer at the pointer each frame; left/right are ignored.
+      const aimCursor = actionDown(this.input, "aimCursor");
+      let turn = aimCursor
+        ? 0
+        : (actionDown(this.input, "turnLeft") ? -1 : 0) +
+          (actionDown(this.input, "turnRight") ? 1 : 0);
+      const thrust = actionDown(this.input, "accelerate");
       // Down swings the nose onto the reverse of your course, so a burn slows
       // you; inertialess hulls simply stop instead
-      const braking = this.input.isDown("ArrowDown");
-      // Hold A: auto-turn toward the selected ship or stellar (manual ←→ win)
-      const aimAssist = turn === 0 && !braking && this.input.isDown("KeyA");
+      const braking = actionDown(this.input, "reverse");
+      // Hold aim-assist: auto-turn toward the selected ship or stellar
+      const aimAssist =
+        !aimCursor &&
+        turn === 0 &&
+        !braking &&
+        actionDown(this.input, "aimAssist");
       // touching the controls takes the ship back off the autopilot
-      if (this.autopilot && (turn !== 0 || thrust || braking || aimAssist)) {
+      if (
+        this.autopilot &&
+        (turn !== 0 || thrust || braking || aimAssist || aimCursor)
+      ) {
         this.autopilot = false;
         this.message("Autopilot disengaged.");
       }
@@ -1649,6 +1894,14 @@ export class Game {
             this.ship.steerToward(dt, retro);
             turn = 0;
           }
+        } else if (aimCursor) {
+          // Rate-limited turn toward the cursor; clamps so one frame cannot overshoot.
+          const aim = this.cursorWorldPoint();
+          this.ship.steerToward(
+            dt,
+            Math.atan2(aim.y - this.ship.pos.y, aim.x - this.ship.pos.x),
+          );
+          turn = 0;
         } else if (aimAssist) {
           const aim = this.selectedAimPoint();
           if (aim) {
@@ -1659,11 +1912,11 @@ export class Game {
             turn = 0; // steerToward already applied the turn
           }
         }
-        // afterburner: hold Z to trade fuel for speed (100 units = 1 jump)
+        // afterburner: hold to trade fuel for speed (100 units = 1 jump)
         this.afterburning =
           this.afterburnerBurn > 0 &&
           thrust &&
-          this.input.isDown("KeyZ") &&
+          actionDown(this.input, "afterburner") &&
           this.player.fuelJumps > 0.05;
         if (this.inertialess && !thrust && !braking) {
           // an inertialess hull holds station the moment you stop pushing
@@ -1694,57 +1947,58 @@ export class Game {
         }
       }
 
-      // EV Nova's own bindings, with the arrow keys flying the ship
-      if (this.input.consume("KeyL")) this.selectOrLand();
+      // Bound in Preferences; defaults match Nova with arrow-key flight.
+      if (actionConsume(this.input, "land")) this.selectOrLand();
+      if (actionConsume(this.input, "cycleStellars")) this.cycleStellars();
       /*
-       * J engages the hyperdrive. A press reports why it cannot (no course,
-       * gravity well, fuel). Holding J keeps trying quietly so you can:
-       *  - fly out of the no-jump zone with J down and jump the moment you clear it
-       *  - ride a multi-system plot without re-tapping J after each arrival
+       * Jump engages the hyperdrive. A press reports why it cannot (no course,
+       * gravity well, fuel). Holding keeps trying quietly so you can:
+       *  - fly out of the no-jump zone with jump held and leave the moment you clear it
+       *  - ride a multi-system plot without re-tapping after each arrival
        */
-      if (this.input.consume("KeyJ")) this.startJump(false);
-      else if (this.input.isDown("KeyJ")) this.startJump(true);
-      if (this.input.consume("Backquote") || this.input.consume("Tab"))
-        this.cycleTarget();
-      if (this.input.consume("KeyR")) this.targetClosest();
-      if (this.input.consume("KeyY")) this.hailTarget();
-      if (this.input.consume("KeyB")) this.tryBoard();
-      if (this.input.consume("KeyU")) this.toggleCloak();
-      // audio: - / = ride the master gain, 0 mutes
+      if (actionConsume(this.input, "jump")) this.startJump(false);
+      else if (actionDown(this.input, "jump")) this.startJump(true);
+      if (consumeCycleTargets(this.input)) this.cycleTarget();
+      if (actionConsume(this.input, "targetClosest")) this.targetClosest();
+      if (actionConsume(this.input, "selectUnderCursor"))
+        this.selectUnderCursor();
+      if (actionConsume(this.input, "hail")) this.hailTarget();
+      if (actionConsume(this.input, "board")) this.tryBoard();
+      if (actionConsume(this.input, "cloak")) this.toggleCloak();
+      // audio: - / = ride the master gain, 0 mutes (not rebindable)
       if (this.input.consume("Minus")) this.nudgeVolume(-0.1);
       if (this.input.consume("Equal")) this.nudgeVolume(0.1);
       if (this.input.consume("Digit0")) {
         this.message(toggleMuted() ? "Sound muted." : "Sound unmuted.");
       }
-      if (this.input.consume("KeyW")) this.cycleSecondary();
-      if (this.input.consume("KeyC")) this.recallFighters();
-      // escort orders
-      if (this.input.consume("KeyE")) this.orderEscorts("attack");
-      if (this.input.consume("KeyF")) this.orderEscorts("defend");
-      if (this.input.consume("KeyV")) this.orderEscorts("hold");
-      // navigation
-      if (this.input.consume("KeyQ")) {
-        if (this.input.shiftDown) this.selfDestruct();
-        else this.toggleAutopilot();
-      }
+      if (actionConsume(this.input, "selectSecondary")) this.cycleSecondary();
+      if (actionConsume(this.input, "escortAttack"))
+        this.orderEscorts("attack");
+      if (actionConsume(this.input, "escortForm")) this.orderEscorts("defend");
+      if (actionConsume(this.input, "escortHold")) this.orderEscorts("hold");
+      if (actionConsume(this.input, "recallFighters")) this.recallFighters();
+      if (actionConsume(this.input, "selfDestruct")) this.selfDestruct();
+      else if (actionConsume(this.input, "autopilot")) this.toggleAutopilot();
       /*
-       * H is Nova's hyper-select / "hyperjump coordinates": cycle the next
-       * jump and show the floating minimap without leaving flight. \ does the
-       * same cycle (classic binding) and also peeks the map so the new course
-       * is visible.
+       * Display mini map (default H): show the floating chart only — does not
+       * change the jump selection. Hold keeps it up; release fades it out.
+       * Select jump destination (default \): step the course and peek the map.
        */
-      if (this.input.consume("KeyH") || this.input.consume("Backslash")) {
+      if (actionConsume(this.input, "cycleJumpDest")) {
         this.cycleJumpDestination();
         this.peekFloatingMap();
       }
-      if (this.input.isDown("KeyH")) this.peekFloatingMap();
-      if (this.input.consume("KeyN")) this.navOff();
-      if (this.input.consume("KeyX") && this.input.altDown)
-        this.ejectFromShip();
-      // information panels
-      if (this.input.consume("KeyP")) this.openPlayerInfo();
-      if (this.input.consume("KeyI")) this.openMissionInfo();
-      if (this.input.consume("KeyK") && this.input.altDown) this.openJettison();
+      if (
+        actionConsume(this.input, "hyperSelect") ||
+        actionDown(this.input, "hyperSelect")
+      ) {
+        this.peekFloatingMap();
+      }
+      if (actionConsume(this.input, "navOff")) this.navOff();
+      if (actionConsume(this.input, "eject")) this.ejectFromShip();
+      if (actionConsume(this.input, "playerInfo")) this.openPlayerInfo();
+      if (actionConsume(this.input, "missionInfo")) this.openMissionInfo();
+      if (actionConsume(this.input, "jettison")) this.openJettison();
       this.updateWeapons(dt);
     }
 
@@ -1759,7 +2013,9 @@ export class Game {
      */
     this.ship.unfolding =
       this.ship.sprite && this.ship.sprite.flags & SHAN_UNFOLD_FIRING
-        ? this.input.isDown("Space") && !this.ship.ionized
+        ? actionDown(this.input, "firePrimary") &&
+          !this.ship.ionized &&
+          !this.ship.disabled
         : this.jump === null;
     this.ship.advanceAnimation(dt);
     for (const npc of this.npcs) npc.advanceAnimation(dt);
@@ -1849,10 +2105,33 @@ export class Game {
    */
   private selectedAimPoint(): { x: number; y: number } | null {
     if (this.targetNpc && !this.targetNpc.done) {
+      // Lead the target using the first forward-firing primary's speed so
+      // hold-A steers toward the intercept point rather than current position.
+      const fwdPrimary = this.weaponSlots.find(
+        (s) => isPrimary(s.weap) && !isTurret(s.weap) && !isBeam(s.weap) && s.weap.speed > 0,
+      );
+      if (fwdPrimary) {
+        return leadPoint(this.ship, this.targetNpc, fwdPrimary.weap.speed);
+      }
       return this.targetNpc.pos;
     }
     if (this.targetPlanet) return this.targetPlanet.pos;
     return null;
+  }
+
+  /**
+   * World-space point under the cursor in the flight view (camera centred on
+   * the player). Used by aim-cursor; safe even when the pointer is over the HUD.
+   */
+  private cursorWorldPoint(): { x: number; y: number } {
+    const viewW = this.viewW - SIDEBAR_W;
+    // Clamp into the playfield so aiming into the sidebar still aims past the edge
+    const mx = Math.max(0, Math.min(viewW, this.mouse.x));
+    const my = Math.max(0, Math.min(this.viewH, this.mouse.y));
+    return {
+      x: mx - viewW / 2 + this.ship.pos.x,
+      y: my - this.viewH / 2 + this.ship.pos.y,
+    };
   }
 
   /** Cloaked ships hide from targeting unless your scanner can see them. */
@@ -1862,14 +2141,26 @@ export class Game {
   }
 
   private cycleTarget(): void {
-    const visible = this.npcs.filter((n) => this.canSee(n));
+    // Allies/escorts are only pickable with select-under-cursor, not R / `.
+    const visible = this.npcs.filter((n) => this.canSee(n) && !n.ally);
     if (visible.length === 0) {
       this.targetNpc = null;
       this.message("No contacts on sensors.");
       return;
     }
+    /*
+     * Cycle contacts then clear the lock (no one), then start again — so you
+     * can deselect without a separate key: A → B → … → last → none → A …
+     */
     const idx = this.targetNpc ? visible.indexOf(this.targetNpc) : -1;
-    this.targetNpc = visible[(idx + 1) % visible.length];
+    if (idx < 0) {
+      // nothing locked, or the lock left the list — take the first contact
+      this.targetNpc = visible[0]!;
+    } else if (idx >= visible.length - 1) {
+      this.targetNpc = null;
+    } else {
+      this.targetNpc = visible[idx + 1]!;
+    }
     this.targetPlanet = null;
     // Beep3 — the short select click; used to be played only as a jump refusal
     playSnd(SND.TARGET, 0.45);
@@ -1966,7 +2257,6 @@ export class Game {
       );
       applySet(planet.onRelease, this.player.bits, this.bitHandlers());
       this.message(`You release ${planet.name} from tribute.`);
-      this.save();
       return;
     }
 
@@ -2047,7 +2337,6 @@ export class Game {
       `${planet.name} submits. Tribute: ${daily.toLocaleString()} cr per day.`,
     );
     playSnd(152, 0.5);
-    this.save();
   }
 
   /** Rank names for mission-text substitution. */
@@ -2185,7 +2474,9 @@ export class Game {
   private tryBoard(): void {
     const t = this.targetNpc;
     if (!t) {
-      this.message("No target selected. Press Tab to select a ship.");
+      this.message(
+        `No target selected. Press ${formatChord(getBinding("cycleTargets"))} to select a ship.`,
+      );
       return;
     }
     if (!t.disabled) {
@@ -2302,7 +2593,6 @@ export class Game {
       if (granted) this.message(`They hand over ${granted}.`);
       // piracy is a crime, and the victim's government notices
       if (t.govtId >= 128) applyCrime(this.player, t.govtId, "kill");
-      this.save();
     };
 
     this.plunderUi.show({
@@ -2372,7 +2662,6 @@ export class Game {
               ? `Your marines take the ${this.hullName(captured)}!`
               : `Your crew storms the ${this.hullName(captured)} and takes her!`,
           );
-          this.save();
           return {
             taken: true,
             prize: this.hullName(captured),
@@ -2404,13 +2693,11 @@ export class Game {
           note = "Your crew is thrown back off the boarding tube, bloodied.";
         }
         this.message(note);
-        this.save();
         return { taken: false, note };
       },
       claim: (choice) => this.claimPrize(choice),
       close: () => {
         this.claimPrize("escort"); // walking away still leaves the prize taken
-        this.save();
       },
     });
   }
@@ -2445,6 +2732,8 @@ export class Game {
       const keepOld = room && old !== prize;
       if (keepOld)
         this.player.escorts.push({ shipId: old, wage: 0, captured: true });
+      this.keepPilotOutfits();
+      grantHullOutfits(prize, this.player.outfits);
       this.applyShipType(prize);
       this.player.fuelJumps = this.player.maxFuelJumps;
       // the crew you left behind flies her off the pad beside you, so the
@@ -2466,13 +2755,11 @@ export class Game {
         `Your command is full — the ${this.hullName(prize)} is cut loose.`,
       );
       this.pendingPrize = null;
-      this.save();
       return;
     }
     // shïp OnCapture: 171 hulls set a bit when taken
     const onCapture = SHIPS[prize]?.onCapture;
     if (onCapture) applySet(onCapture, this.player.bits, this.bitHandlers());
-    this.save();
   }
 
   /** Put a freshly taken prize in the sky beside you, crewed and friendly. */
@@ -2559,7 +2846,6 @@ export class Game {
         });
       }
     }
-    this.save();
   }
 
   /** A named captain hands you a job. */
@@ -2581,7 +2867,9 @@ export class Game {
     }
     const t = this.targetNpc;
     if (!t) {
-      this.message("No target selected. Press Tab for ships, L for worlds.");
+      this.message(
+        `No target selected. Press ${formatChord(getBinding("cycleTargets"))} for ships, ${formatChord(getBinding("land"))} for worlds.`,
+      );
       return;
     }
     const dist = Math.hypot(
@@ -2631,6 +2919,9 @@ export class Game {
       {
         label: "Request landing clearance",
         action: () => {
+          if (this.ship.disabled) {
+            return `"You're dead in space, Captain — we can't clear a disabled ship to dock. Get engines back online first."`;
+          }
           const dist = Math.hypot(
             p.pos.x - this.ship.pos.x,
             p.pos.y - this.ship.pos.y,
@@ -2677,7 +2968,6 @@ export class Game {
           this.player.credits -= bribe;
           const key = String(govtId);
           this.player.records[key] = (this.player.records[key] ?? 0) + 10;
-          this.save();
           return `"...The paperwork does seem to have a few errors. Welcome to ${p.name}."`;
         },
       });
@@ -2839,7 +3129,6 @@ export class Game {
             t.phase = "leaving";
             const ang = Math.random() * Math.PI * 2;
             t.target = { x: Math.cos(ang) * 2400, y: Math.sin(ang) * 2400 };
-            this.save();
             return `"${bribe.toLocaleString()} credits. Pleasure doing business — we were never here."`;
           },
         });
@@ -2922,7 +3211,8 @@ export class Game {
           }
           const needFuel = this.player.fuelJumps < this.player.maxFuelJumps;
           const hurt = this.ship.armor < this.ship.maxArmor;
-          if (!needFuel && !hurt)
+          const crippled = this.ship.disabled;
+          if (!needFuel && !hurt && !crippled)
             return `"You look in good shape to us, Captain. Safe flying."`;
           if (needFuel) {
             this.player.fuelJumps = Math.min(
@@ -2930,12 +3220,42 @@ export class Game {
               this.player.fuelJumps + 1,
             );
           }
-          // gövt Flags2 0x0010 or ränk Flags 0x0800 — these patch you up too
-          if (hurt && freeRepair) this.ship.armor = this.ship.maxArmor;
-          this.save();
-          return freeRepair && hurt
-            ? `"Hold position — transferring fuel and sealing that hull for you."`
-            : `"Transferring a jump's worth of fuel now. Safe travels, Captain."`;
+          /*
+           * gövt Flags2 0x0010 / ränk Flags 0x0800: full free repairs.
+           * Otherwise a disabled hull still gets a limp-home patch — same
+           * courtesy as a jump of fuel, just enough above the disable line
+           * to get engines and weapons back online so you can reach a pad.
+           */
+          let patched = false;
+          let fullSeal = false;
+          if (freeRepair && (hurt || crippled)) {
+            this.ship.armor = this.ship.maxArmor;
+            this.ship.disabled = false;
+            patched = true;
+            fullSeal = true;
+          } else if (crippled) {
+            // ~5% above disableAt (typically 33% → ~38% of max armor)
+            const limp =
+              this.ship.maxArmor * this.ship.disableAt +
+              this.ship.maxArmor * 0.05;
+            this.ship.armor = Math.max(
+              this.ship.armor,
+              Math.min(this.ship.maxArmor, limp),
+            );
+            this.ship.disabled = false;
+            patched = true;
+          }
+          if (fullSeal)
+            return needFuel
+              ? `"Hold position — transferring fuel and sealing that hull for you."`
+              : `"Hold position — sealing that hull for you. You're free to fly."`;
+          if (patched)
+            return needFuel
+              ? `"We're patching enough hull for thrusters and topping up a jump of fuel. Limp clear, Captain."`
+              : `"We're patching enough hull for thrusters. You're not pretty, but you're free to fly."`;
+          if (needFuel)
+            return `"Transferring a jump's worth of fuel now. Safe travels, Captain."`;
+          return `"You look in good shape to us, Captain. Safe flying."`;
         },
       });
     }
@@ -2950,9 +3270,11 @@ export class Game {
   private updateFiringLoops(): void {
     const firing =
       this.mode === "flight" &&
+      !this.flightOverlayOpen() &&
       this.jump === null &&
-      this.input.isDown("Space") &&
-      !this.ship.ionized;
+      actionDown(this.input, "firePrimary") &&
+      !this.ship.ionized &&
+      !this.ship.disabled;
     for (const slot of this.weaponSlots) {
       if (!slot.weap.sndLoop || !slot.weap.sndId || !isPrimary(slot.weap))
         continue;
@@ -2966,29 +3288,39 @@ export class Game {
     for (const slot of this.weaponSlots) {
       slot.cooldown = Math.max(0, slot.cooldown - dt);
     }
-    if (this.input.isDown("Space") && !this.ship.ionized) {
+    // Disabled = weapons offline (ship.disable docstring); ionized same for guns.
+    // Uses action bindings, not raw Space — mouse-fire presets must honour this too.
+    const canShoot = !this.ship.ionized && !this.ship.disabled;
+    if (actionDown(this.input, "firePrimary") && canShoot) {
       for (const slot of this.weaponSlots) {
         if (!isPrimary(slot.weap) || slot.cooldown > 0) continue;
         applyReload(slot);
+        // Series: one shot (mounts rotate). Simultaneous (0x0040): all copies.
+        const volley = volleyCount(slot.weap, slot.count);
         // looped weapons are held by updateFiringLoops instead
         if (slot.weap.sndId && !slot.weap.sndLoop)
           playSnd(slot.weap.sndId, 0.35);
         // turrets swivel onto the selected target; everything else fires ahead
-        const aim =
-          isTurret(slot.weap) && this.targetNpc
-            ? Math.atan2(
-                this.targetNpc.pos.y - this.ship.pos.y,
-                this.targetNpc.pos.x - this.ship.pos.x,
-              )
-            : undefined;
+        let aim: number | undefined;
+        if (isTurret(slot.weap) && this.targetNpc) {
+          // beams are instant — aim at current position; projectiles lead
+          const aimPos =
+            isBeam(slot.weap)
+              ? this.targetNpc.pos
+              : leadPoint(this.ship, this.targetNpc, slot.weap.speed);
+          aim = Math.atan2(
+            aimPos.y - this.ship.pos.y,
+            aimPos.x - this.ship.pos.x,
+          );
+        }
         if (isBeam(slot.weap)) {
-          this.fireBeam(this.ship, slot.weap, slot.count, true, aim);
+          this.fireBeam(this.ship, slot.weap, volley, true, aim);
         } else {
           this.projectiles.push(
             ...fireWeapon(
               this.ship,
               slot.weap,
-              slot.count,
+              volley,
               true,
               this.targetNpc,
               aim,
@@ -2997,12 +3329,9 @@ export class Game {
         }
       }
     }
-    // Left Control fires whichever secondary is selected — missiles launch,
-    // fighter bays scramble, exactly as EV treats bays as secondary weapons
-    if (
-      this.input.consume("ControlLeft") ||
-      this.input.consume("ControlRight")
-    ) {
+    // Secondary fires whichever is selected — missiles launch, fighter bays
+    // scramble, exactly as EV treats bays as secondary weapons
+    if (actionConsume(this.input, "fireSecondary") && canShoot) {
       const slot = this.selectedSecondary();
       if (!slot) {
         this.message("No secondary weapon selected.");
@@ -3029,11 +3358,24 @@ export class Game {
              * cycle" — the chainguns and the Polaron and Ion Cannon spend one
              * round per burst rather than per shot.
              */
+            const volley = Math.min(
+              volleyCount(slot.weap, slot.count),
+              ammoLeft,
+            );
             const spends =
               !(slot.weap.flags3 & W3_AMMO_AT_BURST_END) || slot.burstLeft <= 0;
-            if (spends) this.player.ammo[slot.weap.id] = ammoLeft - 1;
+            // Ammo is per shot that leaves the rail; a simultaneous volley spends
+            // one round per barrel.
+            if (spends)
+              this.player.ammo[slot.weap.id] = Math.max(0, ammoLeft - volley);
             this.projectiles.push(
-              ...fireWeapon(this.ship, slot.weap, 1, true, this.targetNpc),
+              ...fireWeapon(
+                this.ship,
+                slot.weap,
+                volley,
+                true,
+                this.targetNpc,
+              ),
             );
           }
         }
@@ -3084,12 +3426,12 @@ export class Game {
     );
   }
 
-  /** Target the nearest ship (EV's "closest target" key). */
+  /** Target the nearest hostile ship (classic R). */
   private targetClosest(): void {
     let best: NpcShip | null = null;
     let bestD = Infinity;
     for (const n of this.npcs) {
-      if (!this.canSee(n)) continue;
+      if (!this.canSee(n) || n.ally || !n.hostile) continue;
       const d = Math.hypot(
         n.pos.x - this.ship.pos.x,
         n.pos.y - this.ship.pos.y,
@@ -3100,7 +3442,7 @@ export class Game {
       }
     }
     if (!best) {
-      this.message("No contacts on sensors.");
+      this.message("No hostiles on sensors.");
       return;
     }
     this.targetNpc = best;
@@ -3116,7 +3458,6 @@ export class Game {
       this.player.ammo[f.bayWeapId] = (this.player.ammo[f.bayWeapId] ?? 0) + 1;
     }
     playSnd(150, 0.3);
-    this.save();
   }
 
   /**
@@ -3261,13 +3602,14 @@ export class Game {
       reach,
     });
     if (!hit) return;
-    // multiple emitters of the same beam stack their damage
+    // Simultaneous beams stack damage; series passes count=1 so one emitter.
     const shots = Math.max(1, Math.min(count, 4));
     hit.ship.takeHit(weap.shieldDmg * shots, weap.armorDmg * shots);
     if (fromPlayer) {
       const npc = hit.ship as NpcShip;
       if (this.npcs.includes(npc)) {
-        if (!npc.hostile) this.provoke(npc);
+        npc.lastAttacker = this.ship;
+        this.maybeProvoke(npc, weap.shieldDmg * shots + weap.armorDmg * shots);
         if (npc.destroyed) this.destroyNpc(npc, true);
       }
     } else if (hit.ship === this.ship && this.ship.destroyed) {
@@ -3308,9 +3650,12 @@ export class Game {
       if (this.ship.destroyed) this.playerDestroyed();
     } else {
       const victim = hit.ship as NpcShip;
-      if (victim.destroyed && this.npcs.includes(victim)) {
-        // credit only when your escort made the kill
-        this.destroyNpc(victim, npc.ally, npc.ally ? npc : null);
+      if (this.npcs.includes(victim)) {
+        victim.lastAttacker = npc;
+        if (victim.destroyed) {
+          // credit only when your escort made the kill
+          this.destroyNpc(victim, npc.ally, npc.ally ? npc : null);
+        }
       }
     }
   }
@@ -3435,7 +3780,6 @@ export class Game {
     this.player.escorts.push({ shipId, wage: escortWage(type.cost) });
     // wages start accruing from today, not from whenever they were last drawn
     this.player.escortPayDay = Math.floor(this.player.date);
-    this.save();
     return { ok: true };
   }
 
@@ -3454,7 +3798,6 @@ export class Game {
         `You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`,
       );
     }
-    this.save();
   }
 
   /** Give every ship flying with you a standing order. */
@@ -3538,7 +3881,7 @@ export class Game {
     let prey: Ship | null = null;
     let best = reach;
     for (const other of this.npcs) {
-      if (!other.hostile || other === npc) continue;
+      if (!other.hostile || other.disabled || other === npc) continue;
       const d = Math.hypot(other.pos.x - anchor.x, other.pos.y - anchor.y);
       if (d < best) {
         best = d;
@@ -3662,11 +4005,35 @@ export class Game {
       npc.updateAi(dt);
       return;
     }
+    // If a non-player ship recently hit us, focus on them until they are gone.
+    const a = npc.lastAttacker;
+    if (a && a !== this.ship) {
+      const npcA = a as NpcShip;
+      if (this.npcs.includes(npcA) && !npcA.done) {
+        this.attackAi(npc, dt, npcA);
+        return;
+      }
+      npc.lastAttacker = null; // stale — fall back to player
+    }
     this.attackAi(npc, dt, this.ship);
   }
 
   /** System-govt warships hunt hostiles; otherwise they go about their business. */
   private updateWarshipAi(npc: NpcShip, dt: number): void {
+    // Prefer whoever most recently hit us over raw proximity.
+    const a = npc.lastAttacker;
+    if (a) {
+      const npcA = a as NpcShip;
+      const valid =
+        a === this.ship
+          ? !this.ship.disabled && !this.playerDeath
+          : this.npcs.includes(npcA) && !npcA.done;
+      if (valid) {
+        this.attackAi(npc, dt, a);
+        return;
+      }
+      npc.lastAttacker = null;
+    }
     let prey: Ship | null = null;
     let best = 1600;
     for (const other of this.npcs) {
@@ -3698,8 +4065,41 @@ export class Game {
       return;
     }
     if ((target as NpcShip).disabled) {
-      npc.updateAi(dt);
-      return;
+      if (BOARDER_GOVTS.has(npc.govtId)) {
+        // Approach and hold on the disabled ship to board it.
+        const dx = target.pos.x - npc.pos.x;
+        const dy = target.pos.y - npc.pos.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 80) {
+          const facing = npc.steerToward(dt, Math.atan2(dy, dx));
+          npc.update(dt, 0, facing && dist > 120);
+        } else {
+          npc.update(dt, 0, false);
+        }
+        return;
+      }
+      // Non-boarder hostile: prefer any non-disabled active threat within
+      // 1400px before finishing off the disabled ship. Beyond that threshold
+      // it is faster to destroy the sitting target first and then move on.
+      let activeTarget: Ship | null = null;
+      let bestDist = 1400;
+      for (const other of this.npcs) {
+        if (other === npc || other.disabled || other.done) continue;
+        if (!govtEnemy(npc.govtId, other.govtId)) continue;
+        const d = Math.hypot(
+          other.pos.x - npc.pos.x,
+          other.pos.y - npc.pos.y,
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          activeTarget = other;
+        }
+      }
+      if (activeTarget) {
+        this.attackAi(npc, dt, activeTarget);
+        return;
+      }
+      // No active threats nearby — fall through and destroy the disabled ship.
     }
     const dx = target.pos.x - npc.pos.x;
     const dy = target.pos.y - npc.pos.y;
@@ -3744,7 +4144,8 @@ export class Game {
         });
         const weap = stock ? WEAPONS[String(stock.id)] : null;
         if (weap && stock) {
-          npc.fireCooldown = weap.reloadSec;
+          const volley = volleyCount(weap, stock.count);
+          npc.fireCooldown = reloadInterval(weap, stock.count);
           if (weap.sndId) {
             playSndAt(
               weap.sndId,
@@ -3758,10 +4159,10 @@ export class Game {
               target.pos.y - npc.pos.y,
               target.pos.x - npc.pos.x,
             );
-            this.fireBeamFromNpc(npc, weap, stock.count, target, aim);
+            this.fireBeamFromNpc(npc, weap, volley, target, aim);
           } else {
             this.projectiles.push(
-              ...fireWeapon(npc, weap, stock.count, false, target),
+              ...fireWeapon(npc, weap, volley, false, target),
             );
           }
         }
@@ -3823,6 +4224,7 @@ export class Game {
           npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
         if (pathHitsCircle(x0, y0, p.x, p.y, npc.pos.x, npc.pos.y, r)) {
           npc.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
+          npc.lastAttacker = p.fromPlayer ? this.ship : (p.owner as Ship);
           if (p.weap.ionization > 0) {
             npc.ion = Math.min(npc.maxIon, npc.ion + p.weap.ionization);
           }
@@ -3832,7 +4234,7 @@ export class Game {
           if (p.weap.explodBoom !== null) {
             this.spawnExplosion(p.x, p.y, 1, p.weap.explodBoom);
           }
-          if (p.fromPlayer && !npc.hostile) this.provoke(npc);
+          if (p.fromPlayer) this.maybeProvoke(npc, p.weap.shieldDmg + p.weap.armorDmg);
           if (npc.destroyed) {
             const owner = p.fromPlayer ? null : (p.owner as NpcShip);
             this.destroyNpc(
@@ -3899,8 +4301,10 @@ export class Game {
         if (!this.projectileCanHitNpc(p, npc)) continue;
         const before = npc.armor + npc.shield;
         hurt(npc);
-        // a blast that catches a bystander provokes them the same as a direct hit
-        if (p.fromPlayer && npc.armor + npc.shield < before) this.provoke(npc);
+        if (npc.armor + npc.shield < before) {
+          npc.lastAttacker = p.fromPlayer ? this.ship : (p.owner as Ship);
+          if (p.fromPlayer) this.maybeProvoke(npc, p.weap.shieldDmg + p.weap.armorDmg);
+        }
         if (npc.destroyed) {
           const owner = p.fromPlayer ? null : (p.owner as NpcShip);
           this.destroyNpc(
@@ -4002,6 +4406,37 @@ export class Game {
     }
   }
 
+  /**
+   * Provoke an NPC hit by the player, respecting stray-fire tolerance.
+   *
+   * If the player has the NPC explicitly targeted, a single shot is enough —
+   * they know exactly what they're shooting at. Otherwise the shot is treated
+   * as stray fire: damage is accumulated against a tolerance band that scales
+   * with the player's reputation with that government.
+   *
+   *   tolerance = (maxShield + maxArmor) × fraction
+   *   fraction  = clamp(0.06 + record × 0.001, 0.01, 0.40)
+   *
+   * At record 0 the band is 6% of total HP — a handful of grazing hits before
+   * they turn. At record +200 (trusted ally) it's 26%, absorbing quite a bit
+   * of crossfire. At record −50 (already suspect) it's down to 1%, one solid
+   * hit and they're hostile.
+   */
+  private maybeProvoke(npc: NpcShip, damage: number): void {
+    if (npc.ally || npc.hostile) return;
+    if (npc === this.targetNpc) {
+      this.provoke(npc);
+      return;
+    }
+    const record = getRecord(this.player, npc.govtId);
+    const maxHp = npc.maxShield + npc.maxArmor;
+    const fraction = Math.max(0.01, Math.min(0.4, 0.06 + record * 0.001));
+    npc.strayDamage += damage;
+    if (npc.strayDamage >= maxHp * fraction) {
+      this.provoke(npc);
+    }
+  }
+
   /** Disable goals tick over the moment the target stops fighting. */
   private checkDisableGoals(): void {
     for (const active of this.player.activeMissions) {
@@ -4026,7 +4461,6 @@ export class Game {
           ),
         });
       }
-      this.save();
     }
   }
 
@@ -4080,7 +4514,6 @@ export class Game {
             ),
           });
         }
-        this.save();
       }
     }
     if (npc.defenderOf) {
@@ -4092,7 +4525,6 @@ export class Game {
       const idx = this.player.escorts.findIndex((e) => e.shipId === npc.typeId);
       if (idx >= 0) {
         this.player.escorts.splice(idx, 1);
-        this.save();
       }
     }
     if (
@@ -4120,7 +4552,6 @@ export class Game {
          * fought off would be waiting again on the way back.
          */
         active.shipsKilled += 1;
-        this.save();
       } else if (active && m && !active.shipsDone) {
         active.shipsKilled += 1;
         if (active.shipsKilled >= active.shipsTotal) {
@@ -4145,7 +4576,6 @@ export class Game {
             `${active.name}: ${active.shipsKilled}/${active.shipsTotal} destroyed.`,
           );
         }
-        this.save();
       }
     }
   }
@@ -4253,7 +4683,6 @@ export class Game {
               ),
             });
           }
-          this.save();
         }
       }
     }
@@ -4472,7 +4901,6 @@ export class Game {
     // being caught turns the patrol on you, as any crime does
     this.provoke(scanner);
     this.setNpcHostile(scanner); // in case provoke only made a wimpy flee
-    this.save();
   }
 
   /** The called-for fleet drops out of hyperspace once ReinfTime has elapsed. */
@@ -4799,6 +5227,7 @@ export class Game {
       t: 0,
       duration,
       withPod,
+      waitLeft: withPod ? 0 : 1.0,
       x: this.ship.pos.x,
       y: this.ship.pos.y,
       nextFx: 0,
@@ -4840,7 +5269,13 @@ export class Game {
       this.spawnExplosion(d.x + ox, d.y + oy, scale, kind, true);
     }
 
-    if (d.t >= d.duration) this.finishPlayerDeath();
+    if (d.t >= d.duration) {
+      if (d.waitLeft > 0) {
+        d.waitLeft -= dt;
+      } else {
+        this.finishPlayerDeath();
+      }
+    }
   }
 
   private finishPlayerDeath(): void {
@@ -4888,41 +5323,34 @@ export class Game {
         };
         if (text) this.pendingMissionEvents.push({ title: "", text });
         this.player.landedOn = haven.id;
+        this.player.lastPad = haven.id;
         this.mode = "landed";
-        this.save();
+        // RAM only — next leave-planet commits. Death before then loses the pod trip.
         this.landedUi.show(haven, this.system);
       } else {
         this.message(
           "You eject in your escape pod and are picked up — the ship is lost, but you live.",
         );
-        this.save();
       }
       return;
     }
     /*
-     * Without one, that is the end of the pilot. Nova does not tow you home:
-     * the game stops and you go back to the main menu, where you pick the
-     * pilot up from its last save — which is why the file is only written in
-     * port. Strict play deletes the pilot outright.
+     * Without a pod, the run ends. Live progress since the last leave-planet
+     * is discarded (it was never written). The main menu opens with no pilot
+     * loaded. Strict: mark the pilot dead so they cannot Continue. Otherwise
+     * Open Pilot reloads the last leave-planet save.
      */
     const id = this.pilotId;
+    const wasStrict = this.player.strict;
     this.pilotId = null; // nothing more is written for this run
-    if (this.player.strict) {
-      if (id) deletePilot(id);
-      alert(
-        `${this.pilotName} died in the ${this.system.name} system. Strict mode: this pilot is gone.`,
-      );
-    } else {
-      // roll the file back to the last time this pilot was safely in port
-      if (id && this.portSnapshot) {
-        savePilot(id, JSON.parse(this.portSnapshot) as PlayerState);
-      }
-      alert(
-        `${this.pilotName} died in the ${this.system.name} system.\n\nLoad the pilot from the main menu to resume from your last landing.`,
-      );
-    }
+    this.resumeMode = null;
     this.landedUi.hide();
+    this.hailUi.close();
+    this.infoUi.close();
+    this.plunderUi.close();
     this.mode = "menu";
+    if (wasStrict && id) markPilotDead(id);
+    // pilotId is null → menu clears the selected pilot ("no pilot loaded")
     this.onMenu?.();
   }
 
@@ -5021,7 +5449,7 @@ export class Game {
     return false;
   }
 
-  /** Nova's H / \: step the plotted course through this system's neighbours. */
+  /** Step the plotted course through this system's neighbours (default \). */
   private cycleJumpDestination(): void {
     const links = this.system.links.filter((id) => {
       try {
@@ -5046,8 +5474,8 @@ export class Game {
   private static readonly FLOAT_MAP_FADE = 0.85;
 
   /**
-   * Keep the floating hyperspace map up for a few seconds. Called on H / \
-   * (and every frame H is held) so the overlay is a peek, not a mode change.
+   * Keep the floating mini map up for a few seconds. Called while display-mini-map
+   * is held and when cycle-jump-dest peeks the course — not a full map mode.
    * After the hold it fades out rather than vanishing.
    */
   private peekFloatingMap(): void {
@@ -5058,13 +5486,14 @@ export class Game {
   private floatingMapVisible(): boolean {
     return (
       this.mode === "flight" &&
-      (this.floatingMapUntil > this.time || this.input.isDown("KeyH"))
+      (this.floatingMapUntil > this.time ||
+        actionDown(this.input, "hyperSelect"))
     );
   }
 
   /** 1 while held / during the hold; eases to 0 over FLOAT_MAP_FADE. */
   private floatingMapAlpha(): number {
-    if (this.input.isDown("KeyH")) return 1;
+    if (actionDown(this.input, "hyperSelect")) return 1;
     const remaining = this.floatingMapUntil - this.time;
     if (remaining <= 0) return 0;
     if (remaining >= Game.FLOAT_MAP_FADE) return 1;
@@ -5187,55 +5616,138 @@ export class Game {
     });
   }
 
-  /** Nova's I: the jobs you are carrying, and how long you have. */
-  private openMissionInfo(): void {
+  /**
+   * Nova's I: the jobs you are carrying; click one for its briefing.
+   * Same panel in flight and while landed — keybinding only (no spaceport
+   * menu entry). Abort is offered when mïsn CanAbort allows it.
+   */
+  openMissionInfo(): void {
     if (this.infoUi.open) {
       this.infoUi.close();
       return;
     }
-    const sections = this.player.activeMissions.map((a) => {
-      const dest = a.travelDone ? a.returnSpobId : a.travelSpobId;
-      const entry = dest ? SPOBS.get(dest) : null;
-      let where = "wherever the job ends";
-      if (entry) {
-        let sysName = "deep space";
-        try {
-          sysName = getSystem(entry.systemId).name;
-        } catch {
-          // a destination in a system this galaxy build doesn't have
-        }
-        where = `${entry.planet.name}, ${sysName}`;
-      }
-      const rows: InfoRow[] = [{ label: "Destination", value: where }];
-      if (a.cargoLoaded && a.cargoName) {
-        rows.push({
-          label: "Carrying",
-          value: `${a.cargoQty}t ${a.cargoName}`,
-        });
-      }
-      if (a.timeLimit > 0) {
-        const left = Math.max(
-          0,
-          a.timeLimit - (this.player.date - a.acceptedDay),
-        );
-        rows.push({ label: "Time left", value: `${Math.ceil(left)} days` });
-      }
-      return { title: a.name, rows };
-    });
-
     this.infoUi.show({
       title: "Mission Log",
-      sections: sections.length
-        ? sections
-        : [
-            {
-              title: "No active missions",
-              rows: [],
-              note: "Look for work at a spaceport BBS or bar.",
-            },
-          ],
+      sections: () =>
+        this.player.activeMissions.length
+          ? []
+          : [
+              {
+                title: "No active missions",
+                rows: [],
+                note: "Look for work at a spaceport BBS or bar.",
+              },
+            ],
+      pickList: () =>
+        this.player.activeMissions.map((a) => this.missionPickItem(a)),
+      onAbortPick: (id) => {
+        const active = this.player.activeMissions.find(
+          (a) => this.missionPickId(a) === id,
+        );
+        if (active) this.abortMission(active);
+      },
       close: () => undefined,
     });
+  }
+
+  /**
+   * Stable id for a live mission row (indices shift when one is aborted).
+   * Must be safe in an HTML `data-pick` attribute — null bytes (and similar)
+   * are truncated by the browser, which made list clicks always snap back to
+   * the first mission.
+   */
+  private missionPickId(a: ActiveMission): string {
+    return [
+      a.misnId,
+      a.acceptedDay,
+      a.name,
+      a.travelSpobId ?? "",
+      a.returnSpobId ?? "",
+    ]
+      .map((part) => encodeURIComponent(String(part)))
+      .join("|");
+  }
+
+  private missionPickItem(a: ActiveMission): InfoPickItem {
+    const dest = a.travelDone ? a.returnSpobId : a.travelSpobId;
+    const entry = dest ? SPOBS.get(dest) : null;
+    let where = "wherever the job ends";
+    if (entry) {
+      let sysName = "deep space";
+      try {
+        sysName = getSystem(entry.systemId).name;
+      } catch {
+        // a destination in a system this galaxy build doesn't have
+      }
+      where = `${entry.planet.name}, ${sysName}`;
+    }
+    const rows: InfoRow[] = [{ label: "Destination", value: where }];
+    if (a.cargoLoaded && a.cargoName) {
+      rows.push({
+        label: "Carrying",
+        value: `${a.cargoQty}t ${a.cargoName}`,
+      });
+    }
+    let timeLeft = "";
+    if (a.timeLimit > 0) {
+      const left = Math.max(
+        0,
+        a.timeLimit - (this.player.date - a.acceptedDay),
+      );
+      timeLeft = `${Math.ceil(left)} day${Math.ceil(left) === 1 ? "" : "s"} left`;
+      rows.push({ label: "Time left", value: timeLeft });
+    }
+    // Collapsed row shows destination always, and the clock when the job has one.
+    const subtitle = timeLeft ? `${where} · ${timeLeft}` : where;
+    /*
+     * BriefText is the full briefing shown after Accept; QuickBrief is the
+     * one-line log restatement. Prefer the full text when you open a job.
+     */
+    const m = MISSIONS[String(a.misnId)];
+    const raw = m
+      ? (descText(m.briefText) ?? descText(m.quickBrief) ?? "")
+      : "";
+    const body = raw
+      ? substituteTags(raw, m!, a, this.pilotName, this.rankTags())
+      : "";
+    return {
+      id: this.missionPickId(a),
+      label: a.name,
+      subtitle,
+      rows,
+      body: body || undefined,
+      canAbort: !!(m && m.canAbort),
+    };
+  }
+
+  /** Whether the I / P / jettison panel is up (landed key handlers need this). */
+  get infoOpen(): boolean {
+    return this.infoUi.open;
+  }
+
+  /**
+   * Esc against the info panel: dismiss abort confirm first, else close.
+   * Returns true when the panel handled the key (caller should swallow it).
+   */
+  escapeInfo(): boolean {
+    if (!this.infoUi.open) return false;
+    if (!this.infoUi.handleEscape()) this.infoUi.close();
+    return true;
+  }
+
+  /** Enter against the info panel (abort confirm). No-op when none is up. */
+  enterInfo(): void {
+    if (this.infoUi.open) this.infoUi.handleEnter();
+  }
+
+  /** A — abort the expanded mission in the mission log. */
+  abortInfo(): void {
+    if (this.infoUi.open) this.infoUi.handleAbort();
+  }
+
+  /** ArrowUp / ArrowDown through the mission log list. */
+  arrowInfo(delta: number): void {
+    if (this.infoUi.open) this.infoUi.handleArrow(delta);
   }
 
   /** Nova's Alt-K: the hold, with a way to put it over the side. */
@@ -5278,39 +5790,69 @@ export class Game {
     if (dumped <= 0) return;
     if (dumped >= held) delete this.player.cargo[commodityId];
     else this.player.cargo[commodityId] = held - dumped;
-    this.save();
     this.message(`Jettisoned ${dumped}t of ${cargoLabel(commodityId)}.`);
   }
 
+  /**
+   * Land binding: lock the nearest stellar if nothing is targeted, otherwise
+   * keep trying to land on the current target (range/speed messages only —
+   * never steps to another world). Cycle planets with cycleStellars (":").
+   */
   private selectOrLand(): void {
-    const landables = this.system.planets;
-    if (landables.length === 0) {
+    const stellars = this.system.planets;
+    if (stellars.length === 0) {
       this.message("There is nothing to land on in this system.");
       return;
     }
-    if (this.targetPlanet) {
-      const near = Math.hypot(
-        this.targetPlanet.pos.x - this.ship.pos.x,
-        this.targetPlanet.pos.y - this.ship.pos.y,
+    if (!this.targetPlanet) {
+      const byDist = [...stellars].sort(
+        (a, b) =>
+          Math.hypot(a.pos.x - this.ship.pos.x, a.pos.y - this.ship.pos.y) -
+          Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
       );
-      if (near <= this.targetPlanet.radius * LAND_DIST + 60) {
-        this.tryLand(this.targetPlanet);
-        return;
-      }
+      this.setTargetPlanet(byDist[0]!);
+      return;
     }
-    // cycle by distance, nearest first
-    const byDist = [...landables].sort(
-      (a, b) =>
-        Math.hypot(a.pos.x - this.ship.pos.x, a.pos.y - this.ship.pos.y) -
-        Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
-    );
+    this.tryLand(this.targetPlanet);
+  }
+
+
+  /**
+   * Cycle planets / stations / gates by distance from the ship (nearest first).
+   * After the last body, clears the lock (nothing selected), then starts over.
+   * Separate from Land so L only docks the locked stellar.
+   */
+  private cycleStellars(): void {
+    const byDist = this.system.planets
+      .filter((el) => !el.isWormhole)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.pos.x - this.ship.pos.x, a.pos.y - this.ship.pos.y) -
+          Math.hypot(b.pos.x - this.ship.pos.x, b.pos.y - this.ship.pos.y),
+      );
+    if (byDist.length === 0) {
+      this.message("There is nothing to target in this system.");
+      return;
+    }
+    /*
+     * Same pattern as cycleTarget: A → B → … → last → none → A …
+     * so you can deselect a stellar without a separate key.
+     */
     const idx = this.targetPlanet ? byDist.indexOf(this.targetPlanet) : -1;
-    this.setTargetPlanet(byDist[(idx + 1) % byDist.length]);
+    if (idx < 0) {
+      this.setTargetPlanet(byDist[0]!);
+    } else if (idx >= byDist.length - 1) {
+      this.setTargetPlanet(null);
+    } else {
+      this.setTargetPlanet(byDist[idx + 1]!);
+    }
   }
 
   /**
    * Target a stellar. Selecting a working hypergate starts its open sequence;
    * landing (when close and slow) is what opens the destination chart.
+   * Focus cue: snd 151 when you can land (or use a working gate/wormhole),
+   * snd 153 when clearance is refused or the stellar is unusable.
    */
   private setTargetPlanet(planet: PlanetDef | null): void {
     const prev = this.targetPlanet;
@@ -5335,9 +5877,35 @@ export class Game {
       ),
     );
     this.message(`Target: ${planet.name} (${dist} away).`);
+    playSnd(
+      this.canLandOn(planet) ? SND.BEEP2 : SND.LANDING_DENIED,
+      0.45,
+    );
+  }
+
+  /**
+   * Whether targeting this stellar should sound as landable (151) rather than
+   * denied (153). Mirrors tryLand's clearance rules, not range or speed.
+   */
+  private canLandOn(planet: PlanetDef): boolean {
+    const isGate = planet.isHypergate || planet.isWormhole;
+    if (isGate) return this.gateIsWorking(planet);
+    if (!planet.landable) return false;
+    if (this.hasActiveMissionToPlanet(planet.id)) return true;
+    return this.clearedToLand(planet, this.system.govtId);
   }
 
   private tryLand(chosen?: PlanetDef): void {
+    // Dead in space: no engines, no docking thrusters, no traffic clearance.
+    // Hail a friendly ship for assistance first — landing would soft-lock you
+    // into free full repairs on a pad you cannot actually reach under power.
+    if (this.ship.disabled) {
+      this.message(
+        "Your ship is disabled — you cannot land. Request assistance from a nearby ship.",
+      );
+      playSnd(SND.LANDING_DENIED, 0.55);
+      return;
+    }
     const near = chosen
       ? {
           planet: chosen,
@@ -5421,6 +5989,7 @@ export class Game {
     }
 
     this.player.landedOn = planet.id;
+    this.player.lastPad = planet.id;
     // Landing does not move the calendar. Nova advances the date on hyperspace
     // jumps (and on missions that set DatePostInc), and nowhere else — there is
     // no landing rule in the Bible, and putting one here made a shopping run
@@ -5436,8 +6005,7 @@ export class Game {
      * up on uninhabited rocks or other pads with no services.
      */
     if (this.gear.autoRefuel) this.refuel();
-    this.save();
-    this.markPort(); // the point a death rolls back to
+    // No disk write — shopping and mission acceptances stay RAM until takeoff.
     this.landedUi.show(planet, this.system);
   }
 
@@ -5455,11 +6023,21 @@ export class Game {
   depart(): void {
     // backing out of a gate chooser lets the ring shut again
     if (this.gateDocking) this.closeGate(this.gateDocking.id);
+    // mission log can be open over the pad; don't leave it floating in flight
+    this.infoUi.close();
     const planet = this.system.planets.find(
       (p) => p.id === this.player.landedOn,
     );
+    if (planet) this.player.lastPad = planet.id;
     this.player.landedOn = null;
-    this.save();
+    // Landing consumes a day — the same unit hyperspace jumps cost.
+    this.advanceDays(1);
+    /*
+     * Sole durable checkpoint. Everything bought, sold, accepted, or killed
+     * since the previous takeoff is committed here; death before the next
+     * leave discards the live session and reloads this file.
+     */
+    this.commitPilot();
     if (planet) {
       // You lift off from the pad you landed on, so you start on top of it and
       // fly clear under your own power — not already parked off to one side.
@@ -5504,6 +6082,8 @@ export class Game {
     this.message(
       `Course set for ${dest.name}: ${route.length} jump${route.length === 1 ? "" : "s"}.`,
     );
+    // snd 152 — select-jump / course lock (same family as target select)
+    playSnd(SND.TARGET, 0.45);
   }
 
   /**
@@ -5522,6 +6102,11 @@ export class Game {
 
   private insideNoJumpZone(): boolean {
     return Math.hypot(this.ship.pos.x, this.ship.pos.y) < this.noJumpRadius;
+  }
+
+  /** HUD: dim the hyperspace address while the jump is blocked (well or no fuel). */
+  get inNoJumpZone(): boolean {
+    return this.insideNoJumpZone() || this.player.fuelJumps < 1;
   }
 
   /**
@@ -5555,12 +6140,18 @@ export class Game {
   private startJump(quiet = false): void {
     // already mid-sequence, mid-gate, or nothing to do
     if (this.jump || this.pendingGateDest) return;
+    if (this.ship.disabled) {
+      if (!quiet) {
+        this.message("Your ship is disabled — the hyperdrive will not engage.");
+        playSnd(SND.DENY, 0.5);
+      }
+      return;
+    }
     if (this.route.length === 0) {
       if (!quiet) {
         this.message(
-          "No hyperspace course set. Press H to pick a neighbour, or M for the map.",
+          `No hyperspace course set. Press ${formatChord(getBinding("cycleJumpDest"))} to pick a neighbour, or ${formatChord(getBinding("map"))} for the map.`,
         );
-        playSnd(SND.DENY, 0.5);
       }
       return;
     }
@@ -5569,15 +6160,14 @@ export class Game {
         this.message(
           "Too deep in the system's gravity well to jump. Head for open space.",
         );
-        // Beep1 — gravity-well cue (Beep3 = target select, Beep5 = other denies)
-        playSnd(SND.NO_JUMP, 0.55);
+        playSnd(SND.NO_JUMP, 0.55); // 153 — gravity well
       }
       return;
     }
     if (this.player.fuelJumps < 1) {
       if (!quiet) {
         this.message("Not enough hyperdrive fuel. Land somewhere and refuel.");
-        playSnd(SND.DENY, 0.5);
+        playSnd(SND.DENY, 0.5); // 154
       }
       return;
     }
@@ -5586,7 +6176,7 @@ export class Game {
         this.message(
           "Your systems are ionized — the hyperdrive will not engage.",
         );
-        playSnd(SND.DENY, 0.5);
+        playSnd(SND.DENY, 0.5); // 154
       }
       return;
     }
@@ -5595,9 +6185,23 @@ export class Game {
     const dx = next.mapPos.x - cur.mapPos.x;
     const dy = next.mapPos.y - cur.mapPos.y;
     const mult = this.jumpSpeedMult();
-    // base burn is long enough to streak across a typical system; faster
-    // jumpers finish sooner and hit a higher top speed while they do
-    const burnLeft = 1.7 / mult;
+    /*
+     * Warp-up audio spans warm (hold still) + burn (streak). Stock shuttle
+     * (mult 1): full sample — snd 128 ~6.08s at 1×, snd 129 ~4.21s at 2×.
+     * Faster jumpers shorten both and pitch the sample up. Times are game-dt
+     * (main multiplies dt by timeScale) so wall time matches sample / mult.
+     */
+    const clock2x = this.timeScale > 1;
+    const warpSndId = clock2x ? SND.WARP_IN_BIG : SND.WARP_IN;
+    const sampleSec = sndDuration(warpSndId, clock2x ? 3 : 6);
+    const playbackRate = mult;
+    const wallTotal = sampleSec / mult;
+    // Hold still for a short spool before the streak — ~1.1s wall, or 22% of
+    // the sample if that is shorter (fast jumpers).
+    const wallWarm = Math.min(1.1, wallTotal * 0.22);
+    const wallBurn = Math.max(0.35, wallTotal - wallWarm);
+    const warmLeft = wallWarm * this.timeScale;
+    const burnLeft = wallBurn * this.timeScale;
     const cruise = this.ship.stats.maxSpeed;
     const burnSpeed = Math.max(cruise * 4.5, 950) * mult;
     const burnAccel = Math.max(this.ship.stats.accel * 3.5, 600) * mult;
@@ -5607,37 +6211,68 @@ export class Game {
     this.jump = {
       phase: skipBrake ? "turning" : "braking",
       targetAngle: Math.atan2(dy, dx),
+      warmLeft,
       burnLeft,
+      burnTotal: burnLeft,
       burnSpeed,
       burnAccel,
+      warpSndId,
+      playbackRate,
     };
-    // Warp-up audio waits until the burn phase — see beginJumpBurn().
     this.message(
       skipBrake
         ? `Autopilot engaged: jumping to ${next.name}.`
         : `Autopilot engaged: braking for jump to ${next.name}.`,
     );
+
   }
 
   /**
-   * Enter the high-speed hyperspace burn and start the spool-up sample.
-   * "Warp up" is held on a key so executeJump can cut it off; starting it
-   * earlier made the retro-brake sound like the drive was already firing.
+   * Aligned and stopped: start the warp-up sample and hold station while it
+   * spools. Motion begins only when warmLeft runs out (beginJumpBurn).
    */
+  private beginJumpWarm(): void {
+    const j = this.jump;
+    if (!j || j.phase === "warming" || j.phase === "burning") return;
+    j.phase = "warming";
+    this.ship.vel = { x: 0, y: 0 };
+    this.ship.thrusting = false;
+    stopSustained(JUMP_SND_KEY);
+    startSustained(
+      JUMP_SND_KEY,
+      j.warpSndId,
+      false,
+      0.5,
+      j.playbackRate,
+    );
+    this.message("Hyperdrive spooling up...");
+  }
+
+  /** Leave the warm hold and streak into the jump (sound already running). */
   private beginJumpBurn(): void {
     const j = this.jump;
     if (!j || j.phase === "burning") return;
     j.phase = "burning";
-    startSustained(JUMP_SND_KEY, SND.WARP_IN, false, 0.5);
     this.message("Hyperdrive engaged...");
   }
 
-  /**
-   * Drive one frame of the hyperspace entry sequence. The stick is locked for
-   * the whole run — matching Nova, once the drive is engaged you ride it out.
-   */
+  /** Abort a hyperspace entry in progress (disabled hull, Esc to menu, …). */
+  private cancelJumpSequence(): void {
+    if (!this.jump) return;
+    this.jump = null;
+    stopSustained(JUMP_SND_KEY);
+    this.jumpFlash = 0;
+  }
+
   private updateJumpSequence(dt: number): void {
     const j = this.jump!;
+    // Dead in space cannot finish align/burn — drop the sequence so Esc and
+    // other controls are not locked behind a stuck jump.
+    if (this.ship.disabled) {
+      this.cancelJumpSequence();
+      this.message("Jump aborted — your ship is disabled.");
+      return;
+    }
     if (j.phase === "braking") {
       // face reverse of current velocity and burn until nearly stopped
       if (this.ship.speed < 45) {
@@ -5655,7 +6290,17 @@ export class Game {
       const facing = this.ship.steerToward(dt, j.targetAngle);
       // coast while the nose swings onto the jump heading
       this.ship.update(dt, 0, false);
-      if (facing) this.beginJumpBurn();
+      if (facing) this.beginJumpWarm();
+      return;
+    }
+
+    if (j.phase === "warming") {
+      // hold still — sound is already spooling
+      this.ship.vel = { x: 0, y: 0 };
+      this.ship.thrusting = false;
+      this.ship.steerToward(dt, j.targetAngle);
+      j.warmLeft -= dt;
+      if (j.warmLeft <= 0) this.beginJumpBurn();
       return;
     }
 
@@ -5670,9 +6315,13 @@ export class Game {
     this.ship.update(dt, 0, true);
     this.ship.stats = base;
     j.burnLeft -= dt;
-    // white-out builds in the last fraction of a second of the burn
-    if (j.burnLeft < 0.22) {
-      this.jumpFlash = Math.max(this.jumpFlash, (0.22 - j.burnLeft) / 0.22);
+    // white-out in the last ~12% of the burn (scales with slow/fast jumpers)
+    const flashWindow = Math.max(0.2, j.burnTotal * 0.12);
+    if (j.burnLeft < flashWindow) {
+      this.jumpFlash = Math.max(
+        this.jumpFlash,
+        (flashWindow - j.burnLeft) / flashWindow,
+      );
     }
     if (j.burnLeft <= 0) this.executeJump();
   }
@@ -5712,7 +6361,9 @@ export class Game {
     this.ship.vel = { x: -ux * sp, y: -uy * sp };
 
     this.jump = null;
-    stopSustained(JUMP_SND_KEY); // the spool-up ends when the drive fires
+    // Burn was timed to the warp-up sample; stop the slot (sample should be
+    // ending anyway). Cancel paths also use JUMP_SND_KEY.
+    stopSustained(JUMP_SND_KEY);
     this.jumpFlash = 0.5;
     /*
      * A system's Message names an entry in STR# 1000 — the message buoy text
@@ -5737,7 +6388,6 @@ export class Game {
     this.spawnMissionShips();
     this.spawnEscorts(); // your wing makes the jump with you
     playSnd(SND.WARP_OUT, 0.5); // dropping out of hyperspace
-    this.save();
     this.message(
       `Arrived in the ${next.name} system. Fuel: ${this.player.fuelJumps}/${this.player.maxFuelJumps} jumps.`,
     );
@@ -5746,10 +6396,11 @@ export class Game {
       const cont = getSystem(
         this.routeDest ?? this.route[this.route.length - 1],
       ).name;
+      const jumpKey = formatChord(getBinding("jump"));
       this.message(
-        this.input.isDown("KeyJ")
+        actionDown(this.input, "jump")
           ? `Course continues to ${cont}.`
-          : `Course continues to ${cont} — hold or press J to continue.`,
+          : `Course continues to ${cont} — hold or press ${jumpKey} to continue.`,
       );
     }
   }
@@ -5903,13 +6554,11 @@ export class Game {
     }
     this.player.activeMissions.push(active);
     applySet(m.onAccept, this.player.bits, this.bitHandlers());
-    this.save();
     return { ok: true };
   }
 
   refuseMission(m: MissionType): void {
     applySet(m.onRefuse, this.player.bits, this.bitHandlers());
-    this.save();
   }
 
   abortMission(active: ActiveMission): void {
@@ -5918,7 +6567,6 @@ export class Game {
     this.player.activeMissions = this.player.activeMissions.filter(
       (a) => a !== active,
     );
-    this.save();
   }
 
   /**
@@ -6091,7 +6739,6 @@ export class Game {
     if (n <= 0) return;
     this.player.credits -= n * unitPrice;
     this.player.cargo[commodityId] = (this.player.cargo[commodityId] ?? 0) + n;
-    this.save();
   }
 
   sell(commodityId: string, qty: number, unitPrice: number): void {
@@ -6102,7 +6749,6 @@ export class Game {
     this.player.cargo[commodityId] = have - n;
     if (this.player.cargo[commodityId] === 0)
       delete this.player.cargo[commodityId];
-    this.save();
   }
 
   /** Ammo mods reference their weapon; values may or may not be pre-offset by 128. */
@@ -6162,7 +6808,6 @@ export class Game {
     const won = winner === pick;
     const payout = won ? bet * 3 : 0;
     this.player.credits += won ? payout : -bet;
-    this.save();
     return { winner, won, stake: bet, payout };
   }
 
@@ -6216,7 +6861,6 @@ export class Game {
       this.chartFromOutfit(outfId);
     }
     this.recomputeLoadout();
-    this.save();
     return { ok: true };
   }
 
@@ -6237,7 +6881,6 @@ export class Game {
     if (outf.onSell)
       applySet(outf.onSell, this.player.bits, this.bitHandlers());
     this.recomputeLoadout();
-    this.save();
     return { ok: true };
   }
 
@@ -6282,7 +6925,6 @@ export class Game {
     const cost = this.refuelCost();
     this.player.credits -= cost;
     this.player.fuelJumps = this.player.maxFuelJumps;
-    this.save();
   }
 
   // ---------------- NPCs ----------------
@@ -6594,25 +7236,20 @@ export class Game {
     this.dockedNpcs = still;
   }
 
-  // ---------------- flight clicks ----------------
+  // ---------------- flight targeting under cursor ----------------
 
   /**
-   * Click a stellar to make it the one you are flying to. Landing already
-   * cycles targets with L, but with five worlds in Sol that is a lot of
-   * presses to reach the one you want, and the same click is what picks a
-   * destination in Nova. Clicking a ship targets it instead, and clicking
-   * empty space clears the selection.
+   * Select the ship or stellar under the pointer (keybind "selectUnderCursor",
+   * Mouse Left in Classic). Empty space clears the selection. Uses the same
+   * world point as aim-cursor so a keyboard bind works with the mouse still.
    */
-  private onFlightClick(e: MouseEvent): void {
-    if (this.lastDragMoved > 6) return;
-    const rect = this.canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+  private selectUnderCursor(): void {
+    if (this.mode !== "flight" || this.flightOverlayOpen()) return;
     const viewW = this.viewW - SIDEBAR_W;
-    if (mx > viewW) return; // the status bar has its own hit areas
-    // undo the camera transform renderSpace applies
-    const wx = mx - viewW / 2 + this.ship.pos.x;
-    const wy = my - this.viewH / 2 + this.ship.pos.y;
+    if (this.mouse.x > viewW) return; // the status bar has its own hit areas
+    const aim = this.cursorWorldPoint();
+    const wx = aim.x;
+    const wy = aim.y;
 
     let bestPlanet: { planet: PlanetDef; d: number } | null = null;
     for (const p of this.system.planets) {
@@ -6633,12 +7270,15 @@ export class Game {
     let bestNpc: { npc: NpcShip; d: number } | null = null;
     for (const npc of this.npcs) {
       if (npc.done || npc.cloaked) continue;
+      if (!this.canSee(npc)) continue;
       const d = Math.hypot(npc.pos.x - wx, npc.pos.y - wy);
       if (d <= 28 && (!bestNpc || d < bestNpc.d)) bestNpc = { npc, d };
     }
     if (bestNpc) {
       this.targetNpc = bestNpc.npc;
       this.targetPlanet = null;
+      // same select click as R / cycle targets (Beep3)
+      playSnd(SND.TARGET, 0.45);
       this.message(`Target: ${this.shipLabel(bestNpc.npc)}.`);
       return;
     }
@@ -6656,10 +7296,7 @@ export class Game {
       this.fps?.requestLock();
       return;
     }
-    if (this.mode === "flight") {
-      this.onFlightClick(e);
-      return;
-    }
+    // Flight targeting is the selectUnderCursor bind (not a free left-click).
     if (this.mode !== "map") return;
     if (this.lastDragMoved > 6) return; // was a pan, not a click
     const rect = this.canvas.getBoundingClientRect();
@@ -6848,12 +7485,7 @@ export class Game {
     // Nova's own target cursor (spïn 650) rides the selected ship; a selected
     // world gets the four blue corner marks the original drew.
     if (this.targetNpc) {
-      this.drawReticle(
-        ctx,
-        this.targetNpc.pos.x,
-        this.targetNpc.pos.y,
-        this.targetNpc.radius,
-      );
+      this.drawNpcTargetMarks(ctx, this.targetNpc);
     }
     if (this.targetPlanet) {
       this.drawStellarMarks(
@@ -6999,6 +7631,50 @@ export class Game {
     ctx.restore();
   }
 
+  /**
+   * Corner-mark target indicator for NPC ships, matching the stellar-mark
+   * style but coloured by ship status:
+   *   disabled → gray   hostile → red   ally → yellow   neutral → white
+   */
+  private drawNpcTargetMarks(
+    ctx: CanvasRenderingContext2D,
+    npc: NpcShip,
+  ): void {
+    const { x, y } = npc.pos;
+    const r = npc.radius + 6;
+    const arm = 9;
+    const color = npc.ally
+      ? "#40c060"
+      : npc.disabled
+        ? "#909090"
+        : npc.hostile
+          ? "#e04040"
+          : "#e0c040";
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ] as const) {
+      const cx = x + sx * r;
+      const cy = y + sy * r;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + sy * -arm);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + sx * -arm, cy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + sx * -arm * 0.55, cy + sy * -arm * 0.55);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   /** The four blue corner marks EV Nova draws around a selected stellar. */
   private drawStellarMarks(
     ctx: CanvasRenderingContext2D,
@@ -7032,38 +7708,6 @@ export class Game {
       ctx.stroke();
     }
     ctx.restore();
-  }
-
-  /** Nova's target cursor (spïn 650), animated and centred on the target. */
-  /**
-   * Nova's target cursor (spïn 650) is a 23px crosshair whose arrowheads sit on
-   * the edges of its own frame — drawn at native size it disappears into
-   * anything bigger than a shuttle, which is what a Pirate Enterprise did to
-   * it. Scaling it to the target's own radius puts the arrowheads back on the
-   * hull's edge where they read as a lock, whatever you have selected.
-   */
-  private drawReticle(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    radius: number,
-  ): void {
-    const sheet = CURSOR_SPRITE;
-    if (!sheet) return;
-    // Scaled to the hull so it frames the target, but capped: blown up to a
-    // capital ship's full width the crosshair's arrowheads turn into slabs of
-    // red that hide the thing you're aiming at.
-    const scale = Math.max(1, Math.min(3, (radius * 2 + 20) / sheet.w));
-    ctx.globalAlpha = 0.9;
-    drawSheetFrame(
-      ctx,
-      sheet,
-      Math.floor(this.time * 12) % sheet.frames,
-      x,
-      y,
-      scale,
-    );
-    ctx.globalAlpha = 1;
   }
 
   private drawShip(
@@ -7259,8 +7903,6 @@ export class Game {
     ctx.rect(bx, by, boxW, boxH);
     ctx.clip();
 
-    ctx.fillStyle = "rgba(4, 8, 16, 0.88)";
-    ctx.fillRect(bx, by, boxW, boxH);
 
     const here = this.system;
     // tight neighbourhood only: here + one-jump links. A long multi-hop plot
@@ -7436,32 +8078,26 @@ export class Game {
       ctx.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
     }
 
-    // small caption: next hop name
-    const nextName =
-      this.route.length > 0
-        ? (() => {
-            try {
-              return getSystem(this.route[0]).name;
-            } catch {
-              return null;
-            }
-          })()
-        : null;
-    ctx.font = "10px Helvetica, Arial, sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(180, 200, 225, 0.9)";
-    ctx.fillText(
-      nextName ? `Next: ${nextName}` : "H · select destination",
-      bx + 8,
-      by + boxH - 8,
-    );
-
     ctx.restore(); // end alpha
   }
 
-  private renderMap(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  private renderMap(
+    ctx: CanvasRenderingContext2D,
+    fullW: number,
+    h: number,
+  ): void {
     ctx.fillStyle = "rgba(2,5,12,0.92)";
-    ctx.fillRect(0, 0, w, h);
+    // the backdrop runs the whole width, so nothing of the flight scene shows
+    // through beside the status bar
+    ctx.fillRect(0, 0, fullW, h);
+    /*
+     * The chart itself lays out in the space *left* of the status bar. The
+     * sidebar is an opaque DOM panel over the canvas and stays up under the
+     * map, so drawing to the full canvas width put the right-hand readout —
+     * government, standing, goods, services — underneath it: 176 of its 186
+     * columns were hidden, which read as the map having no panel at all.
+     */
+    const w = fullW - SIDEBAR_W;
     // full-screen chart frame (not the H overlay — that uses FloatingMap above)
     ctx.strokeStyle = COLR?.floatingMap ?? "rgba(120, 160, 210, 0.6)";
     ctx.lineWidth = 2;
@@ -7647,20 +8283,26 @@ export class Game {
     for (const systemId of this.mapPreview) mark(systemId, BRIEFING_ARROW);
 
     /*
-     * Nova's mission marker: a small green arrow standing over the destination
+     * Nova's mission marker: a small arrow standing over the destination
      * system, offset by the node's own radius so it sits the same distance
-     * clear of a 2px uncharted dot and a 6px current-system disc.
+     * clear of a 2px uncharted dot and a 6px current-system disc. Drawn as a
+     * tall isosceles triangle (not equilateral) so the tip is obviously the
+     * end that points at the system.
      */
     const missionArrow = (
       pt: { x: number; y: number },
       r: number,
       color: string,
     ) => {
+      // tip just above the node; short base higher up → clear down-point
+      const tipY = pt.y - (r + 5);
+      const baseY = tipY - 12;
+      const halfBase = 3.5;
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(pt.x, pt.y - (r + 7));
-      ctx.lineTo(pt.x - 5, pt.y - (r + 15));
-      ctx.lineTo(pt.x + 5, pt.y - (r + 15));
+      ctx.moveTo(pt.x, tipY);
+      ctx.lineTo(pt.x - halfBase, baseY);
+      ctx.lineTo(pt.x + halfBase, baseY);
       ctx.closePath();
       ctx.fill();
     };
@@ -7913,6 +8555,23 @@ export class Game {
       value("Uncharted", "#62748c");
     }
 
+    /*
+     * The calendar closes the panel out, ruled off from the system's own
+     * details above it. It is anchored to the foot of the box rather than
+     * following `ty`, since how far the goods and services lists run is a
+     * property of the system you happen to have selected.
+     */
+    const dateBase = py + panelH - 14;
+    ctx.strokeStyle = "#22304a";
+    ctx.beginPath();
+    ctx.moveTo(px + 10, dateBase - 32);
+    ctx.lineTo(px + panelW - 10, dateBase - 32);
+    ctx.stroke();
+    ty = dateBase - 13;
+    label("Date:");
+    ty = dateBase;
+    value(formatDate(this.player.date));
+
     // ports and hazards along the bottom of the chart area
     ctx.font = "10.5px Helvetica, Arial, sans-serif";
     let fy = h - barH - 34;
@@ -7938,10 +8597,6 @@ export class Game {
             ? "Light asteroid field"
             : "None";
     ctx.fillText(hazard, 148, fy);
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#62748c";
-    ctx.fillText(formatDate(this.player.date), px - 12, fy);
-    ctx.textAlign = "left";
 
     // button bar
     this.mapButtons = [];
