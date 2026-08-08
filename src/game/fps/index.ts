@@ -12,7 +12,16 @@ import type { Input } from "../../engine/input";
 import { playAmbient, stopAmbient } from "../../engine/audio";
 import { renderScene, type RaySprite } from "./raycast";
 import { FpsWorld, type FpsCommand } from "./sim";
-import { preloadPlate, wallTexture } from "./textures";
+import {
+  deckPixels,
+  preloadMaterials,
+  wallEmit,
+  wallGain,
+  wallGlow,
+  wallInset,
+  wallRepeat,
+  wallTexture,
+} from "./textures";
 import type { FpsOptions } from "./types";
 
 /** Columns cast per frame. Fixed, so a big window costs no more than a small one. */
@@ -26,7 +35,6 @@ const DISPLAY = '"Chakra Petch", "Verdana", sans-serif';
 export class FpsSession {
   readonly world: FpsWorld;
   private readonly canvas: HTMLCanvasElement;
-  private readonly plate: number;
 
   private buf = document.createElement("canvas");
   private bufCtx: CanvasRenderingContext2D | null;
@@ -60,9 +68,8 @@ export class FpsSession {
   constructor(canvas: HTMLCanvasElement, opts: FpsOptions) {
     this.canvas = canvas;
     this.world = new FpsWorld(opts);
-    this.plate = opts.wallPlate ?? 700;
     this.bufCtx = this.buf.getContext("2d");
-    preloadPlate(this.plate);
+    preloadMaterials();
 
     document.addEventListener("pointerlockchange", this.onLockChange);
     window.addEventListener("mousemove", this.onMouseMove);
@@ -137,7 +144,15 @@ export class FpsSession {
         level: this.world.level,
         cam: { x: this.world.x, y: this.world.y, angle: this.world.angle },
         sprites,
-        texture: (id) => wallTexture(this.plate, id - 1),
+        mat: {
+          texture: wallTexture,
+          gain: wallGain,
+          repeat: wallRepeat,
+          glow: wallGlow,
+          emit: wallEmit,
+          inset: wallInset,
+          deck: deckPixels(),
+        },
       },
       this.depth,
     );

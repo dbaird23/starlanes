@@ -103,14 +103,46 @@ correctly as you strafe — the hardest asset problem in a sprite FPS, solved
 before we start, and `rotationFrame`/`getSprite` already index that layout.
 They are also the right monster: the sprites are lit and drawn from above,
 which reads as wrong on anything that walks and fine on something that hovers.
-Walls come from the **machinery tail of the status-bar plates** — below the
-last instrument opening, `public/hud/statusbar-70*.jpg` is greebled panel,
-conduit and rivets, six different materials, one per government. Mind the
-coordinate space: `OPENINGS` is measured in the art's 481-wide space and ends
-at 1649, but the files ship 384 wide, so the tail starts at `1649 × imgW/481`
-— derived in `textures.ts`, not hardcoded. Those plates do **not** load through
-`getSprite`/`getPict`, which hardcode the `nova/sprites/` and `nova/picts/`
-prefixes; `textures.ts` loads them itself through `asset()`.
+
+**Walls used to come from the machinery tail of the status-bar plates. They no
+longer do.** That crop was a ready-made greeble but it was a *sidebar*, drawn
+with its own lighting and its own vertical rhythm, and it read as one. The
+materials are now the tiles in `art-reference/materials/`, downsized into
+`public/fps/` by `scripts/fps-tiles.mjs` (~490 KB for five). They still do
+**not** load through `getSprite`/`getPict`, which hardcode the `nova/sprites/`
+and `nova/picts/` prefixes; `textures.ts` loads them itself through `asset()`.
+
+**The corridor is an octagon in section, per `art-reference/README.md`.** Deck,
+45° lower chamfer, vertical face, 45° upper chamfer, overhead — those angles
+are the *profile*, not floor-plan angles, so the plan stays a grid. A wall
+column is three bands rather than one strip, and the band heights fall out of
+the distance the DDA already computes: the chamfer occupies a strip `chamfer`
+cells wide in front of the wall, which the ray crosses *before* the wall plane,
+and since the DDA's perpendicular distance is `Δx / rayX`, moving that plane
+inward by `chamfer` moves the distance by `chamfer × deltaX`. One multiply, no
+second trace. Each band takes its own texture, its own gain and its own fog;
+the chamfers are sliced (2-4) so their fog follows them back toward the camera.
+
+Things it is easy to get wrong here:
+
+- **`PLANE` and `WALL_H` are art direction, not taste.** At the old 0.66 / 1.6
+  the vertical FOV was 35° against a 66° horizontal one, so a world unit of
+  height covered 1.3× the pixels a world unit of width did and the whole
+  octagon overflowed the frame under four cells — you could not see the shape.
+  0.8 / 1.0 is square at a 16:10 window (`H·WALL_H·2·PLANE/W` = 1), so a
+  section authored to the reference's fractions *is* those fractions on screen.
+- **A sector's overhead height wants to be 1.0 unless you mean it.** The eye is
+  fixed at 0.5 above the deck — that is what `hover` 0.5 means to every
+  billboard — so only a 1.0 overhead puts the camera on the centreline of the
+  vertical face. At 1.6 the chamfer's top edge slides onto the horizon and the
+  face ends up entirely above eye level.
+- **Band boundaries are snapped to whole rows.** A chamfer forty cells out is a
+  fraction of a pixel high, and `drawImage` into a sub-pixel destination blends
+  in the brightest texel it can find — against a near-black derelict that came
+  out as chains of white dots tracking every chamfer edge.
+- **`trim-light-channel.png` goes on the bay frames and the doors only.** On
+  every chamfer it was a light strip down every wall, which is a strip down no
+  wall in particular, and the bay rhythm disappeared into it.
 
 Structural notes that are easy to get wrong:
 
@@ -125,16 +157,88 @@ Structural notes that are easy to get wrong:
 - **Losing the pointer lock pauses; it must not exit.** Esc is how the browser
   hands the pointer back, and the landed Esc handler departs the planet.
   Leaving is Q, or the pause card.
-- One projection constant (`proj = H * WALL_H`) drives walls *and* billboards.
-  Wolf3D's one-cell-tall walls read as knee-height fencing down a long hold;
-  scaling only the walls lifts a Wraith's feet off the deck.
-- There are no floor or ceiling textures anywhere in the extraction, so the
-  deck and overhead are flat colours shaded **per screen row by real distance**
-  (a floor row at y is `proj / 2(y - half)` away) with a darker seam each whole
-  cell. That is what makes the dark read as depth rather than as a void.
-- Levels are ASCII in `level.ts`. Keep corridors **1-2 cells wide** — an open
-  hall renders as a distant ribbon with no depth cues. Validate a new deck for
-  equal row widths, a sealed border and no orphaned cells before shipping it.
+- One projection constant (`proj = H * WALL_H`) drives walls, the three wall
+  bands, the deck cast *and* billboards. Scaling only the walls lifts a
+  Wraith's feet off the deck.
+- **The deck and overhead are cast per pixel** against `deck-plate.png` — a row
+  at screen y is a known distance (`rise · proj / |y − half|`), the world span
+  across it is linear in that, so one walk per row lands every pixel on the
+  tile. That is what gives the plate seams that converge with the corridor and
+  the worn centre runner. There is still no *ceiling* art anywhere, so the
+  overhead borrows the same plate knocked down and cooled; left flat it read as
+  a void hanging over the corridor. The loop is pure JS and does not get faster
+  on better hardware: pixels are packed as `Uint32` words, and sector light is
+  cached per cell rather than looked up per pixel (~4.3 ms → ~1.3 ms).
+- **Levels carry sectors, Doom-style** — a parallel ASCII layer in `level.ts`
+  names a region per cell, and each region has `light`, `height` and `chamfer`.
+  Light belongs to an area, not a wall; a wall takes the sector of the last
+  *open* cell before the hit, which is Doom's rule and is what lets a dead
+  section stay black while the one you came from is lit. `chamfer` is per
+  sector because the art direction states it as a fraction of *corridor width*,
+  and only the sector knows how wide its corridors are.
+- **Bay frames are applied in `parseLevel`, not authored.** A hull cell on the
+  bay grid (every 3 cells) becomes `WALL.frame`. Which grid line depends on
+  which way the wall faces — a wall seen from the east or west runs north/south
+  so its frames step in `y`, and testing both axes on every cell turns the
+  entire `x % bay === 0` column into frames.
+- **The suit lamp is a second light term, on real distance, and it is the
+  mechanic.** Sector light alone made a dead section uniformly black and you
+  navigated it by the minimap, which is wrong at the level of premise: you are
+  carrying the only light on a dead ship, so dark has to mean "you can see
+  three metres". `lampAt()` in `raycast.ts` is an inverse-square core with a
+  hard cutoff at 7 cells, summed with the sector term and clamped, and it goes
+  through walls, chamfers, deck, overhead **and** billboards — all five already
+  know their own distance, and if any one of them skipped it they would
+  disagree about how far away things are. A mild per-column cone (`coneTable`)
+  biases it toward the view axis. The old radial `drawLamp()` vignette is
+  deleted: a gradient over the finished frame moves with the camera rather than
+  with the ship and reads as a smudged lens, not a lamp. **`LAMP_MAX` stays
+  under 1** — at 1.06 every dead compartment lit to white as soon as you stood
+  near a wall, i.e. looked *powered*. The sector levels in `level.ts` were all
+  roughly halved when this landed (airlock 0.85 → 0.45, forward third 0.14 →
+  0.03), because a sector level is now what the *ship* is still putting out and
+  the lamp owns the near field.
+- **The chamfers have their own 3:1 tiles.** A chamfer band is ~28% of a
+  column's height, so a square tile squashed into it loses all vertical
+  structure and comes out as lengthwise ribbons — the smearing down every wall
+  in the first pass. `chamfer-{main,grimy,trim}.png` are full-width 341px bands
+  cut from the same sources by `scripts/fps-tiles.mjs`, sampled at the
+  proportion the band actually occupies. `GLOW_V0/V1` and `HALO_V0/V1` are
+  measured off `chamfer-trim.png`'s fixture (channel y 483..533, housing
+  455..567 of the 1024px source); move the crop and those move with it.
+- **Tile repetition is broken per cell, on the vertical face only.**
+  `cellVariant(x, y)` hashes the grid position into an alternate tile (one cell
+  in eight), a quarter-tile u offset and a mirror. It is deliberately *not*
+  applied to the chamfers: those carry continuous horizontal structure — a
+  conduit run, a bench, a light channel — that has to survive from one cell to
+  the next or the corridor stops reading as one corridor.
+- **A bay rib is geometry, not paint: `Material.inset` steps its wall plane
+  0.15 cells in toward the corridor centre.** Brightness on a smooth tube left
+  the silhouette as two perfectly converging lines; the references are nested
+  octagon ribs receding, and the ribs' outlines are the depth cue. It costs one
+  subtraction because the DDA's distance *is* the ray parameter, so a plane
+  `inset` nearer is reached `inset * delta` earlier. Two details are not
+  optional: the rib is a **box**, so when the stepped-in plane lies behind the
+  cell's along-wall entry the ray comes in through the rib's **return face**
+  instead (`side` flips, and that strip is what occludes); and the entry must be
+  **in front of the camera**, or at a grazing angle `inset * delta` puts it
+  behind you, the column takes a distance of ~0 and paints a black full-height
+  slab down the frame. The return face is only `inset` cells across, so
+  `repScale = 1 / inset` puts its texel density back.
+- **Every long run is capped with a `D`.** Rule 6 of the art direction is that
+  a sightline terminates on a bulkhead; the door material is also the only one
+  with a nonzero `wallEmit`, a small self-illumination added after fog and
+  lamp, so the far bulkhead is visible from beyond the lamp's reach instead of
+  the run ending in undifferentiated black.
+- Keep corridors **1-2 cells wide** — an open hall renders as a distant ribbon
+  with no depth cues. Validate a new deck for equal row widths, a sealed
+  border and no orphaned cells before shipping it.
+- `TEST_CORRIDOR` (`game.startDerelict("corridor")`, reachable from
+  `window.game` and from nothing in the UI) is the art-direction rig: one
+  straight 17-cell run, framed every 3, three sectors stepping from powered to
+  dead, terminating on a door.
+- Known limitation: `depth[x]` holds the *wall* distance, so a billboard
+  between the chamfer's near edge and the wall can draw over a near chamfer.
 - `SHOT_RANGE` is deliberately *not* derived from the wëap's
   `durationSec × speed`: 650 px is calibrated for ships crossing a system and
   there is no honest cells-per-pixel. `reloadSec`, `accuracy` (the spread cone,

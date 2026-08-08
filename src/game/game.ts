@@ -197,7 +197,7 @@ import type { CaptureResult, PlunderHold } from "../ui/plunder";
 import { LandedUi } from "../ui/landed";
 import { NpcShip, SPARROW, Ship, type EscortOrder } from "./ship";
 import { FpsSession } from "./fps";
-import { DERELICT } from "./fps/level";
+import { DERELICT, TEST_CORRIDOR } from "./fps/level";
 import type { FpsOptions } from "./fps/types";
 
 type Mode = "menu" | "flight" | "map" | "landed" | "fps";
@@ -1287,10 +1287,15 @@ export class Game {
   }
 
   /** The bar's cabinet: the derelict, with nothing at stake. */
-  startDerelict(): void {
+  /**
+   * The bar's fifth button. `"corridor"` is the art-direction test run — one
+   * straight, framed, three-sector corridor with nothing on it — reachable from
+   * `window.game` and from nothing in the UI.
+   */
+  startDerelict(which: "deck" | "corridor" = "deck"): void {
     this.startFps({
-      title: "Derelict",
-      level: DERELICT,
+      title: which === "corridor" ? "Test corridor" : "Derelict",
+      level: which === "corridor" ? TEST_CORRIDOR : DERELICT,
       loadout: [{ weaponId: "128", ammo: 160 }],
       health: 100,
       wallPlate: 700,
