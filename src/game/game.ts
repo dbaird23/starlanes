@@ -5333,8 +5333,6 @@ export class Game {
      * Open Pilot reloads the last leave-planet save.
      */
     const id = this.pilotId;
-    const name = this.pilotName;
-    const systemName = this.system.name;
     const wasStrict = this.player.strict;
     this.pilotId = null; // nothing more is written for this run
     this.resumeMode = null;
