@@ -50,15 +50,47 @@ export interface FpsSector {
    */
   height: number;
   /**
-   * The 45 degree chamfer's run, in cells — the same in both axes, since it is
-   * 45 degrees. This has to be a sector property rather than a renderer
-   * constant because the art direction states it as a **fraction of corridor
-   * width** (~0.275), and a two-cell corridor is twice as wide as a one-cell
-   * one. It is the sector that knows how wide its corridors are.
+   * The 45 degree chamfer's run **as a fraction of the space's free span** —
+   * the art direction's ~0.275, which puts the deck at 45% of the corridor's
+   * width. It is a ratio and not a measurement in cells: see `section.ts`,
+   * which turns it into a run against `FpsLevel.freeSpan` and the overhead.
    */
   chamfer: number;
   /** For authoring and debugging only. */
   name: string;
+}
+
+/**
+ * A framed opening: where one space's wall run is interrupted by another space,
+ * the interruption is capped with a flat bulkhead that has an octagonal hole in
+ * it — `art-reference/airlock/airlock.png`, which is the same eight-sided
+ * silhouette as the corridor's own section set into a flat plate.
+ *
+ * This is the answer to the section *dying* at every junction. A chamfer is
+ * anchored to a wall plane, so where the wall stops the chamfer stops with it
+ * and the corridor ends in a square-cornered gap; a raycaster cannot wrap the
+ * fold around the corner, but it has always been able to do doorways. A ray
+ * that crosses the plane inside the aperture carries on into the space beyond;
+ * one that lands on the frame stops there and draws the plate.
+ */
+export interface FpsPortal {
+  /** 0: the plane x = pos, seen from east or west. 1: the plane y = pos. */
+  axis: 0 | 1;
+  pos: number;
+  /** the opening's extent along that plane, in cells */
+  a0: number;
+  a1: number;
+  /** aperture half-width, measured from the opening's centre */
+  hw: number;
+  /** aperture bottom and top, as heights above the deck */
+  yb: number;
+  yt: number;
+  /** the aperture's 45 degree corner run, in cells */
+  cham: number;
+  /** the frame plate runs from the deck up to here, above the deck */
+  ceil: number;
+  /** the sector whose light dresses the plate */
+  sector: number;
 }
 
 /** A parsed level: a grid of wall ids plus the things standing on it. */
@@ -72,6 +104,21 @@ export interface FpsLevel {
   sectorOf: Uint8Array;
   /** sector table; index 0 is always the level's default */
   sectors: FpsSector[];
+  /**
+   * `min(horizontal run, vertical run)` of open cells through each cell, in
+   * cells — how wide the space is, which is what the chamfer is a fraction of.
+   * Zero on solid cells.
+   */
+  freeSpan: Uint8Array;
+  /** every framed opening on the deck */
+  portals: FpsPortal[];
+  /**
+   * 1-based portal id for the plane `x = X` over cell row `y`, indexed
+   * `y * (w + 1) + X`; 0 where the crossing is not framed.
+   */
+  portalEW: Int32Array;
+  /** ...and for the plane `y = Y` over cell column `x`, indexed `Y * w + x`. */
+  portalNS: Int32Array;
   /** player start, in cells */
   start: { x: number; y: number; angle: number };
   /** where you have to get back to once the deck is clear */

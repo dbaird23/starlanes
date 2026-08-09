@@ -144,6 +144,61 @@ Things it is easy to get wrong here:
   every chamfer it was a light strip down every wall, which is a strip down no
   wall in particular, and the bay rhythm disappeared into it.
 
+**The section is an octagon, and it terminates into a frame rather than
+stopping.** Three things settle it, and the third is the one that mattered:
+
+- The chamfer is cast **per pixel against its own sloped plane**, not drawn as
+  a band between two rows. A band has no perspective across its own slope, so
+  its panel runs did not converge with the corridor and the deck never actually
+  narrowed. See the header of `raycast.ts` for the closed-form solve.
+- `FpsSector.chamfer` is a **fraction of the space's free span**, not a
+  measurement in cells. The reference puts the deck at 45% of corridor width,
+  i.e. 0.275 of the width per side; read as an absolute the two-cell spine came
+  out at 72.5% and a wide compartment got a sliver. `FpsLevel.freeSpan` is
+  `min(horizontal run, vertical run)` per cell — the *shorter*, so one octagon
+  goes all the way round a room instead of four different ones on four walls —
+  and `section.ts` turns the fraction into a run. What limits it is the
+  overhead: two chamfers eat `2c` of height, so the derelict's corridors were
+  raised from 1.0 to **1.2** to afford 0.51 of the spine's asked-for 0.55. The
+  eye stays half a cell up, which is still 40% of the overhead, where the
+  reference's camera is.
+- **A junction is framed, not chamfered.** The chamfer is anchored to a wall
+  plane, so where the wall stops the section stopped with it — square-cornered
+  gaps, and since the deck is a grid of crossing corridors that was most of
+  what the player saw. Do **not** try to wrap the fold around the corner. Do
+  what `art-reference/airlock/airlock.png` does: terminate into a flat bulkhead
+  with an **octagonal hole** in it. `level.ts` derives those from the plan
+  (`findPortals`) and the DDA treats them as doorways — through the aperture
+  the trace continues, on the plate it stops. The aperture is the corridor's
+  own section scaled 0.86 about its centre, so the octagon runs continuously
+  through the hole and the frame is what is left in the four corners.
+
+Portal details worth keeping:
+
+- **An opening is a maximal run of open cell faces in one plane with a wall
+  face at both ends.** Not "at least one end": an interior plane through a room
+  ends against solid-solid faces and would otherwise sprout a frame in open
+  space. Where a corridor merely *ends* at another one the run terminates
+  against the hull, which is correctly not framed — the perpendicular plane
+  there is the real interruption and carries the frame you walk through.
+- **Everything beyond a plate is hidden outside the plate's own silhouette.**
+  This is not automatic: a wall's chamfer reaches its deck edge `cham * delta`
+  nearer than the wall, which at a grazing angle lands in front of the plate,
+  and it leaked out under every doorway as a pair of legs down the deck.
+  `composeBackdrop` marks those rows `occluded` and falls through to the flat
+  cast; `drawFaces` clips the vertical face to `clipTop`/`clipBot`, the
+  intersection of every aperture the column crossed, and cuts the source
+  rectangle by the same fraction.
+- **A plate needs incidence shading, which `SIDE_SHADE` does not give it.** The
+  Wolf3D per-axis discount is fine for cell walls, which are only seen from the
+  open side; a portal in a corridor's *side* wall is crossed almost parallel by
+  every ray down that corridor and came out as a bright full-height sliver
+  standing in the wall. `PLATE_GRAZE` shades by how square-on the ray met the
+  plane — one divide, since the ray's length is constant down a column.
+- Sprites are still depth-tested against the far wall only, so a Wraith
+  overlapping a plate's edge draws over it. It fits inside the aperture
+  vertically, so this shows only at the sides.
+
 Structural notes that are easy to get wrong:
 
 - It is a fifth **`Mode`**, not a `LandedUi` view. The canvas is already

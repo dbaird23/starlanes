@@ -13,6 +13,7 @@ import { playAmbient, stopAmbient } from "../../engine/audio";
 import { renderScene, type RaySprite } from "./raycast";
 import { FpsWorld, type FpsCommand } from "./sim";
 import {
+  WALL,
   deckPixels,
   preloadMaterials,
   wallEmit,
@@ -48,6 +49,13 @@ export class FpsSession {
   private bob = 0;
   /** set when the player asks to leave; Game polls it */
   wantsExit = false;
+  /**
+   * Probe hook, off in play: drop every tile and the deck plate so the frame is
+   * flat-shaded surfaces only. The section's silhouette — chamfers, the
+   * octagonal apertures in the framed openings — is what is being judged when
+   * this is on, and greebled photographic metal hides it completely.
+   */
+  noTextures = false;
 
   private onLockChange = (): void => {
     this.locked = document.pointerLockElement === this.canvas;
@@ -145,13 +153,14 @@ export class FpsSession {
         cam: { x: this.world.x, y: this.world.y, angle: this.world.angle },
         sprites,
         mat: {
-          texture: wallTexture,
+          texture: this.noTextures ? (): null => null : wallTexture,
           gain: wallGain,
           repeat: wallRepeat,
           glow: wallGlow,
           emit: wallEmit,
           inset: wallInset,
-          deck: deckPixels(),
+          frameId: WALL.bulkhead,
+          deck: this.noTextures ? null : deckPixels(),
         },
       },
       this.depth,

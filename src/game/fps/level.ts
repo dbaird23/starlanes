@@ -21,10 +21,24 @@
  * than authored glyph by glyph: any hull cell standing on the bay grid is
  * promoted to `WALL.frame`, so the rhythm is a property of the deck and every
  * corridor gets it for free, whichever way it runs.
+ *
+ * **Portals.** Where a wall run is interrupted by another space, the gap is
+ * capped with a framed opening — see `FpsPortal`. That is derived here too,
+ * from the grid alone, because it is a statement about the *plan* and not about
+ * any one wall: an opening is a maximal run of open cell faces in one plane
+ * with real wall on both ends of it, which is exactly "this wall has a hole in
+ * it" and is exactly not "this room is open on one side".
  */
 
+import { apertureFor } from "./section";
 import { WALL } from "./textures";
-import type { FpsEnemyDef, FpsLevel, FpsSector, FpsSpawn } from "./types";
+import type {
+  FpsEnemyDef,
+  FpsLevel,
+  FpsPortal,
+  FpsSector,
+  FpsSpawn,
+} from "./types";
 
 /**
  * Wraith Adult / Youth / Child. Nova draws all three from their own rlëD at 36
@@ -113,8 +127,9 @@ export interface ParseOptions {
 }
 
 /**
- * The section of a one-cell corridor: the art direction's fractions of corridor
- * width (floor ~0.45, chamfer ~0.275 each side) taken against a width of 1.
+ * The reference's own profile: floor ~0.45 of the width, a chamfer of ~0.275 of
+ * the width on each side. `chamfer` is that **fraction**, applied against
+ * whatever the space's free span turns out to be — see `section.ts`.
  */
 const DEFAULT_SECTOR: FpsSector = {
   light: 1,
@@ -211,16 +226,25 @@ const DECK_SECTORS = [
 ];
 
 /**
- * The freighter's own section is tighter than the test corridor's: its rooms
- * are one cell wide, so the chamfer keeps the 0.275-of-width fraction against a
- * width of 1 and the overhead stays low. The reactor bay is the exception and
- * is the reason sector height exists — two decks of it, open to the frames.
+ * The freighter's own section. Every sector keeps the reference's 0.275 of the
+ * span, so the *shape* is one shape everywhere and only the size of the space
+ * changes it: a one-cell passage gets a 0.275 chamfer and a 45% deck, the
+ * two-cell spine asks for 0.55, and the wide compartments ask for more still.
+ *
+ * The overhead is what actually pays for that, which is why these are 1.2 and
+ * not the 1.0 they used to be. Two chamfers eat `2c` of height between them, so
+ * a 1.0 overhead can only afford 0.41 and the spine's deck would come out at
+ * 59% of its width instead of the reference's 45%. At 1.2 it can afford 0.51,
+ * which is 49% — and the eye, still fixed half a cell above the deck, still
+ * sits at 40% of the overhead, which is where the reference's camera is. The
+ * reactor bay is the exception and is the reason sector height exists: two
+ * decks of it, open to the frames, and wide enough to take the full 0.55.
  */
 const DECK_SECTOR_DEFS: Record<string, SectorSpec> = {
-  a: { light: 0.45, height: 1.0, chamfer: 0.275, name: "airlock" },
-  m: { light: 0.16, height: 1.0, chamfer: 0.275, name: "midships" },
-  d: { light: 0.03, height: 1.0, chamfer: 0.275, name: "forward (dead)" },
-  r: { light: 0.06, height: 1.6, chamfer: 0.34, name: "reactor bay" },
+  a: { light: 0.45, height: 1.2, chamfer: 0.275, name: "airlock" },
+  m: { light: 0.16, height: 1.2, chamfer: 0.275, name: "midships" },
+  d: { light: 0.03, height: 1.2, chamfer: 0.275, name: "forward (dead)" },
+  r: { light: 0.06, height: 1.9, chamfer: 0.275, name: "reactor bay" },
 };
 
 const WALL_GLYPHS: Record<string, number> = {
@@ -329,7 +353,218 @@ export function parseLevel(
     }
   }
 
-  return { name, w, h, cells, sectorOf, sectors, start, exit, spawns };
+  const freeSpan = freeSpans(w, h, cells);
+  const { portals, portalEW, portalNS } = findPortals(w, h, cells, sectorOf, sectors);
+
+  return {
+    name,
+    w,
+    h,
+    cells,
+    sectorOf,
+    sectors,
+    freeSpan,
+    portals,
+    portalEW,
+    portalNS,
+    start,
+    exit,
+    spawns,
+  };
+}
+
+/* -------------------------------------------------------------- free span */
+
+/**
+ * How wide the space through each open cell is: the shorter of its horizontal
+ * and vertical runs of open cells.
+ *
+ * The shorter one is the answer because the chamfer is a single 45 degree fold
+ * that goes all the way round a compartment. A room 7 cells by 4 takes its
+ * section from the 4 — the same octagon on every wall, the way a hull is
+ * actually built — where taking each wall's own perpendicular run would give
+ * the long walls a chamfer nearly twice the short walls' and no two of them
+ * would meet in the corners.
+ */
+function freeSpans(w: number, h: number, cells: Uint8Array): Uint8Array {
+  const spanX = new Uint8Array(w * h);
+  const spanY = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    let x = 0;
+    while (x < w) {
+      if (cells[y * w + x] !== 0) {
+        x++;
+        continue;
+      }
+      let e = x;
+      while (e < w && cells[y * w + e] === 0) e++;
+      const len = Math.min(255, e - x);
+      for (let i = x; i < e; i++) spanX[y * w + i] = len;
+      x = e;
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let y = 0;
+    while (y < h) {
+      if (cells[y * w + x] !== 0) {
+        y++;
+        continue;
+      }
+      let e = y;
+      while (e < h && cells[e * w + x] === 0) e++;
+      const len = Math.min(255, e - y);
+      for (let i = y; i < e; i++) spanY[i * w + x] = len;
+      y = e;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    out[i] = spanX[i] < spanY[i] ? spanX[i] : spanY[i];
+  }
+  return out;
+}
+
+/* ----------------------------------------------------------------- portals */
+
+/**
+ * Every framed opening on the deck.
+ *
+ * Work one *plane* at a time — every vertical line `x = X` and every horizontal
+ * line `y = Y` on the grid — and classify each cell-wide face on it as one of
+ * three things: **open** (both cells clear), **wall** (one clear, one solid) or
+ * **interior** (both solid, which is a plane running through the middle of a
+ * bulkhead and means nothing).
+ *
+ * An opening is then a maximal run of open faces with a *wall* face at each
+ * end, and that test is the whole of it:
+ *
+ * - A junction gives four of them, one per arm, because each arm interrupts a
+ *   wall run that continues on both sides of it.
+ * - The middle of a room gives none. Its interior planes have no wall faces at
+ *   all — the run ends against interior faces — so nothing is being
+ *   interrupted and no frame appears in open space.
+ * - Where a corridor simply *ends* at another one (the outer ring turning a
+ *   corner) the run ends against the hull rather than against wall, so it is
+ *   not framed from that side — and it does not need to be, because the
+ *   perpendicular plane there *is* a genuine interruption and carries the frame
+ *   you actually walk through.
+ */
+function findPortals(
+  w: number,
+  h: number,
+  cells: Uint8Array,
+  sectorOf: Uint8Array,
+  sectors: FpsSector[],
+): { portals: FpsPortal[]; portalEW: Int32Array; portalNS: Int32Array } {
+  const portals: FpsPortal[] = [];
+  const portalEW = new Int32Array((w + 1) * h);
+  const portalNS = new Int32Array(w * (h + 1));
+
+  const add = (
+    axis: 0 | 1,
+    pos: number,
+    a0: number,
+    a1: number,
+    secA: number,
+    secB: number,
+  ): number => {
+    const sa = sectors[secA];
+    const sb = sectors[secB];
+    // the plate has to reach the taller overhead or it leaves a gap over the
+    // hole; the aperture takes the shorter, since that is the section beyond
+    const ceil = sa.height > sb.height ? sa.height : sb.height;
+    const apH = sa.height < sb.height ? sa.height : sb.height;
+    const ap = apertureFor(a1 - a0, apH, sa.chamfer);
+    portals.push({
+      axis,
+      pos,
+      a0,
+      a1,
+      hw: ap.hw,
+      yb: ap.yb,
+      yt: ap.yt,
+      cham: ap.cham,
+      ceil,
+      sector: secA,
+    });
+    return portals.length;
+  };
+
+  // vertical planes: x = X, one face per cell row
+  for (let X = 0; X <= w; X++) {
+    let run = -1;
+    let runStartedAtWall = false;
+    let prevWall = false;
+    for (let y = 0; y <= h; y++) {
+      let open = false;
+      let wall = false;
+      if (y < h) {
+        const a = X > 0 ? cells[y * w + X - 1] : 1;
+        const b = X < w ? cells[y * w + X] : 1;
+        open = a === 0 && b === 0;
+        wall = (a === 0) !== (b === 0);
+      }
+      if (open) {
+        if (run < 0) {
+          run = y;
+          runStartedAtWall = prevWall;
+        }
+      } else {
+        if (run >= 0 && runStartedAtWall && wall) {
+          const id = add(
+            0,
+            X,
+            run,
+            y,
+            sectorOf[run * w + X - 1],
+            sectorOf[run * w + X],
+          );
+          for (let i = run; i < y; i++) portalEW[i * (w + 1) + X] = id;
+        }
+        run = -1;
+      }
+      prevWall = wall;
+    }
+  }
+
+  // horizontal planes: y = Y, one face per cell column
+  for (let Y = 0; Y <= h; Y++) {
+    let run = -1;
+    let runStartedAtWall = false;
+    let prevWall = false;
+    for (let x = 0; x <= w; x++) {
+      let open = false;
+      let wall = false;
+      if (x < w) {
+        const a = Y > 0 ? cells[(Y - 1) * w + x] : 1;
+        const b = Y < h ? cells[Y * w + x] : 1;
+        open = a === 0 && b === 0;
+        wall = (a === 0) !== (b === 0);
+      }
+      if (open) {
+        if (run < 0) {
+          run = x;
+          runStartedAtWall = prevWall;
+        }
+      } else {
+        if (run >= 0 && runStartedAtWall && wall) {
+          const id = add(
+            1,
+            Y,
+            run,
+            x,
+            sectorOf[(Y - 1) * w + run],
+            sectorOf[Y * w + run],
+          );
+          for (let i = run; i < x; i++) portalNS[Y * w + i] = id;
+        }
+        run = -1;
+      }
+      prevWall = wall;
+    }
+  }
+
+  return { portals, portalEW, portalNS };
 }
 
 export const DERELICT = parseLevel("Derelict", DECK, {
