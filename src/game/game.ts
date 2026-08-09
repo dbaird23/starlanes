@@ -77,12 +77,22 @@ import {
 } from "../engine/sprites";
 import { applySet, evalTest } from "./bits";
 import { formatDate } from "./calendar";
+import {
+  cargoUsed as fleetCargoUsed,
+  commodityTons,
+  enforceCargoCapacity,
+  fleetCargoCap,
+  freeCommoditySpace,
+  freeHoldSpace,
+  missionCargoUsed,
+  stowage,
+  totalCargoCap,
+} from "./cargo";
 import { runCrons } from "./crons";
 import { runOopses } from "./oops";
 import {
   descText,
   instantiateMission,
-  missionCargoUsed,
   missionDisplayName,
   substituteTags,
   testContext,
@@ -1528,7 +1538,16 @@ export class Game {
     if (this.player.credits < price) {
       return { ok: false, reason: "You cannot afford this ship." };
     }
-    if (this.cargoUsed() > type.cargo) {
+    /*
+     * The wing's holds come with you, so what has to fit here is the hull's
+     * share: mission freight, which never leaves your own hold, plus whatever
+     * commodities the escorts cannot take.
+     */
+    const fleet = fleetCargoCap(this.player);
+    const mustFit =
+      missionCargoUsed(this.player) +
+      Math.max(0, commodityTons(this.player) - fleet);
+    if (mustFit > type.cargo) {
       return {
         ok: false,
         reason: "Your cargo will not fit in this ship's hold.",
@@ -2535,7 +2554,7 @@ export class Game {
       shipName: this.shipLabel(t),
       hold,
       captureOdds: odds,
-      freeCargo: this.player.cargoCap - this.cargoUsed(),
+      freeCargo: freeCommoditySpace(this.player),
       take: (what) => {
         if (what === "credits") {
           this.player.credits += hold.credits;
@@ -2568,7 +2587,7 @@ export class Game {
             : "Nothing to take.";
         }
         // cargo: fill what space you have, heaviest hold first
-        let space = this.player.cargoCap - this.cargoUsed();
+        let space = freeCommoditySpace(this.player);
         const taken: string[] = [];
         for (const [id, tons] of Object.entries(hold.cargo)) {
           if (space <= 0) break;
@@ -2693,6 +2712,9 @@ export class Game {
       this.pendingPrize = null;
       return;
     }
+    // taking the helm of a smaller prize can leave the manifest over capacity,
+    // even with your old hull falling in behind to carry some of it
+    this.settleFleetCargo();
     // shïp OnCapture: 171 hulls set a bit when taken
     const onCapture = SHIPS[prize]?.onCapture;
     if (onCapture) applySet(onCapture, this.player.bits, this.bitHandlers());
@@ -3699,6 +3721,8 @@ export class Game {
     this.message(
       "You could not make payroll. Your escorts have left your service.",
     );
+    // and anything stowed in their holds goes with them
+    this.settleFleetCargo();
   }
 
   /** Hire a ship to fly with you. Wages are a thousandth of the hull per day. */
@@ -3734,6 +3758,7 @@ export class Game {
         `You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`,
       );
     }
+    this.settleFleetCargo();
   }
 
   /** Give every ship flying with you a standing order. */
@@ -4461,6 +4486,8 @@ export class Game {
       const idx = this.player.escorts.findIndex((e) => e.shipId === npc.typeId);
       if (idx >= 0) {
         this.player.escorts.splice(idx, 1);
+        // whatever she was hauling for you burned with her
+        this.settleFleetCargo();
       }
     }
     if (
@@ -4731,7 +4758,7 @@ export class Game {
   }
 
   private collectMineral(m: Mineral): void {
-    const space = this.player.cargoCap - this.cargoUsed();
+    const space = freeCommoditySpace(this.player);
     if (space <= 0) {
       this.message("Your hold is full.");
       return;
@@ -5568,7 +5595,11 @@ export class Game {
             },
             {
               label: "Cargo",
-              value: `${this.cargoUsed()} / ${this.player.cargoCap} tons`,
+              value: `${this.cargoUsed()} / ${this.cargoCapacity()} tons${
+                this.fleetCapacity()
+                  ? ` (${this.fleetCapacity()} in escorts)`
+                  : ""
+              }`,
             },
             { label: "Free mass", value: `${this.freeMassLeft()} tons` },
             {
@@ -5751,17 +5782,28 @@ export class Game {
     this.infoUi.show({
       title: "Cargo Hold",
       // a thunk, so the tonnage falls as you dump
-      sections: () => [
-        {
-          title: "Hold",
-          rows: [
-            {
-              label: "Used",
-              value: `${this.cargoUsed()} / ${this.player.cargoCap} tons`,
-            },
-          ],
-        },
-      ],
+      sections: () => {
+        /*
+         * Two lines when a trader flies with you, one otherwise. The split
+         * matters to the player because only the hull's share competes with
+         * mission freight — see cargo.ts.
+         */
+        const fleet = this.fleetCapacity();
+        const split = this.cargoStowage();
+        const rows = [
+          {
+            label: "Used",
+            value: `${this.cargoUsed()} / ${this.cargoCapacity()} tons`,
+          },
+        ];
+        if (fleet > 0) {
+          rows.push({
+            label: "Stowed",
+            value: `${split.hull}t aboard · ${split.fleet}t in escorts (${fleet}t)`,
+          });
+        }
+        return [{ title: "Hold", rows }];
+      },
       jettison: () =>
         Object.entries(this.player.cargo)
           .filter(([, tons]) => tons > 0)
@@ -6400,10 +6442,49 @@ export class Game {
   // ---------------- economy (called by landed UI) ----------------
 
   cargoUsed(): number {
-    return (
-      Object.values(this.player.cargo).reduce((a, b) => a + b, 0) +
-      missionCargoUsed(this.player)
-    );
+    return fleetCargoUsed(this.player);
+  }
+
+  /**
+   * Hull plus whatever the wing can haul. Trader-AI escorts add their holds
+   * to yours for commodities — see `cargo.ts` for the rule and its limits.
+   */
+  cargoCapacity(): number {
+    return totalCargoCap(this.player);
+  }
+
+  /** What the escorts contribute, alone. Zero unless a trader flies with you. */
+  fleetCapacity(): number {
+    return fleetCargoCap(this.player);
+  }
+
+  /** Tons of commodities you could still buy, anywhere in the fleet. */
+  cargoSpace(): number {
+    return freeCommoditySpace(this.player);
+  }
+
+  /** Tons free in your own hull — all that mission freight may use. */
+  holdSpace(): number {
+    return freeHoldSpace(this.player);
+  }
+
+  /** How the commodity load is split between your hull and the wing. */
+  cargoStowage(): { hull: number; fleet: number } {
+    return stowage(this.player);
+  }
+
+  /**
+   * Re-seat the manifest after the wing changes size. An escort that dies,
+   * defects or is paid off takes its hold with it and the overflow is spaced;
+   * `enforceCargoCapacity` decides what goes, this reports it.
+   */
+  private settleFleetCargo(): void {
+    const lost = enforceCargoCapacity(this.player);
+    if (lost.length === 0) return;
+    const what = lost
+      .map((l) => `${l.tons}t of ${cargoLabel(l.id)}`)
+      .join(", ");
+    this.message(`Your hold cannot take it all — you jettison ${what}.`);
   }
 
   // ---------------- missions ----------------
@@ -6535,10 +6616,12 @@ export class Game {
     ok: boolean;
     reason?: string;
   } {
-    if (
-      active.cargoLoaded &&
-      active.cargoQty > this.player.cargoCap - this.cargoUsed()
-    ) {
+    /*
+     * Mission freight goes in your own hull and nowhere else — the manual is
+     * explicit that "no one else can be trusted with it" — so this is the
+     * hull figure even when the wing has room to spare.
+     */
+    if (active.cargoLoaded && active.cargoQty > freeHoldSpace(this.player)) {
       return {
         ok: false,
         reason: "You don't have enough cargo space for this mission.",
@@ -6725,7 +6808,8 @@ export class Game {
   }
 
   buy(commodityId: string, qty: number, unitPrice: number): void {
-    const space = this.player.cargoCap - this.cargoUsed();
+    // commodities may ride in the wing, so this is the fleet-wide figure
+    const space = freeCommoditySpace(this.player);
     const affordable = Math.floor(this.player.credits / unitPrice);
     const n = Math.min(qty, space, affordable);
     if (n <= 0) return;
