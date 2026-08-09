@@ -1,6 +1,13 @@
 # EV Nova web reimplementation
 
-TypeScript + Vite, no framework; canvas flight sim + HTML landed screens.
+TypeScript + Vite. The flight sim draws to a canvas and the landed screens are
+HTML; the on-foot mini-game in `src/game/fps/` is its own renderer over the same
+canvas.
+
+There is no house rule against frameworks, dependencies or a second rendering
+technology — judge each on its merits for the job. (This line used to read "no
+framework", which had hardened into an unexamined argument against WebGL for
+the mini-game, where a GPU is plainly the right tool for per-pixel geometry.)
 
 ## Data pipeline
 
@@ -68,6 +75,12 @@ empirical evidence.
   with `localStorage.music = "1"` / `"0"`.
 
 ### Probing from an automated browser session
+
+Throwaway probe scripts go in **`scratch/`**, which is gitignored. They have to
+live inside the repo — Node resolves `require('pngjs')` by walking up to
+`node_modules`, so a script in `/tmp` cannot see it — and `scratch/` keeps them
+out of the project root, where they kept showing up as untracked files.
+
 
 `requestAnimationFrame` is paused when the tab is backgrounded, so canvas
 screenshots can be stale. Verify by calling into `window.game` directly, or by

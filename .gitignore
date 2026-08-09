@@ -24,9 +24,7 @@ AGENTS.md
 * 2.*
 * [0-9].*
 
-# Throwaway probe scripts. Automated browser probes have to live inside the
-# repo so `require('pngjs')` resolves against node_modules, so they land here
-# rather than in a scratch directory. They are never part of the build.
+# Throwaway probe scripts belong in scratch/ (which self-ignores). These two
+# patterns catch the ones that still land in the project root out of habit.
 /scratch-*.mjs
 /*-probe.mjs
-/probe*.mjs
