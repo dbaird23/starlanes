@@ -719,9 +719,14 @@ export function leadPoint(
     t = t1 > 0 && t2 > 0 ? Math.min(t1, t2) : Math.max(t1, t2);
   }
   if (t <= 0) return { x: target.pos.x, y: target.pos.y };
+  // Return the point that produces the correct firing angle:
+  //   atan2(aimPos.y - shooter.pos.y, aimPos.x - shooter.pos.x)
+  // must equal atan2(dy + rvy*t, dx + rvx*t) — the intercept direction
+  // in the shooter's own frame.  Using target.vel (absolute) instead of
+  // rv (relative) is only correct when the shooter is stationary.
   return {
-    x: target.pos.x + target.vel.x * t,
-    y: target.pos.y + target.vel.y * t,
+    x: shooter.pos.x + dx + rvx * t,
+    y: shooter.pos.y + dy + rvy * t,
   };
 }
 

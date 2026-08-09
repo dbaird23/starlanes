@@ -4084,7 +4084,28 @@ export class Game {
         : npc.armor < npc.maxArmor * 0.25;
     // a fleeing ship with a cloak uses it
     if (npc.canCloak) npc.cloaked = fleeing;
-    const desired = fleeing ? Math.atan2(-dy, -dx) : Math.atan2(dy, dx);
+
+    // Look up the primary weapon early so we can steer toward the intercept
+    // point rather than the target's current position — a crossing target at
+    // speed will always be missed if we aim at where it is now.
+    const type = npc.typeId ? SHIPS[npc.typeId] : null;
+    const armament = npc.weapons ?? type?.stockWeapons;
+    const stock = armament?.find((sw) => {
+      const w = WEAPONS[String(sw.id)];
+      return w && isPrimary(w);
+    });
+    const weap = stock ? WEAPONS[String(stock.id)] : null;
+
+    // Intercept point: for projectile weapons use leadPoint; beams are instant
+    // so aim at the current position.
+    const aimPos =
+      !fleeing && weap && !isBeam(weap) && weap.speed > 0
+        ? leadPoint(npc, target, weap.speed)
+        : target.pos;
+    const desired = fleeing
+      ? Math.atan2(-dy, -dx)
+      : Math.atan2(aimPos.y - npc.pos.y, aimPos.x - npc.pos.x);
+
     const facing = npc.steerToward(dt, desired);
     const thrust = fleeing ? facing : facing && dist > 180;
     npc.update(dt, 0, thrust);
@@ -4098,41 +4119,40 @@ export class Game {
      */
     const reach =
       person && person.aggress > 0 ? 350 + person.aggress * 350 : 700;
-    if (!fleeing && npc.typeId && npc.fireCooldown <= 0 && dist < reach) {
+    if (!fleeing && weap && stock && npc.fireCooldown <= 0 && dist < reach) {
+      const turret = isTurret(weap);
       let diff = desired - npc.angle;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      if (Math.abs(diff) < 0.2) {
-        const type = SHIPS[npc.typeId];
-        // a named captain flies their own loadout, not the hull's stock one
-        const armament = npc.weapons ?? type?.stockWeapons;
-        const stock = armament?.find((sw) => {
-          const w = WEAPONS[String(sw.id)];
-          return w && isPrimary(w);
-        });
-        const weap = stock ? WEAPONS[String(stock.id)] : null;
-        if (weap && stock) {
-          const volley = volleyCount(weap, stock.count);
-          npc.fireCooldown = reloadInterval(weap, stock.count);
-          if (weap.sndId) {
-            playSndAt(
-              weap.sndId,
-              0.35,
-              npc.pos.x - this.ship.pos.x,
-              npc.pos.y - this.ship.pos.y,
-            );
-          }
-          if (isBeam(weap)) {
-            const aim = Math.atan2(
-              target.pos.y - npc.pos.y,
-              target.pos.x - npc.pos.x,
-            );
-            this.fireBeamFromNpc(npc, weap, volley, target, aim);
-          } else {
-            this.projectiles.push(
-              ...fireWeapon(npc, weap, volley, false, target),
-            );
-          }
+      // Turrets swivel independently — they can fire at the intercept point
+      // regardless of which way the hull is pointing. Fixed guns need the
+      // nose within ~11° of the intercept before firing.
+      if (turret || Math.abs(diff) < 0.2) {
+        const volley = volleyCount(weap, stock.count);
+        npc.fireCooldown = reloadInterval(weap, stock.count);
+        if (weap.sndId) {
+          playSndAt(
+            weap.sndId,
+            0.35,
+            npc.pos.x - this.ship.pos.x,
+            npc.pos.y - this.ship.pos.y,
+          );
+        }
+        if (isBeam(weap)) {
+          const aim = Math.atan2(
+            target.pos.y - npc.pos.y,
+            target.pos.x - npc.pos.x,
+          );
+          this.fireBeamFromNpc(npc, weap, volley, target, aim);
+        } else {
+          // Turrets fire at the pre-computed intercept angle; fixed guns fire
+          // straight ahead (the hull is now already pointing at the intercept).
+          const aimAngle = turret
+            ? Math.atan2(aimPos.y - npc.pos.y, aimPos.x - npc.pos.x)
+            : undefined;
+          this.projectiles.push(
+            ...fireWeapon(npc, weap, volley, false, target, aimAngle),
+          );
         }
       }
     }
