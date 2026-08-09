@@ -3389,7 +3389,7 @@ export class Game {
     let best: NpcShip | null = null;
     let bestD = Infinity;
     for (const n of this.npcs) {
-      if (!this.canSee(n) || n.ally || !n.hostile) continue;
+      if (!this.canSee(n) || n.ally || !n.hostile || n.disabled) continue;
       const d = Math.hypot(
         n.pos.x - this.ship.pos.x,
         n.pos.y - this.ship.pos.y,
