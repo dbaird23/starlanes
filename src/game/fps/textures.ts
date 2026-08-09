@@ -123,6 +123,13 @@ const CHAM_TRIM = "chamfer-trim.png";
  * face away and reads dark. Give all three bands the same value and the
  * section collapses back into a flat strip no matter what the textures do.
  *
+ * The three values on a wall are read against `DECK_GAIN` in `raycast.ts`,
+ * because the fold that matters most is the one where the chamfer leaves the
+ * deck and there is nothing on this side of it to state that. The section is a
+ * staircase — deck 0.72, lower chamfer 1.0, vertical face 0.68, upper chamfer
+ * 0.3, overhead cooler again — so every fold in the octagon has a step in
+ * brightness across it and not just a change of slope.
+ *
  * The chamfers repeat once per cell because their tiles are already 3:1 and a
  * chamfer's slope run is about 0.39 of a cell against a cell of length — so one
  * tile per cell is very close to sampling the art square.
@@ -130,9 +137,9 @@ const CHAM_TRIM = "chamfer-trim.png";
 const MATERIALS: Record<number, Material> = {
   [WALL.hull]: {
     band: [
-      { file: CHAM_MAIN, alt: CHAM_GRIMY, gain: 0.88, repeat: 1 },
+      { file: CHAM_MAIN, alt: CHAM_GRIMY, gain: 1.0, repeat: 1 },
       { file: "wall-main.png", alt: "wall-grimy.png", gain: 0.68, repeat: 2 },
-      { file: CHAM_MAIN, alt: CHAM_GRIMY, gain: 0.4, repeat: 1 },
+      { file: CHAM_MAIN, alt: CHAM_GRIMY, gain: 0.3, repeat: 1 },
     ],
     glow: 0,
     emit: 0,
@@ -140,9 +147,9 @@ const MATERIALS: Record<number, Material> = {
   },
   [WALL.housing]: {
     band: [
-      { file: CHAM_GRIMY, gain: 0.76, repeat: 1 },
+      { file: CHAM_GRIMY, gain: 0.92, repeat: 1 },
       { file: "wall-grimy.png", gain: 0.6, repeat: 2 },
-      { file: CHAM_GRIMY, gain: 0.34, repeat: 1 },
+      { file: CHAM_GRIMY, gain: 0.26, repeat: 1 },
     ],
     glow: 0,
     emit: 0,
@@ -150,9 +157,9 @@ const MATERIALS: Record<number, Material> = {
   },
   [WALL.frame]: {
     band: [
-      { file: CHAM_TRIM, gain: 0.94, repeat: 1 },
+      { file: CHAM_TRIM, gain: 1.0, repeat: 1 },
       { file: "trim-light-channel.png", gain: 0.72, repeat: 1 },
-      { file: CHAM_TRIM, gain: 0.6, repeat: 1 },
+      { file: CHAM_TRIM, gain: 0.44, repeat: 1 },
     ],
     glow: 1,
     emit: 0.015,
@@ -160,9 +167,9 @@ const MATERIALS: Record<number, Material> = {
   },
   [WALL.door]: {
     band: [
-      { file: CHAM_TRIM, gain: 0.86, repeat: 1 },
+      { file: CHAM_TRIM, gain: 0.97, repeat: 1 },
       { file: "door-face.png", gain: 0.95, repeat: 1 },
-      { file: CHAM_TRIM, gain: 0.55, repeat: 1 },
+      { file: CHAM_TRIM, gain: 0.4, repeat: 1 },
     ],
     glow: 0.7,
     emit: 0.13,
