@@ -112,6 +112,43 @@ Manticore hands over 360-600k. Two paths still board empty and are a real gap:
 `spawnFleetOf` and `spawnMissionShips` never set `dudeId`/`bootyFlags`, and
 `maybeMakePerson` overwrites a düde roll with the captain's own Credits.
 
+**A përs bound to one system is placed there, not rolled for.** The Bible's
+"when ships are created, there is a 5% chance that a specific AI-person will
+also be created" was the only way a captain could enter play, and reading it
+as the whole rule makes a system-bound përs unreachable — it competes with
+every wildcard-LinkSyst captain the system admits. That is what broke
+**"Shoot down Derelict" (mïsn 754, Tutorial 006)**: the target is not a
+special ship at all. 754 carries ShipCount -1, and the derelict is **përs
+642**, a Pirate Viper named "- marked for demolition -" with LinkSyst 166
+(Rautherion) and **ActiveOn `b9208`** — precisely the bit 754's OnAccept sets
+and its OnSuccess clears. In Rautherion that përs was 1 of 157 candidates
+behind a 5% roll, so the odds of meeting it were about 0.03% per ship spawned.
+`placeLinkedPersons` now spawns, on entering a system, every available përs
+whose LinkSyst is an explicit id in the Bible's 128-2175 band; there are 29 of
+them and never more than three in one system (Jack Folstam, the Drifting
+Derelicts, a few named traders). `maybeMakePerson` no longer considers that
+band, so nobody doubles up, and the wildcard bands are untouched.
+
+Do not go looking for the derelict on the mission instead. mïsn 755, "Silent
+Mission;Tutorial 006a", is what 754's OnAccept starts (`S755`), and its ships
+are genuinely 1 × düde 155 "Large Auroran War Ships" in sÿst 129 (Tichel) —
+the front-line firepower Barry comments on in 754's DropCargText when you
+reach Viking, which is 754's ReturnStel and sits in that same system. The
+offsets are right; verified against the raw resource. Note also that düde 238,
+"Tutorial Derelict", is **referenced by nothing in the shipped data** — it is
+not the mechanism, and hunting for its caller is a dead end.
+
+The other half is gövt Flags **0x0800**, "ships of this govt start out
+disabled (derelicts)", which was extracted and never read. Both governments
+named Derelicts (160, 180) carry it and between them own every përs it
+applies to — the eleven Drifting Derelicts and the tutorial Viper — so
+without it a derelict spawned with aggress 0 and AI type 1 and simply flew
+off. It is applied in `applyPerson` only. Extending it to düde spawns would
+be right for düde 227 "Association - disabled", 230 "Leviathan - disabled",
+238 and 243 "Disabled Auroran Cruiser", whose names confirm the flag outright
+— but gövt 159, the **Wraith**, also sets 0x0800, and disabling every Wraith
+in flight is not a change to make without a reference build.
+
 **People are cargo — and three fields decide who gets offered the job.** Nova
 has no passenger berths: STR# 4000 entry 6 is "\*Passengers", the 103 missions
 that carry them use CargoQty tons like any other freight, and a hull's capacity

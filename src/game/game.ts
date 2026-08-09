@@ -5038,26 +5038,72 @@ export class Game {
     if (!asReinforcement) this.message(`${fleet.name} enters the system.`);
   }
 
+  /** Is this captain in play, alive, and flying a hull we have? */
+  private personAvailable(p: PersonType): boolean {
+    if (this.player.personsKilled.includes(p.id)) return false;
+    if (!SHIPS[String(p.shipType)]) return false;
+    // ActiveOn gates whether this captain is in play at all
+    if (p.activeOn && !evalTest(p.activeOn, this.player.bits)) return false;
+    return true;
+  }
+
+  /**
+   * A përs whose LinkSyst names one specific system is *placed* there, not
+   * rolled for. The Bible's "5% chance that a specific AI-person will also be
+   * created" governs the general pool, and reading it as the only way in makes
+   * a system-bound captain unreachable: in Rautherion, përs 642 — the tutorial
+   * derelict, gated on the very bit "Shoot down Derelict" sets on accept — is
+   * one of 157 candidates the system admits, so the odds of meeting it were
+   * 0.05 × 1/157 per ship spawned and the mission's target never appeared.
+   *
+   * Only the 29 përs with an explicit id in the Bible's 128-2175 band are
+   * placed (never more than three in one system: Jack Folstam and a named
+   * trader or two). Everything with a wildcard LinkSyst stays on the 5% roll.
+   */
+  private placeLinkedPersons(): void {
+    const sysId = parseInt(this.player.systemId, 10);
+    for (const person of Object.values(PERSONS)) {
+      const link = person.linkSyst;
+      if (link < 128 || link > 2175 || link !== sysId) continue;
+      if (!this.personAvailable(person)) continue;
+      const npc = new NpcShip();
+      this.applyPerson(npc, person);
+      if (!npc.ally && this.hostileToPlayer(npc.govtId)) {
+        if (person.linkMission < 128) this.setNpcHostile(npc);
+      }
+      const ang = Math.random() * Math.PI * 2;
+      const r = 400 + Math.random() * 1200;
+      npc.pos = { x: Math.cos(ang) * r, y: Math.sin(ang) * r };
+      this.setNpcErrand(npc, this.system);
+      npc.angle = Math.atan2(npc.target.y - npc.pos.y, npc.target.x - npc.pos.x);
+      this.npcs.push(npc);
+    }
+  }
+
   /** 5% of ships are a named captain, per the Nova Bible. */
   private maybeMakePerson(npc: NpcShip): void {
     if (Math.random() > 0.05) return;
-    const sysId = parseInt(this.player.systemId, 10);
     const govtId = this.system.govtId;
-    const killed = new Set(this.player.personsKilled);
     const candidates = Object.values(PERSONS).filter((p) => {
-      if (killed.has(p.id)) return false;
-      if (!SHIPS[String(p.shipType)]) return false;
-      // ActiveOn gates whether this captain is in play at all
-      if (p.activeOn && !evalTest(p.activeOn, this.player.bits)) return false;
+      if (!this.personAvailable(p)) return false;
       const link = p.linkSyst;
       if (link === -1) return true;
-      if (link >= 128 && link <= 2175) return link === sysId;
+      // an explicitly placed captain is already in the system; see
+      // placeLinkedPersons — re-rolling one here would double them up
+      if (link >= 128 && link <= 2175) return false;
       if (link >= 9999 && link <= 10255) return govtId === link - 9872;
       if (link >= 20000 && link <= 20255) return govtId !== link - 19872;
       return false;
     });
     if (candidates.length === 0) return;
-    const person = candidates[Math.floor(Math.random() * candidates.length)];
+    this.applyPerson(
+      npc,
+      candidates[Math.floor(Math.random() * candidates.length)],
+    );
+  }
+
+  /** Turn a freshly made hull into a specific named captain. */
+  private applyPerson(npc: NpcShip, person: PersonType): void {
     const type = SHIPS[String(person.shipType)];
     npc.personId = person.id;
     npc.typeId = String(person.shipType);
@@ -5085,6 +5131,16 @@ export class Game {
     }
     // a captain with a job to offer shouldn't open fire before offering it
     if (person.linkMission >= 128) npc.hostile = false;
+    /*
+     * gövt Flags 0x0800, "ships of this govt start out disabled (derelicts)".
+     * Both governments named Derelicts carry it, and between them they own
+     * every përs the field applies to: the eleven Drifting Derelicts and the
+     * tutorial's Pirate Viper. Without it a "derelict" spawns with aggress 0
+     * and AI type 1 and simply flies off, which is not something you can be
+     * sent to shoot down.
+     */
+    if (((GOVT_FLAGS[String(person.govt)] ?? 0) & 0x0800) !== 0)
+      npc.disabled = true;
 
     const radio = STR_LISTS["7101"]?.[person.hailQuote - 1]; // 1-based, as above
     if (radio) this.message(`${person.name}: "${radio}"`);
@@ -6870,6 +6926,7 @@ export class Game {
   private populateNpcs(): void {
     const n = Math.min(this.system.traffic, 2);
     for (let i = 0; i < n; i++) this.spawnNpc(true);
+    this.placeLinkedPersons();
   }
 
   /** weighted pick from {prob} entries */
