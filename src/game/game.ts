@@ -3533,11 +3533,18 @@ export class Game {
    * immune to its own fire; every other ship can hit every other ship so AI
    * dogfights actually connect. The previous filter skipped *all* non-ally
    * shots against non-ally hulls, so hostiles never damaged each other.
+   *
+   * Same-faction NPC shots pass through each other — two Federation ships
+   * in the same battle never trigger on crossfire from their own side.
    */
   private projectileCanHitNpc(p: Projectile, npc: NpcShip): boolean {
     if (p.fromPlayer) return !npc.ally;
     const owner = p.owner as NpcShip | null;
     if (owner?.ally) return !npc.ally;
+    // Same-faction NPC crossfire is ignored: govtClassmate covers both same
+    // govt and shared class (e.g. two different Federation dudes).
+    if (owner && owner.govtId >= 128 && govtClassmate(owner.govtId, npc.govtId))
+      return false;
     // independent / hostile NPC fire: anyone but the shooter (already excluded)
     return true;
   }
@@ -4445,12 +4452,12 @@ export class Game {
    * with the player's reputation with that government.
    *
    *   tolerance = (maxShield + maxArmor) × fraction
-   *   fraction  = clamp(0.06 + record × 0.001, 0.01, 0.40)
+   *   fraction  = clamp(0.06 + record × 0.003, 0.01, 0.75)
    *
    * At record 0 the band is 6% of total HP — a handful of grazing hits before
-   * they turn. At record +200 (trusted ally) it's 26%, absorbing quite a bit
-   * of crossfire. At record −50 (already suspect) it's down to 1%, one solid
-   * hit and they're hostile.
+   * they turn. At record +200 (trusted ally) it's 66%, absorbing the vast
+   * majority of crossfire. At record −50 (already suspect) it's down to 1%,
+   * one solid hit and they're hostile.
    */
   private maybeProvoke(npc: NpcShip, damage: number): void {
     if (npc.ally || npc.hostile) return;
@@ -4460,7 +4467,7 @@ export class Game {
     }
     const record = getRecord(this.player, npc.govtId);
     const maxHp = npc.maxShield + npc.maxArmor;
-    const fraction = Math.max(0.01, Math.min(0.4, 0.06 + record * 0.001));
+    const fraction = Math.max(0.01, Math.min(0.75, 0.06 + record * 0.003));
     npc.strayDamage += damage;
     if (npc.strayDamage >= maxHp * fraction) {
       this.provoke(npc);
