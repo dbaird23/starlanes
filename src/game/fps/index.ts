@@ -13,7 +13,6 @@ import { playAmbient, stopAmbient } from "../../engine/audio";
 import { renderScene, type RaySprite } from "./raycast";
 import { FpsWorld, type FpsCommand } from "./sim";
 import {
-  WALL,
   deckPixels,
   preloadMaterials,
   wallEmit,
@@ -51,9 +50,9 @@ export class FpsSession {
   wantsExit = false;
   /**
    * Probe hook, off in play: drop every tile and the deck plate so the frame is
-   * flat-shaded surfaces only. The section's silhouette — chamfers, the
-   * octagonal apertures in the framed openings — is what is being judged when
-   * this is on, and greebled photographic metal hides it completely.
+   * flat-shaded surfaces only. The section's silhouette — where the fold leaves
+   * the deck, and how it turns a corner — is what is being judged when this is
+   * on, and greebled photographic metal hides it completely.
    */
   noTextures = false;
 
@@ -159,7 +158,6 @@ export class FpsSession {
           glow: wallGlow,
           emit: wallEmit,
           inset: wallInset,
-          frameId: WALL.bulkhead,
           deck: this.noTextures ? null : deckPixels(),
         },
       },

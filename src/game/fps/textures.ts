@@ -70,13 +70,6 @@ export const WALL = {
   housing: 2,
   frame: 3,
   door: 4,
-  /**
-   * Not a cell material at all — the flat plate a framed opening is cut into.
-   * `parseLevel` never emits it; the renderer asks for it by id (`frameId` on
-   * `RayMaterials`) whenever a ray meets a portal, and only its `Main` band and
-   * its `glow` are ever read.
-   */
-  bulkhead: 5,
 } as const;
 
 /** One band's dressing: its tile, its brightness and how often it repeats. */
@@ -111,9 +104,15 @@ interface Material {
    * How far this wall's plane steps in toward the corridor centre, in cells.
    *
    * Nonzero only on the bay frames, and it is what turns them from a brightness
-   * patch on a smooth tube into a rib you can see the edge of. See
-   * `castWalls`: the DDA's distance is a ray parameter, so stepping the plane
-   * in is one subtraction, and the return face falls out of the same test.
+   * patch on a smooth tube into a rib you can see the edge of.
+   *
+   * It is read in two places and they have to agree. `castColumns` steps the
+   * vertical face's plane in — the DDA's distance is a ray parameter, so that
+   * is one subtraction, and the rib's return face falls out of the same test.
+   * `buildBevel` inflates the same cell in the distance field by the same
+   * amount, so the fold steps out around the rib too instead of running past
+   * it; without that the two halves of the section would disagree about where
+   * the wall is by 0.15 of a cell at every frame.
    */
   inset: number;
 }
@@ -181,24 +180,6 @@ const MATERIALS: Record<number, Material> = {
     glow: 0.7,
     emit: 0.13,
     inset: 0.06,
-  },
-  /*
-   * The frame plate. Its gain is well above the hull's 0.68 on purpose: this is
-   * the one surface in the section that faces the viewer square-on rather than
-   * running away from them, so it catches the light the side walls do not, and
-   * that difference is most of what makes an opening read as a plate with a
-   * hole in it rather than as a change of wall texture. `glow` is spent on the
-   * rim tracing the aperture, not on a channel across the plate.
-   */
-  [WALL.bulkhead]: {
-    band: [
-      { file: CHAM_TRIM, gain: 0.9, repeat: 1 },
-      { file: "wall-main.png", gain: 0.92, repeat: 2 },
-      { file: CHAM_TRIM, gain: 0.5, repeat: 1 },
-    ],
-    glow: 0.85,
-    emit: 0.01,
-    inset: 0,
   },
 };
 

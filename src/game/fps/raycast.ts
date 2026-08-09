@@ -6,88 +6,65 @@
  * horizontal strips of 36 pre-rendered rotations, and that is the one thing a
  * DDA-plus-billboard renderer consumes and nothing else does.
  *
- * ## The corridor is an octagon in section, and the chamfers are *surfaces*
+ * ## The corridor is an octagon in section, and the fold turns every corner
  *
  * `art-reference/damage/damage.png` and `corridors/corridor-lit.png` both show
  * the same cross-section: deck, 45 degree lower chamfer, vertical wall, 45
  * degree upper chamfer, overhead. Those angles are **not** floor-plan angles —
  * neither corridor bends — so the plan stays a grid.
  *
- * The first cut of this drew each chamfer as a *band inside the wall column*: a
- * strip of texture between two projected boundary rows, its `v` stepping
- * linearly down the band. The boundary rows were right, and it still read as a
- * straight tube, for two reasons that only a cast surface fixes:
+ * Two earlier cuts of this got the straight run right and the corners wrong,
+ * and both were wrong for the same reason: they treated the fold as a property
+ * of a **wall**.
  *
- * - **A band has no perspective across its own slope.** The chamfer runs *back
- *   toward the camera* — at the bottom of the frame it is a few centimetres
- *   from your boot and at the top of the band it is at the wall — and `v`
- *   stepping linearly in screen rows is precisely the affine texture-warp
- *   artifact. Its panel runs did not converge with the corridor, so the eye
- *   read a wall, not a floor folding up.
- * - **The deck kept its own texture right up to the band.** Sharing a boundary
- *   row is not the same as one surface yielding footprint to another: both were
- *   drawn to the last pixel with the same plate and near enough the same
- *   brightness, and a fold you cannot see the brightness change across is not a
- *   fold.
+ * - Round one drew each chamfer as a *band inside the wall column*, a strip of
+ *   texture between two projected rows with `v` stepping linearly down it. That
+ *   is the affine texture-warp artifact: a band has no perspective across its
+ *   own slope, so its panel runs never converged with the corridor and the deck
+ *   never actually narrowed.
+ * - Round two solved the chamfer per pixel against its own sloped plane, which
+ *   fixed the straight run completely — the deck genuinely narrows, because the
+ *   slope *takes* those pixels. But a plane anchored to a wall stops where that
+ *   wall stops, so every junction, doorway and corner still ended in a square
+ *   gap. It was patched by capping each opening with a flat bulkhead and an
+ *   octagonal hole. That is a different building, not a fix, and it is gone.
  *
- * So the chamfer is now solved **per pixel, against its own sloped plane**,
- * exactly the way the deck is solved against the deck plane. `composeBackdrop`
- * owns four surfaces — overhead, upper chamfer, lower chamfer, deck — and every
- * one of them is a plane the ray is intersected with, textured at the world
- * point it actually lands on. The deck is genuinely narrower than the corridor
- * because the chamfer *takes* those pixels and shades them as its own surface;
- * the wall column left for `drawFaces` is the vertical face and nothing else.
+ * The fold is now a **heightfield over the deck** — see `BevelField`:
  *
- * The solve is closed-form and costs one divide. For a wall the DDA has already
- * hit at perpendicular distance `dist`, with `delta` the ray parameter per cell
- * on the hit axis:
+ *     h(p) = max(0, chamferRun(p) - distanceToNearestSolid(p))
  *
- *     h = q * t                      (a screen row's height/depth ratio, q signed)
- *     h = hw + m * s                 (the chamfer plane; s is the inward run)
- *     s = D0 - t / delta             (how far in from the wall the ray has got)
- *  => t = (hw * delta + m * dist) / (q * delta + m)
+ * Deck where the nearest solid is further than the run; rising at 45 degrees as
+ * you approach anything solid; meeting the vertical face exactly where the run
+ * reaches zero, which is the wall plane. Along a straight wall that is bit for
+ * bit the plane round two solved, and it costs nothing to say so. At a corner
+ * it is simply the truth about the plan: an outside corner's nearest solid is a
+ * *point*, so the fold wraps it as a quarter-cone; an inside corner is the max
+ * of two ramps, which mitres. **A distance field has no corners in it**, which
+ * is the whole trick, and it makes convex and concave alike fall out with no
+ * case analysis and nothing anchored to anything.
  *
- * with `m` -1 for the lower chamfer (it falls away from the wall) and +1 for the
- * upper, and `hw` the plane's height *at the wall*. Substituting the band's own
- * end points back into it returns `dist` at the ridge and `dist - cham*delta` at
- * the deck edge, which is where the old band's two boundary rows came from — so
- * the silhouette is the same one it always computed, and what changed is that
- * every pixel between them now knows its own distance, its own world position
- * and its own light.
+ * ## Marching it
+ *
+ * A heightfield is not a plane, so a closed-form solve is out and the column is
+ * marched — the Comanche/voxel-terrain method, front to back, with the two
+ * economies that make it cheap:
+ *
+ * - **The deck is not marched.** `tEnv` is the first point where the ray comes
+ *   within the chamfer run of anything, found once per column by sphere-tracing
+ *   the field itself (the field is signed and unclamped precisely so that its
+ *   value *is* a safe step). Everything nearer than that is flat deck, drawn by
+ *   the exact per-row cast that was always here.
+ * - **Rows share their march.** The hit distance is monotone up the column, so
+ *   each row starts from the row below's answer and normally needs one or two
+ *   samples. The step is secant-accelerated with a cap, and a crossing is
+ *   refined by interpolation rather than by stepping finely all the way out.
+ *
+ * A sample is one bilinear read of one `Float32Array` — the run, the ceiling
+ * and the distance are baked into the lattice together, so nothing in the inner
+ * loop divides, and nothing looks up a wall.
  *
  * Everything still goes through the one projection constant `proj`, so
  * billboards keep sharing the walls' scale exactly.
- *
- * ## ...and where the wall stops, the section terminates into a *frame*
- *
- * A chamfer is anchored to a wall plane. At a junction there is no near wall
- * for it to run against, so the section simply stopped: deck straight up to
- * ceiling, square corners, and since the derelict is a grid of crossing
- * corridors that is what the player was looking at most of the time. The whole
- * thing read as a square tube even where the spine's own section was right.
- *
- * A raycaster cannot wrap a 45 degree fold around a corner, and trying is the
- * wrong instinct anyway — real ships do not. They do what
- * `art-reference/airlock/airlock.png` does: terminate the run into a **flat
- * bulkhead with an octagonal hole in it**. That is a doorway, and a doorway is
- * something a DDA has always been able to do.
- *
- * So `level.ts` finds every interrupted wall run and hangs an `FpsPortal` in
- * it, and the DDA, on crossing one, asks where along the opening it crossed:
- *
- * - **Inside the aperture** — the ray carries on into the space beyond, and the
- *   column remembers the portal so the pixels above and below the hole can be
- *   drawn as plate. Up to `MAX_PORTALS` of these stack down one sightline,
- *   which is how a run of junctions comes out as nested rings receding.
- * - **On the frame** — the ray stops there. The column is a flat plate at that
- *   distance, deck to overhead, with no chamfer of its own, because a bulkhead
- *   is flat.
- *
- * The aperture is the corridor's own section scaled about its centre (see
- * `section.ts`), so the octagon runs continuously out of one space, through the
- * hole, and into the next; the frame is what is left over in the four corners.
- * `drawFaces` clips the vertical face to the apertures the column passed
- * through, since it paints after the backdrop and would otherwise cover them.
  *
  * ## Light — the sector, and the lamp you are carrying
  *
@@ -95,7 +72,9 @@
  *
  * The **sector** term is Doom's model: fog by distance times the light level of
  * an *area* (see `FpsSector`). A wall is lit by the sector you are looking at it
- * *from*, so the renderer takes the sector of the last open cell before the hit.
+ * *from*, so the renderer takes the sector of the last open cell before the hit;
+ * a bevel pixel, which has a world position of its own, takes the sector it is
+ * standing in.
  *
  * That alone was the whole light model in round one, and it made a dead section
  * uniformly, evenly black — you navigated it by the minimap. Which is wrong at
@@ -105,7 +84,7 @@
  * So the second term is the **suit lamp**, and it is a function of real
  * distance, not a vignette painted over the frame. Every surface here already
  * knows how far away it is — the DDA's ray parameter for walls, the plane solve
- * for the deck, overhead and both chamfers, the camera-space depth for
+ * for the deck and overhead, the march for the bevel, the camera-space depth for
  * billboards — so the same `lampAt()` falloff goes through all of them and they
  * agree about where the light stops. A mild cone (`coneTable`) biases it toward
  * the middle of the view, because a helmet lamp is a cone; the requirement is
@@ -118,14 +97,14 @@
  *
  * The chamfer trim carries a painted light channel; on the bay frames and the
  * doors it also gets an additive term that fog does not touch — emissive, per
- * the art direction. On the chamfers that is added straight into the pixel (we
- * own the byte, so a clamped add *is* `lighter`); on the vertical face, which is
+ * the art direction. On the bevel that is added straight into the pixel (we own
+ * the byte, so a clamped add *is* `lighter`); on the vertical face, which is
  * still blitted with `drawImage`, it is batched and flushed in one composite-op
  * switch at the end of the face pass rather than 480 times.
  */
 
-import { DECK_Y, chamferRun } from "./section";
-import { WallBand, type DeckPixels, type FpsLevel } from "./types";
+import { DECK_Y } from "./section";
+import { WallBand, type BevelField, type DeckPixels, type FpsLevel } from "./types";
 
 /** Horizontal FOV, as the tangent of the half-angle: 2*atan(0.8) ≈ 77°. */
 const PLANE = 0.8;
@@ -156,38 +135,51 @@ const PLANE = 0.8;
 const WALL_H = 1.0;
 
 /**
- * The deck's own brightness, against the chamfer gains in `textures.ts`.
+ * The deck's own brightness, against the bevel gains in `textures.ts`.
  *
  * This is the other half of making the fold read. A 45 degree bench turned up
  * into the room catches light the deck does not, and the wall face catches less
- * than either — so the section is a *staircase* of brightness, deck → chamfer →
+ * than either — so the section is a *staircase* of brightness, deck → bevel →
  * face, with a step at each fold. Left at 1.0 the deck was the brightest thing
- * in the frame and the lower chamfer, however correctly it was cast, had
- * nothing to be brighter *than*.
+ * in the frame and the lower bevel, however correctly it was cast, had nothing
+ * to be brighter *than*.
  */
 const DECK_GAIN = 0.72;
 
 /**
- * The crease. One row of hard shadow in the inside corner where the chamfer
- * meets the deck (and where it meets the overhead), because a real fold has a
- * line in it and a single dark pixel states an edge better than any amount of
- * gradient. Drawn on the chamfer's own last row so it moves with the surface.
+ * The crease. One row of hard shadow in the inside corner where the bevel meets
+ * the deck (and where it meets the overhead), because a real fold has a line in
+ * it and a single dark pixel states an edge better than any amount of gradient.
+ * Measured on the surface's own texture coordinate, so it follows the fold
+ * round a corner instead of being a screen-space line.
  */
 const CREASE_LOWER = 0.42;
 const CREASE_UPPER = 0.55;
 
-/** Fog opacity by distance, sampled into a LUT so the inner loop has no exp(). */
-const FOG_STEPS = 128;
+/**
+ * Fog opacity by distance, sampled into a LUT so the inner loop has no exp().
+ *
+ * The lamp below shares this LUT's **index**, which is why it is 512 entries
+ * over the fog's range rather than its own 128 over seven cells: `litAt` is the
+ * single hottest function in the renderer — every bevel pixel, every wall
+ * column and every billboard goes through it — and one clamped multiply
+ * answering both terms is worth the extra two kilobytes.
+ */
+const FOG_STEPS = 512;
 const FOG_RANGE = 22;
 const FOG_MAX = 0.88;
 const FOG_K = 0.135;
+const FOG_SCALE = (FOG_STEPS - 1) / FOG_RANGE;
 const FOG_LUT = new Float32Array(FOG_STEPS);
+/** ...and `1 - fog`, which is what the light terms actually multiply by. */
+const FOG_KEEP = new Float32Array(FOG_STEPS);
 for (let i = 0; i < FOG_STEPS; i++) {
-  const d = (i / (FOG_STEPS - 1)) * FOG_RANGE;
+  const d = i / FOG_SCALE;
   FOG_LUT[i] = Math.min(FOG_MAX, 1 - Math.exp(-d * FOG_K));
+  FOG_KEEP[i] = 1 - FOG_LUT[i];
 }
 function fogAt(dist: number): number {
-  const i = Math.min(FOG_STEPS - 1, Math.max(0, ((dist / FOG_RANGE) * (FOG_STEPS - 1)) | 0));
+  const i = Math.min(FOG_STEPS - 1, Math.max(0, (dist * FOG_SCALE) | 0));
   return FOG_LUT[i];
 }
 
@@ -207,23 +199,22 @@ function fogAt(dist: number): number {
  * The resting state is `art-reference/damage/damage.png`: near-black, with the
  * light picking out edges rather than filling surfaces.
  */
-const LAMP_STEPS = 128;
 const LAMP_RANGE = 7;
 const LAMP_HALF = 1.5;
 const LAMP_MAX = 0.6;
 /** How much of the lamp survives at the edge of the view — a cone, not a spot. */
 const LAMP_EDGE = 0.55;
-const LAMP_LUT = new Float32Array(LAMP_STEPS);
-for (let i = 0; i < LAMP_STEPS; i++) {
-  const d = (i / (LAMP_STEPS - 1)) * LAMP_RANGE;
+/** On the fog LUT's index; zero past `LAMP_RANGE`, so no branch is needed. */
+const LAMP_LUT = new Float32Array(FOG_STEPS);
+for (let i = 0; i < FOG_STEPS; i++) {
+  const d = i / FOG_SCALE;
+  if (d >= LAMP_RANGE) continue;
   const q = d / LAMP_HALF;
   const cut = Math.max(0, 1 - (d / LAMP_RANGE) * (d / LAMP_RANGE));
   LAMP_LUT[i] = (LAMP_MAX / (1 + q * q)) * cut;
 }
 function lampAt(dist: number): number {
-  if (dist >= LAMP_RANGE) return 0;
-  const i = Math.max(0, ((dist / LAMP_RANGE) * (LAMP_STEPS - 1)) | 0);
-  return LAMP_LUT[i];
+  return LAMP_LUT[Math.min(FOG_STEPS - 1, Math.max(0, (dist * FOG_SCALE) | 0))];
 }
 
 /**
@@ -251,7 +242,10 @@ function coneTable(W: number): Float32Array {
  * colour survives at this distance, before the surface's `gain`.
  */
 function litAt(dist: number, light: number, cone: number): number {
-  const v = light * (1 - fogAt(dist)) + lampAt(dist) * cone;
+  let i = (dist * FOG_SCALE) | 0;
+  if (i < 0) i = 0;
+  else if (i >= FOG_STEPS) i = FOG_STEPS - 1;
+  const v = light * FOG_KEEP[i] + LAMP_LUT[i] * cone;
   return v > 1 ? 1 : v;
 }
 
@@ -259,7 +253,7 @@ function litAt(dist: number, light: number, cone: number): number {
 const SIDE_SHADE = 0.74;
 
 /**
- * Where the trim tile's lit channel sits, as a fraction across the chamfer.
+ * Where the trim tile's lit channel sits, as a fraction across the bevel.
  * Measured off `chamfer-trim.png`, which is a 341px band of the 1024px source
  * centred on a fixture whose channel runs y 483..533 and whose housing runs
  * 455..567 — so the channel lands at 0.425..0.572 and the housing, which is
@@ -273,7 +267,7 @@ const HALO_V1 = 0.67;
 /**
  * The same channel where it crosses the **vertical** face, which is drawn from
  * the square `trim-light-channel.png`: same source, so the same 483..533 out of
- * 1024. Lighting this as well as the chamfers is what closes the light into a
+ * 1024. Lighting this as well as the bevels is what closes the light into a
  * continuous octagonal ring around the frame, which is the single loudest thing
  * in `corridors/corridor-lit.png`.
  */
@@ -286,7 +280,7 @@ const GLOW_R = 255;
 const GLOW_G = 246;
 const GLOW_B = 226;
 
-/** The ridge between a chamfer and the vertical face. */
+/** The ridge between a bevel and the vertical face. */
 const SEAM = "rgba(0,0,0,0.72)";
 
 /**
@@ -353,18 +347,12 @@ export interface RayMaterials {
   gain: (id: number, band: WallBand) => number;
   /** wall id + band → tile repeats per cell of wall length */
   repeat: (id: number, band: WallBand) => number;
-  /** wall id → emissive strength of its chamfer channels, before sector light */
+  /** wall id → emissive strength of its bevel channels, before sector light */
   glow: (id: number) => number;
   /** wall id → self-illumination added after fog and lamp; doors only */
   emit: (id: number) => number;
   /** wall id → how far its plane steps in toward the corridor centre, in cells */
   inset: (id: number) => number;
-  /**
-   * The wall id to dress a framed opening's plate with. It is never a cell in
-   * the grid — it is asked for by id so the renderer stays material-agnostic
-   * and `textures.ts` keeps owning what a surface looks like.
-   */
-  frameId: number;
   /** the deck tile's pixels, or null to fall back to flat rows */
   deck: DeckPixels | null;
 }
@@ -404,14 +392,15 @@ export function renderScene(
   const planeY = dirX * PLANE;
 
   /*
-   * One projection constant for walls, chamfers, deck, overhead and billboards
+   * One projection constant for walls, the bevel, deck, overhead and billboards
    * alike: a wall is exactly PROJ/dist tall on screen, so a sprite of scale 1 is
    * exactly deck-height and `hover` reads in wall heights (0.5 being eye level).
    */
   const proj = H * WALL_H;
 
+  const tab = materialTable(mat);
   const cols = castColumns(W, H, proj, level, cam, dirX, dirY, planeX, planeY, mat, depth);
-  composeBackdrop(ctx, W, H, proj, level, cam, dirX, dirY, planeX, planeY, mat.deck, cols);
+  composeBackdrop(ctx, W, H, proj, level, cam, dirX, dirY, planeX, planeY, mat.deck, cols, tab);
   drawFaces(ctx, W, H, mat, cols);
   drawSprites(ctx, W, H, proj, level, cam, dirX, dirY, planeX, planeY, scene.sprites, depth);
 }
@@ -453,9 +442,9 @@ interface TexPixels {
  *
  * The vertical face is still blitted with `drawImage` — it is one plane at one
  * distance, so a stretched 1px column is exact and the browser does it for
- * free. The chamfers are not: they are solved per pixel against their own
- * sloped plane, which needs the texels rather than an image. Keyed off the
- * image object itself, so a material swap costs one rasterise and no bookkeeping.
+ * free. The bevel is not: it is marched per pixel over a heightfield, which
+ * needs the texels rather than an image. Keyed off the image object itself, so
+ * a material swap costs one rasterise and no bookkeeping.
  */
 const texPixCache = new WeakMap<object, TexPixels>();
 let rasterCv: HTMLCanvasElement | null = null;
@@ -480,56 +469,169 @@ function texPixels(src: CanvasImageSource | null): TexPixels | null {
   return out;
 }
 
+/* --------------------------------------------------------- material table */
+
+/**
+ * The bevel is dressed by whichever solid is *nearest*, which the field records
+ * per sample as a wall id — so the pixel loop needs the whole material set to
+ * hand rather than the one cell a column's DDA happened to hit. There are only
+ * ever a handful of ids, so it is a table, rebuilt once a frame (a tile that
+ * has only just finished loading has to be able to appear).
+ */
+const MAT_IDS = 8;
+
+interface MatTable {
+  texLo: (TexPixels | null)[];
+  texUp: (TexPixels | null)[];
+  repLo: Float32Array;
+  repUp: Float32Array;
+  gainLo: Float32Array;
+  gainUp: Float32Array;
+  glow: Float32Array;
+  emit: Float32Array;
+}
+
+let matTab: MatTable | null = null;
+
+function materialTable(mat: RayMaterials): MatTable {
+  const t: MatTable =
+    matTab ??
+    (matTab = {
+      texLo: new Array<TexPixels | null>(MAT_IDS).fill(null),
+      texUp: new Array<TexPixels | null>(MAT_IDS).fill(null),
+      repLo: new Float32Array(MAT_IDS),
+      repUp: new Float32Array(MAT_IDS),
+      gainLo: new Float32Array(MAT_IDS),
+      gainUp: new Float32Array(MAT_IDS),
+      glow: new Float32Array(MAT_IDS),
+      emit: new Float32Array(MAT_IDS),
+    });
+  for (let id = 0; id < MAT_IDS; id++) {
+    t.texLo[id] = texPixels(mat.texture(id, WallBand.Lower, 0));
+    t.texUp[id] = texPixels(mat.texture(id, WallBand.Upper, 0));
+    t.repLo[id] = mat.repeat(id, WallBand.Lower);
+    t.repUp[id] = mat.repeat(id, WallBand.Upper);
+    t.gainLo[id] = mat.gain(id, WallBand.Lower);
+    t.gainUp[id] = mat.gain(id, WallBand.Upper);
+    t.glow[id] = mat.glow(id);
+    t.emit[id] = mat.emit(id);
+  }
+  return t;
+}
+
+/* --------------------------------------------------------------- the field */
+
+/*
+ * Sampling the bevel heightfield.
+ *
+ * One bilinear read of one `Float32Array` — the chamfer run, the distance to
+ * the nearest solid and the overhead are baked together into the lattice (see
+ * `buildBevel`), so the march's inner loop never divides and never touches the
+ * grid.
+ *
+ * It leaves its **lattice offset and the two fractions** behind in module
+ * scratch, which is the thing that makes the pixel affordable: every other
+ * quantity a bevel pixel wants — the run, the ceiling, the material, the sector
+ * — lives on the same lattice, so once the march has landed they are three
+ * lerps or one array read away and not a second search. Nothing here allocates
+ * and nothing here is a closure; the march calls it a few hundred thousand
+ * times a second.
+ */
+let sO = 0;
+let sFx = 0;
+let sFy = 0;
+let sSub = 1;
+let sGx = 0;
+let sGy = 0;
+
+function sampleField(
+  f: Float32Array,
+  sw: number,
+  sub: number,
+  um: number,
+  vm: number,
+  x: number,
+  y: number,
+): number {
+  let u = x * sub;
+  let v = y * sub;
+  if (u < 0) u = 0;
+  else if (u > um) u = um;
+  if (v < 0) v = 0;
+  else if (v > vm) v = vm;
+  const i = u | 0;
+  const j = v | 0;
+  const fx = u - i;
+  const fy = v - j;
+  const o = j * sw + i;
+  const p0 = f[o];
+  const p1 = f[o + 1];
+  const p2 = f[o + sw];
+  const p3 = f[o + sw + 1];
+  const dxa = p1 - p0;
+  const dxb = p3 - p2;
+  const a = p0 + dxa * fx;
+  const b = p2 + dxb * fx;
+  sO = o;
+  sFx = fx;
+  sFy = fy;
+  sSub = sub;
+  return a + (b - a) * fy;
+}
+
+/**
+ * The gradient of the last-sampled field, at the point it landed on — which is
+ * what tells a bevel pixel which way its surface faces.
+ *
+ * Deliberately *not* computed by `sampleField` itself. The march takes a
+ * hundred and fifty thousand samples a frame and only sixty thousand of them
+ * end up being a pixel, so the four corners are re-read for the ones that do
+ * rather than a gradient being built for the ones that do not.
+ */
+function gradHere(f: Float32Array, sw: number): void {
+  const o = sO;
+  const p0 = f[o];
+  const p2 = f[o + sw];
+  const dxa = f[o + 1] - p0;
+  const dxb = f[o + sw + 1] - p2;
+  sGx = (dxa + (dxb - dxa) * sFy) * sSub;
+  sGy = (p2 + dxb * sFx - (p0 + dxa * sFx)) * sSub;
+}
+
+/** A second field, read at the point the last `sampleField` landed on. */
+function coSample(f: Float32Array, sw: number): number {
+  const o = sO;
+  const a = f[o] + (f[o + 1] - f[o]) * sFx;
+  const b = f[o + sw] + (f[o + sw + 1] - f[o + sw]) * sFx;
+  return a + (b - a) * sFy;
+}
+
+/** ...and a byte field, nearest, at the same point. */
+function coNearest(f: Uint8Array, sw: number): number {
+  return f[sO + (sFx >= 0.5 ? 1 : 0) + (sFy >= 0.5 ? sw : 0)];
+}
+
 /* ------------------------------------------------------------------ columns */
 
 /**
  * Everything one screen column's DDA produced, in parallel typed arrays.
  *
- * Two passes read this — the per-pixel backdrop and the face blit — so the DDA
- * runs once and both agree about where the section's boundaries are, which is
- * what keeps the deck edge, the chamfer and the wall foot from drifting a row
- * apart from each other.
+ * Three passes read this — the flat backdrop, the bevel march and the face blit
+ * — so the DDA runs once and they agree about where the section's boundaries
+ * are, which is what keeps the deck edge, the fold and the wall foot from
+ * drifting a row apart from each other.
  */
-/**
- * How many framed openings one column can pass through before the renderer
- * stops counting. Four is a straight run of two junctions, which is as far as
- * the derelict's plan ever lets you see; past that the rings are a pixel high.
- */
-const MAX_PORTALS = 4;
-
-/** How far the lit rim tracing an aperture reaches onto the plate, in cells. */
-const RIM = 0.04;
-/** ...and how hard it burns, before the plate's own `glow`. */
-const RIM_BURN = 74;
-
-/**
- * How much of a frame plate's brightness survives at grazing incidence.
- *
- * `SIDE_SHADE` is Wolf3D's cheat — a flat discount for one of the two axes —
- * and it is enough for cell walls, which are only ever seen from the open side.
- * A plate is not: a portal in a corridor's *side* wall is crossed at a hand's
- * breadth off parallel by every ray going down that corridor, and at 0.92 gain
- * it came out as a bright full-height sliver standing in the wall. Shading it
- * by how square-on the ray meets the plane costs one divide per crossing (the
- * ray's length is constant down a column) and puts the sliver back into the
- * wall it belongs to.
- */
-const PLATE_GRAZE = 0.34;
-
 interface Cols {
   w: number;
-  /** the camera this frame, so the two passes can re-derive a world point */
+  /** the camera this frame, so the later passes can re-derive a world point */
   camX: number;
   camY: number;
   /** perpendicular distance to the vertical face's plane (inset applied) */
   dist: Float32Array;
-  /** ray parameter per cell on the axis that was hit — the chamfer solve needs it */
-  delta: Float32Array;
   rayX: Float32Array;
   rayY: Float32Array;
   cell: Int32Array;
   side: Uint8Array;
-  flip: Uint8Array;
   faceFlip: Uint8Array;
   faceOff: Float32Array;
   variant: Int32Array;
@@ -537,56 +639,17 @@ interface Cols {
   light: Float32Array;
   emit: Float32Array;
   glow: Float32Array;
-  cham: Float32Array;
-  /** section heights, in world units, for this column's wall */
-  faceBotY: Float32Array;
-  faceTopY: Float32Array;
-  ceilY: Float32Array;
-  /** the four screen-row boundaries, top to bottom */
-  ceilRow: Int32Array;
+  /** the vertical face's two screen rows */
   faceTopRow: Int32Array;
   faceBotRow: Int32Array;
-  deckRow: Int32Array;
-  /** chamfer dressing, resolved once per column */
-  texLo: (TexPixels | null)[];
-  texUp: (TexPixels | null)[];
-  repLo: Float32Array;
-  repUp: Float32Array;
-  gainLo: Float32Array;
-  gainUp: Float32Array;
-  /*
-   * The framed openings this column passed through, near to far, `MAX_PORTALS`
-   * slots per column. Everything about a plate is here rather than looked up
-   * again in the pixel loop, because a portal's plane is at one distance and
-   * one along-wall position for the whole column — only the height varies.
+  /**
+   * The window the face is still allowed to paint in. A bevel nearer than the
+   * wall can stand in front of the foot (or the head) of a far one — the ridge
+   * of a corner silhouetted against the corridor beyond it — and the face pass
+   * runs after the backdrop, so without this it would blit straight over it.
    */
-  pCount: Int32Array;
-  pDist: Float32Array;
-  /** the along-wall world coordinate the ray crossed the plane at */
-  pAlong: Float32Array;
-  /** the aperture's open height range at that crossing, in world units */
-  pLo: Float32Array;
-  pHi: Float32Array;
-  /** the plate's own top, in world units */
-  pCeil: Float32Array;
-  pLight: Float32Array;
-  /** how square-on the ray met the plate, as a brightness multiplier */
-  pFacing: Float32Array;
-  pFlip: Uint8Array;
-  /** 1 where the ray met plate rather than hole, so the trace stopped here */
-  pSolid: Uint8Array;
-  pCeilRow: Int32Array;
-  pApTopRow: Int32Array;
-  pApBotRow: Int32Array;
-  pDeckRow: Int32Array;
-  /** the vertical face's visible window: every aperture the column crossed */
   clipTop: Int32Array;
   clipBot: Int32Array;
-  /** the plate's dressing, resolved once per frame */
-  frameTex: TexPixels | null;
-  frameGain: number;
-  frameRep: number;
-  frameGlow: number;
 }
 
 let colCache: Cols | null = null;
@@ -598,12 +661,10 @@ function colsFor(W: number): Cols {
     camX: 0,
     camY: 0,
     dist: new Float32Array(W),
-    delta: new Float32Array(W),
     rayX: new Float32Array(W),
     rayY: new Float32Array(W),
     cell: new Int32Array(W),
     side: new Uint8Array(W),
-    flip: new Uint8Array(W),
     faceFlip: new Uint8Array(W),
     faceOff: new Float32Array(W),
     variant: new Int32Array(W),
@@ -611,40 +672,10 @@ function colsFor(W: number): Cols {
     light: new Float32Array(W),
     emit: new Float32Array(W),
     glow: new Float32Array(W),
-    cham: new Float32Array(W),
-    faceBotY: new Float32Array(W),
-    faceTopY: new Float32Array(W),
-    ceilY: new Float32Array(W),
-    ceilRow: new Int32Array(W),
     faceTopRow: new Int32Array(W),
     faceBotRow: new Int32Array(W),
-    deckRow: new Int32Array(W),
-    texLo: new Array<TexPixels | null>(W).fill(null),
-    texUp: new Array<TexPixels | null>(W).fill(null),
-    repLo: new Float32Array(W),
-    repUp: new Float32Array(W),
-    gainLo: new Float32Array(W),
-    gainUp: new Float32Array(W),
-    pCount: new Int32Array(W),
-    pDist: new Float32Array(W * MAX_PORTALS),
-    pAlong: new Float32Array(W * MAX_PORTALS),
-    pLo: new Float32Array(W * MAX_PORTALS),
-    pHi: new Float32Array(W * MAX_PORTALS),
-    pCeil: new Float32Array(W * MAX_PORTALS),
-    pLight: new Float32Array(W * MAX_PORTALS),
-    pFacing: new Float32Array(W * MAX_PORTALS),
-    pFlip: new Uint8Array(W * MAX_PORTALS),
-    pSolid: new Uint8Array(W * MAX_PORTALS),
-    pCeilRow: new Int32Array(W * MAX_PORTALS),
-    pApTopRow: new Int32Array(W * MAX_PORTALS),
-    pApBotRow: new Int32Array(W * MAX_PORTALS),
-    pDeckRow: new Int32Array(W * MAX_PORTALS),
     clipTop: new Int32Array(W),
     clipBot: new Int32Array(W),
-    frameTex: null,
-    frameGain: 0.9,
-    frameRep: 2,
-    frameGlow: 0.85,
   };
   return colCache;
 }
@@ -664,13 +695,9 @@ function castColumns(
 ): Cols {
   const c = colsFor(W);
   const half = H / 2;
+  const bf = level.bevel;
   c.camX = cam.x;
   c.camY = cam.y;
-  // one plate material for the whole frame — every framed opening wears it
-  c.frameTex = texPixels(mat.texture(mat.frameId, WallBand.Main, 0));
-  c.frameGain = mat.gain(mat.frameId, WallBand.Main);
-  c.frameRep = mat.repeat(mat.frameId, WallBand.Main);
-  c.frameGlow = mat.glow(mat.frameId);
 
   for (let x = 0; x < W; x++) {
     const cameraX = (2 * x) / W - 1;
@@ -678,8 +705,8 @@ function castColumns(
     const rayY = dirY + planeY * cameraX;
     c.rayX[x] = rayX;
     c.rayY[x] = rayY;
-    // constant down the column, and only the plates need it
-    const rayLen = Math.sqrt(rayX * rayX + rayY * rayY);
+    c.clipTop[x] = 0;
+    c.clipBot[x] = H;
 
     let mapX = Math.floor(cam.x);
     let mapY = Math.floor(cam.y);
@@ -710,10 +737,6 @@ function castColumns(
     // the open cell the ray was in when it hit — the sector lighting this wall
     let fromX = mapX;
     let fromY = mapY;
-    let pCount = 0;
-    /** slot of the portal the ray met plate on, if it stopped on one */
-    let blocked = -1;
-    const pBase = x * MAX_PORTALS;
     // the level's border is solid, so this always terminates; the counter is
     // only a backstop against a malformed level
     for (let guard = 0; guard < 256; guard++) {
@@ -731,117 +754,18 @@ function castColumns(
       if (mapX < 0 || mapY < 0 || mapX >= level.w || mapY >= level.h) break;
       cell = level.cells[mapY * level.w + mapX];
       if (cell > 0) break;
-
-      /*
-       * Still open deck — but the face just crossed may be a framed opening.
-       * The plane crossed is the one *behind* the step just taken, and the ray
-       * parameter there is `side - delta`, which is the same expression the
-       * wall distance below uses.
-       */
-      if (pCount >= MAX_PORTALS) continue;
-      const pid =
-        side === 0
-          ? level.portalEW[mapY * (level.w + 1) + (stepX > 0 ? mapX : mapX + 1)]
-          : level.portalNS[(stepY > 0 ? mapY : mapY + 1) * level.w + mapX];
-      if (pid === 0) continue;
-      const tc = side === 0 ? sideX - deltaX : sideY - deltaY;
-      if (tc <= 0.02) continue;
-
-      const P = level.portals[pid - 1];
-      const along = side === 0 ? cam.y + tc * rayY : cam.x + tc * rayX;
-      let off = along - (P.a0 + P.a1) / 2;
-      if (off < 0) off = -off;
-      /*
-       * The aperture's open height range at this offset. Outside the corner
-       * runs it is the full hole; inside one, the 45 degree cut takes the same
-       * amount off the top and the bottom — which is the octagon, and it is
-       * the corridor's own section stood up in the wall plane.
-       */
-      const inFromEdge = P.hw - off;
-      let lo = DECK_Y + P.yb;
-      let hi = DECK_Y + P.yt;
-      if (inFromEdge < P.cham) {
-        const cut = P.cham - inFromEdge;
-        lo += cut;
-        hi -= cut;
-      }
-      const solid = inFromEdge <= 0 || hi <= lo;
-      if (solid) lo = hi = (lo + hi) / 2;
-
-      const psec = level.sectors[P.sector];
-      const b = pBase + pCount;
-      c.pDist[b] = tc;
-      c.pAlong[b] = along;
-      c.pLo[b] = lo;
-      c.pHi[b] = hi;
-      c.pCeil[b] = DECK_Y + P.ceil;
-      c.pLight[b] = psec.light;
-      const n = side === 0 ? (rayX < 0 ? -rayX : rayX) : rayY < 0 ? -rayY : rayY;
-      c.pFacing[b] = PLATE_GRAZE + (1 - PLATE_GRAZE) * (n / rayLen);
-      c.pFlip[b] = (side === 0 && rayX > 0) || (side === 1 && rayY < 0) ? 1 : 0;
-      c.pSolid[b] = solid ? 1 : 0;
-      pCount++;
-      if (solid) {
-        blocked = pCount - 1;
-        break;
-      }
-    }
-
-    /*
-     * The plates' screen rows, and the window they leave the vertical face.
-     * Snapped to whole rows for the same reason the section's own boundaries
-     * are: a ring four bays down is a fraction of a pixel and a sub-pixel edge
-     * against a near-black derelict reads as a chain of white dots.
-     */
-    let clipT = 0;
-    let clipB = H;
-    for (let k = 0; k < pCount; k++) {
-      const b = pBase + k;
-      const t = c.pDist[b];
-      const at = clampRow(Math.round(half - (c.pHi[b] * proj) / t), H);
-      const ab = clampRow(Math.round(half - (c.pLo[b] * proj) / t), H);
-      c.pCeilRow[b] = clampRow(Math.round(half - (c.pCeil[b] * proj) / t), H);
-      c.pApTopRow[b] = at;
-      c.pApBotRow[b] = ab;
-      c.pDeckRow[b] = clampRow(Math.round(half - (DECK_Y * proj) / t), H);
-      if (at > clipT) clipT = at;
-      if (ab < clipB) clipB = ab;
-    }
-    c.pCount[x] = pCount;
-    c.clipTop[x] = clipT;
-    c.clipBot[x] = clipB;
-
-    if (blocked >= 0) {
-      /*
-       * The ray met plate rather than hole. A bulkhead is flat, so there is no
-       * wall column here at all and no chamfer either: the portal band owns
-       * every row between the plate's overhead and its deck, and the four
-       * section boundaries collapse onto the horizon so nothing else claims one.
-       */
-      const t = c.pDist[pBase + blocked];
-      depth[x] = t;
-      c.cell[x] = 0;
-      c.dist[x] = t;
-      const mid = clampRow(Math.floor(half), H);
-      c.ceilRow[x] = mid;
-      c.faceTopRow[x] = mid;
-      c.faceBotRow[x] = mid;
-      c.deckRow[x] = mid;
-      continue;
     }
 
     if (cell <= 0) {
       // No wall in this direction (a malformed level — the border is solid).
-      // Collapse all four boundaries onto the horizon, which leaves the column
-      // as flat overhead above and flat deck below with nothing between.
+      // Collapse the face onto the horizon, which leaves the column as flat
+      // overhead above and flat deck below with nothing between.
       depth[x] = Infinity;
       c.cell[x] = 0;
       c.dist[x] = Infinity;
       const mid = clampRow(Math.floor(half), H);
-      c.ceilRow[x] = mid;
       c.faceTopRow[x] = mid;
       c.faceBotRow[x] = mid;
-      c.deckRow[x] = mid;
       continue;
     }
 
@@ -856,7 +780,9 @@ function castColumns(
      * their silhouettes doing the work no amount of shading on a smooth tube can
      * do. A raycaster can have that for one subtraction, because the DDA's
      * `dist` is the ray parameter itself — a plane `inset` nearer is reached
-     * `inset * delta` earlier along the ray.
+     * `inset * delta` earlier along the ray. The bevel gets the rib for free:
+     * `buildBevel` inflates the same cell in the distance field by the same
+     * number, so the fold steps out around it too.
      *
      * The rib is a box, though, not an infinite plane: one cell along the wall
      * and `inset` deep. So the stepped-in plane is only the answer while the ray
@@ -894,31 +820,22 @@ function castColumns(
     }
     depth[x] = dist;
 
-    // taken *after* the inset may have flipped the side, so the chamfer solve
-    // uses the axis the ray actually came in on
-    const delta = side === 0 ? deltaX : deltaY;
-
     const sector =
       fromX < 0 || fromY < 0 || fromX >= level.w || fromY >= level.h
         ? level.sectors[0]
         : level.sectors[level.sectorOf[fromY * level.w + fromX]];
 
     /*
-     * The section, in world units. The deck never moves — a sector's height
-     * lifts the overhead and the upper chamfer with it, and nothing else.
-     *
-     * The chamfer's run is the sector's *fraction* taken against how wide the
-     * space actually is at the point the wall is being seen from, so the same
-     * 0.275 gives a one-cell passage a 45% deck and a compartment a fold you
-     * can see. `section.ts` owns that, because the frames in the openings have
-     * to come out the same shape or the octagon steps as you walk through one.
+     * The section, in world units, read off the same two lattices the bevel
+     * march reads and through the same sampler — so whatever smoothing they
+     * carry, the fold arrives at the vertical face's foot exactly and not a
+     * pixel short of it. The deck never moves; a sector's height lifts the
+     * overhead and the upper fold with it, and nothing else.
      */
-    const span =
-      fromX < 0 || fromY < 0 || fromX >= level.w || fromY >= level.h
-        ? 1
-        : level.freeSpan[fromY * level.w + fromX] || 1;
-    const cham = chamferRun(sector.chamfer, span, sector.height);
-    const ceilY = DECK_Y + sector.height;
+    const hitX = cam.x + dist * rayX;
+    const hitY = cam.y + dist * rayY;
+    const cham = sampleField(bf.cham, bf.sw, bf.sub, bf.sw - 1.0001, bf.sh - 1.0001, hitX, hitY);
+    const ceilY = DECK_Y + coSample(bf.ceil, bf.sw);
     let faceBotY = DECK_Y + cham;
     let faceTopY = ceilY - cham;
     if (faceTopY < faceBotY) {
@@ -927,46 +844,30 @@ function castColumns(
     }
 
     /*
-     * Where the chamfer planes reach the deck and the overhead. Shifting the
-     * wall plane inward by `cham` shifts the DDA's distance by `cham * delta`,
-     * which is one multiply and no second trace — and substituting that back
-     * into the per-pixel solve below returns exactly these rows, so the surface
-     * and its own boundary agree to the pixel.
+     * Boundaries are snapped to whole rows. They have to be: a fold forty cells
+     * down the corridor is a fraction of a pixel high, and against a near-black
+     * derelict a sub-pixel boundary comes out as chains of white dots tracking
+     * the fold's edges — the one artifact that reads instantly as broken.
      */
-    const near = Math.max(0.02, dist - cham * delta);
-
-    /*
-     * Boundaries are snapped to whole rows. They have to be: a chamfer forty
-     * cells down the corridor is a fraction of a pixel high, and against a
-     * near-black derelict a sub-pixel boundary comes out as chains of white
-     * dots tracking the chamfer edges — the one artifact that reads instantly
-     * as broken. Every surface rounds the same float for a shared boundary, so
-     * they meet exactly and nothing shows through the join.
-     */
-    const ceilRow = clampRow(Math.round(half - (ceilY * proj) / near), H);
     const faceTopRow = clampRow(Math.round(half - (faceTopY * proj) / dist), H);
     const faceBotRow = clampRow(Math.round(half - (faceBotY * proj) / dist), H);
-    const deckRow = clampRow(Math.round(half - (DECK_Y * proj) / near), H);
 
-    const flip = (side === 0 && rayX > 0) || (side === 1 && rayY < 0);
     /*
      * The per-cell variant. It is deliberately applied to the **vertical face
-     * only**: that is where the repetition shows, and the chamfers carry
+     * only**: that is where the repetition shows, and the bevel carries
      * continuous horizontal structure (a conduit run, a bench, a light channel)
-     * that has to survive from one cell into the next or the corridor stops
-     * reading as one corridor.
+     * that has to survive from one cell into the next — and now round the
+     * corner into the next corridor — or the ship stops reading as one ship.
      */
     const hv = cellVariant(mapX, mapY);
+    const flip = (side === 0 && rayX > 0) || (side === 1 && rayY < 0);
     // one cell in eight takes the alternate tile; the rest are offset and
     // mirrored, which is free and enough on its own to kill the grid
     const variant = (hv & 7) === 0 ? 1 : 0;
-    const sideK = side === 1 ? SIDE_SHADE : 1;
 
     c.dist[x] = dist;
-    c.delta[x] = delta;
     c.cell[x] = cell;
     c.side[x] = side;
-    c.flip[x] = flip ? 1 : 0;
     c.faceFlip[x] = (((hv >> 5) & 1) === 1 ? !flip : flip) ? 1 : 0;
     c.faceOff[x] = ((hv >> 3) & 3) * 0.25;
     c.variant[x] = variant;
@@ -974,20 +875,8 @@ function castColumns(
     c.light[x] = sector.light;
     c.emit[x] = mat.emit(cell);
     c.glow[x] = mat.glow(cell) * sector.light;
-    c.cham[x] = cham;
-    c.faceBotY[x] = faceBotY;
-    c.faceTopY[x] = faceTopY;
-    c.ceilY[x] = ceilY;
-    c.ceilRow[x] = ceilRow;
     c.faceTopRow[x] = faceTopRow;
     c.faceBotRow[x] = faceBotRow;
-    c.deckRow[x] = deckRow;
-    c.texLo[x] = texPixels(mat.texture(cell, WallBand.Lower, 0));
-    c.texUp[x] = texPixels(mat.texture(cell, WallBand.Upper, 0));
-    c.repLo[x] = mat.repeat(cell, WallBand.Lower) * repScale;
-    c.repUp[x] = mat.repeat(cell, WallBand.Upper) * repScale;
-    c.gainLo[x] = mat.gain(cell, WallBand.Lower) * sideK;
-    c.gainUp[x] = mat.gain(cell, WallBand.Upper) * sideK;
   }
 
   return c;
@@ -1000,25 +889,20 @@ function clampRow(r: number, H: number): number {
 /* ------------------------------------------------------------------ backdrop */
 
 /**
- * The four cast surfaces: overhead, upper chamfer, lower chamfer, deck.
+ * The backdrop, in two passes over one ImageData.
  *
- * All of them are planes the ray is intersected with, so all of them are
- * textured at the world point they land on and lit by their own distance. The
- * deck's solve is the classic floor cast — a row at screen y is `proj / 2(y -
- * half)` away and the world span across it is linear in that — and the
- * chamfers' is the same idea against a plane tilted 45 degrees, closed form,
- * one divide per pixel (see the header).
+ * **Row-major, first:** the flat deck and the flat overhead, which are single
+ * planes and so are exact per row — a row at screen y is `rise * proj / |y -
+ * half|` away and the world span across it is linear in that, one walk per row
+ * landing every pixel on the tile. That is what gives the plate seams that
+ * converge with the corridor and the worn centre runner. The rows the vertical
+ * face will cover are filled flat and cheaply, since the face pass paints over
+ * them anyway.
  *
- * That is the whole point of the rewrite. A chamfer drawn as a *band* between
- * two rows shares a boundary with the deck but never takes the deck's
- * footprint: both surfaces run their own texture to the last pixel and the
- * silhouette stays a rectangular tube. Cast as a surface, the deck is genuinely
- * narrower than the corridor's widest point, the slope between them carries a
- * perspective that converges with the corridor, and the wall column left for
- * `drawFaces` is the vertical face only.
- *
- * The whole backdrop is composed in one ImageData and put down in one call; the
- * face pass then draws over the strip between `faceTopRow` and `faceBotRow`.
+ * **Column-major, second:** the bevel, marched over the heightfield (see the
+ * file header, and `castBevel`). It overwrites whatever the flat pass put in
+ * the rows it turns out to own, which is the natural way round: the fold is
+ * always nearer than the deck it is taking pixels from.
  */
 let backBuf: ImageData | null = null;
 /** A 32-bit view onto `backBuf`, so a pixel is one store instead of four. */
@@ -1058,6 +942,7 @@ function composeBackdrop(
   planeY: number,
   deck: DeckPixels | null,
   cols: Cols,
+  tab: MatTable,
 ): void {
   const half = H / 2;
   if (!backBuf || backWords === null || backBuf.width !== W || backBuf.height !== H) {
@@ -1099,13 +984,11 @@ function composeBackdrop(
      * constant distance away, which is the same fact the shading has always
      * used — so the lamp costs one LUT read per row and one multiply-add per
      * pixel, and the deck under your boots comes up out of the dark exactly as
-     * far as the walls beside them do. The chamfers cannot share it: every
-     * pixel of a chamfer is at its own distance, which is what makes it read as
-     * a slope, so they pay for their own LUT reads.
+     * far as the walls beside them do. The bevel cannot share it: every pixel
+     * of it is at its own distance, which is what makes it read as a slope, so
+     * it pays for its own LUT reads.
      */
     const flatLamp = lampAt(flatDist);
-    /** height over depth for this screen row: positive above the horizon. */
-    const q = (half - y) / proj;
 
     const rowStart = y * W;
 
@@ -1150,68 +1033,12 @@ function composeBackdrop(
       fwx += sx;
       fwy += sy;
 
-      /*
-       * The framed openings first, near to far — they stand in front of
-       * everything the wall column produced. Each one owns the rows between
-       * its overhead and the top of its hole, and between the bottom of its
-       * hole and its deck; the rows inside the hole belong to whatever is
-       * beyond, so the walk carries on to the next plate and finally to the
-       * wall. Above the nearest plate's overhead and below its deck the
-       * surfaces are the near sector's own, which the flat cast below already
-       * draws — so those cases fall straight out of the loop.
-       */
-      const pc = cols.pCount[x];
-      /*
-       * ...and off the plate's own silhouette, everything beyond it is hidden.
-       * That is not automatic: a wall's chamfer reaches its deck edge `cham *
-       * delta` nearer than the wall itself, which at a grazing angle can be
-       * further forward than the plate, and it leaked out under the bottom of
-       * every doorway as a pair of legs down the deck. Above and below a plate
-       * the surfaces are the near sector's, which is what the flat cast draws.
-       */
-      let occluded = false;
-      if (pc > 0) {
-        let plate = false;
-        for (let k = 0; k < pc; k++) {
-          const b = x * MAX_PORTALS + k;
-          if (y < cols.pCeilRow[b] || y >= cols.pDeckRow[b]) {
-            occluded = true;
-            break;
-          }
-          if (y < cols.pApTopRow[b] || y >= cols.pApBotRow[b]) {
-            px[p] = framePixel(b, q, cone[x], cols);
-            plate = true;
-            break;
-          }
-        }
-        if (plate) continue;
+      // the strip the vertical face will blit over; no point casting it
+      if (y >= cols.faceTopRow[x] && y < cols.faceBotRow[x]) {
+        px[p] = FACE_FILL;
+        continue;
       }
 
-      /*
-       * Which of the five spans owns this pixel. The four boundaries are
-       * monotonic down the column by construction — the two chamfer edges are
-       * projected at `near` and the two ridges at `dist`, and `near < dist` —
-       * so this is one ordered chain and not a set of independent tests. It is
-       * deliberately *not* branched on `up`: a sector low enough to swallow its
-       * own vertical face would otherwise leave the rows between the collapsed
-       * ridge and the horizon owned by nothing.
-       */
-      if (!occluded && y >= cols.ceilRow[x]) {
-        if (y < cols.faceTopRow[x]) {
-          px[p] = chamferPixel(x, q, cone[x], true, cols);
-          continue;
-        }
-        if (y < cols.faceBotRow[x]) {
-          px[p] = FACE_FILL;
-          continue;
-        }
-        if (y < cols.deckRow[x]) {
-          px[p] = chamferPixel(x, q, cone[x], false, cols);
-          continue;
-        }
-      }
-
-      // --- flat deck or overhead
       if (!td || flatFaded) {
         px[p] = flatWord;
         continue;
@@ -1237,71 +1064,448 @@ function composeBackdrop(
     }
   }
 
+  castBevel(px, W, H, proj, level, cam, cols, tab, deck);
+
   ctx.putImageData(backBuf, 0, 0);
 }
 
+/* ---------------------------------------------------------------- the march */
+
+/** Nothing past the fog's own range is worth marching for. */
+const MARCH_MAX = FOG_RANGE;
+/** How many samples one row is allowed before it gives up on itself. */
+const MARCH_ITERS = 16;
 /**
- * One chamfer pixel, solved against its own 45 degree plane.
+ * How far past the safe (never-overshoot) step the secant is allowed to reach.
  *
- *     h = q * t                  the screen row, as height over depth
- *     h = hw + m * s             the plane; s is how far in from the wall
- *     s = D0 - t / delta         and D0 * delta is the DDA's own `dist`
- *  => t = (hw * delta + m * dist) / (q * delta + m)
- *
- * `m` is -1 for the lower chamfer, which falls away from the wall toward the
- * deck, and +1 for the upper, which rises away from it toward the overhead.
- * Both denominators are bounded away from zero over the rows the surface
- * actually covers — below the horizon `q` is negative so the lower one is
- * `q*delta - 1 <= -1`, and above it the upper one is `q*delta + 1 >= 1` — but a
- * degenerate sector could hand us a chamfer that straddles the horizon, so it
- * is guarded rather than assumed.
- *
- * `v` runs 0..1 across the slope in the same direction the old band's texture
- * did (from the wall down for the lower chamfer, from the overhead in for the
- * upper), which is what keeps the trim tile's lit channel where it was measured.
+ * The safe step is `phi / (rayLen + |q|)`: the surface cannot rise faster than
+ * 45 degrees, so nothing within that distance along the ray can be hit. Taken
+ * literally it is a sphere trace, and a sphere trace creeps at grazing
+ * incidence — which is the *common* case here, since the fold is a shallow ramp
+ * seen almost end-on down a corridor. The secant knows the real slope and jumps
+ * the whole way in one step; the cap is what keeps it from vaulting a bump it
+ * has not sampled. Note that the cap is a multiple of a step that is itself
+ * proportional to how far the ray is from the surface, so it stays small in
+ * absolute terms exactly where a miss would matter; at four it was small enough
+ * to stop a near-tangent row converging at all, and a row that runs out of
+ * samples hangs its answer down the frame as a streak.
  */
-function chamferPixel(
-  x: number,
-  q: number,
+const SECANT_CAP = 12;
+/**
+ * ...and a deliberate 6% overshoot on top of it.
+ *
+ * The secant lands *on* the surface, which means half the rows land a hair
+ * outside it and have to take a second sample to bracket the crossing. Aiming
+ * a little past it means almost every row brackets on its first try and the
+ * crossing is interpolated from the two points in hand. It costs nothing to be
+ * slightly wrong in that direction — the interpolation is what produces the
+ * answer either way — and it took the march from 1.7 samples a row to 1.2.
+ */
+const SECANT_BIAS = 1.06;
+/** ...and a floor on the step, so a tangent ray cannot stall the loop. */
+const MIN_ADV = 0.002;
+/** Below this the surface is flat: deck under you, plating over you. */
+const FLAT_EPS = 0.004;
+/** ...and this close to it, a row that has run out of samples has converged. */
+const STALL_EPS = 0.01;
+/**
+ * Slack on the field's Lipschitz constant. `lo` is `chamferRun - distance`, and
+ * the distance term has a unit gradient, so `|lo|` is a safe distance to step;
+ * the run drifts a little from one space into the next, and this pays for it.
+ */
+const LIP = 1.35;
+
+/**
+ * Per-row constants, which are two divisions each and are the same for every
+ * one of the 480 columns. `tDeck` depends only on the buffer height; `tCeil`
+ * also on the camera's own overhead, so it is refilled when that changes.
+ */
+let rowQ: Float32Array | null = null;
+let rowTDeck: Float32Array | null = null;
+let rowTCeil: Float32Array | null = null;
+let rowH = 0;
+let rowRise = -1;
+function rowTables(H: number, proj: number, ceilRise: number): void {
+  if (!rowQ || rowH !== H) {
+    rowQ = new Float32Array(H);
+    rowTDeck = new Float32Array(H);
+    rowTCeil = new Float32Array(H);
+    rowH = H;
+    rowRise = -1;
+    const half = H / 2;
+    for (let y = 0; y < H; y++) {
+      const q = (half - y) / proj;
+      rowQ[y] = q;
+      rowTDeck[y] = q < -1e-6 ? 0.5 / -q : Infinity;
+    }
+  }
+  if (rowRise !== ceilRise) {
+    rowRise = ceilRise;
+    for (let y = 0; y < H; y++) {
+      const q = rowQ[y];
+      rowTCeil![y] = q > 1e-6 ? ceilRise / q : Infinity;
+    }
+  }
+}
+
+/**
+ * The bevel, marched per column over the heightfield.
+ *
+ * Front to back, once for the fold coming up off the deck and once for the one
+ * hanging under the overhead, with four things doing all the work:
+ *
+ * - **A shared `t` down the column.** The first-hit distance is monotone as the
+ *   ray flattens (a steeper ray is below a flatter one everywhere, so it can
+ *   only hit sooner), which means the previous row's answer is a valid — and
+ *   very close — starting point for this one. What is carried between rows is
+ *   the bracket's *outside* end and the field value there: the surface does not
+ *   depend on which row is asking, so the first sample of each row is free.
+ * - **`tSafe`, which is what makes the deck cost nothing.** Every sample also
+ *   yields a radius inside which there is provably no hit — `|lo|` where the
+ *   fold does not exist at all, `phi / (rayLen + |q|)` where the ray is above
+ *   it — and because rows further up the column are *higher*, a radius
+ *   established for one row is still sound for every row after it. So a single
+ *   sample near your boots typically answers the next twenty rows outright:
+ *   they are deck, the flat cast has already drawn them, and the march skips
+ *   them without touching the field.
+ * - **A crossing is interpolated, not stepped onto.** The moment a sample comes
+ *   out below the surface, the hit is the linear crossing between it and the
+ *   last one above — exact wherever the fold is planar, which is everywhere
+ *   except the cone at an outside corner.
+ * - **The pixel reuses the crossing sample's lattice position** rather than
+ *   looking anything up again. See `sampleField`.
+ *
+ * The loop ends the moment a row finds nothing before the wall: by monotonicity
+ * every row above it is the vertical face or higher, and the DDA owns those.
+ */
+function castBevel(
+  px: Uint32Array,
+  W: number,
+  H: number,
+  proj: number,
+  level: FpsLevel,
+  cam: RayCamera,
+  cols: Cols,
+  tab: MatTable,
+  deck: DeckPixels | null,
+): void {
+  const bf = level.bevel;
+  const half = H / 2;
+  const cone = coneTable(W);
+  const camX = cam.x;
+  const camY = cam.y;
+  const lo = bf.lo;
+  const upF = bf.up;
+  const sw = bf.sw;
+  const sub = bf.sub;
+  const um = sw - 1.0001;
+  const vm = bf.sh - 1.0001;
+  const camSector = level.sectors[sectorAt(level, camX, camY)];
+  const ceilRise = Math.max(0.05, camSector.height - 0.5);
+  frLevel = level;
+  frField = bf;
+  frTab = tab;
+  rowTables(H, proj, ceilRise);
+  const qT = rowQ!;
+  const deckT = rowTDeck!;
+  const ceilT = rowTCeil!;
+
+  for (let x = 0; x < W; x++) {
+    const rayX = cols.rayX[x];
+    const rayY = cols.rayY[x];
+    const rayLen = Math.sqrt(rayX * rayX + rayY * rayY);
+    const invLip = 1 / (LIP * rayLen);
+    const wallT = cols.dist[x];
+    const limit = wallT < MARCH_MAX ? wallT : MARCH_MAX;
+    if (!(limit > 0.02)) continue;
+    const coneK = cone[x];
+    const faceTop = cols.faceTopRow[x];
+    const faceBot = cols.faceBotRow[x];
+
+    /* --- the fold coming up off the deck */
+    let tPrev = 0.03;
+    let sPrev = sampleField(lo, sw, sub, um, vm, camX + tPrev * rayX, camY + tPrev * rayY);
+    let tSafe = sPrev < 0 ? tPrev - sPrev * invLip : tPrev;
+    let den = 0;
+    for (let y = H - 1; y >= 0; y--) {
+      const q = qT[y];
+      const tDeck = deckT[y];
+      const tLimit = tDeck < limit ? tDeck : limit;
+      if (tLimit <= tSafe) {
+        // Provably nothing between the camera and the deck: the flat cast has
+        // it. (Or nothing between here and the wall, which owns the rest.)
+        //
+        // And the *whole block* of rows nearer than the cleared radius goes at
+        // once. `tDeck` is monotone in the row, so the first row that is not
+        // already answered is one division away, and skipping to it is what
+        // stops a column from paying three hundred loop iterations to be told
+        // three hundred times that the deck under your boots is deck.
+        if (tDeck > limit) break;
+        const yJump = Math.ceil(half + (0.5 * proj) / tSafe);
+        if (yJump > 0 && yJump <= y) y = yJump;
+        continue;
+      }
+      if (tPrev > tLimit) {
+        tPrev = tLimit;
+        sPrev = sampleField(lo, sw, sub, um, vm, camX + tPrev * rayX, camY + tPrev * rayY);
+      }
+      const aq = q < 0 ? -q : q;
+
+      let t = tPrev;
+      let hraw = sPrev;
+      let phi = 0.5 + q * t - (hraw > 0 ? hraw : 0);
+      let found = -1;
+      let stalled = false;
+      let outside = t;
+      let outsideH = hraw;
+      if (phi <= 0) {
+        // degenerate: the carried bracket is already under the surface
+        sampleField(lo, sw, sub, um, vm, camX + t * rayX, camY + t * rayY);
+        found = t;
+      }
+
+      for (let k = 0; found < 0 && k < MARCH_ITERS; k++) {
+        const safe = phi / (rayLen + aq);
+        let clear = t + safe;
+        let adv: number;
+        if (hraw <= 0) {
+          // open deck here: step to the deck itself, or to the fold's envelope,
+          // whichever comes first — both are exact and neither can overshoot
+          const toDeck = q < -1e-6 ? phi / aq : Infinity;
+          const toEnv = -hraw * invLip;
+          adv = toDeck < toEnv ? toDeck : toEnv;
+          if (t + toEnv > clear) clear = t + toEnv;
+        } else {
+          adv = den > 1e-4 ? phi * SECANT_BIAS / den : safe;
+          if (adv > safe * SECANT_CAP) adv = safe * SECANT_CAP;
+        }
+        if (clear > tSafe) tSafe = clear;
+        if (!(adv > MIN_ADV)) adv = MIN_ADV;
+        let tn = t + adv;
+        if (tn >= tLimit) tn = tLimit;
+
+        const hn = sampleField(lo, sw, sub, um, vm, camX + tn * rayX, camY + tn * rayY);
+        const phin = 0.5 + q * tn - (hn > 0 ? hn : 0);
+        if (phin <= 0) {
+          outside = t;
+          outsideH = hraw;
+          found = t + (tn - t) * (phi / (phi - phin));
+          break;
+        }
+        den = (phi - phin) / (tn - t);
+        t = tn;
+        phi = phin;
+        hraw = hn;
+        if (tn >= tLimit || k === MARCH_ITERS - 1) {
+          outside = t;
+          outsideH = hraw;
+          // out of samples but essentially on the surface: take it. Out of
+          // samples with the surface still a way off means the row never
+          // converged, and answering it with the distance it happened to reach
+          // paints a streak; leave it to the flat cast instead.
+          if (tn < tLimit && phi <= STALL_EPS) found = t;
+          else if (tn < tLimit) stalled = true;
+          break;
+        }
+      }
+
+      if (found < 0) {
+        tPrev = outside;
+        sPrev = outsideH;
+        if (stalled || tDeck <= limit) continue;
+        break;
+      }
+      tPrev = outside;
+      sPrev = outsideH;
+
+      const hAbove = 0.5 + q * found;
+      if (hAbove <= FLAT_EPS) continue; // it is the deck
+      px[y * W + x] = bevelPixel(
+        found, camX + found * rayX, camY + found * rayY,
+        hAbove, coneK, false, cols.light[x],
+      );
+      if (y < faceBot && y >= faceTop && y < cols.clipBot[x]) cols.clipBot[x] = y;
+    }
+
+    /* --- and the one hanging under the overhead, the same march mirrored */
+    tPrev = 0.03;
+    sPrev = sampleField(upF, sw, sub, um, vm, camX + tPrev * rayX, camY + tPrev * rayY);
+    tSafe = tPrev + (sPrev - 0.5) / (rayLen + 1);
+    den = 0;
+    for (let y = 0; y < H; y++) {
+      const q = qT[y];
+      const tCeil = ceilT[y];
+      const tLimit = tCeil < limit ? tCeil : limit;
+      if (tLimit <= tSafe) {
+        if (tCeil > limit) break;
+        const yJump = Math.floor(half - (ceilRise * proj) / tSafe);
+        if (yJump < H && yJump >= y) y = yJump;
+        continue;
+      }
+      if (tPrev > tLimit) {
+        tPrev = tLimit;
+        sPrev = sampleField(upF, sw, sub, um, vm, camX + tPrev * rayX, camY + tPrev * rayY);
+      }
+
+      let t = tPrev;
+      let surf = sPrev;
+      let phi = surf - (0.5 + q * t);
+      let found = -1;
+      let stalled = false;
+      let outside = t;
+      let outsideS = surf;
+      if (phi <= 0) {
+        sampleField(upF, sw, sub, um, vm, camX + t * rayX, camY + t * rayY);
+        found = t;
+      }
+
+      for (let k = 0; found < 0 && k < MARCH_ITERS; k++) {
+        const safe = phi / (rayLen + q);
+        if (t + safe > tSafe) tSafe = t + safe;
+        let adv = den > 1e-4 ? (phi * SECANT_BIAS) / den : safe;
+        if (adv > safe * SECANT_CAP) adv = safe * SECANT_CAP;
+        if (!(adv > MIN_ADV)) adv = MIN_ADV;
+        let tn = t + adv;
+        if (tn >= tLimit) tn = tLimit;
+
+        const sn = sampleField(upF, sw, sub, um, vm, camX + tn * rayX, camY + tn * rayY);
+        const phin = sn - (0.5 + q * tn);
+        if (phin <= 0) {
+          outside = t;
+          outsideS = surf;
+          found = t + (tn - t) * (phi / (phi - phin));
+          break;
+        }
+        den = (phi - phin) / (tn - t);
+        t = tn;
+        phi = phin;
+        surf = sn;
+        if (tn >= tLimit || k === MARCH_ITERS - 1) {
+          outside = t;
+          outsideS = surf;
+          if (tn < tLimit && phi <= STALL_EPS) found = t;
+          else if (tn < tLimit) stalled = true;
+          break;
+        }
+      }
+
+      if (found < 0) {
+        tPrev = outside;
+        sPrev = outsideS;
+        if (stalled || tCeil <= limit) continue;
+        break;
+      }
+      tPrev = outside;
+      sPrev = outsideS;
+
+      const hAbove = 0.5 + q * found;
+      const wx = camX + found * rayX;
+      const wy = camY + found * rayY;
+      // how far the fold has already come down off the overhead, here
+      const drop = coSample(bf.ceil, sw) - hAbove;
+      if (drop <= FLAT_EPS) {
+        // flat plating rather than fold — but at *this* distance, which is not
+        // the camera's if the space overhead has opened up
+        px[y * W + x] = ceilPixel(level, deck, found, wx, wy, coneK);
+        continue;
+      }
+      px[y * W + x] = bevelPixel(found, wx, wy, hAbove, coneK, true, cols.light[x]);
+      if (y >= faceTop && y < faceBot && y + 1 > cols.clipTop[x]) cols.clipTop[x] = y + 1;
+    }
+  }
+}
+
+/**
+ * One pixel of the fold.
+ *
+ * Everything it needs it already has: the distance (so its own fog and its own
+ * lamp), the world point, the ray's own height there — which **is** the height
+ * of the surface, since that is what the march solved for, and dividing it by
+ * the chamfer run gives the texture coordinate across the slope with no
+ * projection and no per-column boundary to measure against. The run, the
+ * ceiling, the material and the sector all come off the lattice position the
+ * march left behind, which is why this is affordable at 40% of the frame.
+ *
+ * The two things that come out of the gradient are which way the fold faces —
+ * it points at whatever solid is nearest, so its dominant axis is the wall's
+ * normal — and, from that, which world axis runs *along* the surface and
+ * therefore carries `u`. Round a convex corner that choice swaps at the 45
+ * degree diagonal, which is exactly where mitred trim changes direction on a
+ * real bulkhead; the geometry does not change there, only the grain.
+ *
+ * `fallbackLight` is the column's own sector, for a point that has ended up off
+ * the grid entirely.
+ */
+let frLevel: FpsLevel | null = null;
+let frField: BevelField | null = null;
+let frTab: MatTable | null = null;
+
+function bevelPixel(
+  t: number,
+  wx: number,
+  wy: number,
+  hAbove: number,
   cone: number,
   upper: boolean,
-  cols: Cols,
+  fallbackLight: number,
 ): number {
-  const delta = cols.delta[x];
-  const dist = cols.dist[x];
-  const hw = upper ? cols.faceTopY[x] : cols.faceBotY[x];
-  const den = upper ? q * delta + 1 : q * delta - 1;
-  if (den > -1e-3 && den < 1e-3) return FACE_FILL;
-  const t = (hw * delta + (upper ? dist : -dist)) / den;
-  if (!(t > 0.01) || t > 1e5) return FACE_FILL;
+  const level = frLevel!;
+  const bf = frField!;
+  const tab = frTab!;
+  const sw = bf.sw;
+  // the surface's normal, from the same four corners the march interpolated
+  gradHere(bf.lo, sw);
+  const gx = upper ? -sGx : sGx;
+  const gy = upper ? -sGy : sGy;
+  const ax = gx < 0 ? -gx : gx;
+  const ay = gy < 0 ? -gy : gy;
+  const axisX = ax > ay;
 
-  const cham = cols.cham[x];
-  const h = q * t;
-  const hTop = upper ? cols.ceilY[x] : cols.faceBotY[x];
-  let v = (hTop - h) / cham;
+  const id = coNearest(bf.id, sw);
+  const cham = coSample(bf.cham, sw);
+  let v = cham > 1e-4 ? (upper ? coSample(bf.ceil, sw) - hAbove : hAbove) / cham : 1;
+  if (!upper) v = 1 - v;
   if (v < 0) v = 0;
   else if (v > 0.9999) v = 0.9999;
 
-  const tex = upper ? cols.texUp[x] : cols.texLo[x];
-  const gain = upper ? cols.gainUp[x] : cols.gainLo[x];
+  const sec = level.sectors[coNearest(bf.sec, sw)];
+  const light = sec === undefined ? fallbackLight : sec.light;
 
-  let lit = litAt(t, cols.light[x], cone) * gain + cols.emit[x];
+  const gain = upper ? tab.gainUp[id] : tab.gainLo[id];
+  /*
+   * Wolf3D's per-axis discount, but **interpolated by the surface's own
+   * normal** rather than switched on it. Taken as a branch it is a 26% step in
+   * brightness at every point where the fold's dominant axis changes — which
+   * on a field is not a wall corner but a *cone*, so every bay rib and every
+   * outside corner grew a hard V of shadow across a surface that is physically
+   * continuous. The interpolation costs one divide and there is no seam left.
+   */
+  const sideK = SIDE_SHADE + (1 - SIDE_SHADE) * (ax / (ax + ay + 1e-6));
+  let lit = litAt(t, light, cone) * gain * sideK + tab.emit[id];
+  /*
+   * Past the lamp and into the fog there is nothing left to see of the tile: a
+   * `lit` of 0.02 is five values out of 255 whatever the texel says. This is
+   * the difference between the fold's shading being paid for over the whole
+   * frame and being paid for over the part of the frame you can actually make
+   * out — which on a dead ship is most of it, since a sector's own light is
+   * 0.03 forward and the lamp reaches seven cells.
+   */
+  if (lit < 0.02 && tab.glow[id] < 0.01) return pack(74 * lit, 80 * lit, 88 * lit);
   // the crease: one row of hard shadow in the inside corner, so the fold has a
   // line in it rather than only a change of slope
-  if (upper ? v <= 0.015 : v >= 0.985) lit *= upper ? CREASE_UPPER : CREASE_LOWER;
+  if (upper ? v <= 0.02 : v >= 0.98) lit *= upper ? CREASE_UPPER : CREASE_LOWER;
 
   let r: number;
   let g: number;
   let b: number;
+  const tex = upper ? tab.texUp[id] : tab.texLo[id];
   if (tex) {
-    const along = cols.side[x] === 0 ? cols.rayY[x] : cols.rayX[x];
-    const base = cols.side[x] === 0 ? cols.camY : cols.camX;
-    let u = (base + t * along) * (upper ? cols.repUp[x] : cols.repLo[x]);
+    let u = (axisX ? wy : wx) * (upper ? tab.repUp[id] : tab.repLo[id]);
     u -= Math.floor(u);
     let tu = (u * tex.w) | 0;
     if (tu >= tex.w) tu = tex.w - 1;
     // keep the texture's handedness consistent around a corner
-    if (cols.flip[x]) tu = tex.w - 1 - tu;
+    if (axisX ? gx > 0 : gy < 0) tu = tex.w - 1 - tu;
     let tv = (v * tex.h) | 0;
     if (tv >= tex.h) tv = tex.h - 1;
     const o = (tv * tex.w + tu) << 2;
@@ -1320,7 +1524,7 @@ function chamferPixel(
    * straight into the byte, which is what `lighter` would have done anyway now
    * that the surface owns its own pixels.
    */
-  const glow = cols.glow[x];
+  const glow = tab.glow[id] * light;
   if (glow > 0.01) {
     let a = 0;
     if (v >= GLOW_V0 && v < GLOW_V1) a = 0.5;
@@ -1337,65 +1541,31 @@ function chamferPixel(
 }
 
 /**
- * One pixel of a framed opening's plate.
- *
- * The easy surface in the whole renderer: a bulkhead is a flat vertical plane
- * at one distance, so the column already knows its depth, its along-wall
- * position and its light, and only the height varies down it. `u` therefore
- * does not move at all within a column and `v` is linear in world height.
- *
- * The rim is what makes the hole read as a hole. It is a lit line just outside
- * the aperture's edge, and because `lo` and `hi` are recomputed per column
- * against the octagon it traces the corner cuts as well as the top and bottom —
- * so the eight-sided silhouette is drawn in light on the plate, which is what
- * `airlock.png` does with a machined edge and a fixture above it. Columns that
- * met plate rather than hole have no aperture to trace and are skipped.
+ * A pixel of flat overhead found by the upper march rather than by the row
+ * cast: same plating, but at the distance a *locally* taller space puts it,
+ * which is the only way a two-deck compartment reads as two decks from the
+ * corridor outside it.
  */
-function framePixel(b: number, q: number, cone: number, cols: Cols): number {
-  const t = cols.pDist[b];
-  const h = q * t;
-  const ceil = cols.pCeil[b];
-  const lit = litAt(t, cols.pLight[b], cone) * cols.frameGain * cols.pFacing[b];
-
-  let r: number;
-  let g: number;
-  let bl: number;
-  const tex = cols.frameTex;
-  if (tex) {
-    let u = cols.pAlong[b] * cols.frameRep;
-    u -= Math.floor(u);
-    let tu = (u * tex.w) | 0;
-    if (tu >= tex.w) tu = tex.w - 1;
-    if (cols.pFlip[b]) tu = tex.w - 1 - tu;
-    let v = (ceil - h) / (ceil - DECK_Y);
-    if (v < 0) v = 0;
-    else if (v > 0.9999) v = 0.9999;
-    let tv = (v * tex.h) | 0;
-    if (tv >= tex.h) tv = tex.h - 1;
-    const o = (tv * tex.w + tu) << 2;
-    r = tex.data[o] * lit;
-    g = tex.data[o + 1] * lit;
-    bl = tex.data[o + 2] * lit;
-  } else {
-    r = 74 * lit;
-    g = 80 * lit;
-    bl = 88 * lit;
-  }
-
-  if (!cols.pSolid[b]) {
-    const hi = cols.pHi[b];
-    const d = h > hi ? h - hi : cols.pLo[b] - h;
-    if (d < RIM) {
-      // squared, so the line has an edge on it rather than a wide soft halo
-      const f = 1 - d / RIM;
-      const k = cols.frameGlow * f * f * (1 - fogAt(t) * 0.55) * RIM_BURN;
-      r += (GLOW_R / 255) * k;
-      g += (GLOW_G / 255) * k;
-      bl += (GLOW_B / 255) * k;
-    }
-  }
-
-  return pack(r, g, bl);
+function ceilPixel(
+  level: FpsLevel,
+  deck: DeckPixels | null,
+  t: number,
+  wx: number,
+  wy: number,
+  cone: number,
+): number {
+  const light = level.sectors[sectorAt(level, wx, wy)].light;
+  const f = litAt(t, light, cone);
+  if (!deck) return pack(30 * f, 34 * f, 41 * f);
+  const cx = Math.floor(wx);
+  const cy = Math.floor(wy);
+  const o =
+    ((((wy - cy) * deck.h) & deck.maskY) * deck.w + (((wx - cx) * deck.w) & deck.maskX)) << 2;
+  return pack(
+    deck.data[o] * f * CEIL_R,
+    deck.data[o + 1] * f * CEIL_G,
+    deck.data[o + 2] * f * CEIL_B,
+  );
 }
 
 /* --------------------------------------------------------------------- faces */
@@ -1406,8 +1576,8 @@ function framePixel(b: number, q: number, cone: number, cols: Cols): number {
  * This is all that is left of the old wall pass: one plane at one perpendicular
  * distance, which means one fog value is exact and a 1px `drawImage` column is
  * the right tool. The column is also **shorter than it used to be** — it starts
- * at the vertical face and stops there, with the chamfers above and below it
- * now belonging to the cast surfaces in `composeBackdrop`.
+ * at the vertical face and stops there, with the folds above and below it
+ * belonging to the marched heightfield in `castBevel`.
  */
 function drawFaces(
   ctx: CanvasRenderingContext2D,
@@ -1426,11 +1596,11 @@ function drawFaces(
     const fullBot = cols.faceBotRow[x];
     if (fullBot <= fullTop) continue;
     /*
-     * This pass paints after the backdrop, so a face seen *through* a framed
-     * opening has to be clipped to the hole or the blit covers the plate the
-     * backdrop just drew. `clipTop`/`clipBot` are the intersection of every
-     * aperture the column passed through, and the source rectangle is cut by
-     * the same fraction so the tile does not slide inside the strip.
+     * This pass paints after the backdrop, so where a nearer fold has already
+     * claimed rows inside this column's face band — a corner's ridge standing
+     * in front of the wall behind it — the blit has to be cut to what is left.
+     * The source rectangle is cut by the same fraction so the tile does not
+     * slide inside the strip.
      */
     const yTop = fullTop > cols.clipTop[x] ? fullTop : cols.clipTop[x];
     const yBot = fullBot < cols.clipBot[x] ? fullBot : cols.clipBot[x];
@@ -1492,12 +1662,11 @@ function drawFaces(
     }
 
     /*
-     * The ridge where a chamfer meets the face. In the references that is a
+     * The ridge where the fold meets the face. In the references that is a
      * physical edge with the light dying across it, and one dark pixel is
      * enough to state it — without it the three surfaces blend and the section
      * reads as one flat wall however differently they are shaded. Only drawn on
-     * an end the aperture did not already cut off; a ridge inside a doorway is
-     * a line across the hole.
+     * an end a nearer fold has not already taken.
      */
     ctx.fillStyle = SEAM;
     if (yTop > 0 && yTop === fullTop) ctx.fillRect(x, yTop, 1, 1);
@@ -1682,7 +1851,7 @@ function drawSprites(
  * It is gone on purpose. A screen-space vignette darkens the *frame*, which
  * moves with the camera and not with the ship, so it never reads as a light you
  * are carrying; it reads as a smudged lens. The lamp is `lampAt()`, applied per
- * surface at that surface's real distance, and every one of walls, chamfers,
+ * surface at that surface's real distance, and every one of walls, the fold,
  * deck, overhead and billboards goes through it — which is what makes them
- * agree about how far away they are.
+ * agree about how far away things are.
  */

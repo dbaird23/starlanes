@@ -127,14 +127,99 @@ and `nova/picts/` prefixes; `textures.ts` loads them itself through `asset()`.
 
 **The corridor is an octagon in section, per `art-reference/README.md`.** Deck,
 45° lower chamfer, vertical face, 45° upper chamfer, overhead — those angles
-are the *profile*, not floor-plan angles, so the plan stays a grid. A wall
-column is three bands rather than one strip, and the band heights fall out of
-the distance the DDA already computes: the chamfer occupies a strip `chamfer`
-cells wide in front of the wall, which the ray crosses *before* the wall plane,
-and since the DDA's perpendicular distance is `Δx / rayX`, moving that plane
-inward by `chamfer` moves the distance by `chamfer × deltaX`. One multiply, no
-second trace. Each band takes its own texture, its own gain and its own fog;
-the chamfers are sliced (2-4) so their fog follows them back toward the camera.
+are the *profile*, not floor-plan angles, so the plan stays a grid.
+
+**The fold is a heightfield over the deck, not a strip glued to a wall.** This
+is the thing to understand before touching `src/game/fps/`, and it replaces two
+earlier designs outright:
+
+```
+h(p) = max(0, chamferRun(p) - distanceToNearestSolid(p))
+```
+
+Deck where the nearest solid is further away than the run; rising at 45° as you
+approach anything solid; meeting the vertical face exactly where the run reaches
+zero, which *is* the wall plane — so along a straight wall this is bit for bit
+the plane the previous pass solved in closed form. **It turns every corner for
+free, convex and concave alike, because a distance field has no corners in it**:
+at an outside corner the nearest solid is a *point*, so the fold wraps it as a
+quarter-cone; at an inside corner two ramps meet and mitre. The overhead is the
+same field mirrored down from the sector's ceiling.
+
+What this replaced, so nobody re-does either:
+
+- Round one drew each chamfer as a **band inside the wall column**, `v` stepping
+  linearly down it. That is the affine texture-warp artifact — a band has no
+  perspective across its own slope — so the panel runs never converged with the
+  corridor and the deck never actually narrowed.
+- Round two solved the chamfer **per pixel against its own sloped plane**, which
+  fixed the straight run completely. But a plane anchored to a wall stops where
+  that wall stops, so every junction, doorway and corner still ended in a square
+  gap; it was patched by capping each opening with a flat bulkhead and an
+  octagonal hole (`findPortals`, `FpsPortal`, a `PLATE_GRAZE`d frame plate).
+  **The project owner rejected that** and it is all deleted. Explicitly authored
+  `D` doors are unaffected — those are a wall material, not a derived frame.
+
+`BevelField` is built once per level in `level.ts` and sampled bilinearly in
+`raycast.ts`. Things about it that are load-bearing:
+
+- **The distance is exact, not a distance *transform*.** Marking solid samples
+  and sweeping gives the distance to the nearest solid *sample*, which
+  staircases at the lattice pitch — a fold whose foot wobbles an eighth of a
+  cell down a dead straight wall is exactly the artifact this renderer has been
+  fighting all along. Nova's decks are unit squares, so the honest distance is
+  three `max`es and a `sqrt` against each candidate cell's rectangle, and a 7×7
+  window covers everything within the clamp. It is a build-time cost of a few
+  milliseconds.
+- **Everything the pixel loop wants lives on the same lattice**: `lo`
+  (`chamferRun − distance`, *unclamped*, so its own value is a safe sphere-trace
+  step), `up` (the overhead's underside), the run, the ceiling, the nearest
+  solid's wall id and the nearest open cell's sector. `sampleField` leaves its
+  lattice offset and the two fractions in module scratch, so after the march has
+  landed each of those is three lerps or one array read away rather than a
+  second search. Do not add a lookup to `bevelPixel` that could be baked here.
+- **The material is chosen on the *raw* distance, the geometry on the inset
+  one.** A bay frame stands 0.15 of a cell proud (`Material.inset`), and read
+  with that inflation it is the nearest solid to most of the bay as well as to
+  itself — its lit trim came out running the whole length of every wall, which
+  is the one thing the art direction says the trim must not do.
+- **`chamferRun` is a fraction of the space's free span**, so it genuinely
+  differs across the deck (0.275 in a one-cell passage, 0.51 in the two-cell
+  spine). As a wall-anchored chamfer a step between them only made one column's
+  face thinner; as a heightfield it is a step in the fold. The per-cell runs are
+  therefore **eroded (3×3 min) and then blurred**: the erosion is what kills the
+  *doorway spike* — the one corridor cell a compartment opens off has seven
+  cells of vertical run through it, asks for the full 0.51 in a passage one cell
+  wide, and leaves no deck at all between the two folds.
+- **`castColumns` reads the wall column's own top and bottom from the same two
+  lattices through the same sampler.** Whatever smoothing they carry, the fold
+  then arrives at the face's foot exactly and not a pixel short of it.
+
+**Marching it** is the Comanche/voxel-terrain method, front to back, per column.
+It is `castBevel`, and it is where the frame time went — see the note below.
+Four things make it affordable:
+
+- **A shared `t` down the column.** The first-hit distance is monotone as the
+  ray flattens, so the previous row's answer is a valid and very close start for
+  this one. What is carried is the bracket's *outside* end **and the field value
+  there** — the surface does not depend on which row is asking — so the first
+  sample of each row is free.
+- **`tSafe`, which is what makes the deck cost nothing.** Every sample yields a
+  radius inside which there provably is no hit (`|lo|` where the fold does not
+  exist, `phi / (rayLen + |q|)` where the ray is above it), and rows further up
+  are higher, so a radius established once holds for every row after it. The
+  block of rows nearer than that radius is then skipped in **one division**
+  rather than one loop iteration each.
+- **A crossing is interpolated, not stepped onto** — exact wherever the fold is
+  planar, which is everywhere except the cone at an outside corner.
+- **The secant, capped and biased.** A pure sphere trace creeps at grazing
+  incidence, which is the common case (a shallow ramp seen end-on down a
+  corridor). `SECANT_CAP` was **4** and that was small enough to stop a
+  near-tangent row converging at all: the row ran out of samples and hung its
+  last distance down the frame as a vertical streak. It is 12, with a 6%
+  overshoot (`SECANT_BIAS`) so most rows bracket on their first try, and a row
+  that still runs out of samples with `phi` above `STALL_EPS` is left to the
+  flat cast rather than answered with a wrong distance.
 
 Things it is easy to get wrong here:
 
@@ -148,69 +233,39 @@ Things it is easy to get wrong here:
   fixed at 0.5 above the deck — that is what `hover` 0.5 means to every
   billboard — so only a 1.0 overhead puts the camera on the centreline of the
   vertical face. At 1.6 the chamfer's top edge slides onto the horizon and the
-  face ends up entirely above eye level.
-- **Band boundaries are snapped to whole rows.** A chamfer forty cells out is a
-  fraction of a pixel high, and `drawImage` into a sub-pixel destination blends
-  in the brightest texel it can find — against a near-black derelict that came
-  out as chains of white dots tracking every chamfer edge.
+  face ends up entirely above eye level. The derelict's corridors are at **1.2**
+  because two chamfers eat `2c` of height and 1.0 could only afford 0.41 of the
+  spine's asked-for 0.55.
+- **The wall column's two boundaries are snapped to whole rows.** A fold forty
+  cells out is a fraction of a pixel high, and `drawImage` into a sub-pixel
+  destination blends in the brightest texel it can find — against a near-black
+  derelict that came out as chains of white dots tracking every edge.
 - **`trim-light-channel.png` goes on the bay frames and the doors only.** On
   every chamfer it was a light strip down every wall, which is a strip down no
   wall in particular, and the bay rhythm disappeared into it.
+- **`SIDE_SHADE` is interpolated by the surface normal on the fold, not
+  switched on it.** Wolf3D's per-axis discount as a branch is a 26% step in
+  brightness wherever the fold's dominant axis changes — which on a field is not
+  a wall corner but a *cone*, so every bay rib and every outside corner grew a
+  hard V of shadow across a physically continuous surface.
+- **`drawFaces` still paints after the backdrop**, so a fold nearer than the
+  wall — a corner's ridge silhouetted against the corridor beyond it — records
+  `clipTop`/`clipBot` and the face blit is cut to what is left.
 
-**The section is an octagon, and it terminates into a frame rather than
-stopping.** Three things settle it, and the third is the one that mattered:
-
-- The chamfer is cast **per pixel against its own sloped plane**, not drawn as
-  a band between two rows. A band has no perspective across its own slope, so
-  its panel runs did not converge with the corridor and the deck never actually
-  narrowed. See the header of `raycast.ts` for the closed-form solve.
-- `FpsSector.chamfer` is a **fraction of the space's free span**, not a
-  measurement in cells. The reference puts the deck at 45% of corridor width,
-  i.e. 0.275 of the width per side; read as an absolute the two-cell spine came
-  out at 72.5% and a wide compartment got a sliver. `FpsLevel.freeSpan` is
-  `min(horizontal run, vertical run)` per cell — the *shorter*, so one octagon
-  goes all the way round a room instead of four different ones on four walls —
-  and `section.ts` turns the fraction into a run. What limits it is the
-  overhead: two chamfers eat `2c` of height, so the derelict's corridors were
-  raised from 1.0 to **1.2** to afford 0.51 of the spine's asked-for 0.55. The
-  eye stays half a cell up, which is still 40% of the overhead, where the
-  reference's camera is.
-- **A junction is framed, not chamfered.** The chamfer is anchored to a wall
-  plane, so where the wall stops the section stopped with it — square-cornered
-  gaps, and since the deck is a grid of crossing corridors that was most of
-  what the player saw. Do **not** try to wrap the fold around the corner. Do
-  what `art-reference/airlock/airlock.png` does: terminate into a flat bulkhead
-  with an **octagonal hole** in it. `level.ts` derives those from the plan
-  (`findPortals`) and the DDA treats them as doorways — through the aperture
-  the trace continues, on the plate it stops. The aperture is the corridor's
-  own section scaled 0.86 about its centre, so the octagon runs continuously
-  through the hole and the frame is what is left in the four corners.
-
-Portal details worth keeping:
-
-- **An opening is a maximal run of open cell faces in one plane with a wall
-  face at both ends.** Not "at least one end": an interior plane through a room
-  ends against solid-solid faces and would otherwise sprout a frame in open
-  space. Where a corridor merely *ends* at another one the run terminates
-  against the hull, which is correctly not framed — the perpendicular plane
-  there is the real interruption and carries the frame you walk through.
-- **Everything beyond a plate is hidden outside the plate's own silhouette.**
-  This is not automatic: a wall's chamfer reaches its deck edge `cham * delta`
-  nearer than the wall, which at a grazing angle lands in front of the plate,
-  and it leaked out under every doorway as a pair of legs down the deck.
-  `composeBackdrop` marks those rows `occluded` and falls through to the flat
-  cast; `drawFaces` clips the vertical face to `clipTop`/`clipBot`, the
-  intersection of every aperture the column crossed, and cuts the source
-  rectangle by the same fraction.
-- **A plate needs incidence shading, which `SIDE_SHADE` does not give it.** The
-  Wolf3D per-axis discount is fine for cell walls, which are only seen from the
-  open side; a portal in a corridor's *side* wall is crossed almost parallel by
-  every ray down that corridor and came out as a bright full-height sliver
-  standing in the wall. `PLATE_GRAZE` shades by how square-on the ray met the
-  plane — one divide, since the ray's length is constant down a column.
-- Sprites are still depth-tested against the far wall only, so a Wraith
-  overlapping a plate's edge draws over it. It fits inside the aperture
-  vertically, so this shows only at the sides.
+**Frame time roughly doubled and that is the price of the fold turning.**
+Measured with the HUD and viewmodel stripped, 480×300 buffer, best-of-three
+medians over five viewpoints in the headless container: **14.9 ms/frame before,
+27.0 ms after**. Of the ~12.5 ms added, a little over half is the march itself
+(~130-190k field samples a frame) and the rest is `bevelPixel`, which now runs
+over ~40% of the frame. The container is software-rendered and slow — the same
+build's *whole* non-fold renderer measures 10 ms there — so treat these as a
+ratio, not as a frame budget. If it has to come down further, the levers in
+order are: seed each row from the wall-anchored closed form (exact along a
+straight run, so one sample a row and no iteration), bake `1/chamferRun`
+alongside the run to drop a divide per pixel, and only then consider dropping
+`RENDER_W`. Do **not** buy it back by giving the overhead its old per-column
+band — the fold has to turn the corner overhead too or the junction is square
+again where you look up.
 
 Structural notes that are easy to get wrong:
 
@@ -225,9 +280,9 @@ Structural notes that are easy to get wrong:
 - **Losing the pointer lock pauses; it must not exit.** Esc is how the browser
   hands the pointer back, and the landed Esc handler departs the planet.
   Leaving is Q, or the pause card.
-- One projection constant (`proj = H * WALL_H`) drives walls, the three wall
-  bands, the deck cast *and* billboards. Scaling only the walls lifts a
-  Wraith's feet off the deck.
+- One projection constant (`proj = H * WALL_H`) drives walls, the fold, the
+  deck cast *and* billboards. Scaling only the walls lifts a Wraith's feet off
+  the deck.
 - **The deck and overhead are cast per pixel** against `deck-plate.png` — a row
   at screen y is a known distance (`rise · proj / |y − half|`), the world span
   across it is linear in that, so one walk per row lands every pixel on the
@@ -292,7 +347,10 @@ Structural notes that are easy to get wrong:
   **in front of the camera**, or at a grazing angle `inset * delta` puts it
   behind you, the column takes a distance of ~0 and paints a black full-height
   slab down the frame. The return face is only `inset` cells across, so
-  `repScale = 1 / inset` puts its texel density back.
+  `repScale = 1 / inset` puts its texel density back. **`buildBevel` inflates
+  the same cell in the distance field by the same number**, so the fold steps
+  out around the rib as well; the two halves of the section would otherwise
+  disagree about where the wall is by 0.15 of a cell at every frame.
 - **Every long run is capped with a `D`.** Rule 6 of the art direction is that
   a sightline terminates on a bulkhead; the door material is also the only one
   with a nonzero `wallEmit`, a small self-illumination added after fog and

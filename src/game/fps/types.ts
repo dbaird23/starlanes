@@ -9,9 +9,13 @@
  */
 
 /**
- * A wall is an octagon in section, so a column of it is three bands: the 45
- * degree chamfer up off the deck, the vertical face, and the 45 degree chamfer
- * in under the overhead. Each takes its own material and its own light.
+ * The corridor is an octagon in section, so its surfaces come in three bands:
+ * the 45 degree bevel up off the deck, the vertical face, and the 45 degree
+ * bevel in under the overhead. Each takes its own material and its own light.
+ *
+ * The two bevels are **not** properties of any one wall — see `BevelField`.
+ * A band is only ever a way of choosing a material, which is why this is an
+ * enum and not a piece of geometry.
  */
 export enum WallBand {
   Lower = 0,
@@ -61,36 +65,78 @@ export interface FpsSector {
 }
 
 /**
- * A framed opening: where one space's wall run is interrupted by another space,
- * the interruption is capped with a flat bulkhead that has an octagonal hole in
- * it — `art-reference/airlock/airlock.png`, which is the same eight-sided
- * silhouette as the corridor's own section set into a flat plate.
+ * The bevel, as a **heightfield over the whole deck** rather than as something
+ * belonging to a wall.
  *
- * This is the answer to the section *dying* at every junction. A chamfer is
- * anchored to a wall plane, so where the wall stops the chamfer stops with it
- * and the corridor ends in a square-cornered gap; a raycaster cannot wrap the
- * fold around the corner, but it has always been able to do doorways. A ray
- * that crosses the plane inside the aperture carries on into the space beyond;
- * one that lands on the frame stops there and draws the plate.
+ * This is the one idea the on-foot renderer turns on. A chamfer anchored to a
+ * wall plane necessarily stops where that wall stops, so every junction, every
+ * doorway and every corner used to end in a square-cornered gap; an earlier
+ * pass tried to hide that by capping each opening with a flat bulkhead and an
+ * octagonal hole, which is a different building, not a fix.
+ *
+ * Read instead as
+ *
+ *     h(p) = max(0, chamferRun(p) - distanceFromPointToNearestSolid(p))
+ *
+ * the fold stops belonging to any wall at all. It is deck wherever the nearest
+ * solid is further away than the run, it rises at 45 degrees as you approach
+ * anything solid, and it meets the vertical face exactly where the run reaches
+ * zero — which is the wall plane, so the section along a straight wall is the
+ * octagon it always was. And it wraps corners for free, convex and concave
+ * alike, because **a distance field has no corners in it**: at an outside
+ * corner the nearest solid is a point rather than a plane, so the fold turns as
+ * a quarter-cone; at an inside corner two ramps meet and mitre.
+ *
+ * The overhead is the same field mirrored down from the sector's ceiling.
+ *
+ * Sampled on a sub-cell lattice (`sub` per cell) and read back bilinearly, so
+ * the renderer's per-column march costs a table lookup rather than a search.
+ * The distance itself is computed **exactly** — as the distance to the nearest
+ * solid cell's rectangle, not to the nearest solid *sample* — so a straight
+ * wall gives an exactly linear ramp and the deck edge does not wobble along the
+ * lattice.
  */
-export interface FpsPortal {
-  /** 0: the plane x = pos, seen from east or west. 1: the plane y = pos. */
-  axis: 0 | 1;
-  pos: number;
-  /** the opening's extent along that plane, in cells */
-  a0: number;
-  a1: number;
-  /** aperture half-width, measured from the opening's centre */
-  hw: number;
-  /** aperture bottom and top, as heights above the deck */
-  yb: number;
-  yt: number;
-  /** the aperture's 45 degree corner run, in cells */
-  cham: number;
-  /** the frame plate runs from the deck up to here, above the deck */
-  ceil: number;
-  /** the sector whose light dresses the plate */
-  sector: number;
+export interface BevelField {
+  /** samples per cell on each axis */
+  sub: number;
+  /** lattice size: `w * sub + 1` by `h * sub + 1` */
+  sw: number;
+  sh: number;
+  /**
+   * `chamferRun - signedDistanceToNearestSolid`, in cells: the bevel's height
+   * above the deck. **Not** clamped at zero — negative means "this is deck, and
+   * by this much", which is what lets the renderer's march sphere-trace across
+   * open floor in a couple of steps instead of creeping.
+   */
+  lo: Float32Array;
+  /**
+   * ...and the underside of the overhead, `ceiling - max(0, lo)`. Kept as its
+   * own lattice rather than derived, so the upper march is one lookup too.
+   */
+  up: Float32Array;
+  /**
+   * The wall id of the nearest solid, per sample — which material dresses the
+   * bevel here. This is how a bay frame's lit trim carries down onto the fold
+   * and round the corner with it.
+   */
+  id: Uint8Array;
+  /** ...and the sector of the nearest **open** cell, which is what lights it. */
+  sec: Uint8Array;
+  /**
+   * The chamfer run and the overhead height, on the same lattice: the renderer
+   * reads these for the texture coordinate across the slope and for the wall
+   * column's own top and bottom, so that the face and the bevel cannot disagree
+   * about where they meet.
+   *
+   * They are smoothed across cell boundaries on purpose — a one-cell passage
+   * asks for a run of 0.275 and the two-cell spine for 0.51, and an abrupt step
+   * between them is a step in the fold — and they are on *this* lattice rather
+   * than the cell grid so that everything the pixel loop wants comes off one
+   * set of indices. Sampling the field once yields a lattice offset and two
+   * fractions, and every one of these arrays is then three lerps away.
+   */
+  cham: Float32Array;
+  ceil: Float32Array;
 }
 
 /** A parsed level: a grid of wall ids plus the things standing on it. */
@@ -110,15 +156,8 @@ export interface FpsLevel {
    * Zero on solid cells.
    */
   freeSpan: Uint8Array;
-  /** every framed opening on the deck */
-  portals: FpsPortal[];
-  /**
-   * 1-based portal id for the plane `x = X` over cell row `y`, indexed
-   * `y * (w + 1) + X`; 0 where the crossing is not framed.
-   */
-  portalEW: Int32Array;
-  /** ...and for the plane `y = Y` over cell column `x`, indexed `Y * w + x`. */
-  portalNS: Int32Array;
+  /** the bevel heightfield over the whole deck — see `BevelField` */
+  bevel: BevelField;
   /** player start, in cells */
   start: { x: number; y: number; angle: number };
   /** where you have to get back to once the deck is clear */
