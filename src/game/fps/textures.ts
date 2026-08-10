@@ -51,6 +51,10 @@ export const TILE_FILES = [
   "chamfer-main.png",
   "chamfer-grimy.png",
   "chamfer-trim.png",
+  "overhead.png",
+  "deck-runner.png",
+  "frame-rib.png",
+  "bench-conduit.png",
 ] as const;
 
 /**
@@ -68,7 +72,18 @@ export interface WallDress {
   /** the vertical face's tile, and the alternate that breaks the grid */
   face: string;
   faceAlt?: string;
-  /** ...and the chamfers' */
+  /**
+   * ...and the chamfers'.
+   *
+   * The two chamfers do not share a tile, because they are not the same thing.
+   * The lower one is a **bench** — a horizontal surface at knee height that a
+   * ship runs its services along, and `bench-conduit.png` draws exactly that.
+   * The upper one is a soffit: nothing is bolted to it, nothing is reachable on
+   * it, and the same pipes on it would read as a ceiling that had been built
+   * upside down.
+   */
+  bench: string;
+  benchAlt?: string;
   bevel: string;
   bevelAlt?: string;
   /** horizontal repeats of the face tile per cell of wall length */
@@ -91,6 +106,13 @@ export interface WallDress {
   /** the tile on the rib's own faces; wrapped **around** the octagon (see mesh) */
   ribTile: string;
   /**
+   * ...and the tile on the light channel set *into* it, which is a different
+   * object. The ring is bolted steel and the channel is a fitting in a housing;
+   * they were one tile only while the ring had no art of its own, and sharing
+   * `ribTile` put the rib's bolt flanges on the light run.
+   */
+  stripTile: string;
+  /**
    * Self-illumination, keyed off the tile's own bright pixels: `emit` always,
    * plus `emitSector` scaled by how much power the sector still has.
    *
@@ -107,11 +129,14 @@ export interface WallDress {
 const CHAM_MAIN = "chamfer-main.png";
 const CHAM_GRIMY = "chamfer-grimy.png";
 const CHAM_TRIM = "chamfer-trim.png";
+const BENCH = "bench-conduit.png";
 const TRIM = "trim-light-channel.png";
+const RIB = "frame-rib.png";
 
 const HULL: WallDress = {
   face: "wall-main.png",
   faceAlt: "wall-grimy.png",
+  bench: BENCH,
   bevel: CHAM_MAIN,
   bevelAlt: CHAM_GRIMY,
   faceRepeat: 2,
@@ -119,7 +144,8 @@ const HULL: WallDress = {
   gainFace: 0.68,
   gainUpper: 0.34,
   rib: 0,
-  ribTile: TRIM,
+  ribTile: RIB,
+  stripTile: TRIM,
   emit: 0,
   emitSector: 0,
 };
@@ -132,6 +158,7 @@ export const DRESS: Record<number, WallDress> = {
     faceAlt: undefined,
     bevel: CHAM_GRIMY,
     bevelAlt: undefined,
+    benchAlt: undefined,
     gainLower: 0.92,
     gainFace: 0.6,
     gainUpper: 0.3,
@@ -145,7 +172,6 @@ export const DRESS: Record<number, WallDress> = {
   [WALL.frame]: {
     ...HULL,
     rib: 0.15,
-    ribTile: TRIM,
     emit: 0.02,
     emitSector: 0.2,
   },
@@ -153,6 +179,8 @@ export const DRESS: Record<number, WallDress> = {
     ...HULL,
     face: "door-face.png",
     faceAlt: undefined,
+    // a bulkhead cap carries no services across it — the section closes here
+    bench: CHAM_TRIM,
     bevel: CHAM_TRIM,
     bevelAlt: undefined,
     faceRepeat: 1,
@@ -212,17 +240,6 @@ const GLOW_COOL: [number, number, number] = [0.78, 0.92, 1.0];
 /** ...and the warm accent, which is the door's hazard band and nothing else. */
 const GLOW_WARM: [number, number, number] = [1.0, 0.72, 0.34];
 
-/**
- * Two materials that are *not* tiles.
- *
- * `mesh.ts` names the `TILE_MAT` entry a group is lit as separately from the
- * texture it wears, so a surface can borrow another's art without borrowing how
- * light behaves on it. Three surfaces need that: the light channel (`strip`),
- * the overhead, and the bay ring.
- */
-export const CEIL_MAT = "ceiling";
-export const RIB_MAT = "rib";
-
 const DEFAULT_MAT: TileMat = {
   base: [0.117, 0.125, 0.144],
   rough: 0.5,
@@ -256,24 +273,36 @@ export const TILE_MAT: Record<string, TileMat> = {
    */
   strip: { base: [0.05, 0.055, 0.065], rough: 0.95, metal: 0.0, bump: 0.0, glow: GLOW_COOL },
   /*
-   * **The overhead borrows the deck's texture and must not borrow its
-   * material.** `deck-plate.png` is the polished thing — rough 0.36, metal 0.55
-   * — because a deck is what boots have burnished, and the reference says the
-   * deck is the brightest surface in frame. A ceiling is the opposite: painted,
-   * dusty, and touched by nothing. Lit as deck plate it is also the surface the
-   * chest lamp rakes most nearly *along*, so a tight lobe on it spreads a sheet
-   * of highlight across the whole coffer and the overhead reads as wet.
+   * The overhead, which until now borrowed `deck-plate.png` and with it the
+   * most polished material in the level (rough 0.36, metal 0.55 — a deck is
+   * what boots have burnished). A ceiling is the opposite: painted, dusty and
+   * touched by nothing. It is also the surface the suit lamp rakes most nearly
+   * *along*, so a tight lobe on it spread a sheet of highlight across the whole
+   * coffer and the overhead read as wet.
    */
-  [CEIL_MAT]: { base: [0.088, 0.095, 0.112], rough: 0.78, metal: 0.16, bump: 0.55, glow: GLOW_COOL },
+  "overhead.png": { base: [0.086, 0.093, 0.109], rough: 0.78, metal: 0.16, bump: 0.6, glow: GLOW_COOL },
   /*
-   * ...and the bay ring is painted structural steel, not the trim's machined
-   * housing. It shares `trim-light-channel.png` with the channel set into it and
-   * with nothing else about it: the channel is a diffuser (`strip` above), the
-   * housing is machined, the box section carrying both is neither. It keeps a
-   * tighter lobe than the wall behind it on purpose — in `damage/damage.png` the
-   * highlights are on the frame edges, and the ring is where those edges are.
+   * The deck keeps the polish — "the deck is the brightest surface in frame
+   * because it catches what little light there is" (art-reference/README.md, on
+   * damage.png) — and `deck-runner.png` splits it: diamond tread either side of
+   * a strip worn smooth. The tread carries the bump and the runner the lobe,
+   * and both come out of the one tile's own luminance.
    */
-  [RIB_MAT]: { base: [0.099, 0.107, 0.126], rough: 0.52, metal: 0.32, bump: 0.54, glow: GLOW_COOL },
+  "deck-runner.png": { base: [0.109, 0.117, 0.134], rough: 0.34, metal: 0.55, bump: 0.85, glow: GLOW_COOL },
+  /*
+   * The bay ring: painted structural steel, not the trim's machined housing.
+   * It keeps a tighter lobe than the wall behind it on purpose — in
+   * `damage/damage.png` the highlights are on the frame edges, and the ring is
+   * where those edges are.
+   */
+  "frame-rib.png": { base: [0.101, 0.109, 0.128], rough: 0.5, metal: 0.32, bump: 0.6, glow: GLOW_COOL },
+  /*
+   * The bench, which is mostly pipe. Pipe is the one round thing in a level
+   * built entirely of flats, so it wants a tight enough lobe to run a highlight
+   * down its length as the lamp passes — that streak is the only curvature cue
+   * the section has.
+   */
+  "bench-conduit.png": { base: [0.104, 0.112, 0.132], rough: 0.4, metal: 0.4, bump: 0.7, glow: GLOW_COOL },
 };
 
 export function matOf(tile: string): TileMat {
@@ -283,14 +312,25 @@ export function matOf(tile: string): TileMat {
 /**
  * The deck, and the overhead.
  *
- * There is still no *ceiling* art anywhere in `art-reference/`, so the overhead
- * borrows the deck plate knocked down and cooled; left flat it read as a void
- * hanging over the corridor. `deck-plate.png` is a diamond-tread plate with a
- * worn walkway down its middle, so one plate to the cell gives both the seams
- * and the centre runner the references have.
+ * **Both are drawn one tile to the cell and oriented along the corridor**, not
+ * in world space, and that is the whole reason they are separate tiles rather
+ * than one plate used twice. Each has a feature with a *direction* in it —
+ * `deck-runner.png` a walkway worn down its middle, `overhead.png` a machinery
+ * spine — and a direction laid down in world space runs along the corridor for
+ * half the deck and straight across it for the other half. `mesh.ts` has
+ * `alongX` per cell already; the uv is turned to match it there.
+ *
+ * The two tiles are drawn with their runs on opposite axes, so the swap is not
+ * the same swap for both: the deck's runner is a horizontal band and the
+ * overhead's spine a vertical one.
  */
-export const DECK_TILE = "deck-plate.png";
+export const DECK_TILE = "deck-runner.png";
+export const CEIL_TILE = "overhead.png";
 export const DECK_GAIN = 0.72;
 export const CEIL_GAIN = 0.3;
-/** The overhead is the same plate, cooled — see `CEIL_*` in the old raycaster. */
-export const CEIL_TINT: [number, number, number] = [0.5, 0.55, 0.66];
+/**
+ * The overhead is cooled, which is now a tint on its own art rather than the
+ * hard knock-down it needed while it was wearing the deck's. The palette rule
+ * is a cool ground with small warm accents, and `overhead.png` is warm grey.
+ */
+export const CEIL_TINT: [number, number, number] = [0.84, 0.9, 1.0];

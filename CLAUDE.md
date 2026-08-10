@@ -281,6 +281,44 @@ are the CPU cross-check: front-face-only ray casts against the built buffers,
 which is what the GPU culls to, and `diag` lists the triangles rimming a
 crack so it can be named rather than guessed at.
 
+**Every surface has its own tile, and three of them have a direction in them.**
+The level used to dress nine surfaces out of five tiles: the overhead wore the
+deck's plate, the bay ring wore the light channel's, and both chamfers wore one
+band. Each of those is two things that only look alike in a photograph — a deck
+is what boots have burnished and a ceiling is touched by nothing; a ring is
+bolted steel and the channel set into it is a diffuser; a lower chamfer is a
+**bench** at knee height that a ship runs its services along and the upper one
+is a soffit, where the same pipes read as a ceiling built upside down. Four
+tiles close it (`overhead`, `deck-runner`, `frame-rib`, `bench-conduit`), and
+with them each surface's `TILE_MAT` is its own rather than a borrowed one.
+
+- **The deck and the overhead are laid along the corridor, not in world
+  space.** `deck-runner.png` has a walkway worn down its middle and
+  `overhead.png` a machinery spine, and a direction laid down in world space
+  runs along the corridor for half a deck and straight across it for the other
+  half — so half the level had a runner you walked over rather than along.
+  `mesh.ts` already computes `alongX` per cell for the coffer's spine; the deck
+  and overhead uv now turn with it. The two tiles draw their runs on **opposite
+  axes** (the runner is a horizontal band, the spine a vertical one), so
+  `deckUv` and `ceilUv` are each other's inverse and not the same swap.
+- **`frame-rib.png` ships transposed, by `scripts/fps-tiles.mjs`.** On a rib the
+  tile wraps *around* the octagon — `u` is arc along the profile, `v` is
+  position along the corridor — and the source draws its bolted stiles as
+  columns. Mapped straight through, a line of bolts is a line of constant `u`:
+  a stripe running lengthwise down a band one cell long, which reads as pipe
+  threaded through the frame. Transposed it hoops the corridor, which is what a
+  bolted flange on a ring is.
+- **`WallDress` names `ribTile` and `stripTile` separately.** They were one
+  field only while the ring had no art of its own; sharing it put the rib's bolt
+  flanges on the light run.
+- **Nothing is clipping.** At the resting sector levels the shipped viewpoints
+  have **0.00%** of pixels at or above 250 and 0.00% above a mean of 200 — the
+  bay ring reads as a white hoop against a dark corridor because of what is
+  around it, not because the strip term is overflowing. Only `lightFloor 0.9`,
+  which is the reference's "after" and not a game state, clips (4.9% at the
+  convex viewpoint). Measure before retuning `STRIP_SECTOR`; a light fitting
+  looks blown next to a dead corridor whether or not it is.
+
 - **The alternate wall tile is one cell in eight, not one in two.**
   `wall-grimy` is `wall-main` oxidised and a good deal darker; swapped in half
   the time it stops reading as weathering and starts reading as a chequerboard
@@ -290,13 +328,16 @@ crack so it can be named rather than guessed at.
 and overhead shares a single `ShaderMaterial`; what differs arrives as three
 per-vertex floats baked by `mesh.ts` — `aLight` (the sector), `aGain` (the
 band's place in the staircase, times AO), `aEmit` — plus one texture. The
-derelict is **58,622 triangles in nine draw calls** (7,658 before the relief
-went in, 57,614 before the edge stitching; `TEST_CORRIDOR` is 3,682). It is
+derelict is **60,938 triangles in eleven draw calls** (7,658 before the relief
+went in, 57,614 before the edge stitching; `TEST_CORRIDOR` is 3,682). A draw
+call is one *tile*, so the count tracks the material table and not the level —
+giving the bench, the overhead, the deck runner and the bay ring their own art
+took it from nine to eleven without adding a triangle.  It is
 static geometry uploaded once at level load, so on a GPU that is free; the
 headless container is software-rendered and the same frame costs **145-221 ms
 depending on viewpoint against the flat build's 149 ms** there at 1280×800,
 which is a ratio and not a frame budget. Nothing is ever frustum-culled — the
-groups are level-wide, so all 58,622 triangles are submitted every frame — and
+groups are level-wide, so all 60,938 triangles are submitted every frame — and
 the cost is overwhelmingly fill, not geometry: the spread across viewpoints is
 overdraw.
 
