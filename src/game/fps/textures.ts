@@ -212,6 +212,17 @@ const GLOW_COOL: [number, number, number] = [0.78, 0.92, 1.0];
 /** ...and the warm accent, which is the door's hazard band and nothing else. */
 const GLOW_WARM: [number, number, number] = [1.0, 0.72, 0.34];
 
+/**
+ * Two materials that are *not* tiles.
+ *
+ * `mesh.ts` names the `TILE_MAT` entry a group is lit as separately from the
+ * texture it wears, so a surface can borrow another's art without borrowing how
+ * light behaves on it. Three surfaces need that: the light channel (`strip`),
+ * the overhead, and the bay ring.
+ */
+export const CEIL_MAT = "ceiling";
+export const RIB_MAT = "rib";
+
 const DEFAULT_MAT: TileMat = {
   base: [0.117, 0.125, 0.144],
   rough: 0.5,
@@ -244,6 +255,25 @@ export const TILE_MAT: Record<string, TileMat> = {
    * hooping the corridor whether the ship had power or not.
    */
   strip: { base: [0.05, 0.055, 0.065], rough: 0.95, metal: 0.0, bump: 0.0, glow: GLOW_COOL },
+  /*
+   * **The overhead borrows the deck's texture and must not borrow its
+   * material.** `deck-plate.png` is the polished thing — rough 0.36, metal 0.55
+   * — because a deck is what boots have burnished, and the reference says the
+   * deck is the brightest surface in frame. A ceiling is the opposite: painted,
+   * dusty, and touched by nothing. Lit as deck plate it is also the surface the
+   * chest lamp rakes most nearly *along*, so a tight lobe on it spreads a sheet
+   * of highlight across the whole coffer and the overhead reads as wet.
+   */
+  [CEIL_MAT]: { base: [0.088, 0.095, 0.112], rough: 0.78, metal: 0.16, bump: 0.55, glow: GLOW_COOL },
+  /*
+   * ...and the bay ring is painted structural steel, not the trim's machined
+   * housing. It shares `trim-light-channel.png` with the channel set into it and
+   * with nothing else about it: the channel is a diffuser (`strip` above), the
+   * housing is machined, the box section carrying both is neither. It keeps a
+   * tighter lobe than the wall behind it on purpose — in `damage/damage.png` the
+   * highlights are on the frame edges, and the ring is where those edges are.
+   */
+  [RIB_MAT]: { base: [0.099, 0.107, 0.126], rough: 0.52, metal: 0.32, bump: 0.54, glow: GLOW_COOL },
 };
 
 export function matOf(tile: string): TileMat {

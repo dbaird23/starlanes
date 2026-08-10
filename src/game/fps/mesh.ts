@@ -79,9 +79,11 @@
 import * as THREE from "three";
 import {
   CEIL_GAIN,
+  CEIL_MAT,
   CEIL_TINT,
   DECK_GAIN,
   DECK_TILE,
+  RIB_MAT,
   WALL,
   dressOf,
 } from "./textures";
@@ -989,7 +991,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
             deckAo,
           );
         }
-        const trimB = get(frameDress.ribTile);
+        const trimB = get(frameDress.ribTile, undefined, RIB_MAT);
         for (const [a, sgn] of [[e, -1], [1 - e, 1]] as const) {
           // each riser faces away from the raised centre of the sill
           const want: Vec3 = stepX ? [sgn, 0, 0] : [0, 0, sgn];
@@ -1019,7 +1021,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
         cornerAo(cx + 1, cy + 1, 0.13),
         cornerAo(cx, cy + 1, 0.13),
       ];
-      const ceilTint = get(DECK_TILE, CEIL_TINT);
+      const ceilTint = get(DECK_TILE, CEIL_TINT, CEIL_MAT);
 
       /** a horizontal patch of overhead at `drop` below the bilinear height */
       const soffit = (
@@ -1090,7 +1092,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
          * hoop's silhouette is the same three steps overhead as it is on the
          * wall.
          */
-        const trimB = get(frameDress.ribTile);
+        const trimB = get(frameDress.ribTile, undefined, RIB_MAT);
         const beamShade: Shade = {
           light,
           gain: CEIL_GAIN * 1.25,
@@ -1421,7 +1423,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
             [1 - e, RIB, RIB * COLLAR, 1],
             [1, RIB * COLLAR, 0, 1],
           ];
-          const trimB = get(dress.ribTile);
+          const trimB = get(dress.ribTile, undefined, RIB_MAT);
           for (const [t, dLo, dHi, sgn] of steps) {
             // each riser stands at one t, between two depths of the same
             // moulding, so both its edges are that moulding read at that t
@@ -1576,7 +1578,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
                 return [wx, edgeCeil(t) - d, wz];
               };
               quadFacing(
-                get(trimTile),
+                get(trimTile, undefined, RIB_MAT),
                 want,
                 p(t0, hi),
                 p(t1, hi),
@@ -1605,7 +1607,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
                 return [wx, y, wz];
               };
               quadFacing(
-                get(trimTile),
+                get(trimTile, undefined, RIB_MAT),
                 want,
                 p(t0, Math.min(rA, rB)),
                 p(t1, Math.min(rA, rB)),
