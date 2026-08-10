@@ -1,31 +1,26 @@
 /**
- * The on-foot session: pointer lock, the low-resolution buffer, the HUD, and
- * the two end cards. `Game` owns one of these while `mode === "fps"`.
+ * The on-foot session: pointer lock, the GL scene, the HUD, and the two end
+ * cards. `Game` owns one of these while `mode === "fps"`.
  *
- * Everything 3D is drawn into a fixed-width offscreen buffer and blitted up
- * with smoothing off, so the cost does not move with the window or the device
- * pixel ratio and the chunky upscale is a choice rather than an accident. The
- * readouts are drawn afterwards at full resolution, where text belongs.
+ * The world is three.js over a mesh built once from the deck (`mesh.ts`,
+ * `glscene.ts`); everything else on screen — viewmodel, readouts, minimap, end
+ * cards — is canvas 2D over the top of the blitted frame, which is where text
+ * belongs and where the rest of the game's UI already lives.
  */
 
 import type { Input } from "../../engine/input";
 import { playAmbient, stopAmbient } from "../../engine/audio";
-import { renderScene, type RaySprite } from "./raycast";
+import { GlScene } from "./glscene";
 import { FpsWorld, type FpsCommand } from "./sim";
-import {
-  deckPixels,
-  preloadMaterials,
-  wallEmit,
-  wallGain,
-  wallGlow,
-  wallInset,
-  wallRepeat,
-  wallTexture,
-} from "./textures";
-import type { FpsOptions } from "./types";
+import type { FpsOptions, FpsSprite } from "./types";
 
-/** Columns cast per frame. Fixed, so a big window costs no more than a small one. */
-const RENDER_W = 480;
+/**
+ * The viewmodel is still drawn in canvas 2D, and it was authored against the
+ * raycaster's 480-wide buffer. Keeping that as its design width and scaling to
+ * the window means the gun is the same size on every display instead of
+ * shrinking to a splinter at 1280.
+ */
+const GUN_W = 480;
 const MOUSE_SENS = 0.0022;
 const KEY_TURN = 2.4;
 
@@ -36,9 +31,9 @@ export class FpsSession {
   readonly world: FpsWorld;
   private readonly canvas: HTMLCanvasElement;
 
-  private buf = document.createElement("canvas");
-  private bufCtx: CanvasRenderingContext2D | null;
-  private depth = new Float32Array(RENDER_W);
+  private gl: GlScene | null = null;
+  /** rolling mean of GL frame times, in ms — a probe hook, nothing draws it */
+  frameMs = 0;
 
   /** true until the pointer is captured, and again whenever it is released */
   paused = true;
@@ -55,6 +50,14 @@ export class FpsSession {
    * on, and greebled photographic metal hides it completely.
    */
   noTextures = false;
+  /**
+   * ...and the other half of that hook: raise every sector to this level, so a
+   * dead compartment can be looked at as though the ship still had power. What
+   * the reference calls the "after" state (`corridors/corridor-lit.png`) is
+   * this scene at `lightFloor` 0.9; the resting state (`damage/damage.png`) is
+   * the same scene at 0.
+   */
+  lightFloor = 0;
 
   private onLockChange = (): void => {
     this.locked = document.pointerLockElement === this.canvas;
@@ -75,8 +78,12 @@ export class FpsSession {
   constructor(canvas: HTMLCanvasElement, opts: FpsOptions) {
     this.canvas = canvas;
     this.world = new FpsWorld(opts);
-    this.bufCtx = this.buf.getContext("2d");
-    preloadMaterials();
+    try {
+      this.gl = new GlScene(opts.level);
+    } catch (e) {
+      // no WebGL: the session still runs, it just has nothing to look at
+      console.error("fps: WebGL unavailable", e);
+    }
 
     document.addEventListener("pointerlockchange", this.onLockChange);
     window.addEventListener("mousemove", this.onMouseMove);
@@ -84,6 +91,11 @@ export class FpsSession {
     window.addEventListener("mouseup", this.onMouseUp);
 
     if (opts.ambientSnd) playAmbient(opts.ambientSnd, true, 0.3);
+  }
+
+  /** Triangles in the static level mesh. Probe hook. */
+  get glTris(): number {
+    return this.gl?.tris ?? 0;
   }
 
   /** Called from the canvas click handler: take the pointer and start. */
@@ -99,6 +111,8 @@ export class FpsSession {
     window.removeEventListener("mousedown", this.onMouseDown);
     window.removeEventListener("mouseup", this.onMouseUp);
     if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
+    this.gl?.dispose();
+    this.gl = null;
     stopAmbient();
   }
 
@@ -134,41 +148,26 @@ export class FpsSession {
   }
 
   render(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    const bctx = this.bufCtx;
-    if (!bctx) return;
-    const renderH = Math.max(120, Math.round((RENDER_W * h) / Math.max(1, w)));
-    if (this.buf.width !== RENDER_W || this.buf.height !== renderH) {
-      this.buf.width = RENDER_W;
-      this.buf.height = renderH;
+    const gl = this.gl;
+    if (gl) {
+      const sprites: FpsSprite[] = this.world.sprites();
+      const t0 = performance.now();
+      const frame = gl.render(
+        { x: this.world.x, y: this.world.y, angle: this.world.angle },
+        sprites,
+        Math.max(2, Math.round(w)),
+        Math.max(2, Math.round(h)),
+        this.noTextures,
+        this.lightFloor,
+      );
+      this.frameMs += (performance.now() - t0 - this.frameMs) * 0.1;
+      ctx.drawImage(frame, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = "#05070a";
+      ctx.fillRect(0, 0, w, h);
     }
 
-    const sprites: RaySprite[] = this.world.sprites();
-    renderScene(
-      bctx,
-      RENDER_W,
-      renderH,
-      {
-        level: this.world.level,
-        cam: { x: this.world.x, y: this.world.y, angle: this.world.angle },
-        sprites,
-        mat: {
-          texture: this.noTextures ? (): null => null : wallTexture,
-          gain: wallGain,
-          repeat: wallRepeat,
-          glow: wallGlow,
-          emit: wallEmit,
-          inset: wallInset,
-          deck: this.noTextures ? null : deckPixels(),
-        },
-      },
-      this.depth,
-    );
-    this.drawWeapon(bctx, RENDER_W, renderH);
-
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(this.buf, 0, 0, w, h);
-    ctx.imageSmoothingEnabled = true;
-
+    this.drawWeapon(ctx, w, h);
     this.drawHud(ctx, w, h);
   }
 
@@ -180,11 +179,13 @@ export class FpsSession {
    */
   private drawWeapon(ctx: CanvasRenderingContext2D, w: number, h: number): void {
     if (this.world.state !== "playing") return;
-    const bx = w * 0.74 + Math.sin(this.bob) * 4;
-    const by = h + Math.abs(Math.cos(this.bob)) * 3;
+    const k = w / GUN_W;
+    const bx = GUN_W * 0.74 + Math.sin(this.bob) * 4;
+    const by = h / k + Math.abs(Math.cos(this.bob)) * 3;
     const kick = this.world.muzzle * 7;
 
     ctx.save();
+    ctx.scale(k, k);
     ctx.translate(bx, by + kick);
     ctx.rotate(-0.12);
     // stock and receiver, canted in from the right the way a held rifle sits

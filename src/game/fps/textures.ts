@@ -1,62 +1,31 @@
 /**
- * The corridor's materials.
+ * The corridor's materials, as a table the mesh builder reads.
  *
  * These used to be crops out of the status-bar plates in `public/hud/` — a
  * ready-made greeble, but a *sidebar*, drawn with its own lighting and its own
  * vertical rhythm, and it read as one. They are now the reference tiles under
  * `public/fps/`, cut from `art-reference/materials/` by `scripts/fps-tiles.mjs`.
  *
- * Three surfaces per wall id, because the wall is an octagon in section and
- * each band of it catches light differently (see `raycast.ts`).
+ * Nothing here loads an image any more: the section is real geometry and the
+ * tiles are GPU textures, so `glscene.ts` owns the loading. What is left is the
+ * *dressing* — which tile goes on which band of the octagon, how bright each
+ * band is, whether the wall stands proud of its neighbours, and whether it
+ * emits.
  *
  * **The chamfers have their own tiles, and they are 3:1 rather than square.**
- * A chamfer band is roughly 28% of a wall column's height on screen, so a square
- * tile squashed into it loses all of its vertical structure and comes out as
- * lengthwise ribbons — the horizontal smearing that was visible down every wall
- * in round one. `chamfer-*.png` are full-width 341px bands cut out of the same
- * sources at the proportion the band is actually sampled at, so the panel runs
- * and conduit in them stay readable and the light fixture keeps its housing
- * edges instead of blurring into a white blob.
+ * A chamfer band's slope run is about 0.39 of a cell against a cell of length,
+ * so a square tile squashed onto it loses its vertical structure and comes out
+ * as lengthwise ribbons. `chamfer-*.png` are 384x128 bands cut from the same
+ * sources at the proportion the band is actually sampled at.
  *
- * `chamfer-trim.png` — the band with the lit channel in it — is deliberately
- * **only** on the bay frames and the doors. Putting it on every chamfer was the
- * obvious reading of the art direction and it was wrong: a light strip down
- * every wall is a strip down no wall in particular, and the bay rhythm, which is
- * the thing the references actually lead with, disappeared into it. One lit
- * frame every three cells reads as structure. The channel is *painted* light, so
- * the frames also get an additive strip over the top of it — see `GLOW_*` in
- * `raycast.ts`.
+ * **`trim-light-channel.png` goes on the bay frames and the doors only.** On
+ * every chamfer it was a light strip down every wall, which is a strip down no
+ * wall in particular, and the bay rhythm — the thing the references actually
+ * lead with — disappeared into it.
  *
- * As with the plates, these do not go through `getSprite`/`getPict` (both
- * hardcode the `nova/sprites/` and `nova/picts/` prefixes) but they do go
- * through `asset()`, or a bare `/fps/...` 404s on the sub-path Pages deploy.
+ * Paths go through `asset()` in `glscene.ts`, or a bare `/fps/...` 404s on the
+ * sub-path Pages deploy.
  */
-
-import { asset } from "../../asset";
-import { WallBand, type DeckPixels } from "./types";
-
-const FILES = [
-  "wall-main.png",
-  "wall-grimy.png",
-  "trim-light-channel.png",
-  "deck-plate.png",
-  "door-face.png",
-  "chamfer-main.png",
-  "chamfer-grimy.png",
-  "chamfer-trim.png",
-] as const;
-
-const images = new Map<string, HTMLImageElement>();
-
-function tile(file: string): HTMLImageElement | null {
-  let img = images.get(file);
-  if (!img) {
-    img = new Image();
-    img.src = asset(`fps/${file}`);
-    images.set(file, img);
-  }
-  return img.complete && img.naturalWidth > 0 ? img : null;
-}
 
 /**
  * Wall ids, as `level.ts` emits them.
@@ -72,197 +41,145 @@ export const WALL = {
   door: 4,
 } as const;
 
-/** One band's dressing: its tile, its brightness and how often it repeats. */
-interface Band {
-  file: string;
-  /**
-   * The tile used on some cells instead, to break the grid. `wall-main.png` has
-   * a strong central motif, so the identical panel — same slot, same orange dot
-   * in the same corner — recurred once per cell three or four times along a
-   * single wall run, which reads as wallpaper rather than as a hull.
-   */
-  alt?: string;
-  /** multiplier — the chamfers catch light the flat face does not */
-  gain: number;
-  /** horizontal repeats of the tile per cell of wall length */
-  repeat: number;
-}
+/** Every tile the mini-game ships, so they can all be started at once. */
+export const TILE_FILES = [
+  "wall-main.png",
+  "wall-grimy.png",
+  "trim-light-channel.png",
+  "deck-plate.png",
+  "door-face.png",
+  "chamfer-main.png",
+  "chamfer-grimy.png",
+  "chamfer-trim.png",
+] as const;
 
-interface Material {
-  /** one per WallBand */
-  band: [Band, Band, Band];
-  /** how strongly this wall's chamfer channels emit, before sector light */
-  glow: number;
+/**
+ * How a wall id dresses the three bands of the octagon.
+ *
+ * `gain` is where most of the section comes from, and it is a *staircase*: the
+ * lower chamfer is a bench facing up into the room and reads bright, the
+ * vertical face reads mid, the upper chamfer turns its face away and reads
+ * dark. Give all three the same value and the octagon collapses into a flat
+ * strip however good the textures are. The deck and the overhead have their own
+ * two steps (`DECK_GAIN`, `CEIL_GAIN`) so every fold in the section has a step
+ * in brightness across it and not just a change of slope.
+ */
+export interface WallDress {
+  /** the vertical face's tile, and the alternate that breaks the grid */
+  face: string;
+  faceAlt?: string;
+  /** ...and the chamfers' */
+  bevel: string;
+  bevelAlt?: string;
+  /** horizontal repeats of the face tile per cell of wall length */
+  faceRepeat: number;
+  gainLower: number;
+  gainFace: number;
+  gainUpper: number;
   /**
-   * Self-illumination floor, added to the lit factor and *not* multiplied by
-   * the sector. Only the doors carry any: the art direction's rule 6 is that a
-   * sightline terminates on a bulkhead, which it cannot do if the bulkhead is
-   * as black as the corridor it caps.
+   * How far this wall stands **proud** of its neighbours, in cells, as real
+   * geometry: a prism whose front is the same octagon profile pushed `rib`
+   * toward the corridor centre, closed at both ends by a cap.
+   *
+   * Nonzero only on the bay frames. The references' single strongest cue that a
+   * corridor is not one endless tube is a structural ring every few metres, and
+   * with a mesh a ring can actually be a ring — brightness on a smooth tube left
+   * the silhouette as two perfectly converging lines, where the reference is
+   * nested octagons receding and their outlines are the depth cue.
+   */
+  rib: number;
+  /** the tile on the rib's own faces; wrapped **around** the octagon (see mesh) */
+  ribTile: string;
+  /**
+   * Self-illumination, keyed off the tile's own bright pixels: `emit` always,
+   * plus `emitSector` scaled by how much power the sector still has.
+   *
+   * The split is the difference between a light and a lit thing. A bay frame's
+   * channel is a *fitting* — dead ship, dead fitting — so it is nearly all
+   * sector. A door carries a floor that no sector can take away, because rule 6
+   * of the art direction is that a sightline terminates on a bulkhead, which it
+   * cannot do if the bulkhead is as black as the corridor it caps.
    */
   emit: number;
-  /**
-   * How far this wall's plane steps in toward the corridor centre, in cells.
-   *
-   * Nonzero only on the bay frames, and it is what turns them from a brightness
-   * patch on a smooth tube into a rib you can see the edge of.
-   *
-   * It is read in two places and they have to agree. `castColumns` steps the
-   * vertical face's plane in — the DDA's distance is a ray parameter, so that
-   * is one subtraction, and the rib's return face falls out of the same test.
-   * `buildBevel` inflates the same cell in the distance field by the same
-   * amount, so the fold steps out around the rib too instead of running past
-   * it; without that the two halves of the section would disagree about where
-   * the wall is by 0.15 of a cell at every frame.
-   */
-  inset: number;
+  emitSector: number;
 }
 
 const CHAM_MAIN = "chamfer-main.png";
 const CHAM_GRIMY = "chamfer-grimy.png";
 const CHAM_TRIM = "chamfer-trim.png";
+const TRIM = "trim-light-channel.png";
 
-/**
- * The material table.
- *
- * `gain` is where most of the octagon actually comes from. The lower chamfer
- * is a bench facing up into the room and reads bright; the upper one turns its
- * face away and reads dark. Give all three bands the same value and the
- * section collapses back into a flat strip no matter what the textures do.
- *
- * The three values on a wall are read against `DECK_GAIN` in `raycast.ts`,
- * because the fold that matters most is the one where the chamfer leaves the
- * deck and there is nothing on this side of it to state that. The section is a
- * staircase — deck 0.72, lower chamfer 1.0, vertical face 0.68, upper chamfer
- * 0.3, overhead cooler again — so every fold in the octagon has a step in
- * brightness across it and not just a change of slope.
- *
- * The chamfers repeat once per cell because their tiles are already 3:1 and a
- * chamfer's slope run is about 0.39 of a cell against a cell of length — so one
- * tile per cell is very close to sampling the art square.
- */
-const MATERIALS: Record<number, Material> = {
-  [WALL.hull]: {
-    band: [
-      { file: CHAM_MAIN, alt: CHAM_GRIMY, gain: 1.0, repeat: 1 },
-      { file: "wall-main.png", alt: "wall-grimy.png", gain: 0.68, repeat: 2 },
-      { file: CHAM_MAIN, alt: CHAM_GRIMY, gain: 0.3, repeat: 1 },
-    ],
-    glow: 0,
-    emit: 0,
-    inset: 0,
-  },
+const HULL: WallDress = {
+  face: "wall-main.png",
+  faceAlt: "wall-grimy.png",
+  bevel: CHAM_MAIN,
+  bevelAlt: CHAM_GRIMY,
+  faceRepeat: 2,
+  gainLower: 1.0,
+  gainFace: 0.68,
+  gainUpper: 0.34,
+  rib: 0,
+  ribTile: TRIM,
+  emit: 0,
+  emitSector: 0,
+};
+
+export const DRESS: Record<number, WallDress> = {
+  [WALL.hull]: HULL,
   [WALL.housing]: {
-    band: [
-      { file: CHAM_GRIMY, gain: 0.92, repeat: 1 },
-      { file: "wall-grimy.png", gain: 0.6, repeat: 2 },
-      { file: CHAM_GRIMY, gain: 0.26, repeat: 1 },
-    ],
-    glow: 0,
-    emit: 0,
-    inset: 0,
+    ...HULL,
+    face: "wall-grimy.png",
+    faceAlt: undefined,
+    bevel: CHAM_GRIMY,
+    bevelAlt: undefined,
+    gainLower: 0.92,
+    gainFace: 0.6,
+    gainUpper: 0.3,
   },
+  /*
+   * A frame is hull with a ring bolted onto it: the plain profile behind is
+   * still `wall-main`, and everything that makes it a frame — the 0.15 it
+   * stands proud, the trim on its faces, the channel that lights up when the
+   * section has power — is on the prism.
+   */
   [WALL.frame]: {
-    band: [
-      { file: CHAM_TRIM, gain: 1.0, repeat: 1 },
-      { file: "trim-light-channel.png", gain: 0.72, repeat: 1 },
-      { file: CHAM_TRIM, gain: 0.44, repeat: 1 },
-    ],
-    glow: 1,
-    emit: 0.015,
-    inset: 0.15,
+    ...HULL,
+    rib: 0.15,
+    ribTile: TRIM,
+    emit: 0.05,
+    emitSector: 0.62,
   },
   [WALL.door]: {
-    band: [
-      { file: CHAM_TRIM, gain: 0.97, repeat: 1 },
-      { file: "door-face.png", gain: 0.95, repeat: 1 },
-      { file: CHAM_TRIM, gain: 0.4, repeat: 1 },
-    ],
-    glow: 0.7,
-    emit: 0.13,
-    inset: 0.06,
+    ...HULL,
+    face: "door-face.png",
+    faceAlt: undefined,
+    bevel: CHAM_TRIM,
+    bevelAlt: undefined,
+    faceRepeat: 1,
+    gainLower: 0.97,
+    gainFace: 0.95,
+    gainUpper: 0.44,
+    rib: 0,
+    emit: 0.34,
+    emitSector: 0.5,
   },
 };
 
-function matOf(id: number): Material {
-  return MATERIALS[id] ?? MATERIALS[WALL.hull];
+export function dressOf(id: number): WallDress {
+  return DRESS[id] ?? HULL;
 }
 
 /**
- * Material for one wall id and band, or null until its PNG has arrived.
+ * The deck, and the overhead.
  *
- * `variant` is a hash of the cell's grid position (see `cellVariant` in
- * `raycast.ts`); its low bit swaps in the alternate tile where a material has
- * one. The rest of the de-repetition is the u offset and the mirror flip, which
- * the renderer applies without needing anything from here.
+ * There is still no *ceiling* art anywhere in `art-reference/`, so the overhead
+ * borrows the deck plate knocked down and cooled; left flat it read as a void
+ * hanging over the corridor. `deck-plate.png` is a diamond-tread plate with a
+ * worn walkway down its middle, so one plate to the cell gives both the seams
+ * and the centre runner the references have.
  */
-export function wallTexture(
-  id: number,
-  band: WallBand,
-  variant: number,
-): HTMLImageElement | null {
-  const b = matOf(id).band[band];
-  return tile(b.alt && (variant & 1) === 1 ? b.alt : b.file);
-}
-
-/** Brightness multiplier for one wall id and band. */
-export function wallGain(id: number, band: WallBand): number {
-  return matOf(id).band[band].gain;
-}
-
-/** Tile repeats per cell of wall length, so the tile is not stretched flat. */
-export function wallRepeat(id: number, band: WallBand): number {
-  return matOf(id).band[band].repeat;
-}
-
-/** How hard this wall's chamfer light channels burn, before sector light. */
-export function wallGlow(id: number): number {
-  return matOf(id).glow;
-}
-
-/** Self-illumination floor — the doors, so a sightline never ends in nothing. */
-export function wallEmit(id: number): number {
-  return matOf(id).emit;
-}
-
-/** How far this wall steps in toward the corridor centre, in cells. */
-export function wallInset(id: number): number {
-  return matOf(id).inset;
-}
-
-/**
- * The deck, as raw pixels.
- *
- * The floor is cast per pixel rather than shaded per row, which needs the
- * texels rather than an image — so the PNG is decoded into a canvas once and
- * kept as bytes. `deck-plate.png` is a diamond-tread plate with a worn walkway
- * down its middle, so tiling it one plate to the cell gives both the seams and
- * the centre runner the references have.
- */
-let deckCache: DeckPixels | null = null;
-
-export function deckPixels(): DeckPixels | null {
-  if (deckCache) return deckCache;
-  const img = tile("deck-plate.png");
-  if (!img) return null;
-  const w = img.naturalWidth;
-  const h = img.naturalHeight;
-  const cv = document.createElement("canvas");
-  cv.width = w;
-  cv.height = h;
-  const c = cv.getContext("2d", { willReadFrequently: true });
-  if (!c) return null;
-  c.drawImage(img, 0, 0);
-  deckCache = {
-    data: c.getImageData(0, 0, w, h).data,
-    w,
-    h,
-    maskX: w - 1,
-    maskY: h - 1,
-  };
-  return deckCache;
-}
-
-/** Start every tile loading so the first frame in the level is already dressed. */
-export function preloadMaterials(): void {
-  for (const f of FILES) tile(f);
-}
+export const DECK_TILE = "deck-plate.png";
+export const DECK_GAIN = 0.72;
+export const CEIL_GAIN = 0.3;
+/** The overhead is the same plate, cooled — see `CEIL_*` in the old raycaster. */
+export const CEIL_TINT: [number, number, number] = [0.5, 0.55, 0.66];

@@ -9,29 +9,36 @@
  */
 
 /**
- * The corridor is an octagon in section, so its surfaces come in three bands:
- * the 45 degree bevel up off the deck, the vertical face, and the 45 degree
- * bevel in under the overhead. Each takes its own material and its own light.
+ * A billboard the renderer should draw this frame: one frame of a Nova sprite
+ * sheet, standing in the world.
  *
- * The two bevels are **not** properties of any one wall — see `BevelField`.
- * A band is only ever a way of choosing a material, which is why this is an
- * enum and not a piece of geometry.
+ * The sheets are 36 pre-rendered rotations in a horizontal strip, which is why
+ * the Wraiths are the right monster for this — the hardest asset problem in a
+ * sprite FPS is solved before we start, and `rotationFrame` already indexes
+ * that layout.
  */
-export enum WallBand {
-  Lower = 0,
-  Main = 1,
-  Upper = 2,
-}
-
-/** The deck texture, decoded once, for the per-pixel floor cast. */
-export interface DeckPixels {
-  /** RGBA, w*h*4 — kept as bytes so the renderer needs no endianness */
-  data: Uint8ClampedArray;
-  w: number;
-  h: number;
-  /** power-of-two side masks, so the inner loop wraps with & rather than % */
-  maskX: number;
-  maskY: number;
+export interface FpsSprite {
+  x: number;
+  y: number;
+  img: HTMLImageElement;
+  /** side of one (square) frame in the sheet */
+  frameSize: number;
+  /** which of the sheet's frames to draw */
+  frame: number;
+  /** world height of the billboard, in cells */
+  scale: number;
+  /** height of the billboard's centre above the deck, in cells (0.5 = eye level) */
+  hover: number;
+  /** 0-1, for a death fade */
+  alpha: number;
+  /** extra additive flash, 0-1, for a hit flinch */
+  flash: number;
+  /**
+   * Blend as light rather than as paint. Explosions want this: composited
+   * normally, a bööm frame's dark smoke edges paste onto the bulkhead as a
+   * flat decal instead of throwing light across it.
+   */
+  additive?: boolean;
 }
 
 /**
@@ -56,87 +63,12 @@ export interface FpsSector {
   /**
    * The 45 degree chamfer's run **as a fraction of the space's free span** —
    * the art direction's ~0.275, which puts the deck at 45% of the corridor's
-   * width. It is a ratio and not a measurement in cells: see `section.ts`,
-   * which turns it into a run against `FpsLevel.freeSpan` and the overhead.
+   * width. It is a ratio and not a measurement in cells: `mesh.ts` turns it
+   * into a run against `FpsLevel.freeSpan` and the sector's own overhead.
    */
   chamfer: number;
   /** For authoring and debugging only. */
   name: string;
-}
-
-/**
- * The bevel, as a **heightfield over the whole deck** rather than as something
- * belonging to a wall.
- *
- * This is the one idea the on-foot renderer turns on. A chamfer anchored to a
- * wall plane necessarily stops where that wall stops, so every junction, every
- * doorway and every corner used to end in a square-cornered gap; an earlier
- * pass tried to hide that by capping each opening with a flat bulkhead and an
- * octagonal hole, which is a different building, not a fix.
- *
- * Read instead as
- *
- *     h(p) = max(0, chamferRun(p) - distanceFromPointToNearestSolid(p))
- *
- * the fold stops belonging to any wall at all. It is deck wherever the nearest
- * solid is further away than the run, it rises at 45 degrees as you approach
- * anything solid, and it meets the vertical face exactly where the run reaches
- * zero — which is the wall plane, so the section along a straight wall is the
- * octagon it always was. And it wraps corners for free, convex and concave
- * alike, because **a distance field has no corners in it**: at an outside
- * corner the nearest solid is a point rather than a plane, so the fold turns as
- * a quarter-cone; at an inside corner two ramps meet and mitre.
- *
- * The overhead is the same field mirrored down from the sector's ceiling.
- *
- * Sampled on a sub-cell lattice (`sub` per cell) and read back bilinearly, so
- * the renderer's per-column march costs a table lookup rather than a search.
- * The distance itself is computed **exactly** — as the distance to the nearest
- * solid cell's rectangle, not to the nearest solid *sample* — so a straight
- * wall gives an exactly linear ramp and the deck edge does not wobble along the
- * lattice.
- */
-export interface BevelField {
-  /** samples per cell on each axis */
-  sub: number;
-  /** lattice size: `w * sub + 1` by `h * sub + 1` */
-  sw: number;
-  sh: number;
-  /**
-   * `chamferRun - signedDistanceToNearestSolid`, in cells: the bevel's height
-   * above the deck. **Not** clamped at zero — negative means "this is deck, and
-   * by this much", which is what lets the renderer's march sphere-trace across
-   * open floor in a couple of steps instead of creeping.
-   */
-  lo: Float32Array;
-  /**
-   * ...and the underside of the overhead, `ceiling - max(0, lo)`. Kept as its
-   * own lattice rather than derived, so the upper march is one lookup too.
-   */
-  up: Float32Array;
-  /**
-   * The wall id of the nearest solid, per sample — which material dresses the
-   * bevel here. This is how a bay frame's lit trim carries down onto the fold
-   * and round the corner with it.
-   */
-  id: Uint8Array;
-  /** ...and the sector of the nearest **open** cell, which is what lights it. */
-  sec: Uint8Array;
-  /**
-   * The chamfer run and the overhead height, on the same lattice: the renderer
-   * reads these for the texture coordinate across the slope and for the wall
-   * column's own top and bottom, so that the face and the bevel cannot disagree
-   * about where they meet.
-   *
-   * They are smoothed across cell boundaries on purpose — a one-cell passage
-   * asks for a run of 0.275 and the two-cell spine for 0.51, and an abrupt step
-   * between them is a step in the fold — and they are on *this* lattice rather
-   * than the cell grid so that everything the pixel loop wants comes off one
-   * set of indices. Sampling the field once yields a lattice offset and two
-   * fractions, and every one of these arrays is then three lerps away.
-   */
-  cham: Float32Array;
-  ceil: Float32Array;
 }
 
 /** A parsed level: a grid of wall ids plus the things standing on it. */
@@ -156,8 +88,6 @@ export interface FpsLevel {
    * Zero on solid cells.
    */
   freeSpan: Uint8Array;
-  /** the bevel heightfield over the whole deck — see `BevelField` */
-  bevel: BevelField;
   /** player start, in cells */
   start: { x: number; y: number; angle: number };
   /** where you have to get back to once the deck is clear */

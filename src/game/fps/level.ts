@@ -22,22 +22,14 @@
  * promoted to `WALL.frame`, so the rhythm is a property of the deck and every
  * corridor gets it for free, whichever way it runs.
  *
- * **The bevel.** The 45 degree fold is a heightfield over the whole deck rather
- * than a strip glued to each wall, so it is derived here from the plan as a
- * distance field — see `BevelField` and `buildBevel` below. That is what makes
- * it turn corners: the field knows how far the nearest solid is in *every*
- * direction, so the fold has no reason to stop where one wall does.
+ * **The section.** The 45 degree fold is not derived here at all any more: the
+ * corridor is real geometry, built from this grid once at level load by
+ * `mesh.ts`. What this file still owes it is `freeSpan` — how wide the space
+ * through each cell is — because the chamfer is a *fraction* of that.
  */
 
-import { chamferRun } from "./section";
-import { WALL, wallInset } from "./textures";
-import type {
-  BevelField,
-  FpsEnemyDef,
-  FpsLevel,
-  FpsSector,
-  FpsSpawn,
-} from "./types";
+import { WALL } from "./textures";
+import type { FpsEnemyDef, FpsLevel, FpsSector, FpsSpawn } from "./types";
 
 /**
  * Wraith Adult / Youth / Child. Nova draws all three from their own rlëD at 36
@@ -128,7 +120,8 @@ export interface ParseOptions {
 /**
  * The reference's own profile: floor ~0.45 of the width, a chamfer of ~0.275 of
  * the width on each side. `chamfer` is that **fraction**, applied against
- * whatever the space's free span turns out to be — see `section.ts`.
+ * whatever the space's free span turns out to be — see `chamferRun` in
+ * `mesh.ts`.
  */
 const DEFAULT_SECTOR: FpsSector = {
   light: 1,
@@ -193,7 +186,7 @@ const DECK = [
  * used to be the only light in the game, so they had to carry the near field as
  * well as the far, and the airlock at 0.85 came out looking fully powered
  * rather than emergency-lit on a corpse. The lamp owns the near field now — see
- * `lampAt` in `raycast.ts` — so a sector level is what the *ship* is still
+ * the lamp term in `glscene.ts` — so a sector level is what the *ship* is still
  * putting out, and 0.03 forward is honest: that third is dead, and what you see
  * of it is what you brought.
  */
@@ -302,9 +295,9 @@ export function parseLevel(
       const cx = x + 0.5;
       const cy = y + 0.5;
       switch (ch) {
-        // the deck runs north, so you come aboard facing up the hull
+        // the angle is filled in below, from the plan
         case "@":
-          start = { x: cx, y: cy, angle: -Math.PI / 2 };
+          start = { x: cx, y: cy, angle: 0 };
           break;
         case "X":
           exit = { x: cx, y: cy };
@@ -352,8 +345,38 @@ export function parseLevel(
     }
   }
 
+  /*
+   * Which way you are looking when you come aboard.
+   *
+   * This used to be hardcoded north — "the deck runs north, so you come aboard
+   * facing up the hull" — which was true of the first deck authored and of no
+   * other: the derelict's airlock opens onto a corridor running *east*, so a
+   * new run began with the camera 0.5 of a cell from a bulkhead. Taking the
+   * longest open run out of the start cell states the intent instead of the
+   * accident, and gives every deck the art direction's opening shot: a long
+   * sightline terminating on a door.
+   */
+  {
+    const gx = Math.floor(start.x);
+    const gy = Math.floor(start.y);
+    let best = -1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      let n = 0;
+      let x = gx + dx;
+      let y = gy + dy;
+      while (x >= 0 && y >= 0 && x < w && y < h && cells[y * w + x] === 0) {
+        n++;
+        x += dx;
+        y += dy;
+      }
+      if (n > best) {
+        best = n;
+        start.angle = Math.atan2(dy, dx);
+      }
+    }
+  }
+
   const freeSpan = freeSpans(w, h, cells);
-  const bevel = buildBevel(w, h, cells, sectorOf, sectors, freeSpan);
 
   return {
     name,
@@ -363,7 +386,6 @@ export function parseLevel(
     sectorOf,
     sectors,
     freeSpan,
-    bevel,
     start,
     exit,
     spawns,
@@ -419,292 +441,6 @@ function freeSpans(w: number, h: number, cells: Uint8Array): Uint8Array {
     out[i] = spanX[i] < spanY[i] ? spanX[i] : spanY[i];
   }
   return out;
-}
-
-/* ------------------------------------------------------------ bevel field */
-
-/**
- * Samples per cell on each axis. Eight is plenty: the field is exact at every
- * sample (see below), so the lattice only has to be fine enough that bilinear
- * interpolation between samples does not visibly round off a crease, and the
- * creases here are metre-scale.
- */
-const BEVEL_SUB = 8;
-
-/**
- * How far out the field is kept, in cells. Nothing reads it past the chamfer
- * run, so this only has to cover the largest run plus enough slope for the
- * renderer's march to sphere-trace across open deck in a few steps.
- */
-const BEVEL_CLAMP = 2.5;
-
-/** ...and how far a sample looks for the solid that is nearest to it. */
-const BEVEL_SEARCH = 3;
-
-/**
- * The bevel heightfield, built once per level.
- *
- * ## Why a field and not a strip per wall
- *
- * See `BevelField`. The one-line version: `h(p) = chamferRun(p) - d(p)` has no
- * corners in it, so the fold turns every corner the plan happens to contain and
- * we never have to decide which wall a corner belongs to.
- *
- * ## The distance is exact, not a distance *transform*
- *
- * The obvious build is a distance transform over the lattice — mark the solid
- * samples, sweep. That gives the distance to the nearest solid *sample*, which
- * staircases at the lattice pitch, and a bevel whose foot wobbles by an eighth
- * of a cell down a dead straight wall is exactly the artifact this renderer has
- * been fighting all along. Nova's decks are unit squares, so the honest
- * distance is available for the asking: the distance from a point to an
- * axis-aligned rectangle is three `max`es and a square root, and there are only
- * ever a few dozen candidate cells. `BEVEL_SEARCH` of 3 covers every solid that
- * could be within `BEVEL_CLAMP`.
- *
- * A material's `inset` — the 0.15 of a cell a bay frame stands proud of the
- * bays either side — is subtracted from its own rectangle's distance, which
- * inflates that cell in the field. So the rib is a rib in the fold as well as
- * in the vertical face, without the renderer's two halves having to agree about
- * anything but the number.
- *
- * ## The run and the overhead are per cell, smoothed
- *
- * `chamferRun` is a fraction of the space's free span, so it genuinely differs
- * from one part of the deck to the next — 0.275 in a one-cell passage against
- * 0.51 in the two-cell spine. Left as a step at the cell boundary that is a
- * step in the fold, so the per-cell values are propagated into the solids and
- * then blurred once. The renderer takes the wall column's own top and bottom
- * from these same two fields, so the vertical face and the bevel cannot end up
- * disagreeing about where they meet whatever the smoothing does.
- */
-function buildBevel(
-  w: number,
-  h: number,
-  cells: Uint8Array,
-  sectorOf: Uint8Array,
-  sectors: FpsSector[],
-  freeSpan: Uint8Array,
-): BevelField {
-  const n = w * h;
-  const chamCell = new Float32Array(n);
-  const ceilCell = new Float32Array(n);
-  const known = new Uint8Array(n);
-
-  for (let i = 0; i < n; i++) {
-    if (cells[i] !== 0) continue;
-    const sec = sectors[sectorOf[i]];
-    ceilCell[i] = sec.height;
-    chamCell[i] = chamferRun(sec.chamfer, freeSpan[i] || 1, sec.height);
-    known[i] = 1;
-  }
-  // solid cells take the mean of whatever open cells touch them, spread far
-  // enough in to cover a thick bulkhead
-  for (let pass = 0; pass < 3; pass++) {
-    const src = known.slice();
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        if (src[i]) continue;
-        let sc = 0;
-        let se = 0;
-        let k = 0;
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            const jx = x + dx;
-            const jy = y + dy;
-            if (jx < 0 || jy < 0 || jx >= w || jy >= h) continue;
-            const j = jy * w + jx;
-            if (!src[j]) continue;
-            sc += chamCell[j];
-            se += ceilCell[j];
-            k++;
-          }
-        }
-        if (k > 0) {
-          chamCell[i] = sc / k;
-          ceilCell[i] = se / k;
-          known[i] = 1;
-        }
-      }
-    }
-  }
-  for (let i = 0; i < n; i++) {
-    if (!known[i]) {
-      chamCell[i] = DEFAULT_SECTOR.chamfer;
-      ceilCell[i] = DEFAULT_SECTOR.height;
-    }
-  }
-  /*
-   * Erode before blurring, and only the run.
-   *
-   * `freeSpan` is `min(horizontal run, vertical run)` through a cell, which is
-   * the right measure for a room and spikes at a **doorway**: the one cell of
-   * corridor that a compartment opens off has seven cells of vertical run
-   * through it and asks for the full 0.51, with 0.275 either side of it. As a
-   * wall-anchored chamfer that was invisible — it only made one column's face
-   * thinner. As a heightfield it is a blister in the fold, and worse, two folds
-   * of 0.51 in a passage one cell wide leave no deck between them at all.
-   *
-   * A 3x3 minimum says the thing that is actually true: the fold can only be as
-   * big as the tightest place near it. The blur afterwards is what keeps the
-   * transition a taper rather than a step.
-   */
-  erodeCells(chamCell, w, h);
-  blurCells(chamCell, w, h);
-  blurCells(ceilCell, w, h);
-
-  const sub = BEVEL_SUB;
-  const sw = w * sub + 1;
-  const sh = h * sub + 1;
-  const lo = new Float32Array(sw * sh);
-  const up = new Float32Array(sw * sh);
-  const nearId = new Uint8Array(sw * sh);
-  const nearSec = new Uint8Array(sw * sh);
-  const chamS = new Float32Array(sw * sh);
-  const ceilS = new Float32Array(sw * sh);
-
-  for (let j = 0; j < sh; j++) {
-    const py = j / sub;
-    const cy = py >= h ? h - 1 : py | 0;
-    for (let i = 0; i < sw; i++) {
-      const px = i / sub;
-      const cx = px >= w ? w - 1 : px | 0;
-
-      let best = Infinity;
-      let rawBest = Infinity;
-      let bestId = 0;
-      let openBest = Infinity;
-      let openSec = 0;
-      const x0 = Math.max(0, cx - BEVEL_SEARCH);
-      const x1 = Math.min(w - 1, cx + BEVEL_SEARCH);
-      const y0 = Math.max(0, cy - BEVEL_SEARCH);
-      const y1 = Math.min(h - 1, cy + BEVEL_SEARCH);
-      for (let ky = y0; ky <= y1; ky++) {
-        const dy = py < ky ? ky - py : py > ky + 1 ? py - (ky + 1) : 0;
-        for (let kx = x0; kx <= x1; kx++) {
-          const dx = px < kx ? kx - px : px > kx + 1 ? px - (kx + 1) : 0;
-          const dd = dx === 0 ? dy : dy === 0 ? dx : Math.sqrt(dx * dx + dy * dy);
-          const c = cells[ky * w + kx];
-          if (c !== 0) {
-            const e = dd - wallInset(c);
-            if (e < best) best = e;
-            /*
-             * The *material* is chosen on the raw distance, not on the inset
-             * one. A bay frame stands 0.15 proud of the bays either side, so
-             * read with its inflation it is the nearest solid to most of the
-             * bay as well as to itself — and its lit trim came out running the
-             * whole length of every wall, which is the one thing the art
-             * direction says the trim must not do. The rib is still a rib in
-             * the geometry; only which tile dresses it is decided here.
-             */
-            if (dd < rawBest) {
-              rawBest = dd;
-              bestId = c;
-            }
-          } else if (dd < openBest) {
-            openBest = dd;
-            openSec = sectorOf[ky * w + kx];
-          }
-        }
-      }
-
-      const here = cells[cy * w + cx];
-      let d: number;
-      let id: number;
-      let sec: number;
-      if (here !== 0) {
-        // inside a bulkhead: how far to the deck, and the inflation on top
-        id = here;
-        sec = openSec;
-        d = -((openBest === Infinity ? BEVEL_CLAMP : openBest) + wallInset(here));
-      } else {
-        id = bestId;
-        sec = sectorOf[cy * w + cx];
-        d = best === Infinity ? BEVEL_CLAMP : best;
-      }
-
-      const cham = cellLerp(chamCell, w, h, px, py);
-      const ceil = cellLerp(ceilCell, w, h, px, py);
-      let hl = cham - d;
-      if (hl > BEVEL_CLAMP) hl = BEVEL_CLAMP;
-      else if (hl < -BEVEL_CLAMP) hl = -BEVEL_CLAMP;
-
-      const o = j * sw + i;
-      lo[o] = hl;
-      up[o] = ceil - (hl > 0 ? hl : 0);
-      nearId[o] = id;
-      nearSec[o] = sec;
-      chamS[o] = cham;
-      ceilS[o] = ceil;
-    }
-  }
-
-  return { sub, sw, sh, lo, up, id: nearId, sec: nearSec, cham: chamS, ceil: ceilS };
-}
-
-/** A 3x3 minimum over the cell grid, edges clamped. */
-function erodeCells(f: Float32Array, w: number, h: number): void {
-  const src = f.slice();
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let m = src[y * w + x];
-      for (let dy = -1; dy <= 1; dy++) {
-        const jy = y + dy;
-        if (jy < 0 || jy >= h) continue;
-        for (let dx = -1; dx <= 1; dx++) {
-          const jx = x + dx;
-          if (jx < 0 || jx >= w) continue;
-          const v = src[jy * w + jx];
-          if (v < m) m = v;
-        }
-      }
-      f[y * w + x] = m;
-    }
-  }
-}
-
-/** A separable 1-2-1 blur over the cell grid, edges clamped. */
-function blurCells(f: Float32Array, w: number, h: number): void {
-  const tmp = new Float32Array(f.length);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const a = f[y * w + (x > 0 ? x - 1 : 0)];
-      const b = f[y * w + x];
-      const c = f[y * w + (x < w - 1 ? x + 1 : w - 1)];
-      tmp[y * w + x] = (a + 2 * b + c) / 4;
-    }
-  }
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const a = tmp[(y > 0 ? y - 1 : 0) * w + x];
-      const b = tmp[y * w + x];
-      const c = tmp[(y < h - 1 ? y + 1 : h - 1) * w + x];
-      f[y * w + x] = (a + 2 * b + c) / 4;
-    }
-  }
-}
-
-/**
- * Bilinear over a per-cell field, sampled at cell **centres** — so the value
- * halfway between two cells is the mean of the two, and a cell's own centre is
- * its own value. `raycast.ts` re-implements this on the same convention.
- */
-function cellLerp(f: Float32Array, w: number, h: number, x: number, y: number): number {
-  let u = x - 0.5;
-  let v = y - 0.5;
-  if (u < 0) u = 0;
-  else if (u > w - 1.0001) u = w - 1.0001;
-  if (v < 0) v = 0;
-  else if (v > h - 1.0001) v = h - 1.0001;
-  const i = u | 0;
-  const j = v | 0;
-  const fx = u - i;
-  const fy = v - j;
-  const o = j * w + i;
-  const a = f[o] + (f[o + 1] - f[o]) * fx;
-  const b = f[o + w] + (f[o + w + 1] - f[o + w]) * fx;
-  return a + (b - a) * fy;
 }
 
 export const DERELICT = parseLevel("Derelict", DECK, {

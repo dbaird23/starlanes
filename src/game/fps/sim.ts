@@ -13,8 +13,7 @@ import { BOOM_SPRITES } from "../../data/universe";
 import { getSprite, rotationFrame } from "../../engine/sprites";
 import { playSnd, playSndAt } from "../../engine/audio";
 import { ENEMY_DEFS } from "./level";
-import type { RaySprite } from "./raycast";
-import type { FpsEnemyDef, FpsLevel, FpsOptions } from "./types";
+import type { FpsEnemyDef, FpsLevel, FpsOptions, FpsSprite } from "./types";
 
 /** Player collision radius and eye height, in cells. */
 const BODY = 0.28;
@@ -439,9 +438,9 @@ export class FpsWorld {
     this.puffs = this.puffs.filter((p) => p.t < p.life);
   }
 
-  /** Everything the raycaster should draw as a billboard, this frame. */
-  sprites(): RaySprite[] {
-    const out: RaySprite[] = [];
+  /** Everything the renderer should draw as a billboard, this frame. */
+  sprites(): FpsSprite[] {
+    const out: FpsSprite[] = [];
     for (const e of this.enemies) {
       const img = getSprite(e.def.sheet);
       if (!img) continue;
