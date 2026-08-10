@@ -129,18 +129,45 @@ surface per pixel and none of them exists once the surface is triangles.
 there is nothing in them worth porting.
 
 **The corridor is a mesh, built once per level in `mesh.ts`.** For every open
-cell: a deck quad and an overhead quad. For every open-cell face that abuts a
-solid: the section, as three strips — 45° lower chamfer, vertical face, 45°
-upper chamfer. That is all a straight run needs and nearly all a corner needs:
+cell: a deck and a coffered overhead. For every open-cell face that abuts a
+solid: the section — which is **an eleven-segment moulding, not four planes**.
+That is all a straight run needs and nearly all a corner needs:
 
-- **Inside (concave) corners mitre themselves.** Two perpendicular 45° ramps
-  intersect exactly along the plan diagonal, and the eye is above both, so the
-  depth buffer keeps the nearer one — which is `max()`, which is the mitre.
-  Emit both strips and do nothing else.
-- **Outside (convex) corners get a fillet**: a quarter-cone, apex on the corner
-  post at height `run`, falling to the deck at radius `run`. That is the same
-  surface the distance field used to give away, so it meets each neighbouring
-  ramp tangentially along the quadrant's edges and no seam is possible.
+- **Inside (concave) corners mitre themselves.** Two perpendicular profiles
+  intersect exactly along the plan diagonal, and the depth buffer keeps the
+  nearer one — which is the mitre. Emit both strips and do nothing else.
+- **Outside (convex) corners get a fillet**, and it is now the whole profile
+  **lathed about the corner post**: every point `(u, y)` swept through the
+  quadrant at radius `u`. At 0° and 90° that lands exactly on the two
+  neighbouring strips' own endpoints, so no seam is possible. It generalises
+  the quarter-cone this used to emit — that was the lathe of a *straight* 45°
+  line — and it is what lets the bench, the riser and the ledge all turn an
+  outside corner intact.
+
+**The walls used to be one quad per surface with a picture on it, and that is
+why they read flat however good the tile was.** `corridor-lit.png` and
+`damage.png` are not five planes; they are a run of **recessed bays between
+projecting structural frames**, and every one of those five surfaces has a step
+in it. So `section()` is eleven segments, three of which are *trays* rather
+than planes:
+
+- the **lower chamfer is a bench** — toe kick off the deck, step back, the 45°
+  face proper, riser, ledge into the wall. `TOE_H === TOE_D` is deliberate: it
+  puts the step exactly where a plain 45° line from the foot would have been,
+  so the bench's slope is still the reference's slope and the toe is carved out
+  of it rather than added on top;
+- the **vertical face is a recessed panel inside a raised border** — one step
+  back is enough, it is the shadow line at the step that does the work;
+- the **upper chamfer is the bench mirrored** — soffit ledge, riser, 45°, return;
+- the **overhead is coffered**, a dark border ring with raised panels either
+  side of a machinery/light spine that runs *down* the corridor (from the cell's
+  own longer open run) and sits at the border's height so it carries through
+  from one cell to the next.
+
+The recess on a tray is taken along the **segment's own normal**, not the
+wall's, so a panel sunk into the 45° bench sinks into the bench instead of
+sideways through it. Proportions are untouched — deck ~45% of the width, 45°
+bevels, a corridor about as wide as it is tall. The relief lives *inside* them.
 
 Things about the build that are load-bearing:
 
@@ -161,14 +188,22 @@ Things about the build that are load-bearing:
   reactor bay's 1.9 overhead asks for 0.86 and gets a 0.18 strip of vertical
   face — a cove, not a section. The references keep a room's chamfer close to a
   corridor's: one shape, differently sized spaces.
-- **A bay frame is a proud rib, not paint.** `parseLevel` still promotes hull
-  cells on the bay grid to `WALL.frame`; here that becomes a prism whose front
-  is the same octagon profile pushed 0.15 of a cell toward the corridor centre,
-  closed at both ends by a cap, with the plain hull profile still emitted
-  behind it. The ring is carried across the overhead by a shallow beam over
-  every open cell the frame faces — walk out of each frame across the cells it
-  faces, which is *across* the corridor, because a wall facing east/west bounds
-  a passage running north/south.
+- **A bay frame is a box section, and the ring is a hoop.** `parseLevel` still
+  promotes hull cells on the bay grid to `WALL.frame`; here that becomes the
+  whole eleven-segment moulding pushed `RIB` (0.15) toward the corridor centre,
+  **stepped down to a half-depth collar over the outer 0.16 of each end of the
+  cell** so the box has three visible steps rather than one, and closed by a
+  return at every step. The ring is carried across the overhead by a beam
+  stepped the same way and across the deck by a threshold sill, so it hoops the
+  section instead of being two stripes on the side walls. Walk out of each frame
+  across the cells it faces to find the beam — which is *across* the corridor,
+  because a wall facing east/west bounds a passage running north/south.
+- **A frame emits no plain profile behind its ring.** The ring is the same
+  moulding standing nearer, spans the whole cell and is capped at both ends, so
+  from anywhere inside the corridor it completely occludes the wall plane
+  behind it. Emitting both (which the first pass did) was a full cell of
+  overdraw at every bay for a surface that cannot be seen — worth ~10% of the
+  frame.
 - **The rib gets a flatter brightness staircase than the wall behind it**
   (0.95/0.84/0.66 against the section's 1.0/0.68/0.34). At the section's own
   numbers the ring broke into three unrelated bright patches with dark gaps —
@@ -182,8 +217,70 @@ Things about the build that are load-bearing:
 - **Ambient occlusion is baked per vertex, into `aGain`.** There is no shadow
   of any kind — one lamp at the eye, no shadow map — and without crease
   darkening a metal tube lit down its own axis comes out as flawless plastic.
-  `AO_PROFILE` darkens the deck and overhead creases; `cornerAo` counts the
+  `SEG_AO0/1` darken the deck and overhead creases; `cornerAo` counts the
   solids meeting each grid corner for the deck and overhead quads.
+- **The tile coordinate down the profile is held per *segment*, not per
+  point** (`SEG_V0`/`SEG_V1`). Points 5 and 6 each belong to two bands — point
+  5 is the top of the lower chamfer's tile *and* the bottom of the wall's — so
+  a table indexed by point can hold only one of the two. Held that way it
+  silently wrote 0 over the 1, the vertical face came out with a constant `v`,
+  and every wall in the level was one row of texels stretched from deck to
+  overhead. It looked like mipmap aliasing, not like a table bug.
+- **Every riser says which way it should face and lets `quadFacing` settle the
+  winding.** The moulding emits a lot of little steps and working each one's
+  winding out by hand against the frame's handedness (which is left-handed:
+  `s = up × n`) is how a face ends up culled. An 0.08-cell step seen nearly
+  along the ceiling plane covers a lot of frame, so one flipped riser reads as
+  a **bay-sized hole in the ceiling**.
+
+**The mesh is watertight, and that took four separate fixes — all of them
+invisible in the shipped resting state.** A dead ship is black on a black clear
+colour, so a hole in it looks like shadow; the first relief pass shipped with
+1.6% of some frames showing the void and its own silhouettes contained the
+holes read as banding. **Verify with the clear colour set to magenta and a
+pixel count, never by eye.** `scratch/holes.mjs` renders a magenta-clear cube
+map (six 90° faces) from every open cell at three eye heights and counts
+clear-colour pixels; the deck reads **0 across 5,940 renders / 97 Mpx**, and
+`scratch/magenta.mjs` reads 0 at the gameplay viewpoints. What it caught:
+
+- **A coffer panel is a recess *up* into the overhead**, so its four risers are
+  that recess's inside walls and face *in* toward the panel. Wound outward —
+  which is how they shipped — every one is a backface, and that is most of a
+  ceiling.
+- **A ring cell states its beam and its threshold sill as a band along one
+  axis**, so it presents one depth on the two edges the band steps across and
+  three on the two it runs down. `ringAxis` is first-writer-wins, so at a
+  junction a beam running east/west abuts one running north/south and neither
+  agrees about the other's depth: an 0.083-cell slit overhead and an 0.035 one
+  underfoot. The old per-cell end cap could only state one depth and could not
+  see the other side's band. It is replaced by a pass over **every** interior
+  edge that samples both sides and drops a riser where they disagree — where
+  they agree the quad is degenerate and `tri` discards it, so a straight run
+  costs nothing.
+- **The ring's three sub-spans were handed the profile at the cell's grid
+  *corners*, not at their own ends.** `wallStrip(qa, qb, t0, t1)` puts `qa` at
+  `t0` and `qb` at `t1`, so a collar covering `t ∈ [0, 0.16]` planted the far
+  corner's octagon at 0.16. Wherever the two corners' runs differ — most
+  junctions — the collar and the frame proper described different sections and
+  the step between them was open. `lerpProfile` to each span's own ends; the
+  returns already did this, which is why the wedge sat on the collar line.
+- **`quadFacing` read the winding off a degenerate triangle.** The convex
+  corner's lathe has rings of radius zero (the top ledge starts *at* the post),
+  so the leading triangle of that fan has a zero cross product, `d >= 0` keeps
+  whatever winding it was handed, and the one real triangle came out
+  inside-out — a hairline wedge at the top of every outside corner in the
+  level. It now sums both triangles' normals.
+
+**Probing gotcha: never point a probe camera straight up with
+`up = (0, 0, 1)`.** That orientation renders a frame that is simply wrong under
+swiftshader — 26% clear colour where a CPU ray cast of the same triangle soup
+finds solid geometry half a cell away — and it sent this pass chasing a
+non-existent 40%-of-frame hole for an hour. Leave `up = (0, 1, 0)`; three
+perturbs the degenerate case itself. `scratch/rays.mjs` and `scratch/diag.mjs`
+are the CPU cross-check: front-face-only ray casts against the built buffers,
+which is what the GPU culls to, and `diag` lists the triangles rimming a
+crack so it can be named rather than guessed at.
+
 - **The alternate wall tile is one cell in eight, not one in two.**
   `wall-grimy` is `wall-main` oxidised and a good deal darker; swapped in half
   the time it stops reading as weathering and starts reading as a chequerboard
@@ -193,7 +290,15 @@ Things about the build that are load-bearing:
 and overhead shares a single `ShaderMaterial`; what differs arrives as three
 per-vertex floats baked by `mesh.ts` — `aLight` (the sector), `aGain` (the
 band's place in the staircase, times AO), `aEmit` — plus one texture. The
-derelict is **7,658 triangles in nine draw calls**.
+derelict is **58,622 triangles in nine draw calls** (7,658 before the relief
+went in, 57,614 before the edge stitching; `TEST_CORRIDOR` is 3,682). It is
+static geometry uploaded once at level load, so on a GPU that is free; the
+headless container is software-rendered and the same frame costs **145-221 ms
+depending on viewpoint against the flat build's 149 ms** there at 1280×800,
+which is a ratio and not a frame budget. Nothing is ever frustum-culled — the
+groups are level-wide, so all 58,622 triangles are submitted every frame — and
+the cost is overwhelmingly fill, not geometry: the spread across viewpoints is
+overdraw.
 
 - **The light model is the raycaster's, unchanged, because it was right.** The
   sector term is Doom's (light belongs to an *area*, so a dead section stays

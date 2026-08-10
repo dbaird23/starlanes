@@ -233,10 +233,10 @@ const DECK_SECTORS = [
  * decks of it, open to the frames, and wide enough to take the full 0.55.
  */
 const DECK_SECTOR_DEFS: Record<string, SectorSpec> = {
-  a: { light: 0.45, height: 1.2, chamfer: 0.275, name: "airlock" },
-  m: { light: 0.16, height: 1.2, chamfer: 0.275, name: "midships" },
-  d: { light: 0.03, height: 1.2, chamfer: 0.275, name: "forward (dead)" },
-  r: { light: 0.06, height: 1.9, chamfer: 0.275, name: "reactor bay" },
+  a: { light: 0.3, height: 1.2, chamfer: 0.275, name: "airlock" },
+  m: { light: 0.085, height: 1.2, chamfer: 0.275, name: "midships" },
+  d: { light: 0.009, height: 1.2, chamfer: 0.275, name: "forward (dead)" },
+  r: { light: 0.025, height: 1.9, chamfer: 0.275, name: "reactor bay" },
 };
 
 const WALL_GLYPHS: Record<string, number> = {
@@ -525,9 +525,9 @@ const CORRIDOR_SECTORS = [
 export const TEST_CORRIDOR = parseLevel("Test corridor", CORRIDOR, {
   sectorMap: CORRIDOR_SECTORS,
   sectors: {
-    p: { light: 0.85, name: "powered" },
-    k: { light: 0.26, name: "browned out" },
-    l: { light: 0.045, name: "dead" },
+    p: { light: 0.62, name: "powered" },
+    k: { light: 0.15, name: "browned out" },
+    l: { light: 0.02, name: "dead" },
   },
   bay: 3,
 });

@@ -146,8 +146,8 @@ export const DRESS: Record<number, WallDress> = {
     ...HULL,
     rib: 0.15,
     ribTile: TRIM,
-    emit: 0.05,
-    emitSector: 0.62,
+    emit: 0.02,
+    emitSector: 0.2,
   },
   [WALL.door]: {
     ...HULL,
@@ -167,6 +167,87 @@ export const DRESS: Record<number, WallDress> = {
 
 export function dressOf(id: number): WallDress {
   return DRESS[id] ?? HULL;
+}
+
+/* --------------------------------------------------------------- materials */
+
+/**
+ * What a tile is *made of*, as the light model needs it.
+ *
+ * The tiles are the white industrial corridor: `wall-main.png` has a mean
+ * luminance of 194/255 and a peak of 235, which is a contrast ratio of 1.2:1.
+ * Multiply that by a dim light and you get exactly what the first lit pass
+ * produced — a flat mid-grey with no edge anywhere in it, a turned-down
+ * brightness slider rather than a dark ship. The reference (`damage/damage.png`)
+ * is near-black with a handful of blazing specular streaks: *contrast* is doing
+ * all the work, and contrast has to come from the lighting, because there is
+ * none in the albedo.
+ *
+ * So the texel is not the pixel any more. It is split three ways:
+ *
+ * - `base` scales and **cools** it into a plausible diffuse albedo. A derelict's
+ *   bulkhead is not white; it is grey steel with the paint gone, and the
+ *   reference's palette rule is cool ground with small warm accents. The warm
+ *   accents are the suit lamp and the door's hazard band, so everything
+ *   structural leans blue.
+ * - `rough` / `metal` give it a specular lobe. This is the term that was missing
+ *   entirely: nothing in the frame could catch a highlight, so no edge ever read
+ *   as an edge. Trim and deck plate are the polished things.
+ * - `bump` turns the tile's own luminance into surface relief through screen
+ *   space derivatives (see `glscene.ts`). The tiles are photographic and full of
+ *   high-frequency greeble that the albedo cannot show at 1.2:1 — as *height* it
+ *   is rivets, ribs and panel lines that flare as the lamp sweeps across them.
+ */
+export interface TileMat {
+  base: [number, number, number];
+  rough: number;
+  metal: number;
+  bump: number;
+  /** the colour this material's own bright pixels burn at */
+  glow: [number, number, number];
+}
+
+/** Cool white, off `chamfer-trim.png`'s fixture, pulled toward the navy reference. */
+const GLOW_COOL: [number, number, number] = [0.78, 0.92, 1.0];
+/** ...and the warm accent, which is the door's hazard band and nothing else. */
+const GLOW_WARM: [number, number, number] = [1.0, 0.72, 0.34];
+
+const DEFAULT_MAT: TileMat = {
+  base: [0.117, 0.125, 0.144],
+  rough: 0.5,
+  metal: 0.3,
+  bump: 0.5,
+  glow: GLOW_COOL,
+};
+
+export const TILE_MAT: Record<string, TileMat> = {
+  // painted bulkhead: the palest tile, so it takes the hardest knock-down
+  "wall-main.png": { base: [0.102, 0.109, 0.129], rough: 0.46, metal: 0.3, bump: 0.62, glow: GLOW_COOL },
+  // the same panel oxidised — darker, rougher, and it catches almost nothing
+  "wall-grimy.png": { base: [0.086, 0.089, 0.098], rough: 0.74, metal: 0.18, bump: 0.7, glow: GLOW_COOL },
+  "chamfer-main.png": { base: [0.105, 0.113, 0.133], rough: 0.42, metal: 0.34, bump: 0.6, glow: GLOW_COOL },
+  "chamfer-grimy.png": { base: [0.089, 0.093, 0.105], rough: 0.72, metal: 0.2, bump: 0.68, glow: GLOW_COOL },
+  // trim is the polished thing: machined edges are where the reference's
+  // highlights live, so this is the one material that reads as wet metal
+  "chamfer-trim.png": { base: [0.107, 0.118, 0.14], rough: 0.5, metal: 0.45, bump: 0.5, glow: GLOW_COOL },
+  "trim-light-channel.png": { base: [0.107, 0.118, 0.14], rough: 0.5, metal: 0.45, bump: 0.48, glow: GLOW_COOL },
+  // "the deck is the brightest surface in frame because it catches what little
+  // light there is" — art-reference/README.md, on damage.png
+  "deck-plate.png": { base: [0.105, 0.113, 0.129], rough: 0.36, metal: 0.55, bump: 0.85, glow: GLOW_COOL },
+  "door-face.png": { base: [0.113, 0.117, 0.125], rough: 0.4, metal: 0.42, bump: 0.55, glow: GLOW_WARM },
+  /*
+   * The ring's light channel and the overhead's spine, which are *diffusers*.
+   * They share the trim's texture and share none of its material: a diffuser is
+   * matte, it is not metal, and its own surface is nearly black — what you see
+   * of it is what it is putting out, which is `aStrip`. Lit as trim, the strip
+   * caught a specular lobe the size of itself and read as a grey plastic band
+   * hooping the corridor whether the ship had power or not.
+   */
+  strip: { base: [0.05, 0.055, 0.065], rough: 0.95, metal: 0.0, bump: 0.0, glow: GLOW_COOL },
+};
+
+export function matOf(tile: string): TileMat {
+  return TILE_MAT[tile] ?? DEFAULT_MAT;
 }
 
 /**

@@ -9,31 +9,57 @@
  * mesh, and this file is that mesh: built once at level load, never touched
  * again, and handed to `glscene.ts` as a handful of `BufferGeometry`.
  *
- * ## The section
+ * ## The section is a moulding, not four planes
  *
  * `art-reference/damage/damage.png` is the clearest statement of it — the
- * near-field frames are unlit and read as silhouette: deck, 45 degree lower
- * chamfer, vertical face, 45 degree upper chamfer, overhead. Those angles are
- * the **profile**, not floor-plan angles, so the plan stays a grid.
+ * near-field frames are unlit and read as silhouette. But what it shows is not
+ * deck / ramp / wall / ramp / overhead as five flat surfaces. It shows a
+ * **run of recessed bays between projecting structural frames**, and each of
+ * those five surfaces has its own step in it:
  *
- * Proportions from `corridor-lit.png`: deck ~45% of the corridor's width, a
- * chamfer of ~0.275 of the width each side, and a corridor that reads about as
- * wide as it is tall.
+ * - the lower chamfer is a **bench**: a toe kick off the deck, a step back, the
+ *   45 degree face proper, then a riser and a ledge where it meets the wall;
+ * - the vertical face is a **recessed panel inside a raised border**, and the
+ *   shadow line at that step is what says "panelling" rather than "picture";
+ * - the upper chamfer is the bench mirrored — soffit ledge, riser, 45 degree
+ *   face, return;
+ * - the overhead is **coffered**, with a machinery/light run down its spine.
+ *
+ * So the profile is an eleven-segment polyline (`SECTION_*` below), not four
+ * points, and three of those eleven segments are trays rather than planes. The
+ * overall proportions are unchanged and are still the reference's: deck ~45% of
+ * the corridor's width, chamfers at 45 degrees, a corridor about as wide as it
+ * is tall. The relief lives *inside* those proportions.
+ *
+ * ## The bay frame is a ring, and it is a box section
+ *
+ * The single most characteristic thing in both references is a structural ring
+ * every few metres that stands **proud into the corridor** — you see its return
+ * face, and it occludes the panelling behind it as you walk past. `parseLevel`
+ * promotes hull cells on the bay grid to `WALL.frame`; here that becomes the
+ * whole eleven-segment profile pushed `RIB` toward the corridor centre, stepped
+ * down to a half-depth collar at each end of the cell so the box has three
+ * visible steps rather than one, and closed by returns at every step. The ring
+ * is carried across the overhead by a beam (stepped the same way) and across the
+ * deck by a threshold plate, so it is a *hoop* around the section rather than
+ * two stripes on the side walls.
  *
  * ## Corners come out right because the geometry is real
  *
- * Every open cell face that abuts a solid emits the three profile strips. That
- * is all a straight run needs, and it is *nearly* all a corner needs:
+ * Every open cell face that abuts a solid emits the profile. That is all a
+ * straight run needs, and it is *nearly* all a corner needs:
  *
- * - **Inside (concave) corners mitre themselves.** Two perpendicular 45 degree
- *   ramps intersect exactly along the plan diagonal, and the eye is above both,
- *   so the depth buffer keeps the higher one — which is `max()`, which is the
+ * - **Inside (concave) corners mitre themselves.** Two perpendicular profiles
+ *   intersect, and the depth buffer keeps whichever is nearer — which is the
  *   mitre. Emit both and do nothing else.
- * - **Outside (convex) corners need a fillet**, because the two ramps stop at
- *   the corner's quadrant and nothing covers it. The patch is the quarter-cone
- *   the distance field used to give for free: apex at the corner post at height
- *   `run`, falling to the deck at radius `run`, which meets each neighbouring
- *   ramp tangentially along the quadrant's edges.
+ * - **Outside (convex) corners need a fillet**, because the two profiles stop at
+ *   the corner's quadrant and nothing covers it. The patch is the **profile
+ *   lathed about the corner post**: every point `(u, y)` swept through the
+ *   quadrant at radius `u`. At 0 and 90 degrees that lands exactly on the two
+ *   neighbouring strips' endpoints, so no seam is possible — and it is the
+ *   generalisation of the quarter-cone this file used to emit, which was the
+ *   lathe of a *straight* 45 degree line. The bench survives the corner because
+ *   the corner is turned by the same moulding.
  *
  * ## The run is continuous because it lives on the grid's corners
  *
@@ -48,17 +74,6 @@
  * the *doorway spike*: the one corridor cell a compartment opens off has seven
  * cells of vertical run through it, asks for the full 0.5 in a passage one cell
  * wide, and leaves no deck at all between the two folds.
- *
- * ## The bay rhythm is a rib, not paint
- *
- * The references' loudest cue that a corridor is not one endless tube is a
- * structural ring every few metres. `parseLevel` already promotes hull cells on
- * the bay grid to `WALL.frame`; here that becomes a **prism standing 0.15 of a
- * cell proud** of the wall — the same octagon profile pushed toward the corridor
- * centre, closed at both ends — and the ring is carried across the overhead by a
- * shallow beam over every open cell the frame faces. Brightness on a smooth tube
- * left the silhouette as two converging lines; the reference is nested octagons
- * receding, and their outlines are the depth cue.
  */
 
 import * as THREE from "three";
@@ -87,11 +102,209 @@ const CHAM_MIN = 0.1;
  */
 const RUN_MAX = 0.5;
 
-/** How far a bay frame stands proud of the wall, in cells. */
+/** How far a bay frame's main face stands proud of the wall, in cells. */
 const RIB = 0.15;
+/** ...and its end collar, which is what gives the box its second step. */
+const COLLAR = 0.45;
+/** How much of each end of a frame cell the collar takes. */
+const COLLAR_T = 0.16;
 
-/** Segments in a convex corner's quarter-cone. Five is past the point of seeing it. */
-const FILLET_SEGS = 5;
+/** How far a recessed panel sits back from its border, in cells. */
+const RECESS = 0.05;
+/** The border around a recessed panel: across the cell, and along the profile. */
+const TRAY_T = 0.11;
+const TRAY_S = 0.14;
+
+/** How far the overhead's coffer panels stand above the border, in cells. */
+const COFFER = 0.055;
+/** ...and how wide that border is. */
+const COFFER_B = 0.17;
+/** The machinery run down the middle of the overhead, as a share of the cell. */
+const SPINE_W = 0.3;
+/** A ring cell's deck threshold plate. */
+const SILL = 0.035;
+
+/** Steps in a convex corner's lathe. Six left the bench's rings visibly faceted. */
+const FILLET_SEGS = 8;
+
+/* ------------------------------------------------------- the light channel */
+
+/**
+ * The bay ring's light channel — the thing both references lead with.
+ *
+ * `corridors/corridor-lit.png` is read as four nested *octagons of light*
+ * receding down the corridor, not as strips running the length of the walls:
+ * every bay frame carries a channel that follows the section all the way round,
+ * so what you see down a powered corridor is the cross-section repeated in
+ * light. That is why this is geometry on the ring rather than a bright band in
+ * a texture — the art direction's rule is that a strip on every chamfer is a
+ * strip down no wall in particular, and the rhythm is the whole point.
+ *
+ * It runs from the bench's 45 degree face up over the vertical panel and back
+ * down the upper chamfer's, stopping short of the deck and the overhead, and it
+ * stands `STRIP_PROUD` off the ring's own face the way a diffuser sits in its
+ * housing.
+ */
+const STRIP_W = 0.18;
+const STRIP_PROUD = 0.012;
+const STRIP_SEG0 = 2;
+const STRIP_SEG1 = 8;
+/**
+ * How much of a light *fitting* each surface is: 1 for the ring's channel, less
+ * for the overhead's spine, 0 for everything else.
+ *
+ * How hard one actually burns is deliberately not baked here — see
+ * `STRIP_FLOOR` / `STRIP_SECTOR` in `glscene.ts`. Baked against the sector's own
+ * light, a fitting could not respond to `uMinLight`, so the hook that raises the
+ * whole ship to powered (`lightFloor`, and the reveal it stands in for)
+ * brightened the walls and left every light strip in the level at its dead-ship
+ * value. The rating is geometry; the wattage is lighting.
+ */
+const STRIP_MAT = "strip";
+const STRIP_RATING = 1;
+const SPINE_RATING = 0.55;
+
+/* ------------------------------------------------------- the section profile */
+
+/**
+ * The bench's fractions, all measured against the chamfer's own run.
+ *
+ * `TOE_H === TOE_D` is not a coincidence and is worth keeping: it makes the
+ * step above the toe kick land exactly where a 45 degree line from the foot
+ * would have been, so the bench's slope is the reference's slope and the toe is
+ * carved out of it rather than added on top.
+ */
+const TOE_H = 0.16;
+const TOE_D = 0.16;
+const LIP_W = 0.18;
+
+/**
+ * The octagon's profile at one grid corner, in `(u, y)` — `u` measured
+ * **inward** from the wall plane, `y` up from the deck. Twelve points, eleven
+ * segments, from the deck up:
+ *
+ * ```
+ *  0-1 toe kick (vertical)      6-7  soffit ledge (faces down)
+ *  1-2 toe top  (faces up)      7-8  riser
+ *  2-3 bench, 45 degrees        8-9  45 degrees
+ *  3-4 riser                    9-10 return (faces down)
+ *  4-5 ledge    (faces up)     10-11 vertical
+ *  5-6 the vertical face
+ * ```
+ *
+ * `off` pushes the whole profile toward the corridor centre, which is how a bay
+ * frame's ring is the same moulding 0.15 nearer.
+ */
+function section(c: number, ceil: number, off: number): [number, number][] {
+  const top = Math.max(c + 0.02, ceil - c);
+  const k = TOE_H * c;
+  const s = TOE_D * c;
+  const l = LIP_W * c;
+  // the upper chamfer takes whatever height is actually left, which is `c`
+  // everywhere `cornerFields` has done its job but need not be assumed
+  const cu = ceil - top;
+  const ku = TOE_H * cu;
+  const su = TOE_D * cu;
+  const lu = LIP_W * cu;
+  return [
+    [off + c, 0],
+    [off + c, k],
+    [off + c - s, k],
+    [off + l, c - l],
+    [off + l, c],
+    [off, c],
+    [off, top],
+    [off + lu, top],
+    [off + lu, top + lu],
+    [off + cu - su, ceil - ku],
+    [off + cu, ceil - ku],
+    [off + cu, ceil],
+  ];
+}
+
+/** Which band of the section a segment belongs to, and how it is lit. */
+interface SegDef {
+  /** 0 lower chamfer, 1 vertical face, 2 upper chamfer */
+  band: 0 | 1 | 2;
+  /** multiplier on the band's dress gain — the facets of the moulding */
+  mul: number;
+  /** a recessed panel inside a raised border, rather than a plane */
+  tray: boolean;
+}
+
+const SEGS: SegDef[] = [
+  { band: 0, mul: 0.86, tray: false },
+  { band: 0, mul: 1.12, tray: false },
+  { band: 0, mul: 1.0, tray: true },
+  { band: 0, mul: 0.8, tray: false },
+  { band: 0, mul: 1.08, tray: false },
+  { band: 1, mul: 1.0, tray: true },
+  { band: 2, mul: 0.7, tray: false },
+  { band: 2, mul: 0.95, tray: false },
+  { band: 2, mul: 1.0, tray: true },
+  { band: 2, mul: 0.72, tray: false },
+  { band: 2, mul: 1.18, tray: false },
+];
+
+/**
+ * Per **segment**, the tile coordinate at each of its ends, as a fraction of
+ * its band's own arc length — and the crease occlusion there.
+ *
+ * Per segment and not per point, because points 5 and 6 each belong to two
+ * bands: point 5 is the top of the lower chamfer's tile *and* the bottom of the
+ * wall's, and a table indexed by point can only hold one of the two. Held that
+ * way it silently wrote 0 over the 1, the whole vertical face came out with a
+ * constant `v`, and every wall in the level was one row of texels stretched
+ * from deck to overhead.
+ *
+ * Every point of the profile is a fixed multiple of its band's run, so these
+ * fractions are the same whatever the run is — which is what lets one table
+ * serve both chamfers and every sector. They are computed rather than typed so
+ * they cannot drift from `TOE_H`/`TOE_D`/`LIP_W`.
+ *
+ * The occlusion is the same story told once: the octagon is a tube, so every
+ * one of its folds is concave seen from inside and what differs is how much sky
+ * each one can see. The creases against the deck and the overhead are the
+ * tightest, the middle of the vertical face the most open. There is no shadow of
+ * any kind in this renderer — one lamp at the eye, no shadow map — and without
+ * *some* crease darkening a metal tube lit from its own axis comes out as
+ * flawless plastic.
+ */
+const { SEG_V0, SEG_V1, SEG_AO0, SEG_AO1 } = (() => {
+  const p = section(1, 3, 0); // c = 1, top = 2, so cu = 1 as well
+  const len = (i: number): number =>
+    Math.hypot(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]);
+  const v0 = new Array<number>(11).fill(0);
+  const v1 = new Array<number>(11).fill(0);
+  const ao0 = new Array<number>(11).fill(1);
+  const ao1 = new Array<number>(11).fill(1);
+  // deck crease, lower fold, upper fold, overhead crease
+  const key = [0.6, 0.9, 0.84, 0.52];
+  const bands: [number, number, number, number][] = [
+    [0, 5, key[0], key[1]],
+    [5, 6, key[1], key[2]],
+    [6, 11, key[2], key[3]],
+  ];
+  for (const [a, b, aoA, aoB] of bands) {
+    let total = 0;
+    for (let i = a; i < b; i++) total += len(i);
+    let run = 0;
+    for (let i = a; i < b; i++) {
+      v0[i] = run / (total || 1);
+      run += len(i);
+      v1[i] = run / (total || 1);
+      ao0[i] = aoA + (aoB - aoA) * v0[i];
+      ao1[i] = aoA + (aoB - aoA) * v1[i];
+    }
+  }
+  return { SEG_V0: v0, SEG_V1: v1, SEG_AO0: ao0, SEG_AO1: ao1 };
+})();
+
+/** ...and how much a surface standing proud of the wall gets back. */
+const AO_RIB_FRONT = 0.98;
+const AO_RIB_RETURN = 0.55;
+/** A step's own riser is the shadow line, and it wants to read as one. */
+const AO_STEP = 0.5;
 
 /**
  * The chamfer's run for a space of the given free span, under the given
@@ -126,13 +339,15 @@ interface Build {
   light: number[];
   gain: number[];
   emit: number[];
+  strip: number[];
 }
 
 function newBuild(): Build {
-  return { pos: [], nrm: [], uv: [], light: [], gain: [], emit: [] };
+  return { pos: [], nrm: [], uv: [], light: [], gain: [], emit: [], strip: [] };
 }
 
 type Vec3 = [number, number, number];
+type Vec2 = [number, number];
 
 function sub3(a: Vec3, b: Vec3): Vec3 {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -156,31 +371,39 @@ interface Shade {
   light: number;
   gain: number;
   emit: number;
+  /**
+   * An **authored** light fitting, as opposed to `emit`, which is keyed off
+   * whichever pixels of the tile happen to be bright.
+   *
+   * Keying works for the door's hazard band, where the bright pixels genuinely
+   * are the thing that should burn. It cannot state a light *strip*, because
+   * every one of these tiles is a pale photograph and a threshold low enough to
+   * find the fitting also finds the whole housing round it — the art direction's
+   * "a strip down every wall is a strip down no wall in particular". So the
+   * strips in `corridors/corridor-lit.png` are geometry (see the ring below),
+   * and this says the surface *is* the light: uniform over its own quad,
+   * unfogged, coloured by the material's own `glow`.
+   */
+  strip?: number;
 }
 
-/**
- * ...plus a per-vertex occlusion multiplier on `gain`.
- *
- * There is no shadow of any kind in this renderer — one lamp at the eye, no
- * shadow map — and without *some* crease darkening a metal tube lit from its
- * own axis comes out as flawless plastic: every fold of the octagon reads as a
- * change of tone and nothing reads as an edge. Baking a corner term into the
- * gain attribute costs one number a vertex and no shader work at all, and it is
- * exactly what `damage/damage.png` is made of — near-black creases with the
- * light picking out the ribs between them.
- */
 function tri(
   b: Build,
   p0: Vec3,
   p1: Vec3,
   p2: Vec3,
-  uv0: [number, number],
-  uv1: [number, number],
-  uv2: [number, number],
+  uv0: Vec2,
+  uv1: Vec2,
+  uv2: Vec2,
   sh: Shade,
   ao: [number, number, number] = [1, 1, 1],
 ): void {
-  const n = norm3(cross3(sub3(p1, p0), sub3(p2, p0)));
+  const c = cross3(sub3(p1, p0), sub3(p2, p0));
+  // a moulding lathed about a corner post closes on itself, so its last ring is
+  // a point and its last quad is a triangle; a zero-area triangle would take a
+  // zero normal and paint a black crease exactly where the fold should be
+  if (Math.hypot(c[0], c[1], c[2]) < 1e-9) return;
+  const n = norm3(c);
   const ps = [p0, p1, p2];
   const us = [uv0, uv1, uv2];
   for (let i = 0; i < 3; i++) {
@@ -190,6 +413,7 @@ function tri(
     b.light.push(sh.light);
     b.gain.push(sh.gain * ao[i]);
     b.emit.push(sh.emit);
+    b.strip.push(sh.strip ?? 0);
   }
 }
 
@@ -200,10 +424,10 @@ function quad(
   p1: Vec3,
   p2: Vec3,
   p3: Vec3,
-  uv0: [number, number],
-  uv1: [number, number],
-  uv2: [number, number],
-  uv3: [number, number],
+  uv0: Vec2,
+  uv1: Vec2,
+  uv2: Vec2,
+  uv3: Vec2,
   sh: Shade,
   ao: [number, number, number, number] = [1, 1, 1, 1],
 ): void {
@@ -212,18 +436,48 @@ function quad(
 }
 
 /**
- * Occlusion at the four profile points, from the deck up.
+ * ...or wound whichever way puts the normal on the side asked for.
  *
- * The octagon is a tube, so every one of its folds is concave seen from inside;
- * what differs is how much sky each one can see. The two creases against the
- * deck and the overhead are the tightest, the middle of the vertical face the
- * most open.
+ * A moulding with steps in it emits a lot of little risers, and working out the
+ * winding of each one by hand against the frame's handedness is how a face ends
+ * up culled and a black slot appears in the middle of a wall. Every riser in
+ * this file says which way it should face and lets the builder settle it.
  */
-const AO_PROFILE = [0.6, 0.9, 0.84, 0.52];
-
-/** ...and how much a surface standing proud of the wall gets back. */
-const AO_RIB_FRONT = 0.98;
-const AO_RIB_RETURN = 0.55;
+function quadFacing(
+  b: Build,
+  want: Vec3,
+  p0: Vec3,
+  p1: Vec3,
+  p2: Vec3,
+  p3: Vec3,
+  uv0: Vec2,
+  uv1: Vec2,
+  uv2: Vec2,
+  uv3: Vec2,
+  sh: Shade,
+  ao: [number, number, number, number] = [1, 1, 1, 1],
+): void {
+  /*
+   * The facing is read off **both** triangles, not the first one.
+   *
+   * A moulding lathed about a corner post has rings of radius zero — the top
+   * ledge starts *at* the post — so its first quad is a cone apex whose leading
+   * triangle is degenerate and whose cross product is the zero vector. Tested
+   * on that alone the dot product is 0, `d >= 0` keeps whatever winding it was
+   * handed, and the one real triangle of the fan comes out inside-out: a
+   * hairline wedge of clear colour at the top of every convex corner in the
+   * level. Summing the two is the usual planar-quad normal and is nonzero
+   * whenever either half has area.
+   */
+  const na = cross3(sub3(p1, p0), sub3(p2, p0));
+  const nb = cross3(sub3(p2, p0), sub3(p3, p0));
+  const n: Vec3 = [na[0] + nb[0], na[1] + nb[1], na[2] + nb[2]];
+  const d = n[0] * want[0] + n[1] * want[1] + n[2] * want[2];
+  if (d >= 0) quad(b, p0, p1, p2, p3, uv0, uv1, uv2, uv3, sh, ao);
+  else {
+    quad(b, p3, p2, p1, p0, uv3, uv2, uv1, uv0, sh, [ao[3], ao[2], ao[1], ao[0]]);
+  }
+}
 
 /* ------------------------------------------------------------------- output */
 
@@ -231,6 +485,8 @@ const AO_RIB_RETURN = 0.55;
 export interface MeshGroup {
   /** file under `public/fps/` */
   tile: string;
+  /** key into `TILE_MAT` — how it is *lit*, which is not always the tile */
+  mat: string;
   /** flat multiplier on the sampled texel — the overhead is the deck, cooled */
   tint: [number, number, number];
   geometry: THREE.BufferGeometry;
@@ -325,34 +581,7 @@ function cornerFields(lvl: FpsLevel): { run: Float32Array; ceil: Float32Array } 
   return { run, ceil };
 }
 
-/* ------------------------------------------------------------------ profile */
-
-/**
- * The octagon's four profile points at one grid corner, in `(u, y)` — `u`
- * measured **inward** from the wall plane, `y` up from the deck.
- *
- * `off` pushes the whole profile toward the corridor centre, which is how a bay
- * frame's rib is the same shape 0.15 nearer.
- */
-function profile(run: number, ceil: number, off: number): [number, number][] {
-  const top = Math.max(run + 0.02, ceil - run);
-  return [
-    [off + run, 0],
-    [off, run],
-    [off, top],
-    [off + run, ceil],
-  ];
-}
-
-/** Arc length along the profile, normalised — the rib's trim wraps on this. */
-function profileArc(p: [number, number][]): number[] {
-  const d: number[] = [0];
-  for (let i = 1; i < p.length; i++) {
-    d.push(d[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
-  }
-  const t = d[d.length - 1] || 1;
-  return d.map((v) => v / t);
-}
+/* ------------------------------------------------------------------- frames */
 
 /**
  * The frame of one cell face: the inward normal, the along-edge direction, the
@@ -415,14 +644,31 @@ function at(f: Frame, t: number, u: number, y: number): Vec3 {
   ];
 }
 
+function lerp2(a: Vec2, b: Vec2, k: number): Vec2 {
+  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+}
+
+/**
+ * The direction a profile segment faces, in the `(u, y)` plane, pointing into
+ * the corridor. `(dy, -du)` because the profile is walked from the deck up and
+ * the corridor is always on its left.
+ */
+function segNormal2(a: Vec2, b: Vec2): Vec2 {
+  const du = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const l = Math.hypot(du, dy) || 1;
+  return [dy / l, -du / l];
+}
+
 /* -------------------------------------------------------------------- build */
 
 /**
  * Build the whole level's geometry, grouped by texture.
  *
  * Static: this runs once when the session opens, and the result is uploaded to
- * the GPU and left alone. A 24x24 deck comes out around ten thousand triangles
- * in nine draw calls.
+ * the GPU and left alone. The derelict's 24x24 deck comes out around sixty
+ * thousand triangles in nine draw calls, which for geometry that is never
+ * touched again is nothing.
  */
 export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
   const { w, h, cells, sectorOf, sectors } = lvl;
@@ -431,13 +677,27 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
 
   const builds = new Map<string, Build>();
   const tints = new Map<string, [number, number, number]>();
-  const get = (tile: string, tint?: [number, number, number]): Build => {
-    const key = tint ? `${tile}|${tint.join(",")}` : tile;
+  const mats = new Map<string, string>();
+  /**
+   * `mat` names the entry in `TILE_MAT` this group is lit as, and defaults to
+   * the tile. It exists because two surfaces can share a texture and not share a
+   * *material*: the ring's light channel is drawn on the trim tile, but the trim
+   * is polished metal and a channel's diffuser is not — lit as metal, the strip
+   * caught a specular lobe the size of itself and read as a flat grey band
+   * rather than as a light that happens to be switched off.
+   */
+  const get = (
+    tile: string,
+    tint?: [number, number, number],
+    mat?: string,
+  ): Build => {
+    const key = `${tile}|${tint ? tint.join(",") : ""}|${mat ?? ""}`;
     let b = builds.get(key);
     if (!b) {
       b = newBuild();
       builds.set(key, b);
       tints.set(key, tint ?? [1, 1, 1]);
+      mats.set(key, mat ?? tile);
     }
     return b;
   };
@@ -454,9 +714,42 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
   };
   const wallAt = (x: number, y: number): number =>
     x < 0 || y < 0 || x >= w || y >= h ? WALL.hull : cells[y * w + x];
+  /**
+   * The overhead's structural height at a point inside a cell, bilinear over
+   * the four grid corners. Restricted to a cell edge a bilinear patch is
+   * *linear* in the two corners that edge runs between, and both cells sharing
+   * that edge read the same two — which is what makes an overhead that ramps
+   * from the corridors' 1.2 to the reactor bay's 1.9 watertight across it.
+   */
+  const ceilAt = (cx: number, cy: number, a: number, bq: number): number =>
+    cCeil[cy * cw + cx] * (1 - a) * (1 - bq) +
+    cCeil[cy * cw + cx + 1] * a * (1 - bq) +
+    cCeil[(cy + 1) * cw + cx] * (1 - a) * bq +
+    cCeil[(cy + 1) * cw + cx + 1] * a * bq;
 
   /*
-   * The overhead's share of the bay ring.
+   * Which way the space through each cell runs — the corridor's own axis.
+   *
+   * The overhead's machinery spine has to run *down* a corridor and not across
+   * it, and a beam has to run across one and not down it. Both fall out of
+   * whether the open run through the cell is longer in x or in z.
+   */
+  const alongX = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (cells[y * w + x] !== 0) continue;
+      let rx = 1;
+      for (let i = x - 1; i >= 0 && cells[y * w + i] === 0; i--) rx++;
+      for (let i = x + 1; i < w && cells[y * w + i] === 0; i++) rx++;
+      let rz = 1;
+      for (let i = y - 1; i >= 0 && cells[i * w + x] === 0; i--) rz++;
+      for (let i = y + 1; i < h && cells[i * w + x] === 0; i++) rz++;
+      alongX[y * w + x] = rx >= rz ? 1 : 0;
+    }
+  }
+
+  /*
+   * The overhead's and the deck's share of the bay ring.
    *
    * A frame is a wall cell, so it only ever states the ring on the two sides of
    * the corridor. Walking out of each frame across the open cells it faces —
@@ -491,132 +784,461 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
     }
   }
 
+  /* ------------------------------------------------------- one wall section */
+
+  /**
+   * The eleven-segment moulding across one cell face.
+   *
+   * `off` is how far the whole profile stands proud (a bay frame's ring), and
+   * `tray` says whether the three panelled segments get their recess. A frame's
+   * ring is solid trim, so it does not.
+   */
+  const wallStrip = (
+    f: Frame,
+    pa: Vec2[],
+    pb: Vec2[],
+    t0: number,
+    t1: number,
+    tiles: { face: string; bevel: string },
+    dressGain: [number, number, number],
+    faceRepeat: number,
+    uOff: number,
+    sh: { light: number; emit: number },
+    trays: boolean,
+    aoScale: number,
+  ): void => {
+    for (let i = 0; i < SEGS.length; i++) {
+      const seg = SEGS[i];
+      const tile = seg.band === 1 ? tiles.face : tiles.bevel;
+      const b = get(tile);
+      const rep = seg.band === 1 ? faceRepeat : 1;
+      const gain = dressGain[seg.band] * seg.mul;
+      const shade: Shade = { light: sh.light, gain, emit: sh.emit };
+      const ao0 = SEG_AO0[i] * aoScale;
+      const ao1 = SEG_AO1[i] * aoScale;
+      const v0 = SEG_V0[i];
+      const v1 = SEG_V1[i];
+      const uA = uOff + rep * t0;
+      const uB = uOff + rep * t1;
+
+      if (!trays || !seg.tray) {
+        quad(
+          b,
+          at(f, t0, pa[i][0], pa[i][1]),
+          at(f, t1, pb[i][0], pb[i][1]),
+          at(f, t1, pb[i + 1][0], pb[i + 1][1]),
+          at(f, t0, pa[i + 1][0], pa[i + 1][1]),
+          [uA, v0],
+          [uB, v0],
+          [uB, v1],
+          [uA, v1],
+          shade,
+          [ao0, ao0, ao1, ao1],
+        );
+        continue;
+      }
+
+      /*
+       * A tray: a raised border with a recessed panel inside it.
+       *
+       * One step is enough — it is the shadow line at the step that does the
+       * work, and the reference's panelling is exactly one step back from its
+       * frame. The recess is taken along the *segment's own* normal rather than
+       * along the wall's, so the bench's 45 degree face gets a panel that sinks
+       * into the bench instead of sideways through it.
+       */
+      const nrmA = segNormal2(pa[i], pa[i + 1]);
+      const nrmB = segNormal2(pb[i], pb[i + 1]);
+      const P = (t: number, s: number, sink: number): Vec3 => {
+        const a = lerp2(pa[i], pa[i + 1], s);
+        const bp = lerp2(pb[i], pb[i + 1], s);
+        const p = lerp2(a, bp, t);
+        const nr = lerp2(nrmA, nrmB, t);
+        return at(f, t0 + (t1 - t0) * t, p[0] - nr[0] * sink, p[1] - nr[1] * sink);
+      };
+      const UV = (t: number, s: number): Vec2 => [
+        uA + (uB - uA) * t,
+        v0 + (v1 - v0) * s,
+      ];
+      const A = (s: number): number => ao0 + (ao1 - ao0) * s;
+      const t0b = TRAY_T;
+      const t1b = 1 - TRAY_T;
+      const s0b = TRAY_S;
+      const s1b = 1 - TRAY_S;
+
+      const plate = (
+        ta: number,
+        tb2: number,
+        sa: number,
+        sb2: number,
+        sink: number,
+      ): void => {
+        quad(
+          b,
+          P(ta, sa, sink),
+          P(tb2, sa, sink),
+          P(tb2, sb2, sink),
+          P(ta, sb2, sink),
+          UV(ta, sa),
+          UV(tb2, sa),
+          UV(tb2, sb2),
+          UV(ta, sb2),
+          shade,
+          [A(sa), A(sa), A(sb2), A(sb2)],
+        );
+      };
+      // border, at the wall plane
+      plate(0, 1, 0, s0b, 0);
+      plate(0, 1, s1b, 1, 0);
+      plate(0, t0b, s0b, s1b, 0);
+      plate(t1b, 1, s0b, s1b, 0);
+      // the panel, one step back
+      plate(t0b, t1b, s0b, s1b, RECESS);
+
+      // ...and the four risers between them, which are the shadow line
+      const step: Shade = { ...shade, gain: shade.gain * AO_STEP };
+      const tangent = norm3(sub3(P(0.5, 1, 0), P(0.5, 0, 0)));
+      const sDir: Vec3 = [f.s[0], f.s[1], f.s[2]];
+      const neg = (v: Vec3): Vec3 => [-v[0], -v[1], -v[2]];
+      quadFacing(
+        b, tangent,
+        P(t0b, s0b, 0), P(t1b, s0b, 0), P(t1b, s0b, RECESS), P(t0b, s0b, RECESS),
+        UV(t0b, s0b), UV(t1b, s0b), UV(t1b, s0b), UV(t0b, s0b), step,
+      );
+      quadFacing(
+        b, neg(tangent),
+        P(t0b, s1b, 0), P(t1b, s1b, 0), P(t1b, s1b, RECESS), P(t0b, s1b, RECESS),
+        UV(t0b, s1b), UV(t1b, s1b), UV(t1b, s1b), UV(t0b, s1b), step,
+      );
+      quadFacing(
+        b, sDir,
+        P(t0b, s0b, 0), P(t0b, s1b, 0), P(t0b, s1b, RECESS), P(t0b, s0b, RECESS),
+        UV(t0b, s0b), UV(t0b, s1b), UV(t0b, s1b), UV(t0b, s0b), step,
+      );
+      quadFacing(
+        b, neg(sDir),
+        P(t1b, s0b, 0), P(t1b, s1b, 0), P(t1b, s1b, RECESS), P(t1b, s0b, RECESS),
+        UV(t1b, s0b), UV(t1b, s1b), UV(t1b, s1b), UV(t1b, s0b), step,
+      );
+    }
+  };
+
+  /* --------------------------------------------------------------- the deck */
+
   for (let cy = 0; cy < h; cy++) {
     for (let cx = 0; cx < w; cx++) {
       const ci = cy * w + cx;
       if (cells[ci] !== 0) continue;
       const sec = sectors[sectorOf[ci]];
       const light = sec.light;
+      const frameDress = dressOf(WALL.frame);
+      const ringEmit = frameDress.emit + frameDress.emitSector * light;
 
-      const c00 = cy * cw + cx;
-      const c10 = cy * cw + cx + 1;
-      const c01 = (cy + 1) * cw + cx;
-      const c11 = (cy + 1) * cw + cx + 1;
+      const deckAo: [number, number, number, number] = [
+        cornerAo(cx, cy, 0.1),
+        cornerAo(cx, cy + 1, 0.1),
+        cornerAo(cx + 1, cy + 1, 0.1),
+        cornerAo(cx + 1, cy, 0.1),
+      ];
 
-      /* ---- deck: one plate to the cell, seams and centre runner included */
-      quad(
-        get(DECK_TILE),
-        [cx, 0, cy],
-        [cx, 0, cy + 1],
-        [cx + 1, 0, cy + 1],
-        [cx + 1, 0, cy],
-        [cx, cy],
-        [cx, cy + 1],
-        [cx + 1, cy + 1],
-        [cx + 1, cy],
-        { light, gain: DECK_GAIN, emit: 0 },
-        [
-          cornerAo(cx, cy, 0.1),
-          cornerAo(cx, cy + 1, 0.1),
-          cornerAo(cx + 1, cy + 1, 0.1),
-          cornerAo(cx + 1, cy, 0.1),
-        ],
-      );
+      /*
+       * The deck: one plate to the cell, seams and centre runner included —
+       * except under a bay ring, where a threshold plate stands slightly proud
+       * and closes the hoop against the deck. The references put one under
+       * every frame and it is what stops the ring reading as two stripes on the
+       * side walls.
+       */
+      if (!ring[ci]) {
+        quad(
+          get(DECK_TILE),
+          [cx, 0, cy],
+          [cx, 0, cy + 1],
+          [cx + 1, 0, cy + 1],
+          [cx + 1, 0, cy],
+          [cx, cy],
+          [cx, cy + 1],
+          [cx + 1, cy + 1],
+          [cx + 1, cy],
+          { light, gain: DECK_GAIN, emit: 0 },
+          deckAo,
+        );
+      } else {
+        // the sill runs across the corridor, so it steps along the corridor
+        const stepX = ringAxis[ci] !== 1;
+        const e = COLLAR_T;
+        const bands: [number, number, number][] = [
+          [0, e, 0],
+          [e, 1 - e, SILL],
+          [1 - e, 1, 0],
+        ];
+        const deckPt = (a: number, y: number, bnd: number): Vec3 =>
+          stepX ? [cx + a, y, cy + bnd] : [cx + bnd, y, cy + a];
+        for (const [a0, a1, rise] of bands) {
+          quadFacing(
+            get(DECK_TILE),
+            [0, 1, 0],
+            deckPt(a0, rise, 0),
+            deckPt(a0, rise, 1),
+            deckPt(a1, rise, 1),
+            deckPt(a1, rise, 0),
+            [cx + a0, cy],
+            [cx + a0, cy + 1],
+            [cx + a1, cy + 1],
+            [cx + a1, cy],
+            { light, gain: DECK_GAIN * (rise > 0 ? 1.06 : 0.9), emit: 0 },
+            deckAo,
+          );
+        }
+        const trimB = get(frameDress.ribTile);
+        for (const [a, sgn] of [[e, -1], [1 - e, 1]] as const) {
+          // each riser faces away from the raised centre of the sill
+          const want: Vec3 = stepX ? [sgn, 0, 0] : [0, 0, sgn];
+          quadFacing(
+            trimB,
+            want,
+            deckPt(a, 0, 0),
+            deckPt(a, 0, 1),
+            deckPt(a, SILL, 1),
+            deckPt(a, SILL, 0),
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            { light, gain: DECK_GAIN * 0.7, emit: ringEmit * 0.35 },
+          );
+        }
+      }
 
-      /* ---- overhead, at the corners' own heights so a sector step ramps */
-      const drop = ring[ci] ? RIB : 0;
-      const h00 = cCeil[c00] - drop;
-      const h10 = cCeil[c10] - drop;
-      const h01 = cCeil[c01] - drop;
-      const h11 = cCeil[c11] - drop;
+      /* ------------------------------------------------------ the overhead */
+
+      /** bilinear overhead height, `a` across x, `bq` across z */
+      const ceilAtCell = (a: number, bq: number): number => ceilAt(cx, cy, a, bq);
       const ceilAo: [number, number, number, number] = [
         cornerAo(cx, cy, 0.13),
         cornerAo(cx + 1, cy, 0.13),
         cornerAo(cx + 1, cy + 1, 0.13),
         cornerAo(cx, cy + 1, 0.13),
       ];
-      const ceilB = get(DECK_TILE, CEIL_TINT);
-      const ceilTile = ring[ci] ? get(dressOf(WALL.frame).ribTile) : ceilB;
-      const ceilShade = {
-        light,
-        gain: CEIL_GAIN,
-        emit: ring[ci] ? dressOf(WALL.frame).emit + dressOf(WALL.frame).emitSector * light : 0,
-      };
-      if (ring[ci]) {
-        // the beam's soffit carries the ring's trim, wrapped across the span so
-        // the channel lands square across the corridor rather than down it
-        const alongX = ringAxis[ci] === 1;
-        const u0: [number, number] = [0, 0];
-        const u1: [number, number] = alongX ? [1, 0] : [0, 1];
-        const u2: [number, number] = [1, 1];
-        const u3: [number, number] = alongX ? [0, 1] : [1, 0];
-        quad(
-          ceilTile,
-          [cx, h00, cy],
-          [cx + 1, h10, cy],
-          [cx + 1, h11, cy + 1],
-          [cx, h01, cy + 1],
-          u0,
-          u1,
-          u2,
-          u3,
-          ceilShade,
-          ceilAo,
-        );
-      } else {
-        quad(
-          ceilB,
-          [cx, h00, cy],
-          [cx + 1, h10, cy],
-          [cx + 1, h11, cy + 1],
-          [cx, h01, cy + 1],
-          [cx, cy],
-          [cx + 1, cy],
-          [cx + 1, cy + 1],
-          [cx, cy + 1],
-          ceilShade,
-          ceilAo,
-        );
-      }
+      const ceilTint = get(DECK_TILE, CEIL_TINT);
 
-      /* ---- the beam's own sides, where it meets an unribbed neighbour */
+      /** a horizontal patch of overhead at `drop` below the bilinear height */
+      const soffit = (
+        b: Build,
+        a0: number,
+        a1: number,
+        b0: number,
+        b1: number,
+        drop: number,
+        sh: Shade,
+        uv?: [Vec2, Vec2, Vec2, Vec2],
+      ): void => {
+        const p = (a: number, bq: number): Vec3 => [
+          cx + a,
+          ceilAtCell(a, bq) - drop,
+          cy + bq,
+        ];
+        quad(
+          b,
+          p(a0, b0),
+          p(a1, b0),
+          p(a1, b1),
+          p(a0, b1),
+          uv?.[0] ?? [cx + a0, cy + b0],
+          uv?.[1] ?? [cx + a1, cy + b0],
+          uv?.[2] ?? [cx + a1, cy + b1],
+          uv?.[3] ?? [cx + a0, cy + b1],
+          sh,
+          ceilAo,
+        );
+      };
+      /** ...and a riser between two of them */
+      const riser = (
+        b: Build,
+        a0: number,
+        b0: number,
+        a1: number,
+        b1: number,
+        dropLo: number,
+        dropHi: number,
+        want: Vec3,
+        sh: Shade,
+      ): void => {
+        const p = (a: number, bq: number, d: number): Vec3 => [
+          cx + a,
+          ceilAtCell(a, bq) - d,
+          cy + bq,
+        ];
+        quadFacing(
+          b,
+          want,
+          p(a0, b0, dropLo),
+          p(a1, b1, dropLo),
+          p(a1, b1, dropHi),
+          p(a0, b0, dropHi),
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+          sh,
+        );
+      };
+
       if (ring[ci]) {
-        const trim = get(dressOf(WALL.frame).ribTile);
-        const sh = {
+        /*
+         * The ring's beam. It steps like the frame's box section does — a
+         * half-depth collar at each end and the full drop between them — so the
+         * hoop's silhouette is the same three steps overhead as it is on the
+         * wall.
+         */
+        const trimB = get(frameDress.ribTile);
+        const beamShade: Shade = {
+          light,
+          gain: CEIL_GAIN * 1.25,
+          emit: ringEmit,
+        };
+        const stepX = ringAxis[ci] !== 1;
+        const e = COLLAR_T;
+        const spans: [number, number, number][] = [
+          [0, e, RIB * COLLAR],
+          [e, 1 - e, RIB],
+          [1 - e, 1, RIB * COLLAR],
+        ];
+        for (const [a0, a1, drop] of spans) {
+          const uv: [Vec2, Vec2, Vec2, Vec2] = stepX
+            ? [[a0, 0], [a1, 0], [a1, 1], [a0, 1]]
+            : [[0, a0], [0, a1], [1, a1], [1, a0]];
+          if (stepX) soffit(trimB, a0, a1, 0, 1, drop, beamShade, uv);
+          else soffit(trimB, 0, 1, a0, a1, drop, beamShade, uv);
+        }
+        for (const [a, sgn] of [[e, -1], [1 - e, 1]] as const) {
+          // each riser faces away from the deep centre of the beam, exactly as
+          // the sill's do — flipped, it is a hole in the overhead the size of a
+          // bay, because a 0.08 step seen along the ceiling covers a lot of frame
+          const want: Vec3 = stepX ? [sgn, 0, 0] : [0, 0, sgn];
+          if (stepX) riser(trimB, a, 0, a, 1, RIB * COLLAR, RIB, want, {
+            ...beamShade,
+            gain: beamShade.gain * 0.72,
+          });
+          else riser(trimB, 0, a, 1, a, RIB * COLLAR, RIB, want, {
+            ...beamShade,
+            gain: beamShade.gain * 0.72,
+          });
+        }
+        /*
+         * ...and the hoop closes overhead: the same channel across the beam,
+         * so a bay reads as a complete ring of light rather than as two bars on
+         * the side walls with a gap where the ceiling is.
+         */
+        {
+          const g0 = 0.5 - STRIP_W / 2;
+          const g1 = 0.5 + STRIP_W / 2;
+          const glow: Shade = {
+            light,
+            gain: CEIL_GAIN * 0.3,
+            emit: 0,
+            strip: STRIP_RATING,
+          };
+          const uv: [Vec2, Vec2, Vec2, Vec2] = stepX
+            ? [[g0, 0], [g1, 0], [g1, 1], [g0, 1]]
+            : [[0, g0], [0, g1], [1, g1], [1, g0]];
+          const glowB = get(frameDress.ribTile, undefined, STRIP_MAT);
+          if (stepX) soffit(glowB, g0, g1, 0, 1, RIB + STRIP_PROUD, glow, uv);
+          else soffit(glowB, 0, 1, g0, g1, RIB + STRIP_PROUD, glow, uv);
+        }
+        /*
+         * The beam's ends are closed by `stitchEdges` below rather than here.
+         * A cap emitted from inside the cell can only state one depth across
+         * the whole edge, and the beam's depth *varies* along two of its four
+         * edges — so the old constant-`RIB * COLLAR` cap left an 0.083 slit
+         * wherever the beam's deep centre met a neighbour, which is what you
+         * could see the stars through when you looked up.
+         */
+      } else {
+        /*
+         * A coffered overhead: a border at the structural height, two raised
+         * panels, and the machinery run down the middle at the border's own
+         * height so it carries through from cell to cell.
+         *
+         * The references' ceilings are never a smooth plane — left flat this
+         * read as a void hanging over the corridor even with the plate on it.
+         */
+        const bd = COFFER_B;
+        const runX = alongX[ci] === 1;
+        const sp0 = 0.5 - SPINE_W / 2;
+        const sp1 = 0.5 + SPINE_W / 2;
+        /*
+         * The overhead is the darkest surface in the section by design, so the
+         * coffer has to state itself in the *ratio* between its border and its
+         * panels rather than by lifting the whole ceiling: raise `CEIL_GAIN` far
+         * enough to see the step and a dead compartment stops reading as dead.
+         */
+        const border: Shade = { light, gain: CEIL_GAIN * 0.82, emit: 0 };
+        const panel: Shade = { light, gain: CEIL_GAIN * 1.55, emit: 0 };
+        soffit(ceilTint, 0, 1, 0, bd, 0, border);
+        soffit(ceilTint, 0, 1, 1 - bd, 1, 0, border);
+        soffit(ceilTint, 0, bd, bd, 1 - bd, 0, border);
+        soffit(ceilTint, 1 - bd, 1, bd, 1 - bd, 0, border);
+
+        // the two coffer panels, either side of the spine
+        const boxes: [number, number, number, number][] = runX
+          ? [
+              [bd, 1 - bd, bd, sp0],
+              [bd, 1 - bd, sp1, 1 - bd],
+            ]
+          : [
+              [bd, sp0, bd, 1 - bd],
+              [sp1, 1 - bd, bd, 1 - bd],
+            ];
+        for (const [a0, a1, b0, b1] of boxes) {
+          if (a1 - a0 < 1e-3 || b1 - b0 < 1e-3) continue;
+          soffit(ceilTint, a0, a1, b0, b1, -COFFER, panel);
+          const dim: Shade = { ...panel, gain: panel.gain * AO_STEP };
+          /*
+           * A coffer panel is `COFFER` **above** the border, so the box is a
+           * recess up into the overhead and its four risers are that recess's
+           * *inside* walls: each one faces in toward the panel above it, not out
+           * toward the border. Wound the other way round — which is how they
+           * shipped — every one of them is a backface, and a whole ceiling's
+           * worth of them is the black slots that appeared in a lit overhead as
+           * soon as `lightFloor` came up.
+           */
+          riser(ceilTint, a0, b0, a1, b0, 0, -COFFER, [0, 0, 1], dim);
+          riser(ceilTint, a0, b1, a1, b1, 0, -COFFER, [0, 0, -1], dim);
+          riser(ceilTint, a0, b0, a0, b1, 0, -COFFER, [1, 0, 0], dim);
+          riser(ceilTint, a1, b0, a1, b1, 0, -COFFER, [-1, 0, 0], dim);
+        }
+        // the spine itself, on the trim so it can carry a light run
+        /*
+         * The navy reference's other light source: warm panels down the middle
+         * of the overhead. Authored rather than keyed, for the same reason the
+         * ring's channel is — and scaled almost entirely by the sector, because
+         * a ceiling panel is a fitting and this ship's fittings are out.
+         */
+        const spineShade: Shade = {
           light,
           gain: CEIL_GAIN * 1.5,
-          emit: dressOf(WALL.frame).emit + dressOf(WALL.frame).emitSector * light,
+          emit: 0,
+          strip: SPINE_RATING,
         };
-        const nb: [number, number, number][] = [
-          [-1, 0, 0],
-          [1, 0, 1],
-          [0, -1, 2],
-          [0, 1, 3],
-        ];
-        for (const [dx, dy, dir] of nb) {
-          const nx = cx + dx;
-          const ny = cy + dy;
-          if (solid(nx, ny) || ring[ny * w + nx]) continue;
-          // the neighbour's own inward frame is this edge seen from outside
-          const f = faceFrame(nx, ny, dir === 0 ? 1 : dir === 1 ? 0 : dir === 2 ? 3 : 2, cw);
-          const a = cCeil[f.c0];
-          const bb = cCeil[f.c1];
-          quad(
-            trim,
-            at(f, 0, 0, a - RIB),
-            at(f, 1, 0, bb - RIB),
-            at(f, 1, 0, bb),
-            at(f, 0, 0, a),
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-            sh,
-          );
+        const trimB = get(frameDress.ribTile, undefined, STRIP_MAT);
+        if (runX) {
+          soffit(trimB, bd, 1 - bd, sp0, sp1, 0, spineShade, [
+            [bd, 0],
+            [1 - bd, 0],
+            [1 - bd, 1],
+            [bd, 1],
+          ]);
+        } else {
+          soffit(trimB, sp0, sp1, bd, 1 - bd, 0, spineShade, [
+            [0, bd],
+            [0, 1 - bd],
+            [1, 1 - bd],
+            [1, bd],
+          ]);
         }
       }
 
-      /* ---- the four wall sections */
+      /* ---------------------------------------------- the four wall sections */
       for (let dir = 0; dir < 4; dir++) {
         const nx = cx + (dir === 0 ? -1 : dir === 1 ? 1 : 0);
         const ny = cy + (dir === 2 ? -1 : dir === 3 ? 1 : 0);
@@ -628,8 +1250,8 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
         const runB = cRun[f.c1];
         const ceilA = cCeil[f.c0];
         const ceilB2 = cCeil[f.c1];
-        const pa = profile(runA, ceilA, 0);
-        const pb = profile(runB, ceilB2, 0);
+        const pa = section(runA, ceilA, 0);
+        const pb = section(runB, ceilB2, 0);
 
         // one hash per cell breaks the tile's central motif recurring down a run
         const variant = ((cx * 73856093) ^ (cy * 19349663) ^ (dir * 83492791)) >>> 0;
@@ -641,123 +1263,192 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
          * one wall. Rarely, it is dirt.
          */
         const useAlt = (variant & 7) === 0;
-        const faceTile =
-          useAlt && dress.faceAlt ? dress.faceAlt : dress.face;
-        const bevelTile =
-          useAlt && dress.bevelAlt ? dress.bevelAlt : dress.bevel;
+        const faceTile = useAlt && dress.faceAlt ? dress.faceAlt : dress.face;
+        const bevelTile = useAlt && dress.bevelAlt ? dress.bevelAlt : dress.bevel;
         const emit = dress.emit + dress.emitSector * light;
         /*
-         * A frame's plain profile is the *recess* behind the rib and is dressed
+         * A frame's plain profile is the *recess* behind the ring and is dressed
          * as hull, so it must not carry the ring's emission — keyed off the
          * tile's own bright pixels, `wall-main` is bright everywhere and the
          * whole wall would light up at every bay.
          */
         const plainEmit = dress.rib > 0 ? 0 : emit;
         const uOff = (variant % 4) / 4;
+        const gains: [number, number, number] = [
+          dress.gainLower,
+          dress.gainFace,
+          dress.gainUpper,
+        ];
 
-        // lower chamfer
-        quad(
-          get(bevelTile),
-          at(f, 0, pa[0][0], pa[0][1]),
-          at(f, 1, pb[0][0], pb[0][1]),
-          at(f, 1, pb[1][0], pb[1][1]),
-          at(f, 0, pa[1][0], pa[1][1]),
-          [uOff, 0],
-          [uOff + 1, 0],
-          [uOff + 1, 1],
-          [uOff, 1],
-          { light, gain: dress.gainLower, emit: plainEmit },
-          [AO_PROFILE[0], AO_PROFILE[0], AO_PROFILE[1], AO_PROFILE[1]],
-        );
-        // vertical face
-        const rep = dress.faceRepeat;
-        quad(
-          get(faceTile),
-          at(f, 0, pa[1][0], pa[1][1]),
-          at(f, 1, pb[1][0], pb[1][1]),
-          at(f, 1, pb[2][0], pb[2][1]),
-          at(f, 0, pa[2][0], pa[2][1]),
-          [uOff, 0],
-          [uOff + rep, 0],
-          [uOff + rep, 1],
-          [uOff, 1],
-          { light, gain: dress.gainFace, emit: plainEmit },
-          [AO_PROFILE[1], AO_PROFILE[1], AO_PROFILE[2], AO_PROFILE[2]],
-        );
-        // upper chamfer
-        quad(
-          get(bevelTile),
-          at(f, 0, pa[2][0], pa[2][1]),
-          at(f, 1, pb[2][0], pb[2][1]),
-          at(f, 1, pb[3][0], pb[3][1]),
-          at(f, 0, pa[3][0], pa[3][1]),
-          [uOff, 0],
-          [uOff + 1, 0],
-          [uOff + 1, 1],
-          [uOff, 1],
-          { light, gain: dress.gainUpper, emit: plainEmit },
-          [AO_PROFILE[2], AO_PROFILE[2], AO_PROFILE[3], AO_PROFILE[3]],
-        );
+        /*
+         * A bay frame emits no plain profile at all.
+         *
+         * Its ring is the same moulding standing `RIB` nearer, spanning the
+         * whole cell and capped at both ends, so from anywhere inside the
+         * corridor it completely occludes the wall plane behind it. Emitting
+         * both was a full cell of overdraw at every bay for a surface that
+         * cannot be seen.
+         */
+        if (dress.rib === 0) {
+          wallStrip(
+            f,
+            pa,
+            pb,
+            0,
+            1,
+            { face: faceTile, bevel: bevelTile },
+            gains,
+            dress.faceRepeat,
+            uOff,
+            { light, emit: plainEmit },
+            true,
+            1,
+          );
+        }
 
-        /* ---- and the rib, if this wall is a bay frame */
+        /* ---- and the ring, if this wall is a bay frame */
         if (dress.rib > 0) {
-          const ra = profile(runA, ceilA, dress.rib);
-          const rb = profile(runB, ceilB2, dress.rib);
-          const arc = profileArc(ra);
-          const trim = get(dress.ribTile);
           /*
-           * The ring gets a *flatter* staircase than the wall behind it.
+           * A box section, in three steps.
            *
-           * The section's 1.0 / 0.68 / 0.34 is what makes the octagon read as an
-           * octagon, and applied to the rib it broke the ring into three
-           * unrelated bright patches with dark gaps between them — a lit bench,
-           * a dim wall and a black soffit, rather than one piece of structure
-           * hooping the corridor.
+           * The reference's frames are not a single plane standing proud: there
+           * is a collar at each end, then the frame proper, and you read the
+           * depth off those two returns as you walk past. The ring gets a
+           * *flatter* brightness staircase than the wall behind it — the
+           * section's 1.0 / 0.68 / 0.34 applied to the ring broke it into three
+           * unrelated bright patches, a lit bench and a black soffit rather than
+           * one piece of structure hooping the corridor.
            */
-          const gains = [0.95, 0.84, 0.66];
-          for (let i = 0; i < 3; i++) {
-            const sh = { light, gain: gains[i], emit };
-            // the ring's front, with the trim wrapped **around** the octagon —
-            // the tile's channel is a band across its own u, so it comes out as
-            // one continuous strip round the section rather than down the wall
-            quad(
+          /*
+           * Knocked down from 0.95 / 0.84 / 0.66. Under a real lamp the ring is
+           * the nearest thing to it and the only metal in the section, so at the
+           * old values the frames came out as the brightest surfaces in a *dead*
+           * compartment — a corridor hooped in lit white bands, which reads as
+           * powered. In damage/damage.png the frames are structure catching what
+           * light there is, and the recesses behind them are darker still.
+           */
+          const ringGains: [number, number, number] = [0.78, 0.64, 0.48];
+          const trim = { face: dress.ribTile, bevel: dress.ribTile };
+          const e = COLLAR_T;
+          const depths: [number, number, number][] = [
+            [0, e, RIB * COLLAR],
+            [e, 1 - e, RIB],
+            [1 - e, 1, RIB * COLLAR],
+          ];
+          const profs = new Map<number, [Vec2[], Vec2[]]>();
+          for (const [, , d] of depths) {
+            if (!profs.has(d)) {
+              profs.set(d, [section(runA, ceilA, d), section(runB, ceilB2, d)]);
+            }
+          }
+          profs.set(0, [pa, pb]);
+          for (const [t0, t1, d] of depths) {
+            const [qa, qb] = profs.get(d)!;
+            /*
+             * **Interpolated to this span's own ends, not the cell's.**
+             *
+             * `qa`/`qb` are the moulding at the face's two *grid corners*, and
+             * the run differs between them wherever a neighbouring space is
+             * narrower — which is most junctions. Handing them to a strip that
+             * only covers `t0..t1` planted the far corner's profile at `t = e`,
+             * so the collar and the frame proper described different octagons
+             * and the step between them was open: a wedge of clear colour at
+             * every bay of every wall whose two ends disagree. The returns
+             * below already did this correctly, which is why the crack sat on
+             * the collar line rather than at the frame's ends.
+             */
+            wallStrip(
+              f,
+              lerpProfile(qa, qb, t0),
+              lerpProfile(qa, qb, t1),
+              t0,
+              t1,
               trim,
-              at(f, 0, ra[i][0], ra[i][1]),
-              at(f, 1, rb[i][0], rb[i][1]),
-              at(f, 1, rb[i + 1][0], rb[i + 1][1]),
-              at(f, 0, ra[i + 1][0], ra[i + 1][1]),
-              [arc[i], 0],
-              [arc[i], 1],
-              [arc[i + 1], 1],
-              [arc[i + 1], 0],
-              sh,
-              [AO_RIB_FRONT, AO_RIB_FRONT, AO_RIB_FRONT, AO_RIB_FRONT],
+              ringGains,
+              1,
+              0,
+              { light, emit },
+              false,
+              AO_RIB_FRONT,
             );
-            // the two returns that make it a rib you can see the edge of
-            quad(
-              trim,
-              at(f, 0, pa[i][0], pa[i][1]),
-              at(f, 0, ra[i][0], ra[i][1]),
-              at(f, 0, ra[i + 1][0], ra[i + 1][1]),
-              at(f, 0, pa[i + 1][0], pa[i + 1][1]),
-              [arc[i], 0],
-              [arc[i], 1],
-              [arc[i + 1], 1],
-              [arc[i + 1], 0],
-              { ...sh, gain: sh.gain * AO_RIB_RETURN },
-            );
-            quad(
-              trim,
-              at(f, 1, pb[i + 1][0], pb[i + 1][1]),
-              at(f, 1, rb[i + 1][0], rb[i + 1][1]),
-              at(f, 1, rb[i][0], rb[i][1]),
-              at(f, 1, pb[i][0], pb[i][1]),
-              [arc[i + 1], 0],
-              [arc[i + 1], 1],
-              [arc[i], 1],
-              [arc[i], 0],
-              { ...sh, gain: sh.gain * AO_RIB_RETURN },
-            );
+          }
+          /*
+           * ...the light channel, set into the middle of the ring's face and
+           * following the section round. See `STRIP_*`: this is the reference's
+           * octagon-of-light, and it is geometry because no threshold on a pale
+           * photographic tile can pick a fitting out of its own housing.
+           */
+          {
+            const sa = section(runA, ceilA, RIB + STRIP_PROUD);
+            const sb = section(runB, ceilB2, RIB + STRIP_PROUD);
+            const st0 = 0.5 - STRIP_W / 2;
+            const st1 = 0.5 + STRIP_W / 2;
+            const la = lerpProfile(sa, sb, st0);
+            const lb = lerpProfile(sa, sb, st1);
+            const glow: Shade = {
+              light,
+              // a diffuser is not metal: it barely takes the lamp at all, so
+              // what you see of it is what it is putting out
+              gain: 0.12,
+              emit: 0,
+              strip: STRIP_RATING,
+            };
+            const trimB2 = get(dress.ribTile, undefined, STRIP_MAT);
+            for (let i = STRIP_SEG0; i <= STRIP_SEG1; i++) {
+              quad(
+                trimB2,
+                at(f, st0, la[i][0], la[i][1]),
+                at(f, st1, lb[i][0], lb[i][1]),
+                at(f, st1, lb[i + 1][0], lb[i + 1][1]),
+                at(f, st0, la[i + 1][0], la[i + 1][1]),
+                [0, SEG_V0[i]],
+                [1, SEG_V0[i]],
+                [1, SEG_V1[i]],
+                [0, SEG_V1[i]],
+                glow,
+              );
+            }
+          }
+
+          /*
+           * ...and the returns that make it a box you can see the edge of.
+           * Four of them: out of the wall to the collar, up to the frame, back
+           * down to the collar, and home.
+           */
+          const steps: [number, number, number, number][] = [
+            [0, 0, RIB * COLLAR, -1],
+            [e, RIB * COLLAR, RIB, -1],
+            [1 - e, RIB, RIB * COLLAR, 1],
+            [1, RIB * COLLAR, 0, 1],
+          ];
+          const trimB = get(dress.ribTile);
+          for (const [t, dLo, dHi, sgn] of steps) {
+            // each riser stands at one t, between two depths of the same
+            // moulding, so both its edges are that moulding read at that t
+            const lo = lerpProfile(profs.get(dLo)![0], profs.get(dLo)![1], t);
+            const hi = lerpProfile(profs.get(dHi)![0], profs.get(dHi)![1], t);
+            const want: Vec3 = [f.s[0] * sgn, f.s[1] * sgn, f.s[2] * sgn];
+            for (let i = 0; i < SEGS.length; i++) {
+              const seg = SEGS[i];
+              const shade: Shade = {
+                light,
+                gain: ringGains[seg.band] * seg.mul * AO_RIB_RETURN,
+                emit,
+              };
+              quadFacing(
+                trimB,
+                want,
+                at(f, t, lo[i][0], lo[i][1]),
+                at(f, t, lo[i + 1][0], lo[i + 1][1]),
+                at(f, t, hi[i + 1][0], hi[i + 1][1]),
+                at(f, t, hi[i][0], hi[i][1]),
+                [SEG_V0[i], 0],
+                [SEG_V1[i], 0],
+                [SEG_V1[i], 1],
+                [SEG_V0[i], 1],
+                shade,
+              );
+            }
           }
         }
       }
@@ -778,18 +1469,157 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
         if (!solid(cx + dx, cy + dy)) continue;
         if (solid(cx + dx, cy) || solid(cx, cy + dy)) continue;
         const ci2 = gy * cw + gx;
-        const r = cRun[ci2];
-        const ce = cCeil[ci2];
         const id = wallAt(cx + dx, cy + dy);
         const dress = dressOf(id);
         const emit = dress.rib > 0 ? 0 : dress.emit + dress.emitSector * light;
-        const b = get(dress.bevel);
-        fillet(b, gx, gy, sx, sy, r, 0, 1, { light, gain: dress.gainLower, emit });
-        fillet(b, gx, gy, sx, sy, r, ce, -1, {
-          light,
-          gain: dress.gainUpper,
-          emit,
-        });
+        const pts = section(cRun[ci2], cCeil[ci2], 0);
+        latheCorner(
+          get(dress.bevel),
+          gx,
+          gy,
+          sx,
+          sy,
+          pts,
+          [dress.gainLower, dress.gainFace, dress.gainUpper],
+          { light, emit },
+        );
+      }
+    }
+  }
+
+  /* ------------------------------------------- closing the ring at an edge */
+
+  /*
+   * Where two open cells meet, their overhead and their deck have to agree, and
+   * a bay ring's beam and threshold sill are exactly where they do not.
+   *
+   * Both are stated as a *band* along one axis of the cell — collar, full
+   * depth, collar — so a cell states one depth along the two edges the band
+   * steps across and three along the two it runs down. That is fine while
+   * neighbouring ring cells all run the same way, and a junction is precisely
+   * where they do not: `ringAxis` is first-writer-wins, so a cell whose beam
+   * runs east/west sits against one whose beam runs north/south, one presents
+   * `RIB` where the other presents `RIB * COLLAR`, and the 0.083 of a cell
+   * between them is a slit you can see the void through. The deck sill does
+   * the same thing 0.035 tall, under your feet.
+   *
+   * Rather than special-case the junction, close *every* interior edge: sample
+   * both sides' surfaces along it and drop a riser wherever they disagree.
+   * Where they agree — which is almost everywhere — the quad is degenerate and
+   * `tri` throws it away, so this costs nothing on a straight run and is
+   * exhaustive by construction. It subsumes the beam end caps, which were the
+   * same idea done from one side only and could not see the other side's band.
+   */
+  {
+    /** which band of a ring cell's beam / sill a point falls in: 1 = the deep centre */
+    const deepBand = (ci: number, a: number, bq: number): number => {
+      if (!ring[ci]) return 0;
+      const u = ringAxis[ci] !== 1 ? a : bq;
+      return u > COLLAR_T && u < 1 - COLLAR_T ? 1 : 0;
+    };
+    const ceilDrop = (ci: number, a: number, bq: number): number =>
+      !ring[ci] ? 0 : deepBand(ci, a, bq) ? RIB : RIB * COLLAR;
+    const deckRise = (ci: number, a: number, bq: number): number =>
+      !ring[ci] ? 0 : deepBand(ci, a, bq) ? SILL : 0;
+
+    const dressFrame = dressOf(WALL.frame);
+    const trimTile = dressFrame.ribTile;
+    // the only places either surface steps; both sides break at the same two
+    const breaks = [0, COLLAR_T, 1 - COLLAR_T, 1];
+
+    for (let cy = 0; cy < h; cy++) {
+      for (let cx = 0; cx < w; cx++) {
+        const ci = cy * w + cx;
+        if (cells[ci] !== 0) continue;
+        for (const [dx, dz] of [[1, 0], [0, 1]] as const) {
+          const nx = cx + dx;
+          const nz = cy + dz;
+          if (nx >= w || nz >= h) continue;
+          const nj = nz * w + nx;
+          if (cells[nj] !== 0) continue;
+          if (!ring[ci] && !ring[nj]) continue;
+
+          // `t` runs along the shared edge; each side reads its own cell there
+          const edgeXZ = (t: number): [number, number] =>
+            dx === 1 ? [cx + 1, cy + t] : [cx + t, cy + 1];
+          const sideA = (t: number): [number, number] => (dx === 1 ? [1, t] : [t, 1]);
+          const sideB = (t: number): [number, number] => (dx === 1 ? [0, t] : [t, 0]);
+          const edgeCeil = (t: number): number => {
+            const [a, bq] = sideA(t);
+            return ceilAt(cx, cy, a, bq);
+          };
+          const away: Vec3 = [dx, 0, dz];
+          const back: Vec3 = [-dx, 0, -dz];
+          const secA = sectors[sectorOf[ci]];
+          const secB = sectors[sectorOf[nj]];
+
+          for (let k = 0; k + 1 < breaks.length; k++) {
+            const t0 = breaks[k];
+            const t1 = breaks[k + 1];
+            const tm = (t0 + t1) / 2;
+            const [aA, bA] = sideA(tm);
+            const [aB, bB] = sideB(tm);
+
+            /* the overhead: the deeper side's beam shows its flank */
+            const dA = ceilDrop(ci, aA, bA);
+            const dB = ceilDrop(nj, aB, bB);
+            if (Math.abs(dA - dB) > 1e-6) {
+              // the exposed flank belongs to the deeper cell and is seen from
+              // the shallower one, so the normal points at the shallower side
+              const deep = dA > dB ? ci : nj;
+              const want = dA > dB ? away : back;
+              const hi = Math.min(dA, dB);
+              const lo = Math.max(dA, dB);
+              const light = sectors[sectorOf[deep]].light;
+              const p = (t: number, d: number): Vec3 => {
+                const [wx, wz] = edgeXZ(t);
+                return [wx, edgeCeil(t) - d, wz];
+              };
+              quadFacing(
+                get(trimTile),
+                want,
+                p(t0, hi),
+                p(t1, hi),
+                p(t1, lo),
+                p(t0, lo),
+                [t0, 0],
+                [t1, 0],
+                [t1, 1],
+                [t0, 1],
+                {
+                  light,
+                  gain: CEIL_GAIN * 0.9,
+                  emit: (dressFrame.emit + dressFrame.emitSector * light) * 0.6,
+                },
+              );
+            }
+
+            /* ...and the deck, where a threshold sill stands proud of it */
+            const rA = deckRise(ci, aA, bA);
+            const rB = deckRise(nj, aB, bB);
+            if (Math.abs(rA - rB) > 1e-6) {
+              const want = rA > rB ? away : back;
+              const light = (rA > rB ? secA : secB).light;
+              const p = (t: number, y: number): Vec3 => {
+                const [wx, wz] = edgeXZ(t);
+                return [wx, y, wz];
+              };
+              quadFacing(
+                get(trimTile),
+                want,
+                p(t0, Math.min(rA, rB)),
+                p(t1, Math.min(rA, rB)),
+                p(t1, Math.max(rA, rB)),
+                p(t0, Math.max(rA, rB)),
+                [t0, 0],
+                [t1, 0],
+                [t1, 1],
+                [t0, 1],
+                { light, gain: DECK_GAIN * 0.7, emit: 0 },
+              );
+            }
+          }
+        }
       }
     }
   }
@@ -805,10 +1635,12 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
     g.setAttribute("aLight", new THREE.Float32BufferAttribute(b.light, 1));
     g.setAttribute("aGain", new THREE.Float32BufferAttribute(b.gain, 1));
     g.setAttribute("aEmit", new THREE.Float32BufferAttribute(b.emit, 1));
+    g.setAttribute("aStrip", new THREE.Float32BufferAttribute(b.strip, 1));
     g.computeBoundingSphere();
     tris += b.pos.length / 9;
     groups.push({
       tile: key.split("|")[0],
+      mat: mats.get(key) ?? key.split("|")[0],
       tint: tints.get(key) ?? [1, 1, 1],
       geometry: g,
     });
@@ -816,43 +1648,86 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
   return { groups, tris };
 }
 
+/** The profile a fraction `t` of the way from one grid corner to the other. */
+function lerpProfile(a: Vec2[], b: Vec2[], t: number): Vec2[] {
+  const out: Vec2[] = [];
+  for (let i = 0; i < a.length; i++) out.push(lerp2(a[i], b[i], t));
+  return out;
+}
+
 /**
- * A convex corner's quarter-cone: apex on the corner post at height `run`,
- * falling to the deck at radius `run`.
+ * A convex corner's fillet: the whole moulding **lathed about the corner post**.
  *
- * This is the one patch real geometry does not give away, and it is the same
- * surface the distance field used to produce — `h = run - distanceToPost` — so
- * it meets each neighbouring 45 degree ramp tangentially along the quadrant's
- * two edges and no seam is possible.
+ * Every profile point `(u, y)` is swept through the quadrant at radius `u`, so
+ * at 0 and 90 degrees it lands exactly on the two neighbouring strips' own
+ * endpoints and no seam is possible. It generalises the quarter-cone this file
+ * used to emit — that was the lathe of a straight 45 degree line — and it is
+ * what lets the bench, the riser and the ledge all turn an outside corner
+ * intact, which is where every earlier attempt at relief broke.
  *
- * `dirY` is +1 for the deck's fold and -1 for the overhead's, which is the same
- * cone mirrored down from `base`.
+ * The vertical face is skipped: it sits at `u = 0`, which is the post itself.
  */
-function fillet(
+function latheCorner(
   b: Build,
   gx: number,
   gy: number,
   sx: number,
   sy: number,
-  run: number,
-  base: number,
-  dirY: number,
-  sh: Shade,
+  pts: Vec2[],
+  gains: [number, number, number],
+  sh: { light: number; emit: number },
 ): void {
-  const apex: Vec3 = [gx, base + run * dirY, gy];
-  for (let k = 0; k < FILLET_SEGS; k++) {
-    const t0 = (k / FILLET_SEGS) * (Math.PI / 2);
-    const t1 = ((k + 1) / FILLET_SEGS) * (Math.PI / 2);
-    const p0: Vec3 = [gx + sx * run * Math.cos(t0), base, gy + sy * run * Math.sin(t0)];
-    const p1: Vec3 = [gx + sx * run * Math.cos(t1), base, gy + sy * run * Math.sin(t1)];
-    // winding depends on the quadrant and on which way the cone points, so it
-    // is settled by asking which way the normal came out rather than by cases
-    const n = cross3(sub3(p0, apex), sub3(p1, apex));
-    const uv0: [number, number] = [t0 / (Math.PI / 2), 0];
-    const uv1: [number, number] = [t1 / (Math.PI / 2), 0];
-    const uvA: [number, number] = [(t0 + t1) / Math.PI, 1];
-    const ao: [number, number, number] = [AO_PROFILE[1], AO_PROFILE[0], AO_PROFILE[0]];
-    if (n[1] * dirY > 0) tri(b, apex, p0, p1, uvA, uv0, uv1, sh, ao);
-    else tri(b, apex, p1, p0, uvA, uv1, uv0, sh, ao);
+  const P = (i: number, th: number): Vec3 => [
+    gx + sx * pts[i][0] * Math.cos(th),
+    pts[i][1],
+    gy + sy * pts[i][0] * Math.sin(th),
+  ];
+  for (let i = 0; i < SEGS.length; i++) {
+    const seg = SEGS[i];
+    if (seg.band === 1) continue;
+    const shade: Shade = {
+      light: sh.light,
+      gain: gains[seg.band] * seg.mul,
+      emit: sh.emit,
+    };
+    const ao0 = SEG_AO0[i];
+    const ao1 = SEG_AO1[i];
+    for (let k = 0; k < FILLET_SEGS; k++) {
+      const t0 = (k / FILLET_SEGS) * (Math.PI / 2);
+      const t1 = ((k + 1) / FILLET_SEGS) * (Math.PI / 2);
+      const u0 = k / FILLET_SEGS;
+      const u1 = (k + 1) / FILLET_SEGS;
+      // the corridor is inside the lathe, so the winding that faces it is the
+      // one whose normal points away from the post
+      const mid: Vec3 = [
+        gx + sx * 0.5 * (pts[i][0] + pts[i + 1][0]) * Math.cos((t0 + t1) / 2),
+        0,
+        gy + sy * 0.5 * (pts[i][0] + pts[i + 1][0]) * Math.sin((t0 + t1) / 2),
+      ];
+      const want: Vec3 = [mid[0] - gx, 0, mid[2] - gy];
+      // ...except that the bench faces up and the soffit down, which the radial
+      // direction alone cannot say; the profile's own normal supplies it
+      const nr = segNormal2(pts[i], pts[i + 1]);
+      const rad = Math.hypot(want[0], want[2]) || 1;
+      const wantN: Vec3 = [
+        (want[0] / rad) * nr[0],
+        nr[1],
+        (want[2] / rad) * nr[0],
+      ];
+      quadFacing(
+        b,
+        wantN,
+        P(i, t0),
+        P(i, t1),
+        P(i + 1, t1),
+        P(i + 1, t0),
+        [u0, SEG_V0[i]],
+        [u1, SEG_V0[i]],
+        [u1, SEG_V1[i]],
+        [u0, SEG_V1[i]],
+        shade,
+        [ao0, ao0, ao1, ao1],
+      );
+    }
   }
 }
