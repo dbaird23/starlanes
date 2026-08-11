@@ -808,6 +808,21 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
     trays: boolean,
     aoScale: number,
   ): void => {
+    /*
+     * How far the face tile runs vertically, so its texels come out square
+     * against the `faceRepeat` it is already running at horizontally.
+     */
+    const faceArc =
+      (Math.hypot(pa[6][0] - pa[5][0], pa[6][1] - pa[5][1]) +
+        Math.hypot(pb[6][0] - pb[5][0], pb[6][1] - pb[5][1])) /
+      2;
+    /*
+     * `u` runs `rep * (t1 - t0)` over `t1 - t0` cells of corridor, so world per
+     * unit of u is `1 / rep` whatever span this strip covers — the ring's
+     * collars included. Dividing by the span, which the first cut did, squared
+     * the full-cell strips correctly and stretched every sub-span of a bay.
+     */
+    const faceV = Math.max(0.25, faceArc * faceRepeat);
     for (let i = 0; i < SEGS.length; i++) {
       const seg = SEGS[i];
       // band 0 is the bench, 1 the vertical face, 2 the soffit — three tiles,
@@ -819,8 +834,22 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
       const shade: Shade = { light: sh.light, gain, emit: sh.emit };
       const ao0 = SEG_AO0[i] * aoScale;
       const ao1 = SEG_AO1[i] * aoScale;
+      /*
+       * **The vertical face's tile is squared up; the chamfers' are not, and
+       * that asymmetry is deliberate.**
+       *
+       * Every band normalises `v` to 0..1 over its own arc, which fits the
+       * tile to the band exactly and distorts it by whatever the band's aspect
+       * happens to be. On the face that was measured at 1.8:1 — panels half
+       * again as tall as they are wide, over the second largest textured
+       * surface in the level — and `wall-main` is a seamless square tile, so
+       * it can simply run past 1.0 and tile. The chamfer tiles cannot: they
+       * are 3:1 *crops*, tiling left to right only, and their whole height is
+       * meant to land across the slope. They measure 1.33:1 in texel terms
+       * once the crop's own 3:1 is taken out, which is close enough to leave.
+       */
       const v0 = SEG_V0[i];
-      const v1 = SEG_V1[i];
+      const v1 = seg.band === 1 ? SEG_V0[i] + (SEG_V1[i] - SEG_V0[i]) * faceV : SEG_V1[i];
       const uA = uOff + rep * t0;
       const uB = uOff + rep * t1;
 
@@ -1091,6 +1120,16 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
           ceilAtCell(a, bq) - d,
           cy + bq,
         ];
+        /*
+         * Same rule as the ring's returns: a coffer riser is `COFFER` (0.055)
+         * of a cell deep, and given `v` 0..1 it wore a whole ceiling tile
+         * across that sliver — a p90 anisotropy of 12 on the one surface of
+         * the overhead you see edge-on. The overhead runs at one tile to the
+         * cell, so its uv *is* world distance and both extents can be taken
+         * straight off the geometry.
+         */
+        const run = Math.hypot(a1 - a0, b1 - b0);
+        const vExt = Math.abs(dropHi - dropLo);
         quadFacing(
           b,
           want,
@@ -1099,9 +1138,9 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
           p(a1, b1, dropHi),
           p(a0, b0, dropHi),
           [0, 0],
-          [1, 0],
-          [1, 1],
-          [0, 1],
+          [run, 0],
+          [run, vExt],
+          [0, vExt],
           sh,
         );
       };
@@ -1466,6 +1505,26 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
                 gain: ringGains[seg.band] * seg.mul * AO_RIB_RETURN,
                 emit,
               };
+              /*
+               * **A return is 0.06 of a cell deep and used to be handed a
+               * whole tile.** `v` ran 0..1 across it whatever its world size,
+               * so the frame tile's bolt flanges were squeezed into a step
+               * about fifteen times narrower than they are wide — measured at
+               * a p90 anisotropy of 14.8 over the largest surface in the
+               * level, and the single worst source of the smearing on a bay.
+               *
+               * The step's `v` now covers the world distance it actually
+               * spans, at whatever density `u` is running at on this segment
+               * of the profile, so a texel on the return is the same size and
+               * shape as a texel on the moulding it steps off.
+               */
+              const arc = Math.hypot(
+                lo[i + 1][0] - lo[i][0],
+                lo[i + 1][1] - lo[i][1],
+              );
+              const du = SEG_V1[i] - SEG_V0[i];
+              const wpu = du > 1e-6 ? arc / du : 1;
+              const vExt = wpu > 1e-6 ? Math.abs(dHi - dLo) / wpu : 1;
               quadFacing(
                 trimB,
                 want,
@@ -1475,8 +1534,8 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
                 at(f, t, hi[i][0], hi[i][1]),
                 [SEG_V0[i], 0],
                 [SEG_V1[i], 0],
-                [SEG_V1[i], 1],
-                [SEG_V0[i], 1],
+                [SEG_V1[i], vExt],
+                [SEG_V0[i], vExt],
                 shade,
               );
             }

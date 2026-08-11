@@ -319,6 +319,38 @@ with them each surface's `TILE_MAT` is its own rather than a borrowed one.
   convex viewpoint). Measure before retuning `STRIP_SECTOR`; a light fitting
   looks blown next to a dead corridor whether or not it is.
 
+**Texel stretch is measured, not judged by eye — `scratch/stretch.mjs`.** It
+solves the uv→world Jacobian per triangle and reports the area-weighted median
+and p90 of its two singular values' ratio, per tile. Reading it: the number is
+in **uv space**, so divide by the tile's own pixel aspect to get texel stretch —
+the 3:1 chamfer crops read 2.25 there and are 1.33:1 in texels. Three separate
+things were making the corridor look smeared, and only one of them was a uv
+problem:
+
+- **A step got a whole tile however deep it was.** The ring's four returns
+  (0.06 of a cell) and the coffer's risers (0.055) both ran `v` 0..1 across
+  themselves, so the frame tile's bolt flanges were squeezed fifteen-fold into
+  the largest surface in the level. Both now take `v` from the world distance
+  they actually span, at whatever density `u` is running at there. p90 14.8 →
+  2.4 on the ring, 12 → 1.0 on the overhead.
+- **The vertical face fitted its tile to the band exactly**, which distorts by
+  whatever the band's aspect is — 1.8:1 measured. `wall-main` is a seamless
+  square tile, so `v` simply runs past 1.0 and tiles: `faceV = faceArc ×
+  faceRepeat`, and note the `1/rep` there is world-per-u **whatever span the
+  strip covers**, so it must not be divided by `t1 - t0` (doing that squares up
+  a full-cell wall and stretches every collar of every bay). 1.8 → 1.0. The
+  chamfers deliberately keep theirs: they are crops, they tile one way only,
+  and 1.33:1 is not worth breaking that for.
+- **The smear underfoot was never uv at all.** A corridor is a tube seen down
+  its own axis, so almost everything in frame is grazing, which is exactly
+  where isotropic mip selection blurs. Anisotropy is **16** (the container's
+  SwiftShader reports 16 as its max too, so this is measurable here). It costs
+  ~30% in software and close to nothing on a GPU.
+
+The strip is the one surface left stretched (3.4:1, p90 31) and it stays that
+way: a diffuser contributes `0.72 + 0.56 × lum` of its own texture and nothing
+else, so what is being stretched is a hint.
+
 - **The alternate wall tile is one cell in eight, not one in two.**
   `wall-grimy` is `wall-main` oxidised and a good deal darker; swapped in half
   the time it stops reading as weathering and starts reading as a chequerboard

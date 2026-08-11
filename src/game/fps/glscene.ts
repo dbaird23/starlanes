@@ -554,6 +554,8 @@ export class GlScene {
         side: THREE.FrontSide,
       });
       const m = new THREE.Mesh(g.geometry, mat);
+      // named so a probe can say which tile a measurement belongs to
+      m.name = `${g.tile}|${g.mat}`;
       m.frustumCulled = true;
       this.scene.add(m);
     }
@@ -570,7 +572,17 @@ export class GlScene {
       t = new THREE.TextureLoader().load(asset(`fps/${file}`));
       t.wrapS = THREE.RepeatWrapping;
       t.wrapT = THREE.RepeatWrapping;
-      t.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
+      /*
+       * **16, not 4.** A corridor is a tube seen down its own axis, so nearly
+       * every surface in frame is at a grazing angle — the deck ahead of you,
+       * the bench beside you, the whole run of wall. That is precisely where
+       * isotropic mip selection blurs, and it is what the smearing underfoot
+       * is: not a uv problem at all, which is why fixing the uv did not touch
+       * it. Anisotropy is close to free on a GPU and expensive only here,
+       * where there isn't one, so this is tuned for the machine it ships on
+       * rather than for the software rasterizer that measures it.
+       */
+      t.anisotropy = Math.min(16, this.renderer.capabilities.getMaxAnisotropy());
       this.textures.set(file, t);
     }
     return t;
