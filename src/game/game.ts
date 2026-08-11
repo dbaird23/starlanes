@@ -2625,18 +2625,27 @@ export class Game {
       captureOdds: odds,
       freeCargo: freeCommoditySpace(this.player),
       take: (what) => {
+        // Each boarding action risks triggering a reactor explosion (10%).
+        const maybeExplode = (note: string) => {
+          if (Math.random() < 0.1) {
+            this.destroyNpc(t, true);
+            return { note, shipLost: true };
+          }
+          return { note, shipLost: false };
+        };
+
         if (what === "credits") {
           this.player.credits += hold.credits;
           const note = `Took ${hold.credits.toLocaleString()} credits.`;
           hold.credits = 0;
           strip();
-          return note;
+          return maybeExplode(note);
         }
         if (what === "energy") {
           this.player.fuelJumps = this.player.maxFuelJumps;
           hold.energy = 0;
           strip();
-          return "You filled your reactors with energy from this ship.";
+          return maybeExplode("You filled your reactors with energy from this ship.");
         }
         if (what === "ammo") {
           const taken: string[] = [];
@@ -2651,9 +2660,10 @@ export class Game {
             delete hold.ammo[wid];
           }
           strip();
-          return taken.length
+          const note = taken.length
             ? `Took ${taken.join(", ")}.`
             : "Nothing to take.";
+          return maybeExplode(note);
         }
         // cargo: fill what space you have, heaviest hold first
         let space = freeCommoditySpace(this.player);
@@ -2670,13 +2680,18 @@ export class Game {
           );
         }
         strip();
-        return taken.length
+        const note = taken.length
           ? `Took ${taken.join(", ")}.`
           : "No room in your hold.";
+        return maybeExplode(note);
       },
       capture: (): CaptureResult => {
+        // One attempt only — mark boarded immediately so re-boarding is
+        // blocked regardless of outcome.
+        t.boarded = true;
         if (odds === null || !t.typeId) return { taken: false, note: "" };
         if (Math.random() < odds) {
+          // Outcome 1: success
           const captured = t.typeId;
           t.done = true;
           if (this.targetNpc === t) this.targetNpc = null;
@@ -2693,31 +2708,17 @@ export class Game {
             roomInWing: this.player.escorts.length < MAX_ESCORTS,
           };
         }
-        let note: string;
-        if (withMarines) {
-          // a failed assault costs you the boarding party
-          const lost = Math.ceil(this.gear.marines / 2);
-          note = `The assault is thrown back — you lose ${lost} marines.`;
-          for (const [outfId, owned] of Object.entries(this.player.outfits)) {
-            const outf = OUTFITS[outfId];
-            if (outf?.mods.some((m) => m.type === 25) && owned > 0) {
-              this.player.outfits[outfId] = owned - 1;
-              if (this.player.outfits[outfId] === 0)
-                delete this.player.outfits[outfId];
-              break;
-            }
-          }
-          this.recomputeLoadout();
+        // Outcome 2: ship explodes / Outcome 3: boarding party ejected
+        if (Math.random() < 0.5) {
+          this.destroyNpc(t, true);
         } else {
-          // no platoon to lose: the crew is beaten back bloodied instead
-          this.ship.armor = Math.max(
-            1,
-            this.ship.armor - this.ship.maxArmor * 0.15,
+          this.message(
+            withMarines
+              ? "The assault is thrown back — your boarding party is ejected."
+              : "Your crew is thrown back off the boarding tube.",
           );
-          note = "Your crew is thrown back off the boarding tube, bloodied.";
         }
-        this.message(note);
-        return { taken: false, note };
+        return { taken: false, note: "" };
       },
       claim: (choice) => this.claimPrize(choice),
       close: () => {

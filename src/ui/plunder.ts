@@ -37,7 +37,7 @@ export interface PlunderContext {
   captureOdds: number | null;
   /** free tons in your own hold */
   freeCargo: number;
-  take: (what: "credits" | "cargo" | "ammo" | "energy") => string;
+  take: (what: "credits" | "cargo" | "ammo" | "energy") => { note: string; shipLost: boolean };
   capture: () => CaptureResult;
   /** settle a taken prize: fly her, or send her to the wing */
   claim: (choice: "flagship" | "escort") => void;
@@ -143,18 +143,24 @@ export class PlunderUi {
       .querySelectorAll<HTMLButtonElement>("button[data-take]")
       .forEach((btn) => {
         btn.addEventListener("click", () => {
-          this.note = c.take(
+          const result = c.take(
             btn.dataset.take as "credits" | "cargo" | "ammo" | "energy",
           );
+          if (result.shipLost) {
+            c.close();
+            this.close();
+            return;
+          }
+          this.note = result.note;
           this.render();
         });
       });
     this.root.querySelector("#pl-capture")?.addEventListener("click", () => {
       const result = c.capture();
       if (!result.taken) {
-        // the assault was thrown back — you are still alongside her
-        this.note = result.note;
-        this.render();
+        // Boarding is over (ejected or exploded) — close the panel.
+        c.close();
+        this.close();
         return;
       }
       this.prize = result;
