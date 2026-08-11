@@ -74,6 +74,7 @@ import * as THREE from "three";
 import { asset } from "../../asset";
 import { buildLevelMesh, type LevelMesh } from "./mesh";
 import { TILE_FILES, matOf } from "./textures";
+import type { Prop } from "./props";
 import type { Station } from "./salvage";
 import type { FpsLevel, FpsSprite } from "./types";
 
@@ -545,6 +546,7 @@ interface SpriteSlot {
 export class GlScene {
   private stationMeshes: THREE.Mesh[] = [];
   private stationHousings: THREE.Mesh[] = [];
+  private propMeshes: THREE.Mesh[] = [];
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
@@ -811,6 +813,83 @@ export class GlScene {
     }
   }
 
+  /**
+   * The clutter, as geometry through the level's own shader.
+   *
+   * One mesh per prop rather than one merged buffer per kind, because there are
+   * a few dozen of them on a deck and merging would buy nothing measurable while
+   * costing the ability to place one by hand later. They wear the same tiles the
+   * bulkheads do — a crate on this ship was built by the people who built the
+   * ship — and they are lit by the sector they stand in, so clutter in a dead
+   * compartment stays dead and comes up when you throw its breaker.
+   */
+  setProps(props: Prop[]): void {
+    for (const m of this.propMeshes) {
+      this.scene.remove(m);
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
+    this.propMeshes = [];
+
+    for (const p of props) {
+      let g: THREE.BufferGeometry;
+      let tile: string;
+      let gain: number;
+      let lift: number;
+      switch (p.kind) {
+        case "crate": {
+          const s = 0.3 * p.scale;
+          g = new THREE.BoxGeometry(s, s * 0.9, s * 1.15);
+          tile = "wall-grimy.png";
+          gain = 0.86;
+          lift = s * 0.45;
+          break;
+        }
+        case "debris": {
+          // a sheet of panelling off the wall, lying almost flat
+          const s = 0.38 * p.scale;
+          g = new THREE.BoxGeometry(s, 0.035, s * 0.6);
+          g.rotateX(0.22);
+          tile = "wall-main.png";
+          gain = 0.7;
+          lift = 0.04;
+          break;
+        }
+        case "canister": {
+          const r = 0.075 * p.scale;
+          g = new THREE.CylinderGeometry(r, r, 0.34 * p.scale, 10);
+          tile = "bench-conduit.png";
+          gain = 0.95;
+          lift = 0.17 * p.scale;
+          break;
+        }
+        default: {
+          const s = 0.17 * p.scale;
+          g = new THREE.BoxGeometry(s, s * 1.2, 0.09);
+          tile = "frame-rib.png";
+          gain = 0.9;
+          lift = 0;
+          break;
+        }
+      }
+      /*
+       * **The uv comes off the tile scale the walls run at, not off the box.**
+       * `BoxGeometry` maps 0..1 across every face however big the face is, so a
+       * 0.3-cell crate would wear a whole bulkhead tile — one rivet the size of
+       * a hand, at a texel density ten times the wall it is leaning against,
+       * which is exactly the mismatch `scratch/stretch.mjs` exists to catch.
+       */
+      scaleUv(g, 1);
+      this.dressProp(g, p.sector, gain);
+      const m = new THREE.Mesh(g, this.levelMaterial(tile, tile));
+      m.position.set(p.x, p.base + lift, p.y);
+      m.rotation.y = -p.angle;
+      m.frustumCulled = false;
+      this.scene.add(m);
+      this.propMeshes.push(m);
+    }
+  }
+
   /** Repaint them for this frame's state. */
   updateStations(stations: Station[], target: number): void {
     for (let i = 0; i < this.stationMeshes.length; i++) {
@@ -954,4 +1033,36 @@ export class GlScene {
     this.quad.dispose();
     this.renderer.dispose();
   }
+}
+
+/**
+ * Rescale a prop's uv so its texels are the size the level's are.
+ *
+ * `BoxGeometry` and `CylinderGeometry` both map 0..1 across each face whatever
+ * the face measures, so a small prop magnifies its tile enormously and reads as
+ * a different material from the wall behind it. Multiplying the uv by the face's
+ * own world extent — taken per triangle from the positions, which is the same
+ * quantity `scratch/stretch.mjs` measures — puts a prop at `density` tiles per
+ * cell, the rate the deck and the overhead already run at.
+ */
+function scaleUv(g: THREE.BufferGeometry, density: number): void {
+  const pos = g.getAttribute("position");
+  const uv = g.getAttribute("uv");
+  if (!pos || !uv) return;
+  /*
+   * A box's faces are axis-aligned in its own space, so the two uv axes of any
+   * face run along two of x/y/z. Taking the whole geometry's extent per axis is
+   * exact for a box and close enough for a ten-sided cylinder.
+   */
+  g.computeBoundingBox();
+  const bb = g.boundingBox!;
+  const ex = bb.max.x - bb.min.x;
+  const ey = bb.max.y - bb.min.y;
+  const ez = bb.max.z - bb.min.z;
+  const su = Math.max(ex, ez) * density;
+  const sv = Math.max(ey, Math.min(ex, ez)) * density;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  }
+  uv.needsUpdate = true;
 }

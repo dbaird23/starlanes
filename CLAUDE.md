@@ -155,6 +155,26 @@ Three things about it are load-bearing:
   anywhere, and it lit the compartment that was already the brightest on the
   ship.
 
+**Props are placed from the deck too — `src/game/fps/props.ts`.** Crates,
+fallen panelling, gas bottles and junction boxes, about a third of the open
+cells, through the level's own shader so a crate in a dead compartment stays
+dead and comes up when you throw its breaker. Four things are load-bearing:
+
+- **Deterministic, hashed off the cell.** No `Math.random`: a deck the player is
+  meant to learn cannot rearrange itself between attempts.
+- **They never block.** `sim.ts` collides against the grid and nothing else, so
+  anything standing where you walk is a thing you walk through.
+- **`HUG_DECK` is 0.21, not 0.33.** The deck is only the middle ~45% of the
+  corridor; past that the lower chamfer rises as a bench, so a prop "against the
+  wall" at a third of a cell is buried in the bench at whatever angle the bench
+  happens to be. `HUG_WALL` 0.45 is the other answer, for the junction box,
+  which is bolted to the vertical face and so wants nearly the full half-cell.
+  A canister standing *on* the bench was tried and is wrong twice over: it is a
+  45° slope, so a cylinder on it either floats or sinks.
+- **`scaleUv` exists because `BoxGeometry` maps 0..1 across every face however
+  big it is.** A 0.3-cell crate would wear a whole bulkhead tile — one rivet the
+  size of a hand, at ten times the texel density of the wall it leans against.
+
 **A station is a housing plus a lens, and they are lit differently on purpose.**
 The housing is a box standing 0.07 proud, wearing `frame-rib` and going through
 the **level's own shader** (`levelMaterial` / `dressProp` bake the four extra

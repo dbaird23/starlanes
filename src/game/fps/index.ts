@@ -14,6 +14,7 @@ import { GlScene } from "./glscene";
 import { FpsWorld, type FpsCommand } from "./sim";
 import type { FpsOptions, FpsSprite } from "./types";
 import { AIR_LOW, formatAir } from "./salvage";
+import { placeProps } from "./props";
 
 const MOUSE_SENS = 0.0022;
 const KEY_TURN = 2.4;
@@ -74,6 +75,7 @@ export class FpsSession {
     this.world = new FpsWorld(opts);
     try {
       this.gl = new GlScene(opts.level);
+      this.gl.setProps(placeProps(opts.level, this.world.run.stations));
       this.gl.setStations(this.world.run.stations, (x, y) =>
         opts.level.sectorOf[
           Math.floor(y) * opts.level.w + Math.floor(x)
