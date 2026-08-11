@@ -61,42 +61,75 @@ export interface ActionDef {
   label: string;
 }
 
-/** Display order in Preferences. */
-export const ACTIONS: ActionDef[] = [
-  { id: "turnLeft", label: "Turn left" },
-  { id: "turnRight", label: "Turn right" },
-  { id: "accelerate", label: "Accelerate" },
-  { id: "reverse", label: "Reverse (turn about)" },
-  { id: "aimAssist", label: "Aim toward target (hold)" },
-  { id: "aimCursor", label: "Aim toward cursor (hold)" },
-  { id: "afterburner", label: "Afterburner" },
-  { id: "firePrimary", label: "Fire primary" },
-  { id: "fireSecondary", label: "Fire secondary" },
-  { id: "selectSecondary", label: "Select secondary" },
-  { id: "cycleTargets", label: "Cycle targets" },
-  { id: "targetClosest", label: "Target nearest hostile" },
-  { id: "selectUnderCursor", label: "Select item under cursor" },
-  { id: "land", label: "Land / dock" },
-  { id: "cycleStellars", label: "Cycle planets / stations" },
-  { id: "jump", label: "Hyperspace jump" },
-  { id: "hyperSelect", label: "Display mini map" },
-  { id: "cycleJumpDest", label: "Select jump destination" },
-  { id: "map", label: "Star map" },
-  { id: "hail", label: "Communicate" },
-  { id: "board", label: "Board disabled ship" },
-  { id: "cloak", label: "Engage cloak" },
-  { id: "recallFighters", label: "Recall fighters" },
-  { id: "autopilot", label: "Autopilot" },
-  { id: "navOff", label: "Nav system off" },
-  { id: "escortAttack", label: "Escorts: attack my target" },
-  { id: "escortForm", label: "Escorts: form up" },
-  { id: "escortHold", label: "Escorts: hold position" },
-  { id: "playerInfo", label: "Player info" },
-  { id: "missionInfo", label: "Mission info" },
-  { id: "jettison", label: "Jettison cargo" },
-  { id: "eject", label: "Eject (escape pod)" },
-  { id: "selfDestruct", label: "Self-destruct" },
+export interface ActionGroup {
+  title: string;
+  actions: ActionDef[];
+}
+
+/** Grouped display order — used in Preferences and the player-info keybinding list. */
+export const ACTION_GROUPS: ActionGroup[] = [
+  {
+    title: "Flight",
+    actions: [
+      { id: "turnLeft", label: "Turn left" },
+      { id: "turnRight", label: "Turn right" },
+      { id: "accelerate", label: "Accelerate" },
+      { id: "reverse", label: "Reverse (turn about)" },
+      { id: "afterburner", label: "Afterburner" },
+      { id: "aimAssist", label: "Aim toward target (hold)" },
+      { id: "aimCursor", label: "Aim toward cursor (hold)" },
+      { id: "autopilot", label: "Autopilot" },
+    ],
+  },
+  {
+    title: "Combat",
+    actions: [
+      { id: "firePrimary", label: "Fire primary" },
+      { id: "fireSecondary", label: "Fire secondary" },
+      { id: "selectSecondary", label: "Select secondary" },
+      { id: "cycleTargets", label: "Cycle targets" },
+      { id: "targetClosest", label: "Target nearest hostile" },
+      { id: "selectUnderCursor", label: "Select item under cursor" },
+      { id: "board", label: "Board disabled ship" },
+      { id: "eject", label: "Eject (escape pod)" },
+      { id: "selfDestruct", label: "Self-destruct" },
+    ],
+  },
+  {
+    title: "Navigation",
+    actions: [
+      { id: "land", label: "Land / dock" },
+      { id: "cycleStellars", label: "Cycle planets / stations" },
+      { id: "jump", label: "Hyperspace jump" },
+      { id: "cycleJumpDest", label: "Select jump destination" },
+      { id: "map", label: "Star map" },
+      { id: "hyperSelect", label: "Display mini map" },
+    ],
+  },
+  {
+    title: "Escorts & comms",
+    actions: [
+      { id: "hail", label: "Communicate" },
+      { id: "escortAttack", label: "Escorts: attack my target" },
+      { id: "escortForm", label: "Escorts: form up" },
+      { id: "escortHold", label: "Escorts: hold position" },
+      { id: "recallFighters", label: "Recall fighters" },
+    ],
+  },
+  {
+    title: "Info",
+    actions: [
+      { id: "playerInfo", label: "Player info" },
+      { id: "missionInfo", label: "Mission info" },
+      { id: "jettison", label: "Jettison cargo" },
+      { id: "cloak", label: "Engage cloak" },
+      { id: "navOff", label: "Nav system off" },
+    ],
+  },
 ];
+
+/** Flat list derived from ACTION_GROUPS — used wherever order matters. */
+export const ACTIONS: ActionDef[] = ACTION_GROUPS.flatMap((g) => g.actions);
 
 export const ACTION_IDS: ActionId[] = ACTIONS.map((a) => a.id);
 
