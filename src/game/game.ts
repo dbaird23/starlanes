@@ -1889,12 +1889,11 @@ export class Game {
             0,
             this.player.fuelJumps - (this.afterburnerBurn / 100) * dt,
           );
-          const boost = 1.5;
           const base = this.ship.stats;
           this.ship.stats = {
             ...base,
-            maxSpeed: base.maxSpeed * boost,
-            accel: base.accel * boost,
+            maxSpeed: base.maxSpeed * 1.5,
+            accel: base.accel * 3,
           };
           this.ship.update(dt, turn as -1 | 0 | 1, thrust);
           this.ship.stats = base;
@@ -6858,7 +6857,17 @@ export class Game {
         active.shipsDone &&
         (finalSpob === null || finalSpob === planetId)
       ) {
-        this.player.credits += Math.max(0, active.pay);
+        if (active.pay > 0) {
+          this.player.credits += active.pay;
+        } else if (active.pay < 0) {
+          // Outfit grant: -(count * 10000 + outfitNovaId)
+          const encoded = Math.abs(active.pay);
+          const count = Math.floor(encoded / 10000);
+          const outfitId = String(encoded % 10000);
+          const qty = this.player.outfits[outfitId] ?? 0;
+          this.player.outfits[outfitId] = qty + count;
+          this.recomputeLoadout();
+        }
         // DropOffMode 1 delivers at the end of the run rather than mid-way
         if (active.cargoLoaded && m.dropOffMode === 1) {
           active.cargoLoaded = false;

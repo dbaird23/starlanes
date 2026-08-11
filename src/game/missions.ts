@@ -162,7 +162,7 @@ export function availableMissions(
     // completed by their cargo and destination alone, so they must not be
     // filtered out with goal 6.
     if (m.shipCount > 0 && m.shipGoal > 5) continue;
-    if (m.pay < 0) continue; // special-reward encodings not supported yet
+    // pay < 0 encodes an outfit grant: -(count * 10000 + outfitNovaId); handled at completion
     if (m.flags & 0x0400) continue; // invisible missions
     const record = getRecord(player, SPOB_GOVT.get(spob.id) ?? -1);
     // -32000 and below is Nova's sentinel for "only once you hold this world".
