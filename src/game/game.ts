@@ -183,6 +183,7 @@ import {
   consumeCycleTargets,
   formatChord,
   getBinding,
+  type ActionId,
 } from "../keybindings";
 import { simFastForCapsLock } from "../settings";
 import { InfoUi, type InfoPickItem, type InfoRow } from "../ui/info";
@@ -5602,6 +5603,11 @@ export class Game {
       .map((e) => SHIPS[e.shipId]?.name.split(";")[0] ?? "Ship")
       .sort();
 
+    const kb = (id: ActionId): string => {
+      const c = getBinding(id);
+      return c.code ? formatChord(c) : "—";
+    };
+
     this.infoUi.show({
       title: this.pilotName,
       sections: [
@@ -5662,6 +5668,61 @@ export class Game {
         ...(wing.length
           ? [{ title: "Escorts", rows: [], note: wing.join(", ") }]
           : []),
+        {
+          title: "Flight",
+          rows: [
+            { label: "Turn left / right", value: `${kb("turnLeft")} / ${kb("turnRight")}` },
+            { label: "Accelerate / reverse", value: `${kb("accelerate")} / ${kb("reverse")}` },
+            { label: "Afterburner", value: kb("afterburner") },
+            { label: "Aim toward target", value: kb("aimAssist") },
+            { label: "Aim toward cursor", value: kb("aimCursor") },
+            { label: "Autopilot", value: kb("autopilot") },
+          ],
+        },
+        {
+          title: "Combat",
+          rows: [
+            { label: "Fire primary", value: kb("firePrimary") },
+            { label: "Fire secondary", value: kb("fireSecondary") },
+            { label: "Select secondary", value: kb("selectSecondary") },
+            { label: "Cycle targets", value: kb("cycleTargets") },
+            { label: "Target nearest hostile", value: kb("targetClosest") },
+            { label: "Select under cursor", value: kb("selectUnderCursor") },
+            { label: "Board disabled ship", value: kb("board") },
+            { label: "Eject (escape pod)", value: kb("eject") },
+          ],
+        },
+        {
+          title: "Navigation",
+          rows: [
+            { label: "Land / dock", value: kb("land") },
+            { label: "Cycle planets / stations", value: kb("cycleStellars") },
+            { label: "Hyperspace jump", value: kb("jump") },
+            { label: "Select jump destination", value: kb("cycleJumpDest") },
+            { label: "Star map", value: kb("map") },
+            { label: "Mini map", value: kb("hyperSelect") },
+          ],
+        },
+        {
+          title: "Escorts & comms",
+          rows: [
+            { label: "Hail", value: kb("hail") },
+            { label: "Escorts: attack target", value: kb("escortAttack") },
+            { label: "Escorts: form up", value: kb("escortForm") },
+            { label: "Escorts: hold position", value: kb("escortHold") },
+            { label: "Recall fighters", value: kb("recallFighters") },
+          ],
+        },
+        {
+          title: "Info",
+          rows: [
+            { label: "Player info (this panel)", value: kb("playerInfo") },
+            { label: "Mission log", value: kb("missionInfo") },
+            { label: "Jettison cargo", value: kb("jettison") },
+            { label: "Engage cloak", value: kb("cloak") },
+            { label: "Nav system off", value: kb("navOff") },
+          ],
+        },
       ],
       close: () => undefined,
     });
