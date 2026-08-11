@@ -91,6 +91,20 @@ const CHAMFERS = [
   ["new-hallway-materials/pipes-middle.png", "bench-conduit.png", 0, 724, 384, 128],
   ["materials/trim-light-channel.png", "chamfer-trim.png", 338, 679, 384, 128],
   ["new-hallway-materials/lightstrip-middle.png", "chamfer-main.png", 0, 875, 128, 384, true],
+  /*
+   * **The end pieces**, which is what the kit is really for: a run of services
+   * that *terminates* rather than tiling forever.
+   *
+   * They are cut at the same texel density as their own middle, so a cap covers
+   * the fraction of a cell its art actually measures — 483/2622 = 0.184 for the
+   * pipes, 584/875 = 0.667 for the light strip — rather than being stretched to
+   * fill whatever span it is handed. `mesh.ts` reads those two numbers back as
+   * `CAP_BENCH` and `CAP_SOFFIT`; change a crop and they move with it.
+   */
+  ["new-hallway-materials/pipes-leftend.png", "bench-end-lo.png", 0, 724, 71, 128],
+  ["new-hallway-materials/pipes-rightend.png", "bench-end-hi.png", 0, 724, 71, 128],
+  ["new-hallway-materials/lightstrip-top.png", "soffit-end-lo.png", 0, 584, 128, 256, true],
+  ["new-hallway-materials/lightstrip-bottom.png", "soffit-end-hi.png", 0, 584, 128, 256, true],
   ["materials/wall-grimy.png", "chamfer-grimy.png", 600, 941, 384, 128],
 ];
 

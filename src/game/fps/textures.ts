@@ -60,6 +60,10 @@ export const TILE_FILES = [
   "breaker-glow.png",
   "locker-closed.png",
   "locker-open.png",
+  "bench-end-lo.png",
+  "bench-end-hi.png",
+  "soffit-end-lo.png",
+  "soffit-end-hi.png",
 ] as const;
 
 /**
@@ -308,6 +312,10 @@ export const TILE_MAT: Record<string, TileMat> = {
    * the section has.
    */
   "bench-conduit.png": { base: [0.104, 0.112, 0.132], rough: 0.4, metal: 0.4, bump: 0.7, glow: GLOW_COOL },
+  // the end pieces are the same material as the run they terminate; only the
+  // picture differs, so a cap must not read as a different metal from its middle
+  "bench-end-lo.png": { base: [0.104, 0.112, 0.132], rough: 0.4, metal: 0.4, bump: 0.7, glow: GLOW_COOL },
+  "bench-end-hi.png": { base: [0.104, 0.112, 0.132], rough: 0.4, metal: 0.4, bump: 0.7, glow: GLOW_COOL },
   /*
    * The two fittings. They are the only surfaces in the level a player walks up
    * to and stands at, so they take the least knock-down of anything here — a

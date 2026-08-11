@@ -193,6 +193,20 @@ const STRIP_SEG1 = 8;
  */
 const STRIP_EMIT = 1.6;
 
+/**
+ * How much of a cell an end piece covers, at the same texel density as its own
+ * middle tile: `pipes-leftend` is 483px against `pipes-middle`'s 2622, and
+ * `lightstrip-top` 584 against 875. See `scripts/fps-tiles.mjs`, which cuts
+ * them, and move these two if a crop moves.
+ */
+const CAP_BENCH = 483 / 2622;
+const CAP_SOFFIT = 584 / 875;
+
+const BENCH_END_LO = "bench-end-lo.png";
+const BENCH_END_HI = "bench-end-hi.png";
+const SOFFIT_END_LO = "soffit-end-lo.png";
+const SOFFIT_END_HI = "soffit-end-hi.png";
+
 const STRIP_MAT = "strip";
 const STRIP_RATING = 1;
 const SPINE_RATING = 0.55;
@@ -864,6 +878,14 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
     sh: { light: number; emit: number },
     trays: boolean,
     aoScale: number,
+    /*
+     * Which of the three bands to emit, as a bit each. It exists because the
+     * bench and the soffit cap their runs at different lengths, so they are
+     * emitted as two independent sets of spans over the same profile — and
+     * without a mask the vertical face, which belongs to neither, would be
+     * emitted by both passes and z-fight with itself down every wall.
+     */
+    bandMask = 7,
   ): void => {
     /*
      * How far the face tile runs vertically, so its texels come out square
@@ -882,6 +904,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
     const faceV = Math.max(0.25, faceArc * faceRepeat);
     for (let i = 0; i < SEGS.length; i++) {
       const seg = SEGS[i];
+      if (!(bandMask & (1 << seg.band))) continue;
       // band 0 is the bench, 1 the vertical face, 2 the soffit — three tiles,
       // because the bench carries services and the soffit above it cannot
       const tile = seg.band === 1 ? tiles.face : seg.band === 0 ? tiles.bench : tiles.bevel;
@@ -1424,24 +1447,90 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
          * cannot be seen.
          */
         if (dress.rib === 0) {
-          wallStrip(
-            f,
-            pa,
-            pb,
-            0,
-            1,
-            {
-              face: faceTile,
-              bevel: bevelTile,
-              bench: useAlt && dress.benchAlt ? dress.benchAlt : dress.bench,
-            },
-            gains,
-            dress.faceRepeat,
-            uOff,
-            { light, emit: plainEmit },
-            true,
-            1,
-          );
+          const benchTile = useAlt && dress.benchAlt ? dress.benchAlt : dress.bench;
+          /*
+           * **A run of services terminates where it meets a bay**, and this is
+           * where the kit's end pieces go in.
+           *
+           * A wall facing east/west bounds a passage running north/south, so a
+           * run along it is broken by whatever stands at the cell before and
+           * after *along that wall*. `capAt` asks whether that neighbour is a
+           * bay ring or solid — either way the run stops there — and if it does,
+           * the strip is split so the last `CAP_*` of the cell wears the end
+           * piece instead of another repeat of the middle.
+           *
+           * Splitting rather than swapping the whole cell matters: an end piece
+           * is 0.18 of a cell of pipe and 0.67 of a cell of light channel, and
+           * stretched over a whole cell it is the same aspect distortion
+           * `scratch/stretch.mjs` exists to catch. `wallStrip` already takes a
+           * sub-span — it is how the bay ring's own collars are emitted — so the
+           * cap is one more call with a different `t0..t1` and a different tile.
+           */
+          const along: [number, number] = dir < 2 ? [0, 1] : [1, 0];
+          const capAt = (sgn: number): boolean => {
+            const nx2 = cx + along[0] * sgn;
+            const ny2 = cy + along[1] * sgn;
+            if (nx2 < 0 || ny2 < 0 || nx2 >= w || ny2 >= h) return true;
+            const nj2 = ny2 * w + nx2;
+            return cells[nj2] !== 0 || ring[nj2] === 1;
+          };
+          const lo = capAt(-1);
+          const hi = capAt(1);
+          // a one-cell run between two bays cannot fit two full caps
+          const cb = lo && hi ? Math.min(CAP_BENCH, 0.5) : CAP_BENCH;
+          const cs = lo && hi ? Math.min(CAP_SOFFIT, 0.5) : CAP_SOFFIT;
+
+          const strip = (
+            t0: number,
+            t1: number,
+            bench: string,
+            bevel: string,
+            bandMask: number,
+          ): void => {
+            if (t1 - t0 < 1e-4) return;
+            wallStrip(
+              f,
+              lerpProfile(pa, pb, t0),
+              lerpProfile(pa, pb, t1),
+              t0,
+              t1,
+              { face: faceTile, bevel, bench },
+              gains,
+              dress.faceRepeat,
+              uOff,
+              { light, emit: plainEmit },
+              true,
+              1,
+              bandMask,
+            );
+          };
+
+          /*
+           * The two bands cap at different lengths, so they are emitted as two
+           * independent sets of spans over the same profile: the bench's caps at
+           * `cb` and the soffit's at `cs`. Where a band is not capping, its span
+           * simply carries the middle tile, so a straight run still costs the
+           * same three calls' worth of geometry it always did.
+           */
+          for (const [band, cap, mid, capLo, capHi] of [
+            [0, cb, benchTile, BENCH_END_LO, BENCH_END_HI],
+            [2, cs, bevelTile, SOFFIT_END_LO, SOFFIT_END_HI],
+          ] as const) {
+            const isBench = band === 0;
+            // the bench pass carries the vertical face; the soffit pass does not
+            const mask = isBench ? 0b011 : 0b100;
+            const seg = (t0: number, t1: number, tile: string): void =>
+              strip(
+                t0,
+                t1,
+                isBench ? tile : benchTile,
+                isBench ? bevelTile : tile,
+                mask,
+              );
+            if (lo) seg(0, cap, capLo);
+            seg(lo ? cap : 0, hi ? 1 - cap : 1, mid);
+            if (hi) seg(1 - cap, 1, capHi);
+          }
         }
 
         /* ---- and the ring, if this wall is a bay frame */

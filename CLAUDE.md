@@ -493,11 +493,26 @@ rather than tile it forever. Two of them are in:
   `wall-main`, which is pale everywhere. Without it the channel sat at the
   soffit's own gain of 0.34 and read as a slightly paler stripe on a dark band.
 
-Still unused, and the reason the kit is worth more than four tiles: `*-end.png`
-for both runs, `floor.png` (the reference's grating runner, better than
-`deck-runner`), `ceiling.png`, `edge.png` and the `pipes2` variant. Wiring the
-ends means `wallStrip` choosing a tile per cell from whether the run terminates
-at a bay, which the cell loop already knows (`ring[ci]`).
+- **Runs terminate at bays, with the kit's end pieces** (`*-end-lo/hi.png`).
+  A wall facing east/west bounds a passage running north/south, so a run along
+  it breaks at whatever stands at the cell before and after *along that wall*;
+  if that neighbour is a bay ring or solid, the strip is split and the last
+  `CAP_*` of the cell wears the end piece. **Splitting rather than swapping the
+  whole cell is the point**: a cap is 0.18 of a cell of pipe and 0.67 of a cell
+  of light channel, and stretched to fill a whole cell it is the same aspect
+  distortion `scratch/stretch.mjs` exists to catch. `wallStrip` already took a
+  sub-span — it is how the bay ring's collars are emitted — so a cap is one more
+  call with a different `t0..t1`.
+- **`wallStrip` takes a band mask, and it is not an optimisation.** The bench
+  and the soffit cap at different lengths, so they are emitted as two
+  independent sets of spans over the same profile. Without a mask the vertical
+  face, which belongs to neither, is emitted by both passes and z-fights with
+  itself down every wall in the level.
+
+Still unused: `floor.png` (the reference's grating runner, better than
+`deck-runner`), `ceiling.png`, `edge.png` and the `pipes2` variant. The first
+two are 1.75:1 and 2.61:1 against a deck that maps one tile per square cell, so
+they need a uv repeat rather than a straight swap.
 
 **Texel stretch is measured, not judged by eye — `scratch/stretch.mjs`.** It
 solves the uv→world Jacobian per triangle and reports the area-weighted median
