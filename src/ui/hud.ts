@@ -531,7 +531,8 @@ export class HudUi {
      * lives on the map screen, which buys the manifest a line back.
      */
     const rows: [string, string, string][] = [
-      ["FREE", String(Math.max(0, g.player.cargoCap - g.cargoUsed())), ""],
+      // fleet-wide: FREE is what you could still buy, and trader escorts count
+      ["FREE", String(Math.max(0, g.cargoSpace())), ""],
       ["CREDITS", g.player.credits.toLocaleString(), "credits"],
     ];
     const special = g.player.activeMissions.find(

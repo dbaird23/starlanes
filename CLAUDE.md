@@ -273,6 +273,43 @@ Manticore hands over 360-600k. Two paths still board empty and are a real gap:
 `spawnFleetOf` and `spawnMissionShips` never set `dudeId`/`bootyFlags`, and
 `maybeMakePerson` overwrites a düde roll with the captain's own Credits.
 
+**A përs bound to one system is placed there, not rolled for.** The Bible's
+"when ships are created, there is a 5% chance that a specific AI-person will
+also be created" was the only way a captain could enter play, and reading it
+as the whole rule makes a system-bound përs unreachable — it competes with
+every wildcard-LinkSyst captain the system admits. That is what broke
+**"Shoot down Derelict" (mïsn 754, Tutorial 006)**: the target is not a
+special ship at all. 754 carries ShipCount -1, and the derelict is **përs
+642**, a Pirate Viper named "- marked for demolition -" with LinkSyst 166
+(Rautherion) and **ActiveOn `b9208`** — precisely the bit 754's OnAccept sets
+and its OnSuccess clears. In Rautherion that përs was 1 of 157 candidates
+behind a 5% roll, so the odds of meeting it were about 0.03% per ship spawned.
+`placeLinkedPersons` now spawns, on entering a system, every available përs
+whose LinkSyst is an explicit id in the Bible's 128-2175 band; there are 29 of
+them and never more than three in one system (Jack Folstam, the Drifting
+Derelicts, a few named traders). `maybeMakePerson` no longer considers that
+band, so nobody doubles up, and the wildcard bands are untouched.
+
+Do not go looking for the derelict on the mission instead. mïsn 755, "Silent
+Mission;Tutorial 006a", is what 754's OnAccept starts (`S755`), and its ships
+are genuinely 1 × düde 155 "Large Auroran War Ships" in sÿst 129 (Tichel) —
+the front-line firepower Barry comments on in 754's DropCargText when you
+reach Viking, which is 754's ReturnStel and sits in that same system. The
+offsets are right; verified against the raw resource. Note also that düde 238,
+"Tutorial Derelict", is **referenced by nothing in the shipped data** — it is
+not the mechanism, and hunting for its caller is a dead end.
+
+The other half is gövt Flags **0x0800**, "ships of this govt start out
+disabled (derelicts)", which was extracted and never read. Both governments
+named Derelicts (160, 180) carry it and between them own every përs it
+applies to — the eleven Drifting Derelicts and the tutorial Viper — so
+without it a derelict spawned with aggress 0 and AI type 1 and simply flew
+off. It is applied in `applyPerson` only. Extending it to düde spawns would
+be right for düde 227 "Association - disabled", 230 "Leviathan - disabled",
+238 and 243 "Disabled Auroran Cruiser", whose names confirm the flag outright
+— but gövt 159, the **Wraith**, also sets 0x0800, and disabling every Wraith
+in flight is not a change to make without a reference build.
+
 **People are cargo — and three fields decide who gets offered the job.** Nova
 has no passenger berths: STR# 4000 entry 6 is "\*Passengers", the 103 missions
 that carry them use CargoQty tons like any other freight, and a hull's capacity
@@ -795,6 +832,45 @@ as being too close to the planet. Arrival is at 1700, safely outside. The
 autopilot flies out of the zone before jumping rather than asking every frame.
 Once outside, the jump sequence itself is the three-phase entry described
 under "Recently completed" (brake → align → high-speed burn → flash).
+
+**Your escorts' holds are yours — for commodities, and only from traders.**
+Escort capacity was never pooled: `cargoCap` was hull + outfits and a hired
+Sprite's 500 tons did nothing. The manual's *Escorts and Fighters* section
+states both halves of the rule in one breath — escorts are worth having for
+"providing additional cargo space on a profitable trade route", but "any
+special cargo you need for a mission must always fit into your ship's own
+cargo hold; no one else can be trusted with it". The Bible then narrows *who*:
+shïp **InherentAI** @66 — "only ships with inherent AI of 1 or 2 can be used
+to carry cargo when they are the player's escorts", the two trader AIs. Of the
+79 hireable hulls only **27** read 1 or 2, so a hired Manticore's 500-ton hold
+is worth nothing to you and a Sprite's is worth all of it.
+
+The model is in `src/game/cargo.ts` and is entirely derived from the escort
+list — no per-escort stowage state, nothing new in the pilot file. Things worth
+knowing:
+
+- **`player.cargoCap` still means the hull**, and must keep meaning it: it is
+  the only figure mission freight may use. The fleet-wide number is
+  `totalCargoCap`, surfaced as `Game.cargoCapacity()`. The two free-space
+  questions are different and both are asked — `freeCommoditySpace` (buying,
+  plunder, minerals) and `freeHoldSpace` (mission offers and `acceptMission`).
+  Reaching for `cargoCap - cargoUsed()` again gets one of them wrong.
+- **Commodities fill the escorts first and spill back into your hull.**
+  Neither document says how a load is distributed, so this is ours, and the
+  reason is that the other way round is a trap: a full hold would lock you out
+  of mission cargo while your escorts flew empty. As it stands 400 tons aboard
+  a Shuttle with a Sprite escort leaves the Shuttle's own 10 tons free.
+- **Losing an escort spaces the overflow.** `enforceCargoCapacity` runs from
+  `Game.settleFleetCargo()` on every path the wing shrinks — a death, payroll
+  defection, dismissal, and taking a smaller prize as your flagship. Nothing
+  says what becomes of the goods, and losing them is the only reading that
+  makes the borrowed space a risk rather than free storage. Mission freight is
+  never touched: it was in your own hull all along.
+- `buyShip` checks the *hull's* share against the new hull, not `cargoUsed()`
+  — the wing's holds come with you.
+- The hiring hall states the rule before you pay: a "Carries For You" line
+  reading `500 t` or `None (500 t, warship crew)`, and the wing heading totals
+  it. The Alt-K cargo panel adds a Stowed line splitting aboard from escorts.
 
 **Capturing a ship asks what you want done with her.** A successful boarding
 silently swapped your hull for the prize and threw your own ship away. Nova

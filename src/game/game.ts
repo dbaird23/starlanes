@@ -77,12 +77,22 @@ import {
 } from "../engine/sprites";
 import { applySet, evalTest } from "./bits";
 import { formatDate } from "./calendar";
+import {
+  cargoUsed as fleetCargoUsed,
+  commodityTons,
+  enforceCargoCapacity,
+  fleetCargoCap,
+  freeCommoditySpace,
+  freeHoldSpace,
+  missionCargoUsed,
+  stowage,
+  totalCargoCap,
+} from "./cargo";
 import { runCrons } from "./crons";
 import { runOopses } from "./oops";
 import {
   descText,
   instantiateMission,
-  missionCargoUsed,
   missionDisplayName,
   substituteTags,
   testContext,
@@ -1579,7 +1589,16 @@ export class Game {
     if (this.player.credits < price) {
       return { ok: false, reason: "You cannot afford this ship." };
     }
-    if (this.cargoUsed() > type.cargo) {
+    /*
+     * The wing's holds come with you, so what has to fit here is the hull's
+     * share: mission freight, which never leaves your own hold, plus whatever
+     * commodities the escorts cannot take.
+     */
+    const fleet = fleetCargoCap(this.player);
+    const mustFit =
+      missionCargoUsed(this.player) +
+      Math.max(0, commodityTons(this.player) - fleet);
+    if (mustFit > type.cargo) {
       return {
         ok: false,
         reason: "Your cargo will not fit in this ship's hold.",
@@ -2604,7 +2623,7 @@ export class Game {
       shipName: this.shipLabel(t),
       hold,
       captureOdds: odds,
-      freeCargo: this.player.cargoCap - this.cargoUsed(),
+      freeCargo: freeCommoditySpace(this.player),
       take: (what) => {
         if (what === "credits") {
           this.player.credits += hold.credits;
@@ -2637,7 +2656,7 @@ export class Game {
             : "Nothing to take.";
         }
         // cargo: fill what space you have, heaviest hold first
-        let space = this.player.cargoCap - this.cargoUsed();
+        let space = freeCommoditySpace(this.player);
         const taken: string[] = [];
         for (const [id, tons] of Object.entries(hold.cargo)) {
           if (space <= 0) break;
@@ -2762,6 +2781,9 @@ export class Game {
       this.pendingPrize = null;
       return;
     }
+    // taking the helm of a smaller prize can leave the manifest over capacity,
+    // even with your old hull falling in behind to carry some of it
+    this.settleFleetCargo();
     // shïp OnCapture: 171 hulls set a bit when taken
     const onCapture = SHIPS[prize]?.onCapture;
     if (onCapture) applySet(onCapture, this.player.bits, this.bitHandlers());
@@ -3768,6 +3790,8 @@ export class Game {
     this.message(
       "You could not make payroll. Your escorts have left your service.",
     );
+    // and anything stowed in their holds goes with them
+    this.settleFleetCargo();
   }
 
   /** Hire a ship to fly with you. Wages are a thousandth of the hull per day. */
@@ -3803,6 +3827,7 @@ export class Game {
         `You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`,
       );
     }
+    this.settleFleetCargo();
   }
 
   /** Give every ship flying with you a standing order. */
@@ -4530,6 +4555,8 @@ export class Game {
       const idx = this.player.escorts.findIndex((e) => e.shipId === npc.typeId);
       if (idx >= 0) {
         this.player.escorts.splice(idx, 1);
+        // whatever she was hauling for you burned with her
+        this.settleFleetCargo();
       }
     }
     if (
@@ -4800,7 +4827,7 @@ export class Game {
   }
 
   private collectMineral(m: Mineral): void {
-    const space = this.player.cargoCap - this.cargoUsed();
+    const space = freeCommoditySpace(this.player);
     if (space <= 0) {
       this.message("Your hold is full.");
       return;
@@ -5107,26 +5134,72 @@ export class Game {
     if (!asReinforcement) this.message(`${fleet.name} enters the system.`);
   }
 
+  /** Is this captain in play, alive, and flying a hull we have? */
+  private personAvailable(p: PersonType): boolean {
+    if (this.player.personsKilled.includes(p.id)) return false;
+    if (!SHIPS[String(p.shipType)]) return false;
+    // ActiveOn gates whether this captain is in play at all
+    if (p.activeOn && !evalTest(p.activeOn, this.player.bits)) return false;
+    return true;
+  }
+
+  /**
+   * A përs whose LinkSyst names one specific system is *placed* there, not
+   * rolled for. The Bible's "5% chance that a specific AI-person will also be
+   * created" governs the general pool, and reading it as the only way in makes
+   * a system-bound captain unreachable: in Rautherion, përs 642 — the tutorial
+   * derelict, gated on the very bit "Shoot down Derelict" sets on accept — is
+   * one of 157 candidates the system admits, so the odds of meeting it were
+   * 0.05 × 1/157 per ship spawned and the mission's target never appeared.
+   *
+   * Only the 29 përs with an explicit id in the Bible's 128-2175 band are
+   * placed (never more than three in one system: Jack Folstam and a named
+   * trader or two). Everything with a wildcard LinkSyst stays on the 5% roll.
+   */
+  private placeLinkedPersons(): void {
+    const sysId = parseInt(this.player.systemId, 10);
+    for (const person of Object.values(PERSONS)) {
+      const link = person.linkSyst;
+      if (link < 128 || link > 2175 || link !== sysId) continue;
+      if (!this.personAvailable(person)) continue;
+      const npc = new NpcShip();
+      this.applyPerson(npc, person);
+      if (!npc.ally && this.hostileToPlayer(npc.govtId)) {
+        if (person.linkMission < 128) this.setNpcHostile(npc);
+      }
+      const ang = Math.random() * Math.PI * 2;
+      const r = 400 + Math.random() * 1200;
+      npc.pos = { x: Math.cos(ang) * r, y: Math.sin(ang) * r };
+      this.setNpcErrand(npc, this.system);
+      npc.angle = Math.atan2(npc.target.y - npc.pos.y, npc.target.x - npc.pos.x);
+      this.npcs.push(npc);
+    }
+  }
+
   /** 5% of ships are a named captain, per the Nova Bible. */
   private maybeMakePerson(npc: NpcShip): void {
     if (Math.random() > 0.05) return;
-    const sysId = parseInt(this.player.systemId, 10);
     const govtId = this.system.govtId;
-    const killed = new Set(this.player.personsKilled);
     const candidates = Object.values(PERSONS).filter((p) => {
-      if (killed.has(p.id)) return false;
-      if (!SHIPS[String(p.shipType)]) return false;
-      // ActiveOn gates whether this captain is in play at all
-      if (p.activeOn && !evalTest(p.activeOn, this.player.bits)) return false;
+      if (!this.personAvailable(p)) return false;
       const link = p.linkSyst;
       if (link === -1) return true;
-      if (link >= 128 && link <= 2175) return link === sysId;
+      // an explicitly placed captain is already in the system; see
+      // placeLinkedPersons — re-rolling one here would double them up
+      if (link >= 128 && link <= 2175) return false;
       if (link >= 9999 && link <= 10255) return govtId === link - 9872;
       if (link >= 20000 && link <= 20255) return govtId !== link - 19872;
       return false;
     });
     if (candidates.length === 0) return;
-    const person = candidates[Math.floor(Math.random() * candidates.length)];
+    this.applyPerson(
+      npc,
+      candidates[Math.floor(Math.random() * candidates.length)],
+    );
+  }
+
+  /** Turn a freshly made hull into a specific named captain. */
+  private applyPerson(npc: NpcShip, person: PersonType): void {
     const type = SHIPS[String(person.shipType)];
     npc.personId = person.id;
     npc.typeId = String(person.shipType);
@@ -5154,6 +5227,16 @@ export class Game {
     }
     // a captain with a job to offer shouldn't open fire before offering it
     if (person.linkMission >= 128) npc.hostile = false;
+    /*
+     * gövt Flags 0x0800, "ships of this govt start out disabled (derelicts)".
+     * Both governments named Derelicts carry it, and between them they own
+     * every përs the field applies to: the eleven Drifting Derelicts and the
+     * tutorial's Pirate Viper. Without it a "derelict" spawns with aggress 0
+     * and AI type 1 and simply flies off, which is not something you can be
+     * sent to shoot down.
+     */
+    if (((GOVT_FLAGS[String(person.govt)] ?? 0) & 0x0800) !== 0)
+      npc.disabled = true;
 
     const radio = STR_LISTS["7101"]?.[person.hailQuote - 1]; // 1-based, as above
     if (radio) this.message(`${person.name}: "${radio}"`);
@@ -5581,7 +5664,11 @@ export class Game {
             },
             {
               label: "Cargo",
-              value: `${this.cargoUsed()} / ${this.player.cargoCap} tons`,
+              value: `${this.cargoUsed()} / ${this.cargoCapacity()} tons${
+                this.fleetCapacity()
+                  ? ` (${this.fleetCapacity()} in escorts)`
+                  : ""
+              }`,
             },
             { label: "Free mass", value: `${this.freeMassLeft()} tons` },
             {
@@ -5764,17 +5851,28 @@ export class Game {
     this.infoUi.show({
       title: "Cargo Hold",
       // a thunk, so the tonnage falls as you dump
-      sections: () => [
-        {
-          title: "Hold",
-          rows: [
-            {
-              label: "Used",
-              value: `${this.cargoUsed()} / ${this.player.cargoCap} tons`,
-            },
-          ],
-        },
-      ],
+      sections: () => {
+        /*
+         * Two lines when a trader flies with you, one otherwise. The split
+         * matters to the player because only the hull's share competes with
+         * mission freight — see cargo.ts.
+         */
+        const fleet = this.fleetCapacity();
+        const split = this.cargoStowage();
+        const rows = [
+          {
+            label: "Used",
+            value: `${this.cargoUsed()} / ${this.cargoCapacity()} tons`,
+          },
+        ];
+        if (fleet > 0) {
+          rows.push({
+            label: "Stowed",
+            value: `${split.hull}t aboard · ${split.fleet}t in escorts (${fleet}t)`,
+          });
+        }
+        return [{ title: "Hold", rows }];
+      },
       jettison: () =>
         Object.entries(this.player.cargo)
           .filter(([, tons]) => tons > 0)
@@ -6413,10 +6511,49 @@ export class Game {
   // ---------------- economy (called by landed UI) ----------------
 
   cargoUsed(): number {
-    return (
-      Object.values(this.player.cargo).reduce((a, b) => a + b, 0) +
-      missionCargoUsed(this.player)
-    );
+    return fleetCargoUsed(this.player);
+  }
+
+  /**
+   * Hull plus whatever the wing can haul. Trader-AI escorts add their holds
+   * to yours for commodities — see `cargo.ts` for the rule and its limits.
+   */
+  cargoCapacity(): number {
+    return totalCargoCap(this.player);
+  }
+
+  /** What the escorts contribute, alone. Zero unless a trader flies with you. */
+  fleetCapacity(): number {
+    return fleetCargoCap(this.player);
+  }
+
+  /** Tons of commodities you could still buy, anywhere in the fleet. */
+  cargoSpace(): number {
+    return freeCommoditySpace(this.player);
+  }
+
+  /** Tons free in your own hull — all that mission freight may use. */
+  holdSpace(): number {
+    return freeHoldSpace(this.player);
+  }
+
+  /** How the commodity load is split between your hull and the wing. */
+  cargoStowage(): { hull: number; fleet: number } {
+    return stowage(this.player);
+  }
+
+  /**
+   * Re-seat the manifest after the wing changes size. An escort that dies,
+   * defects or is paid off takes its hold with it and the overflow is spaced;
+   * `enforceCargoCapacity` decides what goes, this reports it.
+   */
+  private settleFleetCargo(): void {
+    const lost = enforceCargoCapacity(this.player);
+    if (lost.length === 0) return;
+    const what = lost
+      .map((l) => `${l.tons}t of ${cargoLabel(l.id)}`)
+      .join(", ");
+    this.message(`Your hold cannot take it all — you jettison ${what}.`);
   }
 
   // ---------------- missions ----------------
@@ -6548,10 +6685,12 @@ export class Game {
     ok: boolean;
     reason?: string;
   } {
-    if (
-      active.cargoLoaded &&
-      active.cargoQty > this.player.cargoCap - this.cargoUsed()
-    ) {
+    /*
+     * Mission freight goes in your own hull and nowhere else — the manual is
+     * explicit that "no one else can be trusted with it" — so this is the
+     * hull figure even when the wing has room to spare.
+     */
+    if (active.cargoLoaded && active.cargoQty > freeHoldSpace(this.player)) {
       return {
         ok: false,
         reason: "You don't have enough cargo space for this mission.",
@@ -6738,7 +6877,8 @@ export class Game {
   }
 
   buy(commodityId: string, qty: number, unitPrice: number): void {
-    const space = this.player.cargoCap - this.cargoUsed();
+    // commodities may ride in the wing, so this is the fleet-wide figure
+    const space = freeCommoditySpace(this.player);
     const affordable = Math.floor(this.player.credits / unitPrice);
     const n = Math.min(qty, space, affordable);
     if (n <= 0) return;
@@ -6937,6 +7077,7 @@ export class Game {
   private populateNpcs(): void {
     const n = Math.min(this.system.traffic, 2);
     for (let i = 0; i < n; i++) this.spawnNpc(true);
+    this.placeLinkedPersons();
   }
 
   /** weighted pick from {prob} entries */

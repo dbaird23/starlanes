@@ -13,6 +13,7 @@ import {
   STR_LISTS,
   SYSTEMS,
 } from "../data/universe";
+import { freeHoldSpace } from "./cargo";
 import { getRecord, ratingLevel } from "./reputation";
 import type {
   ActiveMission,
@@ -187,7 +188,8 @@ export function availableMissions(
      * mission whose cargo would have to come aboard here and now.
      */
     const needAtAccept = minCargoAtAccept(m);
-    const free = freeCargoSpace(player);
+    // your own hull only — escorts may not carry mission freight (see cargo.ts)
+    const free = freeHoldSpace(player);
     if ((m.flags2 & 0x0001) !== 0 && minCargoQty(m.cargoQty) > free) continue;
     if (needAtAccept > free) continue;
     /*
@@ -347,20 +349,6 @@ function systemNameOf(systemId: string): string {
   } catch {
     return "an unknown system";
   }
-}
-
-/** Total tons of mission cargo currently aboard. */
-export function missionCargoUsed(player: PlayerState): number {
-  return player.activeMissions.reduce(
-    (sum, a) => sum + (a.cargoLoaded ? a.cargoQty : 0),
-    0,
-  );
-}
-
-/** Free cargo space right now (commodities + mission cargo both count). */
-export function freeCargoSpace(player: PlayerState): number {
-  const commodities = Object.values(player.cargo).reduce((a, b) => a + b, 0);
-  return player.cargoCap - commodities - missionCargoUsed(player);
 }
 
 /** Minimum tons a mission will demand at accept time (random quantities roll ≥ 1). */

@@ -25,6 +25,7 @@ import {
   escortSellValue,
   escortWage,
 } from "../game/game";
+import { escortCargoCap } from "../game/cargo";
 import { JUNKS, junkCargoKey } from "../data/universe";
 import {
   availableMissions,
@@ -1152,11 +1153,12 @@ export class LandedUi {
       this.game.rankTags(),
     );
     const cantRefuse = (m.flags & 0x0004) !== 0;
-    const freeSpace = this.game.player.cargoCap - this.game.cargoUsed();
+    // mission freight rides in your own hull, so escort holds don't count
+    const freeSpace = this.game.holdSpace();
     const fits = !active.cargoLoaded || active.cargoQty <= freeSpace;
     const noSpaceNote = fits
       ? ""
-      : `<p class="hint warn">This job needs ${active.cargoQty} tons of free cargo space — you have ${Math.max(0, freeSpace)}. Sell some cargo or fly a bigger ship.</p>`;
+      : `<p class="hint warn">This job needs ${active.cargoQty} tons free <em>in your own hold</em> — you have ${Math.max(0, freeSpace)}. Your escorts cannot carry it. Sell some cargo or fly a bigger ship.</p>`;
     this.root.innerHTML = `
       <div class="panel">
         <h1>${escapeHtml(active.name)}<span class="sys">${this.shipOfferFrom ?? this.planet!.name}</span></h1>
@@ -1308,7 +1310,7 @@ export class LandedUi {
         g.pilotName,
         g.rankTags(),
       );
-      const freeSpace = g.player.cargoCap - this.game.cargoUsed();
+      const freeSpace = g.holdSpace(); // own hull only — escorts can't take it
       const fits = !active.cargoLoaded || active.cargoQty <= freeSpace;
       const facts = [
         sel.pay > 0 ? `Pay: ${sel.pay.toLocaleString()} cr` : null,
@@ -1322,7 +1324,7 @@ export class LandedUi {
         <div class="misn-text">
           <p>${text.replace(/\n/g, "</p><p>")}</p>
           ${facts.length ? `<p class="hint">${facts.join(" · ")}</p>` : ""}
-          ${fits ? "" : `<p class="hint warn">Needs ${active.cargoQty} tons of free cargo space — you have ${Math.max(0, freeSpace)}.</p>`}
+          ${fits ? "" : `<p class="hint warn">Needs ${active.cargoQty} tons free in your own hold — you have ${Math.max(0, freeSpace)}.</p>`}
         </div>`;
       accept = `<button class="evbtn" id="btn-bbs-accept" ${fits ? "" : "disabled"}>Accept</button>
         <button class="evbtn" id="btn-bbs-map">Map</button>`;
@@ -1452,6 +1454,8 @@ export class LandedUi {
       const s = SHIPS[this.selectedHire];
       const fee = escortHireFee(s.cost);
       const wage = escortWage(s.cost);
+      // the Bible lets only the two trader AIs haul for you — see cargo.ts
+      const hauls = escortCargoCap(this.selectedHire);
       const can = !full && g.player.credits >= fee;
       // dësc 14000 + shipID - 128 is the pilot standing beside the hull
       const pilot = DESCS[String(14000 + Number(this.selectedHire) - 128)];
@@ -1470,6 +1474,11 @@ export class LandedUi {
           <div><span>Hiring Price:</span><b>${fee.toLocaleString()} cr</b></div>
           <div><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
           <div class="gap"><span>Daily Wage:</span><b>${wage.toLocaleString()} cr</b></div>
+          <div><span>Carries For You:</span><b>${
+            hauls
+              ? `${hauls} t`
+              : `None <small>(${s.cargo} t, warship crew)</small>`
+          }</b></div>
         </div>`;
       hireBtn = `<button class="evbtn" id="btn-hire-sel" ${can ? "" : "disabled"}>${btnLabel(12, "Hire Escort")}</button>`;
     }
@@ -1480,6 +1489,7 @@ export class LandedUi {
         const s = SHIPS[e.shipId];
         // a prize is sold rather than dismissed, and draws no wage meanwhile
         const value = e.captured ? escortSellValue(e.shipId) : 0;
+        const hauls = escortCargoCap(e.shipId);
         return `<div class="ship-card">
           <div class="ship-info">
             <div class="ship-name">${escapeHtml(s?.name.split(";")[0] ?? "Ship")}</div>
@@ -1487,7 +1497,7 @@ export class LandedUi {
               e.captured
                 ? `Captured prize · worth ${value.toLocaleString()} cr`
                 : `In your service · ${e.wage.toLocaleString()} cr/day`
-            }</div>
+            }${hauls ? ` · carries ${hauls} t` : ""}</div>
           </div>
           <div class="ship-buy"><button class="evbtn" data-dismiss="${i}">${
             e.captured ? "Sell" : "Dismiss"
@@ -1518,8 +1528,8 @@ export class LandedUi {
         ${
           g.player.escorts.length
             ? `<h2 class="sub">Your wing${daily > 0 ? ` — ${daily.toLocaleString()} cr/day` : ""}${
-                full ? " — your command is full" : ""
-              }</h2>
+                g.fleetCapacity() > 0 ? ` — ${g.fleetCapacity()} t of hold` : ""
+              }${full ? " — your command is full" : ""}</h2>
                <div class="ship-list">${hired}</div>`
             : ""
         }
@@ -1782,9 +1792,12 @@ export class LandedUi {
 
   private statusBar(): string {
     const g = this.game;
+    // the fleet figure, with the escorts' share called out where there is one
+    const fleet = g.fleetCapacity();
+    const cargo = `${g.cargoUsed()} / ${g.cargoCapacity()} t`;
     return `<div class="statusbar">
       <span>Credits: <b>${g.player.credits.toLocaleString()} cr</b></span>
-      <span>Cargo: <b>${g.cargoUsed()} / ${g.player.cargoCap} t</b></span>
+      <span>Cargo: <b>${cargo}</b>${fleet ? ` <small>(${fleet}t in escorts)</small>` : ""}</span>
       <span>Fuel: <b>${Math.round(g.player.fuelJumps * 10) / 10} / ${g.player.maxFuelJumps} jumps</b></span>
       <span>${formatDate(g.player.date)}</span>
     </div>`;
@@ -1917,7 +1930,8 @@ export class LandedUi {
     const p = this.planet!;
     const g = this.game;
     const spobId = Number(p.id);
-    const space = g.player.cargoCap - g.cargoUsed();
+    // commodities pool across the wing; trader escorts widen this
+    const space = g.cargoSpace();
 
     type Row = {
       key: string;
