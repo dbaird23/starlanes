@@ -313,16 +313,25 @@ export function placeStations(level: FpsLevel, lockers = 8): Station[] {
   const taken: { x: number; y: number }[] = [];
 
   /*
-   * One breaker per sector that has any darkness to fix. Sector 0 is the
-   * level's default — the corridor you arrive in — and it is deliberately
-   * skipped: the first thing you should see is the deck you came from staying
-   * exactly as dead as it was.
+   * One breaker per sector **except the one you arrive in**.
+   *
+   * This used to skip sector 0, the level's declared default, on the assumption
+   * that the default is where the airlock is. On the shipped deck it is not —
+   * every cell carries an authored sector and none is 0 — so the airlock got a
+   * breaker of its own, standing about four metres from the start. You threw it
+   * before you had walked anywhere, and it lit the one compartment that was
+   * already the brightest on the ship: the payoff spent on the tutorial step.
+   * Read off the start cell instead, it is right on any deck.
    */
+  const startSector =
+    level.sectorOf[
+      Math.floor(level.start.y) * level.w + Math.floor(level.start.x)
+    ] ?? 0;
   const best = new Map<number, number>();
   for (let ci = 0; ci < dist.length; ci++) {
     if (dist[ci] < 0) continue;
     const sec = level.sectorOf[ci];
-    if (sec === 0) continue;
+    if (sec === startSector) continue;
     if (mountFace(level, ci % level.w, (ci / level.w) | 0) === null) continue;
     const cur = best.get(sec);
     if (cur === undefined || dist[ci] > dist[cur]) best.set(sec, ci);

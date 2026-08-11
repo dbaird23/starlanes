@@ -128,11 +128,32 @@ first, last one the length of the ship. Lockers fill the gaps furthest-first,
 new numbers" means in code — a bigger hull is a longer walk and the 300 seconds
 and the hold times do not change.
 
-**A thrown breaker lights the ship, and today that is level-wide.** `uMinLight`
-is raised 0.38 × (breakers/total), which reads as the ship coming back rather
-than as a switch. Per-*sector* is the right version and is the next job: it
-needs `mesh.ts` to bake a sector index per vertex beside `aLight` plus a small
-uniform table. `SalvageRun.power` already carries the per-sector state, unused.
+**A thrown breaker lights the compartment that breaker belongs to**, and
+leaves the rest of the ship exactly as dead as it was. `mesh.ts` bakes a sector
+*index* per vertex (`aSector`) beside the sector's baked light, `glscene.ts`
+holds a `uPower[16]` table the run writes, and the sector term takes
+`max(vLight, vPower, uMinLight)`. Measured: throwing the first breaker takes its
+own compartment's mean frame luminance 63.2 → 122.3 and leaves the other three
+sectors byte-identical.
+
+Three things about it are load-bearing:
+
+- **The table is read in the *vertex* shader.** Three compiles to GLSL ES 1.00
+  even on a WebGL2 context, and 1.00 forbids indexing a uniform array with a
+  non-constant expression in a *fragment* shader. Every vertex of a primitive
+  carries the same sector, so interpolating the looked-up value is exact.
+- **`SECTOR_ID` in `mesh.ts` is a module-level variable, not a `Shade` field.**
+  A `Shade` is constructed at about forty sites — every band of the moulding,
+  every riser of every coffer, every span of every ring — and all of them sit
+  inside a loop that already knows exactly one sector. Threading an index
+  through forty call sites is forty chances to pass the wrong one; setting it
+  once per cell is one line that cannot disagree with itself.
+- **`placeStations` skips the sector the player *starts* in**, read off the
+  start cell — not sector 0, the level's declared default. On the shipped deck
+  every cell carries an authored sector and none is 0, so skipping 0 gave the
+  airlock a breaker four metres from the start: you threw it before walking
+  anywhere, and it lit the compartment that was already the brightest on the
+  ship.
 
 **`Station.facing` points out of the bulkhead into the cell.** Everything
 downstream is an offset along it and every sign error looks like a different

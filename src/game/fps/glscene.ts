@@ -174,16 +174,43 @@ function glslColor(c: THREE.Color): string {
   return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
 }
 
+/**
+ * How many sectors the power table holds.
+ *
+ * A GLSL ES 1.00 uniform array has to be a compile-time size, so this is a
+ * ceiling rather than the level's own count; the shipped decks use four and the
+ * test corridor three. `mesh.ts` clamps the baked index into it, so a level that
+ * somehow authored more would light the wrong compartment rather than sample
+ * out of bounds.
+ */
+const MAX_SECTORS = 16;
+
+/**
+ * What a restored sector reads as. The shipped decks author 0.0 to about 0.35,
+ * so this is comfortably the brightest state in the game without being the
+ * `lightFloor 0.9` probe state, which is the reference's "after" and not
+ * something a player should ever be standing in.
+ */
+const POWER_LIGHT = 0.5;
+
 const SHARED_UNIFORMS = {
   uCam: { value: new THREE.Vector3() },
   uFwd: { value: new THREE.Vector3(1, 0, 0) },
   uLampPos: { value: new THREE.Vector3() },
   uTexMix: { value: 1 },
   uMinLight: { value: 0 },
+  /**
+   * What each sector has been switched back on to, 0..1, written by the salvage
+   * run. Shared across every material so one write lights the whole deck's worth
+   * of draw calls at once.
+   */
+  uPower: { value: new Float32Array(MAX_SECTORS) },
 };
 
 const VERT = /* glsl */ `
 attribute float aLight;
+attribute float aSector;
+uniform float uPower[${MAX_SECTORS}];
 attribute float aGain;
 attribute float aEmit;
 attribute float aStrip;
@@ -191,6 +218,7 @@ varying vec2 vUv;
 varying vec3 vWorld;
 varying vec3 vNrm;
 varying float vLight;
+varying float vPower;
 varying float vGain;
 varying float vEmit;
 varying float vStrip;
@@ -200,6 +228,15 @@ void main() {
   vWorld = wp.xyz;
   vNrm = mat3(modelMatrix) * normal;
   vLight = aLight;
+  /*
+   * **The sector table is read here, in the vertex shader, and not in the
+   * fragment shader**, and that is not a performance choice. Three compiles to
+   * GLSL ES 1.00 by default even on a WebGL2 context, and 1.00 forbids indexing
+   * a uniform array with a non-constant expression in a fragment shader. It is
+   * allowed in a vertex shader, and every vertex of a primitive carries the same
+   * sector, so interpolating the result is exact rather than approximate.
+   */
+  vPower = uPower[int(aSector + 0.5)];
   vGain = aGain;
   vEmit = aEmit;
   vStrip = aStrip;
@@ -234,6 +271,7 @@ float lampFall(float d) {
 `;
 
 const FRAG = /* glsl */ `
+varying float vPower;
 uniform sampler2D map;
 uniform vec3 uTint;
 uniform vec3 uBase;
@@ -397,7 +435,15 @@ void main() {
   }
 
   /* ---- ...and what the ship is still putting out ------------------------ */
-  float sec = max(vLight, uMinLight);
+  /*
+   * **The sector term now takes the greater of what the ship was still putting
+   * out and what you have switched back on.** vPower is this sector's entry
+   * in a table the salvage run writes to, so throwing a breaker lights the
+   * compartment that breaker belongs to and leaves the rest of the ship exactly
+   * as dead as it was — which is the whole payoff, and is Doom's rule about
+   * light belonging to an area rather than to a wall, running in reverse.
+   */
+  float sec = max(max(vLight, vPower), uMinLight);
   float fogKeep = max(1.0 - ${FOG_MAX.toFixed(3)}, exp(-dc * ${FOG_K.toFixed(4)}));
   col += alb * ${glslColor(SECTOR_COL)} * (sec * fogKeep * ${SECTOR_POWER.toFixed(3)});
 
@@ -623,6 +669,19 @@ export class GlScene {
    * Art replaces the colour, not the geometry: a housing with a lever in it,
    * keyed the way `door-face` already is.
    */
+  /**
+   * Switch a sector back on. `power[i]` is 0..1 as the salvage run states it,
+   * and `POWER_LIGHT` is what "on" means in the sector term — deliberately not
+   * 1.0, which is brighter than any sector this game authors and would make a
+   * restored compartment the brightest thing anyone has ever seen on this ship.
+   */
+  setPower(power: Float32Array): void {
+    const u = SHARED_UNIFORMS.uPower.value;
+    for (let i = 0; i < u.length; i++) {
+      u[i] = i < power.length ? power[i] * POWER_LIGHT : 0;
+    }
+  }
+
   setStations(stations: Station[]): void {
     for (const m of this.stationMeshes) {
       this.scene.remove(m);

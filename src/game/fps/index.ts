@@ -149,20 +149,18 @@ export class FpsSession {
       const run = this.world.run;
       gl.updateStations(run.stations, run.target);
       /*
-       * **Throwing a breaker lights the ship, and that is the payoff.**
+       * **Throwing a breaker lights the compartment that breaker belongs to**,
+       * and leaves the rest of the ship exactly as dead as it was. That is the
+       * payoff, and it is why the sector model was worth keeping from the
+       * raycaster: light belongs to an *area*, so restoring power is a thing
+       * that happens to a place rather than a number going up on the HUD.
        *
-       * `uMinLight` is the probe hook's floor and it is exactly the right lever:
-       * it lifts every sector at once, so the corridor you are standing in comes
-       * up along with the compartment you just powered. Per-sector would be
-       * better — one room at a time, the rest still dead — and it is the next
-       * thing here: it needs `mesh.ts` to bake a sector *index* per vertex
-       * beside `aLight` and a small uniform table to look it up in. Until then
-       * the whole deck brightens a third of the way per breaker, which reads as
-       * the ship coming back rather than as a light switch.
+       * It used to raise `uMinLight`, which is the probe hook's level-wide
+       * floor — one breaker lit the whole deck including the three compartments
+       * you had not reached, so the second and third breakers had nothing left
+       * to show you.
        */
-      const power = run.breakersTotal
-        ? (run.breakers / run.breakersTotal) * 0.38
-        : 0;
+      gl.setPower(run.power);
       const t0 = performance.now();
       const frame = gl.render(
         { x: this.world.x, y: this.world.y, angle: this.world.angle },
@@ -170,7 +168,7 @@ export class FpsSession {
         Math.max(2, Math.round(w)),
         Math.max(2, Math.round(h)),
         this.noTextures,
-        Math.max(this.lightFloor, power),
+        this.lightFloor,
       );
       this.frameMs += (performance.now() - t0 - this.frameMs) * 0.1;
       ctx.drawImage(frame, 0, 0, w, h);

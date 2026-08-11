@@ -338,13 +338,14 @@ interface Build {
   nrm: number[];
   uv: number[];
   light: number[];
+  sec: number[];
   gain: number[];
   emit: number[];
   strip: number[];
 }
 
 function newBuild(): Build {
-  return { pos: [], nrm: [], uv: [], light: [], gain: [], emit: [], strip: [] };
+  return { pos: [], nrm: [], uv: [], light: [], sec: [], gain: [], emit: [], strip: [] };
 }
 
 type Vec3 = [number, number, number];
@@ -366,6 +367,24 @@ function norm3(v: Vec3): Vec3 {
   const l = Math.hypot(v[0], v[1], v[2]) || 1;
   return [v[0] / l, v[1] / l, v[2] / l];
 }
+
+/**
+ * **Which sector the primitive being emitted belongs to**, as a module-level
+ * variable the builder sets as it walks the deck.
+ *
+ * It is not a field on `Shade` for a boring reason: a `Shade` is constructed at
+ * something like forty sites in this file — every band of the moulding, every
+ * riser of every coffer, every span of every ring — and all of them are already
+ * inside a loop that knows exactly one sector. Threading an index through all
+ * forty would be forty chances to pass the wrong one, where setting it once per
+ * cell is one line that cannot disagree with itself. The builder is a single
+ * synchronous pass, so there is nothing for this to race against.
+ *
+ * The *value* of the sector's light still goes in `Shade.light` and is still
+ * baked; this is the index, so the shader can look the sector up in a table
+ * that changes at runtime. That is what lets a breaker light one compartment.
+ */
+let SECTOR_ID = 0;
 
 /** Attributes shared by every vertex of one primitive. */
 interface Shade {
@@ -412,6 +431,7 @@ function tri(
     b.nrm.push(n[0], n[1], n[2]);
     b.uv.push(us[i][0], us[i][1]);
     b.light.push(sh.light);
+    b.sec.push(SECTOR_ID);
     b.gain.push(sh.gain * ao[i]);
     b.emit.push(sh.emit);
     b.strip.push(sh.strip ?? 0);
@@ -963,6 +983,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
       if (cells[ci] !== 0) continue;
       const sec = sectors[sectorOf[ci]];
       const light = sec.light;
+      SECTOR_ID = sectorOf[ci];
       const frameDress = dressOf(WALL.frame);
       const ringEmit = frameDress.emit + frameDress.emitSector * light;
 
@@ -1660,6 +1681,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
               const want = dA > dB ? away : back;
               const hi = Math.min(dA, dB);
               const lo = Math.max(dA, dB);
+              SECTOR_ID = sectorOf[deep];
               const light = sectors[sectorOf[deep]].light;
               const p = (t: number, d: number): Vec3 => {
                 const [wx, wz] = edgeXZ(t);
@@ -1689,6 +1711,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
             const rB = deckRise(nj, aB, bB);
             if (Math.abs(rA - rB) > 1e-6) {
               const want = rA > rB ? away : back;
+              SECTOR_ID = rA > rB ? sectorOf[ci] : sectorOf[nj];
               const light = (rA > rB ? secA : secB).light;
               const p = (t: number, y: number): Vec3 => {
                 const [wx, wz] = edgeXZ(t);
@@ -1723,6 +1746,7 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
     g.setAttribute("normal", new THREE.Float32BufferAttribute(b.nrm, 3));
     g.setAttribute("uv", new THREE.Float32BufferAttribute(b.uv, 2));
     g.setAttribute("aLight", new THREE.Float32BufferAttribute(b.light, 1));
+    g.setAttribute("aSector", new THREE.Float32BufferAttribute(b.sec, 1));
     g.setAttribute("aGain", new THREE.Float32BufferAttribute(b.gain, 1));
     g.setAttribute("aEmit", new THREE.Float32BufferAttribute(b.emit, 1));
     g.setAttribute("aStrip", new THREE.Float32BufferAttribute(b.strip, 1));
