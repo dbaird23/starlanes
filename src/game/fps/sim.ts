@@ -24,6 +24,9 @@ import {
 
 /** Player collision radius and eye height, in cells. */
 const BODY = 0.28;
+/** How far the head tips, in radians. 70 degrees. */
+const PITCH_MAX = 1.22;
+
 const WALK = 3.1;
 const RUN = 4.9;
 
@@ -36,6 +39,8 @@ export interface FpsCommand {
   strafe: number;
   /** radians to add to the heading this frame */
   turn: number;
+  /** ...and to the pitch. Positive is up. */
+  look: number;
   fire: boolean;
   run: boolean;
 }
@@ -78,6 +83,14 @@ export class FpsWorld {
   x: number;
   y: number;
   angle: number;
+  /**
+   * Where you are looking vertically, in radians, positive up.
+   *
+   * It exists on the world rather than in the session because it is *aim*, not
+   * a camera preference: a probe that drives `update()` has to be able to set it
+   * for the same reason it sets `angle`.
+   */
+  pitch = 0;
   health: number;
   readonly maxHealth: number;
 
@@ -222,6 +235,19 @@ export class FpsWorld {
     this.angle += cmd.turn;
     if (this.angle > Math.PI) this.angle -= Math.PI * 2;
     if (this.angle < -Math.PI) this.angle += Math.PI * 2;
+    /*
+     * Pitch clamps rather than wrapping, and at 70 degrees rather than 90.
+     * Straight up is a frame of ceiling with no horizon in it and nothing to
+     * navigate by, and the last few degrees before vertical are where a mouse
+     * feels like it has stopped responding. Movement stays on the plan — you
+     * cannot walk up — so this is a head, not a direction of travel.
+     *
+     * `?? 0` because commands are also built by hand in `scratch/` probes, and
+     * a missing field there would put NaN in the pitch and take the camera with
+     * it — a failure that looks like the renderer breaking rather than like a
+     * typo in a throwaway script.
+     */
+    this.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, this.pitch + (cmd.look ?? 0)));
 
     // move
     const speed = (cmd.run ? RUN : WALK) * dt;

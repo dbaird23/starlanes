@@ -99,6 +99,17 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**You can look up and down.** `FpsWorld.pitch`, clamped to ±1.22 rad (70°),
+driven by `movementY` and by Up/Down as the arrows already drive yaw. Three
+notes: it lives on the *world* rather than on the session because it is aim and
+a probe has to be able to set it; `uFwd` carries the pitch, since it is what the
+suit lamp's cone is measured against and a flat one would light the deck while
+you look at the overhead; but the lamp's *position* stays on the horizontal
+frame, because it is strapped to a chest and does not swing out sideways when
+you tip your head back. Movement stays on the plan — this is a head, not a
+direction of travel. The old raycaster could not do this at all: sliding the
+horizon down the buffer leaves the walls vertical, which is why it never had it.
+
 **The run is a salvage job, not a firefight — `src/game/fps/salvage.ts`.**
 *Five minutes of air, throw every breaker, then get back to the lock.* One
 clock, one verb, one decision:

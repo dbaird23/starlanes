@@ -960,7 +960,7 @@ export class GlScene {
    * corner — and greebled photographic metal hides it completely.
    */
   render(
-    cam: { x: number; y: number; angle: number },
+    cam: { x: number; y: number; angle: number; pitch?: number },
     sprites: FpsSprite[],
     w: number,
     h: number,
@@ -975,25 +975,47 @@ export class GlScene {
       this.camera.updateProjectionMatrix();
     }
 
-    const fx = Math.cos(cam.angle);
-    const fy = Math.sin(cam.angle);
+    /*
+     * **Pitch is a real look direction, not a screen shear.** A raycaster fakes
+     * looking up by sliding the horizon down the buffer, which leaves the walls
+     * vertical and is why the old renderer never had it. With a perspective
+     * camera it is simply where the camera points, and every consequence — the
+     * ceiling foreshortening, the coffers opening up overhead — falls out.
+     *
+     * The forward vector has to carry the pitch too. `uFwd` is what the suit
+     * lamp's cone is measured against, so left flat, looking at the overhead
+     * would light the deck you are not looking at and leave the ceiling dark.
+     */
+    const p = cam.pitch ?? 0;
+    const cp = Math.cos(p);
+    const fx = Math.cos(cam.angle) * cp;
+    const fy = Math.sin(cam.angle) * cp;
+    const fyv = Math.sin(p);
     this.camera.position.set(cam.x, EYE, cam.y);
-    this.camera.lookAt(cam.x + fx, EYE, cam.y + fy);
+    this.camera.lookAt(cam.x + fx, EYE + fyv, cam.y + fy);
     SHARED_UNIFORMS.uCam.value.set(cam.x, EYE, cam.y);
-    SHARED_UNIFORMS.uFwd.value.set(fx, 0, fy);
+    SHARED_UNIFORMS.uFwd.value.set(fx, fyv, fy);
     // the lamp is on the chest, not in the eye — see LAMP_RIGHT above; without
     // the offset every specular lobe collapses onto the view axis and no edge
     // in the level can catch a highlight
+    /*
+     * ...but the lamp's *position* stays on the horizontal frame. It is strapped
+     * to a chest, so it does not swing out to the side when you tip your head
+     * back — and using the pitched vector here would shorten the right-offset by
+     * `cos(pitch)` and collapse the specular rake exactly when you look up.
+     */
+    const px = Math.cos(cam.angle);
+    const pz = Math.sin(cam.angle);
     SHARED_UNIFORMS.uLampPos.value.set(
-      cam.x + -fy * LAMP_RIGHT + fx * LAMP_FWD,
+      cam.x + -pz * LAMP_RIGHT + px * LAMP_FWD,
       EYE - LAMP_DOWN,
-      cam.y + fx * LAMP_RIGHT + fy * LAMP_FWD,
+      cam.y + px * LAMP_RIGHT + pz * LAMP_FWD,
     );
     SHARED_UNIFORMS.uTexMix.value = noTextures ? 0 : 1;
     SHARED_UNIFORMS.uMinLight.value = minLight;
 
     // billboards: yaw-only, so the 36 pre-rendered rotations do the turning
-    const yaw = Math.atan2(-fx, -fy);
+    const yaw = Math.atan2(-px, -pz);
     let n = 0;
     for (const s of sprites) {
       const tex = this.sheet(s.img);

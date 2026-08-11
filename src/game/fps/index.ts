@@ -34,6 +34,7 @@ export class FpsSession {
   paused = true;
   private locked = false;
   private mouseDx = 0;
+  private mouseDy = 0;
   private firing = false;
   private bob = 0;
   /** set when the player asks to leave; Game polls it */
@@ -61,7 +62,15 @@ export class FpsSession {
     if (!this.locked) this.paused = true;
   };
   private onMouseMove = (e: MouseEvent): void => {
-    if (this.locked && !this.paused) this.mouseDx += e.movementX;
+    if (this.locked && !this.paused) {
+      this.mouseDx += e.movementX;
+      /*
+       * Not inverted. Nova has no first-person mode and so no convention to
+       * inherit, and every shooter since Quake has defaulted to mouse-forward
+       * looking up; an invert toggle can go in with the other bindings.
+       */
+      this.mouseDy += e.movementY;
+    }
   };
   private onMouseDown = (e: MouseEvent): void => {
     if (e.button === 0) this.firing = true;
@@ -129,6 +138,7 @@ export class FpsSession {
     }
     if (this.paused) {
       this.mouseDx = 0;
+      this.mouseDy = 0;
       return;
     }
 
@@ -139,10 +149,14 @@ export class FpsSession {
       turn:
         this.mouseDx * MOUSE_SENS +
         (down("ArrowRight") - down("ArrowLeft")) * KEY_TURN * dt,
+      look:
+        -this.mouseDy * MOUSE_SENS +
+        (down("ArrowUp") - down("ArrowDown")) * KEY_TURN * dt,
       fire: this.firing || input.isDown("Space"),
       run: input.shiftDown,
     };
     this.mouseDx = 0;
+    this.mouseDy = 0;
 
     if (cmd.forward || cmd.strafe) this.bob += dt * (cmd.run ? 11 : 7);
     this.world.update(dt, cmd);
@@ -169,7 +183,12 @@ export class FpsSession {
       gl.setPower(run.power);
       const t0 = performance.now();
       const frame = gl.render(
-        { x: this.world.x, y: this.world.y, angle: this.world.angle },
+        {
+          x: this.world.x,
+          y: this.world.y,
+          angle: this.world.angle,
+          pitch: this.world.pitch,
+        },
         sprites,
         Math.max(2, Math.round(w)),
         Math.max(2, Math.round(h)),
@@ -218,7 +237,7 @@ export class FpsSession {
       this.card(ctx, w, h, world.opts.title.toUpperCase(), [
         "Five minutes of air. Throw every breaker, then get back to the lock.",
         "",
-        "W A S D move · mouse look · hold click or Space to work a panel",
+        "W A S D move · mouse looks around · hold click or Space to work a panel",
         "Lockers cost air. Shift run · Esc pause · Q leave",
       ]);
     } else if (world.state === "won") {
