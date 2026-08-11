@@ -72,11 +72,25 @@ const CHAMFERS = [
    * story, and 240..581 is the one that puts the plates high on the bench, the
    * cable run through its middle and the step down by the toe.
    */
-  ["materials/bench-conduit.png", "bench-conduit.png", 240, 581, 384, 128],
+  /*
+   * **The bench and the soffit come from the modular kit**, not from the square
+   * material sheets, and they are the two surfaces that most wanted to.
+   *
+   * `pipes-middle.png` is 3.62:1 and already draws its pipe and cable runs
+   * *lengthwise*, which is exactly what a bench carrying services along a
+   * corridor is — the old `bench-conduit` crop was a square sheet cut down to a
+   * band, so its runs were an accident of where the crop landed. Taken at
+   * 384x128 the source loses almost nothing: 3.62 against 3.
+   *
+   * `lightstrip-middle.png` is the reference photograph's lit channel between
+   * bolted ribs, and it is **transposed** for the same reason `frame-rib` is:
+   * the source draws the channel running down its own y, and on a chamfer `u`
+   * is along the corridor. Mapped straight through, the lit strip would be a
+   * band *across* the corridor once per cell — a rung, not a run.
+   */
+  ["new-hallway-materials/pipes-middle.png", "bench-conduit.png", 0, 724, 384, 128],
   ["materials/trim-light-channel.png", "chamfer-trim.png", 338, 679, 384, 128],
-  // the same tile's upper third: a panel run, a conduit run and a panel band,
-  // no fixture — horizontal structure, which is what a bench-like chamfer wants
-  ["materials/trim-light-channel.png", "chamfer-main.png", 0, 341, 384, 128],
+  ["new-hallway-materials/lightstrip-middle.png", "chamfer-main.png", 0, 875, 128, 384, true],
   ["materials/wall-grimy.png", "chamfer-grimy.png", 600, 941, 384, 128],
 ];
 
@@ -124,7 +138,7 @@ function emit(to, out) {
   console.log(`${to}  ${out.width}x${out.height}  ${(buf.length / 1024).toFixed(0)} KB`);
 }
 
-/** Swap the two axes of a square tile. */
+/** Swap the two axes of a tile. */
 function transpose(img) {
   const out = new PNG({ width: img.height, height: img.width });
   for (let y = 0; y < img.height; y++) {
@@ -146,9 +160,10 @@ for (const [from, to, size, flip] of TILES) {
   emit(to, flip ? transpose(out) : out);
 }
 
-for (const [from, to, y0, y1, w, h] of CHAMFERS) {
+for (const [from, to, y0, y1, w, h, flip] of CHAMFERS) {
   const src = PNG.sync.read(readFileSync(resolve(root, "art-reference", from)));
-  emit(to, boxDown(src, w, h, y0, y1));
+  const out = boxDown(src, w, h, y0, y1);
+  emit(to, flip ? transpose(out) : out);
 }
 
 /* ------------------------------------------------------------- the panels */

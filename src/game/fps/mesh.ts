@@ -187,6 +187,12 @@ const STRIP_SEG1 = 8;
  * brightened the walls and left every light strip in the level at its dead-ship
  * value. The rating is geometry; the wattage is lighting.
  */
+/**
+ * How hard the soffit's light channel burns, scaled by the sector — a fitting
+ * on a dead ship is dead, and this is what comes back when a breaker is thrown.
+ */
+const STRIP_EMIT = 1.6;
+
 const STRIP_MAT = "strip";
 const STRIP_RATING = 1;
 const SPINE_RATING = 0.55;
@@ -882,7 +888,22 @@ export function buildLevelMesh(lvl: FpsLevel): LevelMesh {
       const b = get(tile);
       const rep = seg.band === 1 ? faceRepeat : 1;
       const gain = dressGain[seg.band] * seg.mul;
-      const shade: Shade = { light: sh.light, gain, emit: sh.emit };
+      /*
+       * **The upper chamfer's light channel emits; the rest of the strip does
+       * not.** `chamfer-main.png` is the kit's `lightstrip-middle` — a blazing
+       * white channel between mid-grey bolted ribs — and it is the one tile in
+       * the level whose bright pixels genuinely *are* a light, so the shader's
+       * keyed emission can find it where it cannot on `wall-main` (pale
+       * everywhere, so a threshold low enough to find a fitting lights the whole
+       * wall). Without this the channel sits at the soffit's own gain of 0.34
+       * and is simply a slightly paler stripe on a dark band.
+       *
+       * It is per *band* rather than per wall because a `WallDress`'s `emit`
+       * applies to the whole profile, and the bench and the vertical face have
+       * nothing on them that should burn.
+       */
+      const emit = seg.band === 2 ? sh.emit + STRIP_EMIT * sh.light : sh.emit;
+      const shade: Shade = { light: sh.light, gain, emit };
       const ao0 = SEG_AO0[i] * aoScale;
       const ao1 = SEG_AO1[i] * aoScale;
       /*

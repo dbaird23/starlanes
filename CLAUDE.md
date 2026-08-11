@@ -473,6 +473,32 @@ with them each surface's `TILE_MAT` is its own rather than a borrowed one.
   convex viewpoint). Measure before retuning `STRIP_SECTOR`; a light fitting
   looks blown next to a dead corridor whether or not it is.
 
+**The bench and the soffit come from a modular kit —
+`art-reference/new-hallway-materials/`.** It ships middle *and end* pieces for
+pipe runs and light strips, which is the first art here that can terminate a run
+rather than tile it forever. Two of them are in:
+
+- **`pipes-middle.png` is the bench.** At 3.62:1 it already draws its pipe and
+  cable runs lengthwise, which is what a bench carrying services along a
+  corridor is; the `bench-conduit` crop it replaces was a square sheet cut down
+  to a band, so its runs were an accident of where the crop landed.
+- **`lightstrip-middle.png` is the soffit, transposed**, for the same reason
+  `frame-rib` is: the source draws its channel down its own y and on a chamfer
+  `u` is along the corridor, so mapped straight through the lit strip is a rung
+  across the corridor once per cell rather than a run down it.
+- **The soffit's channel emits and the rest of the strip does not** (`STRIP_EMIT`
+  in `mesh.ts`, per *band*, scaled by the sector). This is the one tile in the
+  level whose bright pixels genuinely are a light — a white channel between
+  mid-grey ribs — so the shader's keyed emission can find it where it cannot on
+  `wall-main`, which is pale everywhere. Without it the channel sat at the
+  soffit's own gain of 0.34 and read as a slightly paler stripe on a dark band.
+
+Still unused, and the reason the kit is worth more than four tiles: `*-end.png`
+for both runs, `floor.png` (the reference's grating runner, better than
+`deck-runner`), `ceiling.png`, `edge.png` and the `pipes2` variant. Wiring the
+ends means `wallStrip` choosing a tile per cell from whether the run terminates
+at a bay, which the cell loop already knows (`ring[ci]`).
+
 **Texel stretch is measured, not judged by eye — `scratch/stretch.mjs`.** It
 solves the uv→world Jacobian per triangle and reports the area-weighted median
 and p90 of its two singular values' ratio, per tile. Reading it: the number is
