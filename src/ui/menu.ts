@@ -33,8 +33,8 @@ import {
   loadPilot,
 } from "../game/pilots";
 import {
+  ACTION_GROUPS,
   ACTION_IDS,
-  ACTIONS,
   bindingsForPreset,
   chordFromEvent,
   chordFromMouseEvent,
@@ -829,7 +829,7 @@ export class MainMenu {
             </div>
             <p class="menu-hint">Choose a preset to load it, or click a binding and press a key or mouse button (with Opt / Shift / Ctrl for a chord). Delete clears a binding. A bare Shift/Opt/Ctrl key collides with any chord that uses that modifier — free it first, then holding the bare key will not block other binds. Esc and Caps Lock are fixed.</p>
             <div id="pref-bind-status" class="menu-hint pref-bind-status"></div>
-            <table class="keytable keytable-bind" id="pref-keytable"></table>
+            <div id="pref-keytable" class="keybind-columns"></div>
             <p class="menu-hint pref-fixed-keys">Also fixed: <kbd>Esc</kbd> menu · <kbd>Caps Lock</kbd> 2× speed · <kbd>−</kbd>/<kbd>=</kbd>/<kbd>0</kbd> volume</p>
           </fieldset>
         </div>
@@ -851,7 +851,7 @@ export class MainMenu {
     // Mark the dialog shell so layout can pin the action row.
     m.querySelector(".ttl-dialog")?.classList.add("prefs-dialog");
 
-    const table = m.querySelector<HTMLTableElement>("#pref-keytable")!;
+    const table = m.querySelector<HTMLElement>("#pref-keytable")!;
     const status = m.querySelector<HTMLElement>("#pref-bind-status")!;
     const presetSelect = m.querySelector<HTMLSelectElement>("#pref-preset")!;
     const customOption = m.querySelector<HTMLOptionElement>(
@@ -919,30 +919,40 @@ export class MainMenu {
 
     const paint = (): void => {
       const collisions = findCollisions(draft);
-      const rows = ACTIONS.map(({ id, label }) => {
-        const chord = draft[id];
-        const clash = collisions.has(id);
-        const listen = listening === id;
-        const kbdClass = [
-          "keybind-kbd",
-          clash ? "collision" : "",
-          listen ? "listening" : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-        const title = listen
-          ? "Press a key or mouse button… Esc/Delete unbind"
-          : clash
-            ? "Conflicts with another action"
-            : "Click to rebind";
-        return `<tr class="${clash ? "collision-row" : ""}${listen ? " listening-row" : ""}" data-action="${id}">
-          <td>${label}</td>
-          <td><button type="button" class="${kbdClass}" data-bind="${id}" title="${title}">${
-            listen ? "…" : formatChord(chord)
-          }</button></td>
-        </tr>`;
-      }).join("");
-      table.innerHTML = rows;
+      const renderGroups = (groups: typeof ACTION_GROUPS): string => {
+        const rows = groups.flatMap(({ title, actions }) => {
+          const header = `<tr class="keybind-group-header"><td colspan="2">${title}</td></tr>`;
+          const actionRows = actions.map(({ id, label }) => {
+            const chord = draft[id];
+            const clash = collisions.has(id);
+            const listen = listening === id;
+            const kbdClass = [
+              "keybind-kbd",
+              clash ? "collision" : "",
+              listen ? "listening" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const titleAttr = listen
+              ? "Press a key or mouse button… Esc/Delete unbind"
+              : clash
+                ? "Conflicts with another action"
+                : "Click to rebind";
+            return `<tr class="${clash ? "collision-row" : ""}${listen ? " listening-row" : ""}" data-action="${id}">
+              <td>${label}</td>
+              <td><button type="button" class="${kbdClass}" data-bind="${id}" title="${titleAttr}">${
+                listen ? "…" : formatChord(chord)
+              }</button></td>
+            </tr>`;
+          });
+          return [header, ...actionRows];
+        });
+        return `<table class="keytable keytable-bind">${rows.join("")}</table>`;
+      };
+      // Left column: Flight + Combat; right column: Navigation + Escorts & comms + Info
+      table.innerHTML =
+        renderGroups(ACTION_GROUPS.slice(0, 2)) +
+        renderGroups(ACTION_GROUPS.slice(2));
       if (listening) {
         status.textContent =
           "Press a key or mouse button · Esc / Delete / Backspace to unbind · click the slot again to cancel.";

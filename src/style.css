@@ -1219,8 +1219,29 @@ td.actions button:disabled {
     11px ui-monospace,
     monospace;
 }
+.keybind-columns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.keybind-columns .keytable {
+  flex: 1;
+  min-width: 0;
+}
 .keytable-bind {
   margin: 6px 0 4px;
+}
+.keytable-bind tr.keybind-group-header td {
+  padding: 10px 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7ba7d9;
+  border-bottom: 1px solid #2b3d56;
+}
+.keytable-bind tr.keybind-group-header:first-child td {
+  padding-top: 2px;
 }
 .keytable-bind tr.collision-row td {
   color: #f0a0a0;
