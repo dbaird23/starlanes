@@ -547,6 +547,7 @@ export class GlScene {
   private stationMeshes: THREE.Mesh[] = [];
   private stationHousings: THREE.Mesh[] = [];
   private propMeshes: THREE.Mesh[] = [];
+  private stationGlows: THREE.Mesh[] = [];
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
@@ -721,98 +722,141 @@ export class GlScene {
   }
 
   setStations(stations: Station[], sectorOf: (x: number, y: number) => number): void {
-    for (const m of this.stationMeshes) {
-      this.scene.remove(m);
-      m.geometry.dispose();
-    }
-    for (const m of this.stationHousings) {
+    for (const m of [...this.stationMeshes, ...this.stationHousings, ...this.stationGlows]) {
       this.scene.remove(m);
       m.geometry.dispose();
       (m.material as THREE.Material).dispose();
     }
     this.stationMeshes = [];
     this.stationHousings = [];
+    this.stationGlows = [];
 
     for (const st of stations) {
       const breaker = st.kind === "breaker";
-      const w = breaker ? 0.34 : 0.44;
-      const hgt = breaker ? 0.44 : 0.6;
-      const y = breaker ? 0.52 : 0.34;
       /*
-       * **The lens is a fraction of the housing, not the whole face of it.**
-       *
-       * Sized to the housing it was a flat amber slab a third of a metre across
-       * — legible, certainly, but the legible thing was a colour rather than an
-       * object, and at arm's length it filled the screen with one flat value.
-       * A breaker gets a tall indicator strip beside where its lever would be
-       * and a locker a small latch light, so what carries the size is the steel
-       * and what carries the state is a light set into it. Bright pixels read at
-       * distance whatever their area, so this costs nothing in legibility.
+       * **The quad's shape is the tile's shape.** `fps-tiles.mjs` crops each
+       * panel to the fitting itself — 256x184 for the breaker enclosure and
+       * 192x268 for the locker door — so these two pairs are one measurement
+       * stated twice, and a changed crop has to be followed here or the art
+       * distorts by whatever the mismatch is.
        */
-      const lw = breaker ? 0.1 : 0.13;
-      const lh = breaker ? 0.28 : 0.07;
-      // ...and it sits off-centre, which is what stops it reading as a sign
-      const lx = breaker ? -w * 0.28 : 0;
-      const ly = breaker ? 0 : -hgt * 0.3;
       /*
-       * `d` is measured **from the station, toward the wall it is mounted on**.
-       * `facing` points out of that wall into the cell, so subtracting a
-       * multiple of it walks back into the bulkhead — and the station itself is
-       * already `MOUNT_OFF` (0.34) that way from the cell centre, which puts the
-       * wall plane 0.16 further on. Measuring these from the cell centre
-       * instead, which the first cut did, buried both the housing and the lens
-       * a quarter of a cell inside the wall, where they are simply not there.
+       * **Both fit inside the vertical face, which is about 0.35 of a cell.**
+       * That band is all there is between the bench and the soffit, and it is
+       * what a fitting can be bolted to; a locker sized to look like a locker —
+       * 0.53 tall, which is what the door's own proportions want — has its lower
+       * third inside the bench, where the corridor geometry simply occludes it.
+       * So the locker keeps its 0.716 aspect and gets smaller rather than
+       * taller, and both are centred on the same band.
        */
+      const w = breaker ? 0.4 : 0.244;
+      const hgt = breaker ? 0.288 : 0.34;
+      const y = 0.56;
       const cosF = Math.cos(st.facing);
       const sinF = Math.sin(st.facing);
+      // `d` is measured from the station toward the wall it is mounted on; the
+      // station already sits MOUNT_OFF that way, which puts the wall at 0.16
       const at = (d: number): [number, number] => [st.x - cosF * d, st.y - sinF * d];
-      // the box is 0.07 deep, so a centre at 0.125 stands its face 0.07 proud
-      const D_HOUSING = 0.125;
-      const D_LENS = 0.085;
+      const yaw = -st.facing + Math.PI / 2;
+      const sec = sectorOf(st.x, st.y);
 
       /*
-       * **The housing is a box, and it is what makes the panel a fitting.**
-       *
-       * A lit rectangle on the wall reads across a dark corridor, which is what
-       * a breaker has to do, but on its own it is a decal: no thickness, no
-       * shadow line, nothing for the lamp to catch as you come up to it. The box
-       * stands 0.07 proud, wears the frame tile, and goes through the level's
-       * own shader — so the last two metres of the approach are a piece of
-       * bolted steel resolving out of the dark, and the lens is set into it.
+       * The mount: a plate standing proud, a little larger than the panel,
+       * wearing the frame tile. It is what gives the fitting a shadow line and
+       * an edge for the lamp to catch on the approach — without it the art is a
+       * decal, however good the art is.
        */
-      const hg = new THREE.BoxGeometry(w + 0.12, hgt + 0.12, 0.07);
-      this.dressProp(hg, sectorOf(st.x, st.y), 0.9);
+      const hg = new THREE.BoxGeometry(w + 0.07, hgt + 0.07, 0.06);
+      scaleUv(hg, 1);
+      this.dressProp(hg, sec, 0.88);
       const hm = new THREE.Mesh(hg, this.levelMaterial("frame-rib.png", "frame-rib.png"));
-      const hp = at(D_HOUSING);
+      const hp = at(0.13);
       hm.position.set(hp[0], y, hp[1]);
-      hm.rotation.y = -st.facing + Math.PI / 2;
+      hm.rotation.y = yaw;
       hm.frustumCulled = false;
       this.scene.add(hm);
       this.stationHousings.push(hm);
 
       /*
-       * ...and the lens, which is unlit on purpose. It is the one thing on a
-       * dead ship that has to be visible from beyond the suit lamp's reach —
-       * a breaker you cannot find is a breaker that is not in the game — so it
-       * ignores the sector, the lamp and the fog alike.
+       * The panel itself, through the **level's own shader**, so the enclosure's
+       * dial glass and switch bodies are raked by your lamp exactly as the
+       * bulkhead beside them is. Its texture swaps for the live/open state when
+       * the station completes.
        */
-      const g = new THREE.PlaneGeometry(lw, lh);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
-      const m = new THREE.Mesh(g, mat);
-      const lp = at(D_LENS);
-      // `lx` runs along the wall, which is the facing turned a quarter
-      m.position.set(
-        lp[0] + Math.cos(st.facing + Math.PI / 2) * lx,
-        y + ly,
-        lp[1] + Math.sin(st.facing + Math.PI / 2) * lx,
-      );
-      m.rotation.y = -st.facing + Math.PI / 2;
-      m.frustumCulled = false;
-      this.scene.add(m);
-      this.stationMeshes.push(m);
+      const tile = breaker ? "breaker-dead.png" : "locker-closed.png";
+      const pg = new THREE.PlaneGeometry(w, hgt);
+      this.dressProp(pg, sec, 1.0);
+      const pm = new THREE.Mesh(pg, this.levelMaterial(tile, tile));
+      const pp = at(0.096);
+      pm.position.set(pp[0], y, pp[1]);
+      pm.rotation.y = yaw;
+      pm.frustumCulled = false;
+      this.scene.add(pm);
+      this.stationMeshes.push(pm);
+
+      /*
+       * ...and the glow, which exists only on the breaker.
+       *
+       * `breaker-glow.png` is `live` minus `dead` — 20.3% of the panel, exactly
+       * the amber and none of the pale grey housing. It is a subtraction and not
+       * a luminance key because the housing's own luminance is about 0.78, so no
+       * threshold separates the two: the same failure the art direction records
+       * for the light channel, where keying from mid-grey lit the whole bay
+       * instead of the fitting in it.
+       *
+       * Unlit and unfogged, so a breaker is findable from beyond the lamp's
+       * reach, and its opacity follows the hold — the lamps come up **as you
+       * throw it** rather than snapping on at the end.
+       */
+      if (breaker) {
+        const gg = new THREE.PlaneGeometry(w, hgt);
+        const gm = new THREE.Mesh(
+          gg,
+          new THREE.MeshBasicMaterial({
+            map: this.tile("breaker-glow.png"),
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            toneMapped: false,
+          }),
+        );
+        const gp = at(0.09);
+        gm.position.set(gp[0], y, gp[1]);
+        gm.rotation.y = yaw;
+        gm.frustumCulled = false;
+        gm.renderOrder = 3;
+        this.scene.add(gm);
+        this.stationGlows.push(gm);
+      } else {
+        /*
+         * A locker has no equivalent, because opening one turns on nothing. Its
+         * pip is a small unlit latch light and the only reason a locker can be
+         * seen down a dead corridor at all; it goes out when the door is open,
+         * which is what tells you across a compartment that you have been here.
+         */
+        // 0.016 of a cell, which is about four centimetres: a latch light, not
+        // a panel. At 0.05 it was a slab of flat colour across the door and read
+        // as a rendering fault rather than as a fitting.
+        const lg = new THREE.PlaneGeometry(0.016, 0.016);
+        const lm = new THREE.Mesh(
+          lg,
+          new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }),
+        );
+        const lp = at(0.088);
+        // beside the latch, which the door art draws toward one edge
+        const off = -w * 0.34;
+        lm.position.set(
+          lp[0] + Math.cos(st.facing + Math.PI / 2) * off,
+          y + hgt * 0.3,
+          lp[1] + Math.sin(st.facing + Math.PI / 2) * off,
+        );
+        lm.rotation.y = yaw;
+        lm.frustumCulled = false;
+        this.scene.add(lm);
+        this.stationGlows.push(lm);
+      }
     }
   }
-
   /**
    * The clutter, as geometry through the level's own shader.
    *
@@ -894,23 +938,43 @@ export class GlScene {
   updateStations(stations: Station[], target: number): void {
     for (let i = 0; i < this.stationMeshes.length; i++) {
       const st = stations[i];
-      const mat = this.stationMeshes[i].material as THREE.MeshBasicMaterial;
       if (!st) continue;
-      if (st.kind === "breaker") {
-        // amber dead, green live, and the fill rises as you hold it
-        const t = st.done ? 1 : st.progress;
-        mat.color.setRGB(1 - t * 0.85, 0.42 + t * 0.58, 0.12 + t * 0.2);
-      } else if (st.done) {
-        mat.color.setRGB(0.1, 0.11, 0.13);
+      const breaker = st.kind === "breaker";
+
+      /*
+       * The panel swaps to its finished state **once**, not every frame:
+       * reassigning a `ShaderMaterial` uniform is cheap, but marking one dirty
+       * every frame on every station is not, and the state changes exactly once.
+       */
+      const want = breaker
+        ? st.done
+          ? "breaker-live.png"
+          : "breaker-dead.png"
+        : st.done
+          ? "locker-open.png"
+          : "locker-closed.png";
+      const mat = this.stationMeshes[i].material as THREE.ShaderMaterial;
+      const tex = this.tile(want);
+      if (mat.uniforms.map.value !== tex) mat.uniforms.map.value = tex;
+
+      const gm = this.stationGlows[i].material as THREE.MeshBasicMaterial;
+      if (breaker) {
+        /*
+         * A dead breaker still shows a little of its glow — 0.13 — because it
+         * has to be findable, and because "there is standby power here, the
+         * switches are just open" is what the fitting means. Holding it raises
+         * that to full, so the panel lights under your hand.
+         */
+        gm.opacity = st.done ? 1 : 0.13 + 0.87 * st.progress;
       } else {
+        gm.opacity = st.done ? 0 : 1;
         const t = st.progress;
-        mat.color.setRGB(0.28 + t * 0.6, 0.34 + t * 0.5, 0.42 + t * 0.3);
+        gm.color.setRGB(0.5 + t * 0.5, 0.66 + t * 0.34, 0.6 + t * 0.4);
       }
-      // the one you are standing at gets brighter, which is the whole prompt
-      if (i === target && !st.done) mat.color.multiplyScalar(1.5);
+      // the one you are standing at brightens, which is the whole prompt
+      if (i === target && !st.done) gm.opacity = Math.min(1, gm.opacity * 1.6 + 0.1);
     }
   }
-
   private slot(i: number): SpriteSlot {
     let s = this.slots[i];
     if (!s) {

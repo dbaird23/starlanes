@@ -55,6 +55,11 @@ export const TILE_FILES = [
   "deck-runner.png",
   "frame-rib.png",
   "bench-conduit.png",
+  "breaker-dead.png",
+  "breaker-live.png",
+  "breaker-glow.png",
+  "locker-closed.png",
+  "locker-open.png",
 ] as const;
 
 /**
@@ -303,6 +308,17 @@ export const TILE_MAT: Record<string, TileMat> = {
    * the section has.
    */
   "bench-conduit.png": { base: [0.104, 0.112, 0.132], rough: 0.4, metal: 0.4, bump: 0.7, glow: GLOW_COOL },
+  /*
+   * The two fittings. They are the only surfaces in the level a player walks up
+   * to and stands at, so they take the least knock-down of anything here — a
+   * bulkhead is scenery at three metres and a breaker is read at arm's length —
+   * and they keep a tighter lobe, because a machined enclosure full of switches
+   * and dial glass is the one genuinely polished object on a derelict.
+   */
+  "breaker-dead.png": { base: [0.128, 0.135, 0.152], rough: 0.38, metal: 0.42, bump: 0.72, glow: GLOW_WARM },
+  "breaker-live.png": { base: [0.128, 0.135, 0.152], rough: 0.38, metal: 0.42, bump: 0.72, glow: GLOW_WARM },
+  "locker-closed.png": { base: [0.122, 0.129, 0.146], rough: 0.42, metal: 0.4, bump: 0.66, glow: GLOW_COOL },
+  "locker-open.png": { base: [0.122, 0.129, 0.146], rough: 0.42, metal: 0.4, bump: 0.66, glow: GLOW_COOL },
 };
 
 export function matOf(tile: string): TileMat {

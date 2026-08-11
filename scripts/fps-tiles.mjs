@@ -81,17 +81,18 @@ const CHAMFERS = [
 ];
 
 /** Area average of a source rect into a `w`x`h` output. */
-function boxDown(src, w, h, cropY0 = 0, cropY1 = src.height) {
+function boxDown(src, w, h, cropY0 = 0, cropY1 = src.height, cropX0 = 0, cropX1 = src.width) {
   const out = new PNG({ width: w, height: h });
   const ch = cropY1 - cropY0;
-  const sx = src.width / w;
+  const cw = cropX1 - cropX0;
+  const sx = cw / w;
   const sy = ch / h;
   for (let y = 0; y < h; y++) {
     const y0 = cropY0 + Math.floor(y * sy);
     const y1 = Math.max(y0 + 1, cropY0 + Math.floor((y + 1) * sy));
     for (let x = 0; x < w; x++) {
-      const x0 = Math.floor(x * sx);
-      const x1 = Math.max(x0 + 1, Math.floor((x + 1) * sx));
+      const x0 = cropX0 + Math.floor(x * sx);
+      const x1 = Math.max(x0 + 1, cropX0 + Math.floor((x + 1) * sx));
       let r = 0;
       let g = 0;
       let b = 0;
@@ -148,4 +149,107 @@ for (const [from, to, size, flip] of TILES) {
 for (const [from, to, y0, y1, w, h] of CHAMFERS) {
   const src = PNG.sync.read(readFileSync(resolve(root, "art-reference", from)));
   emit(to, boxDown(src, w, h, y0, y1));
+}
+
+/* ------------------------------------------------------------- the panels */
+
+/**
+ * The breaker and the locker, from `art-reference/panels/`.
+ *
+ * Two things are different about these and both come from what they are *for*.
+ *
+ * **They are cropped to the fitting**, not used whole. Each source draws the
+ * panel *and* the bulkhead plating around it, which is right for a reference
+ * sheet and wrong on a quad bolted to a wall — mapped whole you get a picture of
+ * a wall hanging on a wall, at a different tile scale from the wall behind it.
+ * The crops are the enclosure and the locker door respectively, measured off the
+ * sources, and the same rect is used for both states of each so they register
+ * exactly when one swaps for the other.
+ *
+ * **They are not square, and the geometry follows them.** A breaker enclosure is
+ * landscape and a locker door portrait; forcing either into a square tile is the
+ * same aspect distortion `scratch/stretch.mjs` exists to catch, so the output
+ * sizes here and the quad dimensions in `glscene.ts` are one measurement stated
+ * twice. Change a crop and the quad changes with it.
+ *
+ * `[source, out, w, h, y0, y1, x0, x1]`
+ */
+const PANELS = [
+  ["panels/breaker-dead.png", "breaker-dead.png", 256, 184, 175, 835, 60, 975],
+  ["panels/breaker-live.png", "breaker-live.png", 256, 184, 175, 835, 60, 975],
+  ["panels/locker-closed.png", "locker-closed.png", 192, 268, 40, 975, 180, 850],
+  ["panels/locker-open.png", "locker-open.png", 192, 268, 40, 975, 180, 850],
+];
+
+for (const [from, to, w, h, y0, y1, x0, x1] of PANELS) {
+  const src = PNG.sync.read(readFileSync(resolve(root, "art-reference", from)));
+  emit(to, boxDown(src, w, h, y0, y1, x0, x1));
+}
+
+/**
+ * ...and the breaker's **glow layer, by subtraction**.
+ *
+ * `breaker-live` is `breaker-dead` with the lamps on and nothing else changed,
+ * so `live - dead` isolates exactly the amber and leaves the pale grey housing
+ * at zero. That matters because the housing's own luminance is around 0.78 —
+ * high enough that the shader's keyed-emission threshold cannot separate the
+ * fitting from the panel it is set in, which is the same failure the art
+ * direction records for the light channel ("a strip down every wall is a strip
+ * down no wall in particular"). Subtraction has no threshold to get wrong.
+ *
+ * The result is RGBA: `live`'s colour, with alpha carrying how much of the
+ * pixel is glow. `glscene.ts` draws it unlit and additive over the lit panel,
+ * with its opacity following the hold — so the lamps come up as you throw it.
+ */
+{
+  const live = PNG.sync.read(readFileSync(resolve(root, "art-reference", "panels/breaker-live.png")));
+  const dead = PNG.sync.read(readFileSync(resolve(root, "art-reference", "panels/breaker-dead.png")));
+  const g = new PNG({ width: live.width, height: live.height });
+  for (let i = 0; i < live.width * live.height; i++) {
+    const o = i << 2;
+    // the largest per-channel rise, which is what "lit up" means on amber over
+    // grey: the blue channel barely moves and averaging would halve the signal
+    let d = 0;
+    for (let c = 0; c < 3; c++) d = Math.max(d, live.data[o + c] - dead.data[o + c]);
+    g.data[o] = live.data[o];
+    g.data[o + 1] = live.data[o + 1];
+    g.data[o + 2] = live.data[o + 2];
+    g.data[o + 3] = Math.max(0, Math.min(255, Math.round(d * 1.6)));
+  }
+  const out = boxDown4(g, 256, 184, 175, 835, 60, 975);
+  const buf = PNG.sync.write(out, { deflateLevel: 9 });
+  writeFileSync(resolve(root, "public/fps", "breaker-glow.png"), buf);
+  let lit = 0;
+  for (let i = 0; i < out.width * out.height; i++) if (out.data[(i << 2) + 3] > 8) lit++;
+  console.log(
+    `breaker-glow.png  ${out.width}x${out.height}  ${(buf.length / 1024).toFixed(0)} KB` +
+      `  (${((100 * lit) / (out.width * out.height)).toFixed(1)}% of the panel is glow)`,
+  );
+}
+
+/** `boxDown`, but carrying alpha through. */
+function boxDown4(src, w, h, cropY0, cropY1, cropX0, cropX1) {
+  const out = new PNG({ width: w, height: h });
+  const sx = (cropX1 - cropX0) / w;
+  const sy = (cropY1 - cropY0) / h;
+  for (let y = 0; y < h; y++) {
+    const y0 = cropY0 + Math.floor(y * sy);
+    const y1 = Math.max(y0 + 1, cropY0 + Math.floor((y + 1) * sy));
+    for (let x = 0; x < w; x++) {
+      const x0 = cropX0 + Math.floor(x * sx);
+      const x1 = Math.max(x0 + 1, cropX0 + Math.floor((x + 1) * sx));
+      const acc = [0, 0, 0, 0];
+      let n = 0;
+      for (let j = y0; j < y1; j++) {
+        for (let i = x0; i < x1; i++) {
+          const p = (j * src.width + i) << 2;
+          for (let c = 0; c < 4; c++) acc[c] += src.data[p + c];
+          n++;
+        }
+      }
+      const q = (y * w + x) << 2;
+      for (let c = 0; c < 4; c++) out.data[q + c] = Math.round(acc[c] / n);
+    }
+  }
+  return out;
 }

@@ -186,6 +186,33 @@ dead and comes up when you throw its breaker. Four things are load-bearing:
   big it is.** A 0.3-cell crate would wear a whole bulkhead tile — one rivet the
   size of a hand, at ten times the texel density of the wall it leans against.
 
+**The breaker and the locker wear their own art — `art-reference/panels/`.**
+Four sources, two states each, cropped by `fps-tiles.mjs` to the *fitting* and
+not the bulkhead plating drawn around it (mapped whole you get a picture of a
+wall hanging on a wall, at a different tile scale from the wall behind it). Both
+crops use the same rect for both states so they register exactly when one swaps
+for the other, and the output aspects — 256x184 for the enclosure, 192x268 for
+the door — are restated as the quad dimensions in `glscene.ts`: one measurement
+in two files, so a changed crop has to be followed there.
+
+- **The glow is a subtraction, not a luminance key.** `breaker-live` is
+  `breaker-dead` with the lamps on and nothing else changed, so `live - dead`
+  isolates exactly the amber (20.3% of the panel) and leaves the pale grey
+  housing at zero. A key cannot do it: the housing's own luminance is about
+  0.78, which is the same failure recorded for the light channel, where a
+  threshold low enough to find the fitting also finds everything round it.
+  `breaker-glow.png` is RGBA — live's colour, alpha carrying the rise — drawn
+  unlit and unfogged over the lit panel, opacity following the hold, so **the
+  lamps come up as you throw it**.
+- **A fitting has to fit the vertical face**, which is only about 0.35 of a
+  cell: all there is between the bench and the soffit. The locker door sized to
+  its own proportions (0.53 tall) has its lower third inside the bench, where
+  the corridor geometry occludes it. It keeps its aspect and gets *smaller*.
+- **A locker has no glow layer**, because opening one turns nothing on. Its
+  findability is a 0.016-cell latch pip that goes out when the door is open. At
+  0.05 that pip was a slab of flat colour across the door and read as a
+  rendering fault.
+
 **A station is a housing plus a lens, and they are lit differently on purpose.**
 The housing is a box standing 0.07 proud, wearing `frame-rib` and going through
 the **level's own shader** (`levelMaterial` / `dressProp` bake the four extra
