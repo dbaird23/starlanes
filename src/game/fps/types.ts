@@ -130,11 +130,20 @@ export interface FpsEnemyDef {
 }
 
 export interface FpsOutcome {
+  /** breakers thrown, of the deck's total — the field names are the shooter's */
   won: boolean;
   enemiesKilled: number;
   enemiesTotal: number;
   timeSec: number;
+  /** air left in the tank, in seconds */
   healthLeft: number;
+  /**
+   * What came out of the lockers, and **empty on a loss**. This is the seam a
+   * real boarding action reads: credits into the pilot's account, cargo into
+   * the hold as far as it will go, outfits fitted or sold. Losing costs you the
+   * haul and nothing else, which is what makes carrying it a decision.
+   */
+  haul: import("./salvage").Salvaged[];
 }
 
 export interface FpsOptions {

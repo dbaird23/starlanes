@@ -74,6 +74,7 @@ import * as THREE from "three";
 import { asset } from "../../asset";
 import { buildLevelMesh, type LevelMesh } from "./mesh";
 import { TILE_FILES, matOf } from "./textures";
+import type { Station } from "./salvage";
 import type { FpsLevel, FpsSprite } from "./types";
 
 /** The eye, half a cell above the deck — what `hover` 0.5 means to a billboard. */
@@ -496,6 +497,7 @@ interface SpriteSlot {
 }
 
 export class GlScene {
+  private stationMeshes: THREE.Mesh[] = [];
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
@@ -604,6 +606,80 @@ export class GlScene {
       this.sheets.set(img.src, t);
     }
     return t;
+  }
+
+  /**
+   * The stations, as geometry.
+   *
+   * They are flat lit rectangles on the bulkhead and not textured panels, on
+   * purpose and for now: what a player has to read across a dark corridor is
+   * *there is a thing here and what state is it in*, and a lit rectangle says
+   * that at forty metres where a photographic panel says it at four. They are
+   * `MeshBasicMaterial` so they ignore the sector and the suit lamp entirely —
+   * a breaker that goes dark when its compartment does is a breaker you cannot
+   * find, and the one fitting on a dead ship that has to be visible from
+   * outside the lamp's reach is the one you came here to throw.
+   *
+   * Art replaces the colour, not the geometry: a housing with a lever in it,
+   * keyed the way `door-face` already is.
+   */
+  setStations(stations: Station[]): void {
+    for (const m of this.stationMeshes) {
+      this.scene.remove(m);
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
+    this.stationMeshes = [];
+    for (const st of stations) {
+      const g = new THREE.PlaneGeometry(
+        st.kind === "breaker" ? 0.34 : 0.44,
+        st.kind === "breaker" ? 0.44 : 0.6,
+      );
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+      const m = new THREE.Mesh(g, mat);
+      /*
+       * **Back toward the wall, not out into the corridor.** `Station.facing`
+       * points *out* of the bulkhead into the cell, so the station's own
+       * position is already `MOUNT_OFF` toward the wall and the housing has to
+       * go further the same way — added instead of subtracted it hung in the
+       * middle of the passage, and at half a metre from the eye a 0.34-cell
+       * plane is most of the screen.
+       *
+       * 0.13 puts its face at 0.47 from the cell centre, a hair inside the
+       * bulkhead plane at 0.5, so it cannot z-fight the moulding it is bolted
+       * to.
+       */
+      m.position.set(
+        st.x - Math.cos(st.facing) * 0.13,
+        st.kind === "breaker" ? 0.52 : 0.34,
+        st.y - Math.sin(st.facing) * 0.13,
+      );
+      m.rotation.y = -st.facing + Math.PI / 2;
+      m.frustumCulled = false;
+      this.scene.add(m);
+      this.stationMeshes.push(m);
+    }
+  }
+
+  /** Repaint them for this frame's state. */
+  updateStations(stations: Station[], target: number): void {
+    for (let i = 0; i < this.stationMeshes.length; i++) {
+      const st = stations[i];
+      const mat = this.stationMeshes[i].material as THREE.MeshBasicMaterial;
+      if (!st) continue;
+      if (st.kind === "breaker") {
+        // amber dead, green live, and the fill rises as you hold it
+        const t = st.done ? 1 : st.progress;
+        mat.color.setRGB(1 - t * 0.85, 0.42 + t * 0.58, 0.12 + t * 0.2);
+      } else if (st.done) {
+        mat.color.setRGB(0.1, 0.11, 0.13);
+      } else {
+        const t = st.progress;
+        mat.color.setRGB(0.28 + t * 0.6, 0.34 + t * 0.5, 0.42 + t * 0.3);
+      }
+      // the one you are standing at gets brighter, which is the whole prompt
+      if (i === target && !st.done) mat.color.multiplyScalar(1.5);
+    }
   }
 
   private slot(i: number): SpriteSlot {

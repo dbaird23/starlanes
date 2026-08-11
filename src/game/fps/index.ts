@@ -13,14 +13,8 @@ import { playAmbient, stopAmbient } from "../../engine/audio";
 import { GlScene } from "./glscene";
 import { FpsWorld, type FpsCommand } from "./sim";
 import type { FpsOptions, FpsSprite } from "./types";
+import { AIR_LOW, formatAir } from "./salvage";
 
-/**
- * The viewmodel is still drawn in canvas 2D, and it was authored against the
- * raycaster's 480-wide buffer. Keeping that as its design width and scaling to
- * the window means the gun is the same size on every display instead of
- * shrinking to a splinter at 1280.
- */
-const GUN_W = 480;
 const MOUSE_SENS = 0.0022;
 const KEY_TURN = 2.4;
 
@@ -80,6 +74,7 @@ export class FpsSession {
     this.world = new FpsWorld(opts);
     try {
       this.gl = new GlScene(opts.level);
+      this.gl.setStations(this.world.run.stations);
     } catch (e) {
       // no WebGL: the session still runs, it just has nothing to look at
       console.error("fps: WebGL unavailable", e);
@@ -151,6 +146,23 @@ export class FpsSession {
     const gl = this.gl;
     if (gl) {
       const sprites: FpsSprite[] = this.world.sprites();
+      const run = this.world.run;
+      gl.updateStations(run.stations, run.target);
+      /*
+       * **Throwing a breaker lights the ship, and that is the payoff.**
+       *
+       * `uMinLight` is the probe hook's floor and it is exactly the right lever:
+       * it lifts every sector at once, so the corridor you are standing in comes
+       * up along with the compartment you just powered. Per-sector would be
+       * better — one room at a time, the rest still dead — and it is the next
+       * thing here: it needs `mesh.ts` to bake a sector *index* per vertex
+       * beside `aLight` and a small uniform table to look it up in. Until then
+       * the whole deck brightens a third of the way per breaker, which reads as
+       * the ship coming back rather than as a light switch.
+       */
+      const power = run.breakersTotal
+        ? (run.breakers / run.breakersTotal) * 0.38
+        : 0;
       const t0 = performance.now();
       const frame = gl.render(
         { x: this.world.x, y: this.world.y, angle: this.world.angle },
@@ -158,7 +170,7 @@ export class FpsSession {
         Math.max(2, Math.round(w)),
         Math.max(2, Math.round(h)),
         this.noTextures,
-        this.lightFloor,
+        Math.max(this.lightFloor, power),
       );
       this.frameMs += (performance.now() - t0 - this.frameMs) * 0.1;
       ctx.drawImage(frame, 0, 0, w, h);
@@ -167,68 +179,15 @@ export class FpsSession {
       ctx.fillRect(0, 0, w, h);
     }
 
-    this.drawWeapon(ctx, w, h);
     this.drawHud(ctx, w, h);
   }
 
-  /**
-   * There is no first-person viewmodel anywhere in Nova's art — the outfit
-   * pictures are 3/4 product shots on black — so the gun is a few polygons.
-   * Drawn into the low-res buffer on purpose, so it wears the same pixels as
-   * the world instead of floating above it.
+  /*
+   * The viewmodel is gone with the weapon. There was never any first-person art
+   * in Nova to draw one from, and a pair of hands holding nothing is worse than
+   * an empty frame: what the player's attention should be on is the panel they
+   * are standing at and the number counting down.
    */
-  private drawWeapon(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    if (this.world.state !== "playing") return;
-    const k = w / GUN_W;
-    const bx = GUN_W * 0.74 + Math.sin(this.bob) * 4;
-    const by = h / k + Math.abs(Math.cos(this.bob)) * 3;
-    const kick = this.world.muzzle * 7;
-
-    ctx.save();
-    ctx.scale(k, k);
-    ctx.translate(bx, by + kick);
-    ctx.rotate(-0.12);
-    // stock and receiver, canted in from the right the way a held rifle sits
-    ctx.fillStyle = "#14181d";
-    ctx.beginPath();
-    ctx.moveTo(-4, 0);
-    ctx.lineTo(2, -26);
-    ctx.lineTo(30, -22);
-    ctx.lineTo(34, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#1e242b";
-    ctx.fillRect(-2, -34, 22, 12);
-    // barrel, with the housing Nova's hardware is all wrapped in
-    ctx.fillStyle = "#262c34";
-    ctx.beginPath();
-    ctx.moveTo(3, -32);
-    ctx.lineTo(5, -62);
-    ctx.lineTo(15, -62);
-    ctx.lineTo(17, -32);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#0a0c0f";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = "#39424c";
-    ctx.fillRect(4, -50, 12, 2);
-    ctx.fillRect(4, -42, 12, 2);
-
-    if (this.world.muzzle > 0.02) {
-      const m = this.world.muzzle;
-      const g = ctx.createRadialGradient(10, -64, 1, 10, -64, 30 * m);
-      g.addColorStop(0, `rgba(255,244,220,${(0.95 * m).toFixed(2)})`);
-      g.addColorStop(0.35, `rgba(255,178,96,${(0.6 * m).toFixed(2)})`);
-      g.addColorStop(1, "rgba(255,120,40,0)");
-      ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = g;
-      ctx.fillRect(-24, -98, 68, 68);
-      ctx.globalCompositeOperation = "source-over";
-    }
-    ctx.restore();
-  }
-
   private drawHud(ctx: CanvasRenderingContext2D, w: number, h: number): void {
     const world = this.world;
 
@@ -245,29 +204,44 @@ export class FpsSession {
 
     if (world.state === "playing") {
       this.drawCrosshair(ctx, w, h);
+      this.drawHold(ctx, w, h);
       this.drawReadouts(ctx, w, h);
       this.drawMap(ctx, w, h);
     }
 
+    const run = world.run;
     if (this.paused && world.state === "playing") {
       this.card(ctx, w, h, world.opts.title.toUpperCase(), [
-        "Click to take the deck.",
+        "Five minutes of air. Throw every breaker, then get back to the lock.",
         "",
-        "W A S D move · mouse look · click or Space fire",
-        "Shift run · Esc pause · Q leave",
+        "W A S D move · mouse look · hold click or Space to work a panel",
+        "Lockers cost air. Shift run · Esc pause · Q leave",
       ]);
     } else if (world.state === "won") {
-      const mins = Math.floor(world.elapsed / 60);
-      const secs = Math.floor(world.elapsed % 60);
-      this.card(ctx, w, h, "DECK CLEAR", [
-        `${world.total} contacts down. You made the airlock with ${Math.max(0, Math.round(world.health))} left.`,
-        `Time ${mins}:${String(secs).padStart(2, "0")}`,
+      /*
+       * The haul is listed and not totalled, because a total is a score and a
+       * list is a story: three lines of what you actually carried out is what
+       * makes the locker you skipped at 0:40 worth remembering.
+       */
+      const lines = [
+        `She has power, and you made the lock with ${formatAir(run.air)} in the tank.`,
         "",
-        "Enter — back to the bar",
-      ]);
+      ];
+      if (run.haul.length) {
+        lines.push("Carried out:");
+        for (const g of run.haul.slice(0, 6)) lines.push(`  ${g.name}`);
+        if (run.haul.length > 6) lines.push(`  ...and ${run.haul.length - 6} more`);
+      } else {
+        lines.push("You touched nothing on the way. She is still yours.");
+      }
+      lines.push("", "Enter — back to the bar");
+      this.card(ctx, w, h, "SHE'S YOURS", lines);
     } else if (world.state === "lost") {
-      this.card(ctx, w, h, "YOU DIDN'T MAKE IT", [
-        `${world.killed} of ${world.total} contacts down.`,
+      this.card(ctx, w, h, "OUT OF AIR", [
+        `${run.breakers} of ${run.breakersTotal} breakers thrown.`,
+        run.haul.length
+          ? `You were carrying ${run.haul.length} find${run.haul.length > 1 ? "s" : ""}. They stay aboard.`
+          : "",
         "",
         "Enter — back to the bar",
       ]);
@@ -287,62 +261,102 @@ export class FpsSession {
     ctx.stroke();
   }
 
+  /**
+   * The tank, the objective, and the hold ring.
+   *
+   * Three readouts and no more. The shooter's HUD had hull, ammo, contacts and
+   * a weapon name, and every one of them was a number you could watch instead
+   * of looking at the ship; the run has exactly one number worth watching and
+   * it is the one you cannot get back.
+   */
   private drawReadouts(ctx: CanvasRenderingContext2D, w: number, h: number): void {
-    const world = this.world;
+    const run = this.world.run;
     ctx.textBaseline = "alphabetic";
 
-    // health, bottom left
+    /* ---- the tank, bottom left, and it is the only big number on screen */
+    const low = run.air < AIR_LOW;
     const bx = 26;
     const by = h - 34;
     ctx.font = `500 11px ${MONO}`;
-    ctx.fillStyle = "#7d8a99";
+    ctx.fillStyle = low ? "#c66" : "#7d8a99";
     ctx.textAlign = "left";
-    ctx.fillText("HULL", bx, by - 10);
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(bx, by, 190, 12);
-    const frac = Math.max(0, world.health / world.maxHealth);
-    ctx.fillStyle = frac > 0.5 ? "#4fa3d1" : frac > 0.25 ? "#d1a24f" : "#d14f4f";
-    ctx.fillRect(bx + 1, by + 1, Math.round(188 * frac), 10);
-    ctx.strokeStyle = "rgba(140,160,180,0.35)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(bx + 0.5, by + 0.5, 189, 11);
+    ctx.fillText("AIR", bx, by - 26);
+    ctx.font = `600 30px ${MONO}`;
+    /*
+     * The last minute pulses. It is the only animated thing in the HUD, so it
+     * cannot be mistaken for anything else, and it starts at `AIR_LOW` rather
+     * than at some fraction of the tank so it means the same thing on a run
+     * you spent well and one you didn't.
+     */
+    const pulse = low ? 0.72 + 0.28 * Math.abs(Math.sin(this.world.elapsed * 4)) : 1;
+    ctx.fillStyle = low
+      ? `rgba(230,90,90,${pulse.toFixed(2)})`
+      : "rgba(196,214,232,0.92)";
+    ctx.fillText(formatAir(run.air), bx, by);
 
-    // ammo, bottom right
+    /* ---- the objective, bottom right: breakers, then get out */
     ctx.textAlign = "right";
+    ctx.font = `500 11px ${MONO}`;
     ctx.fillStyle = "#7d8a99";
-    ctx.fillText("ROUNDS", w - 26, by - 10);
-    ctx.font = `700 26px ${MONO}`;
-    ctx.fillStyle = world.ammo > 0 ? "#c8d4e0" : "#d14f4f";
-    ctx.fillText(String(world.ammo), w - 26, by + 12);
-
-    // contacts, top left
-    ctx.textAlign = "left";
-    ctx.font = `600 13px ${DISPLAY}`;
-    ctx.fillStyle = "#8c99a8";
-    ctx.fillText(world.opts.title, 26, 34);
-    ctx.font = `500 12px ${MONO}`;
-    ctx.fillStyle = world.remaining ? "#c8d4e0" : "#7fd18f";
+    ctx.fillText(run.powered ? "SHIP" : "BREAKERS", w - 26, by - 26);
+    ctx.font = `600 20px ${MONO}`;
+    ctx.fillStyle = run.powered ? "rgba(150,225,170,0.95)" : "rgba(196,214,232,0.92)";
     ctx.fillText(
-      world.remaining
-        ? `CONTACTS  ${world.remaining} / ${world.total}`
-        : "DECK CLEAR",
-      26,
-      54,
+      run.powered ? "GET BACK TO THE LOCK" : `${run.breakers} / ${run.breakersTotal}`,
+      w - 26,
+      by,
     );
 
-    if (world.cleared) {
+    /* ---- and what just happened, under the reticle */
+    if (run.noteLeft > 0) {
       ctx.textAlign = "center";
-      ctx.font = `600 15px ${DISPLAY}`;
-      ctx.fillStyle = "#7fd18f";
-      ctx.fillText(
-        `Return to the airlock — ${world.exitDist.toFixed(0)}m`,
-        w / 2,
-        h - 74,
-      );
+      ctx.font = `500 13px ${MONO}`;
+      ctx.fillStyle = `rgba(196,224,208,${Math.min(1, run.noteLeft).toFixed(2)})`;
+      ctx.fillText(run.note, w / 2, h / 2 + 54);
     }
   }
 
-  /** A corner deck plan, showing only what you have walked past. */
+  /**
+   * The hold ring: the verb, drawn where the verb happens.
+   *
+   * It is at the reticle and not on the panel because the panel is a rectangle
+   * on a wall three metres away and the thing being reported is *your* action.
+   * The ring only exists while a station is in reach, so it doubles as the
+   * prompt — there is no "press E to use" line anywhere in the game.
+   */
+  private drawHold(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    const run = this.world.run;
+    if (run.target < 0) return;
+    const st = run.stations[run.target];
+    const cx = Math.round(w / 2);
+    const cy = Math.round(h / 2);
+    const r = 22;
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(150,180,205,0.35)";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (st.progress > 0.001) {
+      // a locker's ring is amber, because amber is what the air is going into
+      ctx.strokeStyle = st.kind === "locker" ? "rgba(240,180,90,0.95)" : "rgba(150,230,175,0.95)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * st.progress);
+      ctx.stroke();
+    }
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.font = `500 11px ${MONO}`;
+    ctx.fillStyle = "rgba(180,205,225,0.8)";
+    ctx.fillText(st.label.toUpperCase(), cx, cy + r + 18);
+    if (st.kind === "locker" && st.progress <= 0.001) {
+      ctx.fillStyle = "rgba(240,180,90,0.75)";
+      ctx.fillText("COSTS AIR", cx, cy + r + 32);
+    }
+  }
+
   private drawMap(ctx: CanvasRenderingContext2D, w: number, _h: number): void {
     const world = this.world;
     const lvl = world.level;

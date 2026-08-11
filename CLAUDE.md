@@ -99,6 +99,47 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
+**The run is a salvage job, not a firefight — `src/game/fps/salvage.ts`.**
+*Five minutes of air, throw every breaker, then get back to the lock.* One
+clock, one verb, one decision:
+
+- **One clock.** Air, `AIR_FULL` 300s. It only goes down and nothing else is
+  timed; a second number turns a decision into arithmetic.
+- **One verb.** Hold to use, on the button that used to fire. Breakers and
+  lockers are the same interaction with different payoffs, so there is nothing
+  to learn between them and no key to teach. The prompt *is* the hold ring at
+  the reticle — there is no "press E" line anywhere.
+- **One decision.** A locker drains at `LOOT_DRAIN` (4x), and only while you
+  actually hold it, so walking past one is free and opening it is a bet. Four
+  breakers cost ~10s of the 300 and eight lockers ~194s: you can have most of
+  the lockers or a comfortable walk, not both.
+
+**The weapon is gone and so is everything that fired it.** `tryFire`, `kill`,
+`addPuff`, `updateEnemies`, `SHOT_RANGE`, `FOOT_DAMAGE` and the viewmodel are
+deleted; `Enemy`/`Puff` and `sprites()` stay, empty, because a boarding action
+fought by marines is a plausible later mode. Nothing spawns. **The Wraiths are
+not coming back.**
+
+**Stations are placed from the deck, not authored on it** (`placeStations`).
+A breaker goes in each non-default sector at the cell furthest from the airlock
+by BFS walking distance, so the sequence falls out of the plan: nearest sector
+first, last one the length of the ship. Lockers fill the gaps furthest-first,
+`LOCKER_SPACING` apart. That is what "difficulty is layout and sequence, never
+new numbers" means in code — a bigger hull is a longer walk and the 300 seconds
+and the hold times do not change.
+
+**A thrown breaker lights the ship, and today that is level-wide.** `uMinLight`
+is raised 0.38 × (breakers/total), which reads as the ship coming back rather
+than as a switch. Per-*sector* is the right version and is the next job: it
+needs `mesh.ts` to bake a sector index per vertex beside `aLight` plus a small
+uniform table. `SalvageRun.power` already carries the per-sector state, unused.
+
+**`Station.facing` points out of the bulkhead into the cell.** Everything
+downstream is an offset along it and every sign error looks like a different
+bug: the housing added instead of subtracted hangs in mid-corridor (and at half
+a metre fills the screen), and a probe that stands at `pos - cos(facing)*d`
+stands inside the wall and reports that nothing can be targeted.
+
 **Derelict: an on-foot mini-game in `src/game/fps/`, rendered with three.js.**
 A sweep of a dead ship, entered from a fifth button in the Bar beside Gamble
 and Holovid. It is a **vertical slice and deliberately a diversion**:
