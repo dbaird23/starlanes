@@ -1,0 +1,5 @@
+# Everything in here is throwaway. Probe scripts have to sit inside the repo so
+# Node can resolve `require('pngjs')` up into node_modules; this keeps them from
+# cluttering the project root.
+*
+!.gitignore

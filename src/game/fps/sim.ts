@@ -7,49 +7,28 @@
  * `opts.onOutcome`, which the arcade entry point does not pass.
  */
 
-import { pathHitsCircle } from "../combat";
 import { WEAPONS } from "../../data/universe";
-import { BOOM_SPRITES } from "../../data/universe";
 import { getSprite, rotationFrame } from "../../engine/sprites";
-import { playSnd, playSndAt } from "../../engine/audio";
+import { playSnd } from "../../engine/audio";
 import { ENEMY_DEFS } from "./level";
-import type { RaySprite } from "./raycast";
-import type { FpsEnemyDef, FpsLevel, FpsOptions } from "./types";
+import type { FpsEnemyDef, FpsLevel, FpsOptions, FpsSprite } from "./types";
+import {
+  type SalvageRun,
+  type Station,
+  newRun,
+  placeStations,
+  rollLoot,
+  runOutcome,
+  stepRun,
+} from "./salvage";
 
 /** Player collision radius and eye height, in cells. */
 const BODY = 0.28;
 const WALK = 3.1;
 const RUN = 4.9;
-/** Wraiths are not solid to each other, but they do keep out of walls. */
-const ENEMY_BODY = 0.3;
 
-/**
- * Nova's damage numbers are hull-scale — a Light Blaster does 4 shield and 1
- * armour to something with hundreds of both. On foot the same shot should put
- * a creature down in a couple of hits, so the two channels are summed and
- * scaled once, here, rather than the enemy health numbers being quietly
- * denominated in something else.
- */
-const FOOT_DAMAGE = 4;
 
-/**
- * How far a shot reaches, in cells.
- *
- * Deliberately *not* derived from the wëap's `durationSec * speed`: that is 650
- * px for a Light Blaster, a distance calibrated for ships crossing a system,
- * and there is no honest cells-per-pixel to convert it with. What bounds an
- * engagement here is the fog — you cannot see past about ten cells — so that is
- * what bounds the gun. `reloadSec`, `accuracy`, `burstCount` and the damage
- * channels all translate directly and are read from the resource.
- */
-const SHOT_RANGE = 12;
 
-/**
- * `playSndAt`'s falloff is calibrated in the space sim's pixels (full volume
- * inside 350, silent past 2600, panned on x/900). Rather than rework the audio
- * layer for a second scale, on-foot distances are converted into that one.
- */
-const AUDIO_PX_PER_CELL = 220;
 
 export interface FpsCommand {
   /** -1..1 */
@@ -113,8 +92,17 @@ export class FpsWorld {
   hurt = 0;
   /** decays after firing, for the muzzle flare */
   muzzle = 0;
-  /** set once when the last Wraith drops, so the UI can say "get back" */
+  /** set once the last breaker is in, so the UI can say "get back to the lock" */
   cleared = false;
+
+  /**
+   * The salvage run — the air, the stations and the haul.
+   *
+   * It is a field on the world rather than a replacement for it because the
+   * world already owns everything a run needs to ask about: where you are
+   * standing, which way you are looking, and whether the button is down.
+   */
+  readonly run: SalvageRun;
 
   private enemies: Enemy[] = [];
   private puffs: Puff[] = [];
@@ -141,7 +129,17 @@ export class FpsWorld {
     this.seen = new Uint8Array(opts.level.w * opts.level.h);
     this.markSeen();
 
-    for (const s of opts.level.spawns) {
+    this.run = newRun(opts.level, placeStations(opts.level));
+
+    /*
+     * **Nothing is spawned.** The slice shipped as a shooter and the level
+     * format still carries `spawns`, but a derelict is not a monster closet —
+     * the tension is the clock, and something to shoot would give you a second
+     * thing to spend attention on and a reason to want a weapon. The loop is
+     * kept compiling because a boarding action fought by marines is a plausible
+     * later mode, and deleting it would mean rebuilding it from nothing.
+     */
+    for (const s of [] as typeof opts.level.spawns) {
       const def = ENEMY_DEFS[s.kind];
       if (!def) continue;
       this.enemies.push({
@@ -214,18 +212,6 @@ export class FpsWorld {
   }
 
   /** Nothing solid between two points. Sampled rather than DDA'd — cheap enough. */
-  private clearLine(x0: number, y0: number, x1: number, y1: number): boolean {
-    const dx = x1 - x0;
-    const dy = y1 - y0;
-    const len = Math.hypot(dx, dy);
-    const steps = Math.ceil(len / 0.15);
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      if (this.solid(x0 + dx * t, y0 + dy * t)) return false;
-    }
-    return true;
-  }
-
   update(dt: number, cmd: FpsCommand): void {
     if (this.state !== "playing") return;
     this.elapsed += dt;
@@ -255,22 +241,50 @@ export class FpsWorld {
     }
 
     this.markSeen();
-    if (cmd.fire) this.tryFire();
-    this.updateEnemies(dt);
-    this.updatePuffs(dt);
 
-    if (this.health <= 0) {
+    /*
+     * The run. `cmd.fire` is the same button it always was — there is nothing
+     * to shoot, so the finger that used to pull a trigger holds a panel open.
+     */
+    const done = stepRun(this.run, dt, this.x, this.y, this.angle, cmd.fire);
+    if (done) this.stationDone(done);
+
+    const outcome = runOutcome(this.run, this.exitDist < 1.1);
+    if (outcome === "lost") {
       this.finish(false);
       return;
     }
-    if (!this.cleared && this.killed >= this.total) {
+    if (this.run.powered && !this.cleared) {
       this.cleared = true;
-      playSnd(371, 0.4); // Klaxxon: the deck is clear, the ship is still dead
+      playSnd(371, 0.4); // Klaxxon: she has power, and you are still on her
     }
-    if (this.cleared && this.exitDist < 1.1) {
+    if (outcome === "won") {
       playSnd(390, 0.55); // Airlock
       this.finish(true);
     }
+  }
+
+  /**
+   * What a finished station does.
+   *
+   * A breaker's payoff is the light: `SalvageRun.power` is read by the renderer
+   * every frame, so the compartment comes on around you. A locker's payoff is
+   * rolled here and only *recorded* — nothing reaches the pilot's hold unless
+   * `onOutcome` is wired, which the arcade entry point does not do.
+   */
+  private stationDone(st: Station): void {
+    if (st.kind === "breaker") {
+      playSnd(305, 0.5);
+      // the sector names carry their own state ("forward (dead)"), which stops
+      // being true the moment you throw the breaker
+      this.run.note = `Power restored — ${st.label.replace(/\s*\(.*\)\s*$/, "")}`;
+    } else {
+      playSnd(390, 0.35);
+      st.loot = rollLoot();
+      this.run.haul.push(st.loot);
+      this.run.note = st.loot.name;
+    }
+    this.run.noteLeft = 3;
   }
 
   private finish(won: boolean): void {
@@ -279,169 +293,24 @@ export class FpsWorld {
     this.state = won ? "won" : "lost";
     this.opts.onOutcome?.({
       won,
-      enemiesKilled: this.killed,
-      enemiesTotal: this.total,
+      enemiesKilled: this.run.breakers,
+      enemiesTotal: this.run.breakersTotal,
       timeSec: this.elapsed,
-      healthLeft: Math.max(0, this.health),
+      healthLeft: Math.max(0, this.run.air),
+      haul: won ? this.run.haul.slice() : [],
     });
   }
 
-  private tryFire(): void {
-    if (this.reloadLeft > 0 || this.ammo <= 0) return;
-    const w = this.weapon;
-    this.reloadLeft = w ? w.reloadSec : 0.33;
-    this.ammo--;
-    this.muzzle = 1;
-    if (w?.sndId) playSnd(w.sndId, 0.4);
-
-    // wëap Accuracy is the inaccuracy cone in degrees, straight off the resource
-    const spread = ((w?.accuracy ?? 0) * Math.PI) / 180;
-    const a = this.angle + (Math.random() - 0.5) * spread;
-    const dx = Math.cos(a);
-    const dy = Math.sin(a);
-
-    // how far the shot gets before it buries itself in a bulkhead
-    let wall = SHOT_RANGE;
-    for (let d = 0.15; d <= SHOT_RANGE; d += 0.15) {
-      if (this.solid(this.x + dx * d, this.y + dy * d)) {
-        wall = d;
-        break;
-      }
-    }
-
-    const x1 = this.x + dx * wall;
-    const y1 = this.y + dy * wall;
-    let best: Enemy | null = null;
-    let bestD = Infinity;
-    for (const e of this.enemies) {
-      if (e.dead) continue;
-      const r = e.def.scale * 0.42;
-      if (!pathHitsCircle(this.x, this.y, x1, y1, e.x, e.y, r)) continue;
-      const d = Math.hypot(e.x - this.x, e.y - this.y);
-      if (d < bestD) {
-        bestD = d;
-        best = e;
-      }
-    }
-
-    const dmg = w ? (w.armorDmg + w.shieldDmg) * FOOT_DAMAGE : 20;
-    if (best) {
-      best.health -= dmg;
-      best.flash = 0.5;
-      best.awake = true;
-      if (best.health <= 0) this.kill(best);
-    } else {
-      // sparks off the bulkhead, so a miss still reads
-      this.addPuff(this.x + dx * (wall - 0.1), this.y + dy * (wall - 0.1), 400, 0.35, 0.5);
-    }
-  }
-
-  private kill(e: Enemy): void {
-    e.dead = true;
-    e.dying = 0.45;
-    this.killed++;
-    this.addPuff(e.x, e.y, e.def.boomId, e.def.scale * 1.2, e.def.hover);
-    playSndAt(
-      e.def.deathSnd,
-      0.5,
-      (e.x - this.x) * AUDIO_PX_PER_CELL,
-      (e.y - this.y) * AUDIO_PX_PER_CELL,
-    );
-  }
-
-  private updateEnemies(dt: number): void {
-    for (const e of this.enemies) {
-      e.flash = Math.max(0, e.flash - dt * 2.5);
-      if (e.dead) {
-        e.dying = Math.max(0, e.dying - dt);
-        continue;
-      }
-
-      const dx = this.x - e.x;
-      const dy = this.y - e.y;
-      const dist = Math.hypot(dx, dy);
-      if (!e.awake) {
-        if (dist < e.def.senseRange && this.clearLine(e.x, e.y, this.x, this.y)) {
-          e.awake = true;
-        } else {
-          continue; // asleep in the dark
-        }
-      }
-
-      e.strafeLeft -= dt;
-      if (e.strafeLeft <= 0) {
-        e.strafe = -e.strafe;
-        e.strafeLeft = 1.2 + Math.random() * 2.2;
-      }
-
-      /*
-       * They weave rather than bee-line. That is better to fight, and it is
-       * also what makes the 36 pre-rendered rotations earn their place: a
-       * creature that always pointed straight at you would only ever show one
-       * frame of its sheet.
-       */
-      const toward = Math.atan2(dy, dx);
-      const bias = dist < e.def.reach * 2 ? 1.1 : 0.55;
-      const heading = toward + e.strafe * bias;
-      const step = e.def.speed * dt;
-      if (dist > e.def.reach * 0.8) {
-        const p = this.slide(
-          e.x,
-          e.y,
-          Math.cos(heading) * step,
-          Math.sin(heading) * step,
-          ENEMY_BODY,
-        );
-        if (p.x !== e.x || p.y !== e.y) {
-          e.facing = Math.atan2(p.y - e.y, p.x - e.x);
-        }
-        e.x = p.x;
-        e.y = p.y;
-      } else {
-        e.facing = toward;
-      }
-
-      e.attackCd -= dt;
-      if (dist < e.def.reach && e.attackCd <= 0) {
-        e.attackCd = e.def.attackGap;
-        this.health -= e.def.damage;
-        this.hurt = 1;
-        playSnd(154, 0.35);
-      }
-    }
-    this.enemies = this.enemies.filter((e) => !e.dead || e.dying > 0);
-  }
-
-  private addPuff(
-    x: number,
-    y: number,
-    boomId: number,
-    scale: number,
-    hover: number,
-  ): void {
-    const sheet = BOOM_SPRITES[String(boomId)];
-    if (!sheet) return;
-    this.puffs.push({
-      x,
-      y,
-      file: sheet.file,
-      frameSize: sheet.h,
-      frames: sheet.frames,
-      t: 0,
-      life: Math.max(0.25, sheet.frames / 30),
-      scale,
-      hover,
-    });
-  }
-
-  private updatePuffs(dt: number): void {
-    for (const p of this.puffs) p.t += dt;
-    this.puffs = this.puffs.filter((p) => p.t < p.life);
-  }
-
-  /** Everything the raycaster should draw as a billboard, this frame. */
-  sprites(): RaySprite[] {
-    const out: RaySprite[] = [];
+  /*
+   * `tryFire` lived here and is gone. A derelict run has nothing to shoot, and
+   * leaving a weapon in the player's hands is the one change that would put the
+   * clock second: with a trigger there is always something to do with the time.
+   * The enemy machinery below stays — a boarding action fought by marines is a
+   * plausible later mode and rebuilding it from nothing would be the expensive
+   * way to find that out — but nothing spawns and nothing is fired.
+   */
+  sprites(): FpsSprite[] {
+    const out: FpsSprite[] = [];
     for (const e of this.enemies) {
       const img = getSprite(e.def.sheet);
       if (!img) continue;

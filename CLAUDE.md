@@ -1,6 +1,14 @@
 # EV Nova web reimplementation
 
-TypeScript + Vite, no framework; canvas flight sim + HTML landed screens.
+TypeScript + Vite. The flight sim draws to a canvas and the landed screens are
+HTML; the on-foot mini-game in `src/game/fps/` is **three.js** (0.185), on its
+own GL canvas blitted into the same 2D one.
+
+There is no house rule against frameworks, dependencies or a second rendering
+technology — judge each on its merits for the job. (This line used to read "no
+framework", which had hardened into an unexamined argument against WebGL for
+the mini-game, where a GPU is plainly the right tool for per-pixel geometry.
+Five rounds of a hand-written raycaster later, it is.)
 
 ## Data pipeline
 
@@ -69,6 +77,12 @@ empirical evidence.
 
 ### Probing from an automated browser session
 
+Throwaway probe scripts go in **`scratch/`**, which is gitignored. They have to
+live inside the repo — Node resolves `require('pngjs')` by walking up to
+`node_modules`, so a script in `/tmp` cannot see it — and `scratch/` keeps them
+out of the project root, where they kept showing up as untracked files.
+
+
 `requestAnimationFrame` is paused when the tab is backgrounded, so canvas
 screenshots can be stale. Verify by calling into `window.game` directly, or by
 compositing the extracted sheets into a scratch canvas. Note that a dynamic
@@ -85,64 +99,432 @@ proceeding resource by resource.
 
 ### Recently completed — don't redo
 
-**Derelict: an on-foot raycaster, in `src/game/fps/`.** A Wolf3D-style sweep of
-a dead ship, entered from a fifth button in the Bar beside Gamble and Holovid.
-It is a **vertical slice and deliberately a diversion**: `FpsOptions.onOutcome`
-is the only way a result can leave, and the arcade entry point
-(`Game.startDerelict`) does not pass one, so a win and a loss both leave
+**The run is a salvage job, not a firefight — `src/game/fps/salvage.ts`.**
+*Five minutes of air, throw every breaker, then get back to the lock.* One
+clock, one verb, one decision:
+
+- **One clock.** Air, `AIR_FULL` 300s. It only goes down and nothing else is
+  timed; a second number turns a decision into arithmetic.
+- **One verb.** Hold to use, on the button that used to fire. Breakers and
+  lockers are the same interaction with different payoffs, so there is nothing
+  to learn between them and no key to teach. The prompt *is* the hold ring at
+  the reticle — there is no "press E" line anywhere.
+- **One decision.** A locker drains at `LOOT_DRAIN` (4x), and only while you
+  actually hold it, so walking past one is free and opening it is a bet. Four
+  breakers cost ~10s of the 300 and eight lockers ~194s: you can have most of
+  the lockers or a comfortable walk, not both.
+
+**The weapon is gone and so is everything that fired it.** `tryFire`, `kill`,
+`addPuff`, `updateEnemies`, `SHOT_RANGE`, `FOOT_DAMAGE` and the viewmodel are
+deleted; `Enemy`/`Puff` and `sprites()` stay, empty, because a boarding action
+fought by marines is a plausible later mode. Nothing spawns. **The Wraiths are
+not coming back.**
+
+**Stations are placed from the deck, not authored on it** (`placeStations`).
+A breaker goes in each non-default sector at the cell furthest from the airlock
+by BFS walking distance, so the sequence falls out of the plan: nearest sector
+first, last one the length of the ship. Lockers fill the gaps furthest-first,
+`LOCKER_SPACING` apart. That is what "difficulty is layout and sequence, never
+new numbers" means in code — a bigger hull is a longer walk and the 300 seconds
+and the hold times do not change.
+
+**A thrown breaker lights the compartment that breaker belongs to**, and
+leaves the rest of the ship exactly as dead as it was. `mesh.ts` bakes a sector
+*index* per vertex (`aSector`) beside the sector's baked light, `glscene.ts`
+holds a `uPower[16]` table the run writes, and the sector term takes
+`max(vLight, vPower, uMinLight)`. Measured: throwing the first breaker takes its
+own compartment's mean frame luminance 63.2 → 122.3 and leaves the other three
+sectors byte-identical.
+
+Three things about it are load-bearing:
+
+- **The table is read in the *vertex* shader.** Three compiles to GLSL ES 1.00
+  even on a WebGL2 context, and 1.00 forbids indexing a uniform array with a
+  non-constant expression in a *fragment* shader. Every vertex of a primitive
+  carries the same sector, so interpolating the looked-up value is exact.
+- **`SECTOR_ID` in `mesh.ts` is a module-level variable, not a `Shade` field.**
+  A `Shade` is constructed at about forty sites — every band of the moulding,
+  every riser of every coffer, every span of every ring — and all of them sit
+  inside a loop that already knows exactly one sector. Threading an index
+  through forty call sites is forty chances to pass the wrong one; setting it
+  once per cell is one line that cannot disagree with itself.
+- **`placeStations` skips the sector the player *starts* in**, read off the
+  start cell — not sector 0, the level's declared default. On the shipped deck
+  every cell carries an authored sector and none is 0, so skipping 0 gave the
+  airlock a breaker four metres from the start: you threw it before walking
+  anywhere, and it lit the compartment that was already the brightest on the
+  ship.
+
+**Props are placed from the deck too — `src/game/fps/props.ts`.** Crates,
+fallen panelling, gas bottles and junction boxes, about a third of the open
+cells, through the level's own shader so a crate in a dead compartment stays
+dead and comes up when you throw its breaker. Four things are load-bearing:
+
+- **Deterministic, hashed off the cell.** No `Math.random`: a deck the player is
+  meant to learn cannot rearrange itself between attempts.
+- **They never block.** `sim.ts` collides against the grid and nothing else, so
+  anything standing where you walk is a thing you walk through.
+- **`HUG_DECK` is 0.21, not 0.33.** The deck is only the middle ~45% of the
+  corridor; past that the lower chamfer rises as a bench, so a prop "against the
+  wall" at a third of a cell is buried in the bench at whatever angle the bench
+  happens to be. `HUG_WALL` 0.45 is the other answer, for the junction box,
+  which is bolted to the vertical face and so wants nearly the full half-cell.
+  A canister standing *on* the bench was tried and is wrong twice over: it is a
+  45° slope, so a cylinder on it either floats or sinks.
+- **`scaleUv` exists because `BoxGeometry` maps 0..1 across every face however
+  big it is.** A 0.3-cell crate would wear a whole bulkhead tile — one rivet the
+  size of a hand, at ten times the texel density of the wall it leans against.
+
+**A station is a housing plus a lens, and they are lit differently on purpose.**
+The housing is a box standing 0.07 proud, wearing `frame-rib` and going through
+the **level's own shader** (`levelMaterial` / `dressProp` bake the four extra
+attributes uniformly), so the lamp rakes across it exactly as it rakes across
+the bulkhead it is bolted to — lit any other way a panel is a decal. The lens is
+a small `MeshBasicMaterial` strip that ignores the sector, the lamp and the fog
+alike, because it is the one thing on a dead ship that has to be findable from
+beyond the lamp's reach. Sized to the whole housing it was a flat amber slab
+that filled the screen at arm's length; it is a fraction of it, off-centre, so
+the steel carries the size and the light carries the state.
+
+**`Station.facing` points out of the bulkhead into the cell.** Everything
+downstream is an offset along it and every sign error looks like a different
+bug: the housing added instead of subtracted hangs in mid-corridor (and at half
+a metre fills the screen), and a probe that stands at `pos - cos(facing)*d`
+stands inside the wall and reports that nothing can be targeted.
+
+**Derelict: an on-foot mini-game in `src/game/fps/`, rendered with three.js.**
+A sweep of a dead ship, entered from a fifth button in the Bar beside Gamble
+and Holovid. It is a **vertical slice and deliberately a diversion**:
+`FpsOptions.onOutcome` is the only way a result can leave, and the arcade entry
+point (`Game.startDerelict`) does not pass one, so a win and a loss both leave
 credits, cargo, record, bits and missions exactly as they were. Wiring it to a
 real boarding action means generating the level from the boarded hull (`crew`
 and `length` are on all 288 ships) and filling that callback in at `tryBoard`
 — which is also where `BoardPenalty`, listed under Known gaps, would finally
 get charged.
 
-Why a raycaster rather than anything else: **Nova's art is already in the
-format one consumes.** The Wraith Adult/Youth/Child sheets (`ship-1080/1082/
-1084.png`) are 36 pre-rendered rotations per set, so a billboard turns
-correctly as you strafe — the hardest asset problem in a sprite FPS, solved
-before we start, and `rotationFrame`/`getSprite` already index that layout.
-They are also the right monster: the sprites are lit and drawn from above,
-which reads as wrong on anything that walks and fine on something that hovers.
+The enemies are **Nova's own Wraith sheets** (`ship-1080/1082/1084.png`), 36
+pre-rendered rotations per set, drawn as camera-facing billboards — the hardest
+asset problem in a sprite FPS, solved before we start, and `rotationFrame`
+already indexes that layout. They are also the right monster: the sprites are
+lit and drawn from above, which reads as wrong on anything that walks and fine
+on something that hovers.
 
-**Walls used to come from the machinery tail of the status-bar plates. They no
-longer do.** That crop was a ready-made greeble but it was a *sidebar*, drawn
-with its own lighting and its own vertical rhythm, and it read as one. The
-materials are now the tiles in `art-reference/materials/`, downsized into
-`public/fps/` by `scripts/fps-tiles.mjs` (~490 KB for five). They still do
-**not** load through `getSprite`/`getPict`, which hardcode the `nova/sprites/`
-and `nova/picts/` prefixes; `textures.ts` loads them itself through `asset()`.
+**It used to be a software raycaster and that is over. Do not bring it back.**
+Five rounds of `raycast.ts` got the octagonal section correct along a straight
+wall and could never make it turn a corner. The last round wrapped the fold as
+a heightfield over the deck (`h(p) = max(0, chamferRun(p) − distanceToSolid(p))`),
+which was geometrically right and still punched several hundred spikes through
+the deck per frame, scalloped the section into lobes around every rib, and cost
+1.6× the frame time to do it. Every one of those is a problem of *deriving* a
+surface per pixel and none of them exists once the surface is triangles.
+`raycast.ts`, `section.ts` and the whole `BevelField` machinery are **deleted**;
+there is nothing in them worth porting.
 
-**The corridor is an octagon in section, per `art-reference/README.md`.** Deck,
-45° lower chamfer, vertical face, 45° upper chamfer, overhead — those angles
-are the *profile*, not floor-plan angles, so the plan stays a grid. A wall
-column is three bands rather than one strip, and the band heights fall out of
-the distance the DDA already computes: the chamfer occupies a strip `chamfer`
-cells wide in front of the wall, which the ray crosses *before* the wall plane,
-and since the DDA's perpendicular distance is `Δx / rayX`, moving that plane
-inward by `chamfer` moves the distance by `chamfer × deltaX`. One multiply, no
-second trace. Each band takes its own texture, its own gain and its own fog;
-the chamfers are sliced (2-4) so their fog follows them back toward the camera.
+**The corridor is a mesh, built once per level in `mesh.ts`.** For every open
+cell: a deck and a coffered overhead. For every open-cell face that abuts a
+solid: the section — which is **an eleven-segment moulding, not four planes**.
+That is all a straight run needs and nearly all a corner needs:
 
-Things it is easy to get wrong here:
+- **Inside (concave) corners mitre themselves.** Two perpendicular profiles
+  intersect exactly along the plan diagonal, and the depth buffer keeps the
+  nearer one — which is the mitre. Emit both strips and do nothing else.
+- **Outside (convex) corners get a fillet**, and it is now the whole profile
+  **lathed about the corner post**: every point `(u, y)` swept through the
+  quadrant at radius `u`. At 0° and 90° that lands exactly on the two
+  neighbouring strips' own endpoints, so no seam is possible. It generalises
+  the quarter-cone this used to emit — that was the lathe of a *straight* 45°
+  line — and it is what lets the bench, the riser and the ledge all turn an
+  outside corner intact.
 
-- **`PLANE` and `WALL_H` are art direction, not taste.** At the old 0.66 / 1.6
-  the vertical FOV was 35° against a 66° horizontal one, so a world unit of
-  height covered 1.3× the pixels a world unit of width did and the whole
-  octagon overflowed the frame under four cells — you could not see the shape.
-  0.8 / 1.0 is square at a 16:10 window (`H·WALL_H·2·PLANE/W` = 1), so a
-  section authored to the reference's fractions *is* those fractions on screen.
-- **A sector's overhead height wants to be 1.0 unless you mean it.** The eye is
-  fixed at 0.5 above the deck — that is what `hover` 0.5 means to every
-  billboard — so only a 1.0 overhead puts the camera on the centreline of the
-  vertical face. At 1.6 the chamfer's top edge slides onto the horizon and the
-  face ends up entirely above eye level.
-- **Band boundaries are snapped to whole rows.** A chamfer forty cells out is a
-  fraction of a pixel high, and `drawImage` into a sub-pixel destination blends
-  in the brightest texel it can find — against a near-black derelict that came
-  out as chains of white dots tracking every chamfer edge.
-- **`trim-light-channel.png` goes on the bay frames and the doors only.** On
-  every chamfer it was a light strip down every wall, which is a strip down no
-  wall in particular, and the bay rhythm disappeared into it.
+**The walls used to be one quad per surface with a picture on it, and that is
+why they read flat however good the tile was.** `corridor-lit.png` and
+`damage.png` are not five planes; they are a run of **recessed bays between
+projecting structural frames**, and every one of those five surfaces has a step
+in it. So `section()` is eleven segments, three of which are *trays* rather
+than planes:
+
+- the **lower chamfer is a bench** — toe kick off the deck, step back, the 45°
+  face proper, riser, ledge into the wall. `TOE_H === TOE_D` is deliberate: it
+  puts the step exactly where a plain 45° line from the foot would have been,
+  so the bench's slope is still the reference's slope and the toe is carved out
+  of it rather than added on top;
+- the **vertical face is a recessed panel inside a raised border** — one step
+  back is enough, it is the shadow line at the step that does the work;
+- the **upper chamfer is the bench mirrored** — soffit ledge, riser, 45°, return;
+- the **overhead is coffered**, a dark border ring with raised panels either
+  side of a machinery/light spine that runs *down* the corridor (from the cell's
+  own longer open run) and sits at the border's height so it carries through
+  from one cell to the next.
+
+The recess on a tray is taken along the **segment's own normal**, not the
+wall's, so a panel sunk into the 45° bench sinks into the bench instead of
+sideways through it. Proportions are untouched — deck ~45% of the width, 45°
+bevels, a corridor about as wide as it is tall. The relief lives *inside* them.
+
+Things about the build that are load-bearing:
+
+- **The chamfer run and the overhead height live on the grid's *corners*, not
+  on cells.** `chamferRun` is a fraction of the space's free span, so it
+  genuinely differs across a deck (0.275 in a one-cell passage, the 0.5 cap in
+  the spine and the rooms); read per cell that is a step at every cell boundary,
+  and a step in a mesh is a *hole*. Resolved onto `(w+1)×(h+1)` corners, every
+  strip interpolates between two shared endpoints and adjacent faces cannot
+  disagree. The run takes the **minimum** of the open cells at a corner (an
+  overshoot eats the vertical face) and the ceiling their **mean** (a sector
+  step wants to ramp — the reactor bay's mouth is a good place for a slope).
+- **Per-cell runs are eroded (3×3 min) first**, and that is what kills the
+  *doorway spike*: the one corridor cell a compartment opens off has seven
+  cells of vertical run through it, asks for the full run in a passage one cell
+  wide, and leaves no deck at all between the two folds.
+- **`RUN_MAX` is 0.5 of a cell.** Without it a wide compartment under the
+  reactor bay's 1.9 overhead asks for 0.86 and gets a 0.18 strip of vertical
+  face — a cove, not a section. The references keep a room's chamfer close to a
+  corridor's: one shape, differently sized spaces.
+- **A bay frame is a box section, and the ring is a hoop.** `parseLevel` still
+  promotes hull cells on the bay grid to `WALL.frame`; here that becomes the
+  whole eleven-segment moulding pushed `RIB` (0.15) toward the corridor centre,
+  **stepped down to a half-depth collar over the outer 0.16 of each end of the
+  cell** so the box has three visible steps rather than one, and closed by a
+  return at every step. The ring is carried across the overhead by a beam
+  stepped the same way and across the deck by a threshold sill, so it hoops the
+  section instead of being two stripes on the side walls. Walk out of each frame
+  across the cells it faces to find the beam — which is *across* the corridor,
+  because a wall facing east/west bounds a passage running north/south.
+- **A frame emits no plain profile behind its ring.** The ring is the same
+  moulding standing nearer, spans the whole cell and is capped at both ends, so
+  from anywhere inside the corridor it completely occludes the wall plane
+  behind it. Emitting both (which the first pass did) was a full cell of
+  overdraw at every bay for a surface that cannot be seen — worth ~10% of the
+  frame.
+- **The rib gets a flatter brightness staircase than the wall behind it**
+  (0.95/0.84/0.66 against the section's 1.0/0.68/0.34). At the section's own
+  numbers the ring broke into three unrelated bright patches with dark gaps —
+  a lit bench, a dim wall and a black soffit — instead of one piece of
+  structure hooping the corridor.
+- **The trim tile wraps *around* the octagon on a rib**, `u` = normalised arc
+  along the profile and `v` = position along the corridor. `trim-light-channel.png`
+  is a band across its own `u`, so mapped that way its channel comes out as one
+  continuous strip round the section. Arc length is ~1.4 against a cell of
+  length, so the tile is very nearly square on the rib and barely distorts.
+- **Ambient occlusion is baked per vertex, into `aGain`.** There is no shadow
+  of any kind — one lamp at the eye, no shadow map — and without crease
+  darkening a metal tube lit down its own axis comes out as flawless plastic.
+  `SEG_AO0/1` darken the deck and overhead creases; `cornerAo` counts the
+  solids meeting each grid corner for the deck and overhead quads.
+- **The tile coordinate down the profile is held per *segment*, not per
+  point** (`SEG_V0`/`SEG_V1`). Points 5 and 6 each belong to two bands — point
+  5 is the top of the lower chamfer's tile *and* the bottom of the wall's — so
+  a table indexed by point can hold only one of the two. Held that way it
+  silently wrote 0 over the 1, the vertical face came out with a constant `v`,
+  and every wall in the level was one row of texels stretched from deck to
+  overhead. It looked like mipmap aliasing, not like a table bug.
+- **Every riser says which way it should face and lets `quadFacing` settle the
+  winding.** The moulding emits a lot of little steps and working each one's
+  winding out by hand against the frame's handedness (which is left-handed:
+  `s = up × n`) is how a face ends up culled. An 0.08-cell step seen nearly
+  along the ceiling plane covers a lot of frame, so one flipped riser reads as
+  a **bay-sized hole in the ceiling**.
+
+**The mesh is watertight, and that took four separate fixes — all of them
+invisible in the shipped resting state.** A dead ship is black on a black clear
+colour, so a hole in it looks like shadow; the first relief pass shipped with
+1.6% of some frames showing the void and its own silhouettes contained the
+holes read as banding. **Verify with the clear colour set to magenta and a
+pixel count, never by eye.** `scratch/holes.mjs` renders a magenta-clear cube
+map (six 90° faces) from every open cell at three eye heights and counts
+clear-colour pixels; the deck reads **0 across 5,940 renders / 97 Mpx**, and
+`scratch/magenta.mjs` reads 0 at the gameplay viewpoints. What it caught:
+
+- **A coffer panel is a recess *up* into the overhead**, so its four risers are
+  that recess's inside walls and face *in* toward the panel. Wound outward —
+  which is how they shipped — every one is a backface, and that is most of a
+  ceiling.
+- **A ring cell states its beam and its threshold sill as a band along one
+  axis**, so it presents one depth on the two edges the band steps across and
+  three on the two it runs down. `ringAxis` is first-writer-wins, so at a
+  junction a beam running east/west abuts one running north/south and neither
+  agrees about the other's depth: an 0.083-cell slit overhead and an 0.035 one
+  underfoot. The old per-cell end cap could only state one depth and could not
+  see the other side's band. It is replaced by a pass over **every** interior
+  edge that samples both sides and drops a riser where they disagree — where
+  they agree the quad is degenerate and `tri` discards it, so a straight run
+  costs nothing.
+- **The ring's three sub-spans were handed the profile at the cell's grid
+  *corners*, not at their own ends.** `wallStrip(qa, qb, t0, t1)` puts `qa` at
+  `t0` and `qb` at `t1`, so a collar covering `t ∈ [0, 0.16]` planted the far
+  corner's octagon at 0.16. Wherever the two corners' runs differ — most
+  junctions — the collar and the frame proper described different sections and
+  the step between them was open. `lerpProfile` to each span's own ends; the
+  returns already did this, which is why the wedge sat on the collar line.
+- **`quadFacing` read the winding off a degenerate triangle.** The convex
+  corner's lathe has rings of radius zero (the top ledge starts *at* the post),
+  so the leading triangle of that fan has a zero cross product, `d >= 0` keeps
+  whatever winding it was handed, and the one real triangle came out
+  inside-out — a hairline wedge at the top of every outside corner in the
+  level. It now sums both triangles' normals.
+
+**Probing gotcha: never point a probe camera straight up with
+`up = (0, 0, 1)`.** That orientation renders a frame that is simply wrong under
+swiftshader — 26% clear colour where a CPU ray cast of the same triangle soup
+finds solid geometry half a cell away — and it sent this pass chasing a
+non-existent 40%-of-frame hole for an hour. Leave `up = (0, 1, 0)`; three
+perturbs the degenerate case itself. `scratch/rays.mjs` and `scratch/diag.mjs`
+are the CPU cross-check: front-face-only ray casts against the built buffers,
+which is what the GPU culls to, and `diag` lists the triangles rimming a
+crack so it can be named rather than guessed at.
+
+**Every surface has its own tile, and three of them have a direction in them.**
+The level used to dress nine surfaces out of five tiles: the overhead wore the
+deck's plate, the bay ring wore the light channel's, and both chamfers wore one
+band. Each of those is two things that only look alike in a photograph — a deck
+is what boots have burnished and a ceiling is touched by nothing; a ring is
+bolted steel and the channel set into it is a diffuser; a lower chamfer is a
+**bench** at knee height that a ship runs its services along and the upper one
+is a soffit, where the same pipes read as a ceiling built upside down. Four
+tiles close it (`overhead`, `deck-runner`, `frame-rib`, `bench-conduit`), and
+with them each surface's `TILE_MAT` is its own rather than a borrowed one.
+
+- **The deck and the overhead are laid along the corridor, not in world
+  space.** `deck-runner.png` has a walkway worn down its middle and
+  `overhead.png` a machinery spine, and a direction laid down in world space
+  runs along the corridor for half a deck and straight across it for the other
+  half — so half the level had a runner you walked over rather than along.
+  `mesh.ts` already computes `alongX` per cell for the coffer's spine; the deck
+  and overhead uv now turn with it. The two tiles draw their runs on **opposite
+  axes** (the runner is a horizontal band, the spine a vertical one), so
+  `deckUv` and `ceilUv` are each other's inverse and not the same swap.
+- **`frame-rib.png` ships transposed, by `scripts/fps-tiles.mjs`.** On a rib the
+  tile wraps *around* the octagon — `u` is arc along the profile, `v` is
+  position along the corridor — and the source draws its bolted stiles as
+  columns. Mapped straight through, a line of bolts is a line of constant `u`:
+  a stripe running lengthwise down a band one cell long, which reads as pipe
+  threaded through the frame. Transposed it hoops the corridor, which is what a
+  bolted flange on a ring is.
+- **`WallDress` names `ribTile` and `stripTile` separately.** They were one
+  field only while the ring had no art of its own; sharing it put the rib's bolt
+  flanges on the light run.
+- **Nothing is clipping.** At the resting sector levels the shipped viewpoints
+  have **0.00%** of pixels at or above 250 and 0.00% above a mean of 200 — the
+  bay ring reads as a white hoop against a dark corridor because of what is
+  around it, not because the strip term is overflowing. Only `lightFloor 0.9`,
+  which is the reference's "after" and not a game state, clips (4.9% at the
+  convex viewpoint). Measure before retuning `STRIP_SECTOR`; a light fitting
+  looks blown next to a dead corridor whether or not it is.
+
+**Texel stretch is measured, not judged by eye — `scratch/stretch.mjs`.** It
+solves the uv→world Jacobian per triangle and reports the area-weighted median
+and p90 of its two singular values' ratio, per tile. Reading it: the number is
+in **uv space**, so divide by the tile's own pixel aspect to get texel stretch —
+the 3:1 chamfer crops read 2.25 there and are 1.33:1 in texels. Three separate
+things were making the corridor look smeared, and only one of them was a uv
+problem:
+
+- **A step got a whole tile however deep it was.** The ring's four returns
+  (0.06 of a cell) and the coffer's risers (0.055) both ran `v` 0..1 across
+  themselves, so the frame tile's bolt flanges were squeezed fifteen-fold into
+  the largest surface in the level. Both now take `v` from the world distance
+  they actually span, at whatever density `u` is running at there. p90 14.8 →
+  2.4 on the ring, 12 → 1.0 on the overhead.
+- **The vertical face fitted its tile to the band exactly**, which distorts by
+  whatever the band's aspect is — 1.8:1 measured. `wall-main` is a seamless
+  square tile, so `v` simply runs past 1.0 and tiles: `faceV = faceArc ×
+  faceRepeat`, and note the `1/rep` there is world-per-u **whatever span the
+  strip covers**, so it must not be divided by `t1 - t0` (doing that squares up
+  a full-cell wall and stretches every collar of every bay). 1.8 → 1.0. The
+  chamfers deliberately keep theirs: they are crops, they tile one way only,
+  and 1.33:1 is not worth breaking that for.
+- **The smear underfoot was never uv at all.** A corridor is a tube seen down
+  its own axis, so almost everything in frame is grazing, which is exactly
+  where isotropic mip selection blurs. Anisotropy is **16** (the container's
+  SwiftShader reports 16 as its max too, so this is measurable here). It costs
+  ~30% in software and close to nothing on a GPU.
+
+The strip is the one surface left stretched (3.4:1, p90 31) and it stays that
+way: a diffuser contributes `0.72 + 0.56 × lum` of its own texture and nothing
+else, so what is being stretched is a hint.
+
+- **The alternate wall tile is one cell in eight, not one in two.**
+  `wall-grimy` is `wall-main` oxidised and a good deal darker; swapped in half
+  the time it stops reading as weathering and starts reading as a chequerboard
+  of tone down a wall that is meant to be one wall.
+
+**One shader does the whole level (`glscene.ts`).** Every wall, chamfer, deck
+and overhead shares a single `ShaderMaterial`; what differs arrives as three
+per-vertex floats baked by `mesh.ts` — `aLight` (the sector), `aGain` (the
+band's place in the staircase, times AO), `aEmit` — plus one texture. The
+derelict is **60,938 triangles in eleven draw calls** (7,658 before the relief
+went in, 57,614 before the edge stitching; `TEST_CORRIDOR` is 3,682). A draw
+call is one *tile*, so the count tracks the material table and not the level —
+giving the bench, the overhead, the deck runner and the bay ring their own art
+took it from nine to eleven without adding a triangle.  It is
+static geometry uploaded once at level load, so on a GPU that is free; the
+headless container is software-rendered and the same frame costs **145-221 ms
+depending on viewpoint against the flat build's 149 ms** there at 1280×800,
+which is a ratio and not a frame budget. Nothing is ever frustum-culled — the
+groups are level-wide, so all 60,938 triangles are submitted every frame — and
+the cost is overwhelmingly fill, not geometry: the spread across viewpoints is
+overdraw.
+
+- **The light model is the raycaster's, unchanged, because it was right.** The
+  sector term is Doom's (light belongs to an *area*, so a dead section stays
+  dead while the one you came from is lit) and is the term fog attenuates. The
+  **suit lamp** is a second term on real distance — inverse-square core, hard
+  cutoff at 7 cells, mild cone toward the view axis — and it is the mechanic:
+  dark has to mean "you can see three metres", never "you can see nothing".
+  `LAMP_MAX` stays under 1 or a dead bulkhead lights to white, i.e. looks
+  *powered*.
+- **Emission is keyed off each tile's own bright pixels and is never fogged.**
+  `smoothstep(0.80, 0.965, luminance)`, and the threshold has to sit that high:
+  `trim-light-channel.png` is a lit channel set into a *pale* housing and
+  `wall-main.png` is pale everywhere, so keyed from mid-grey the whole bay
+  lights up rather than the fitting in it — a light strip down every wall,
+  which is a strip down no wall in particular. Frames are mostly
+  sector-scaled (a fitting on a dead ship is dead); doors keep a floor no
+  sector can take away, because rule 6 is that a sightline terminates on a
+  bulkhead and it cannot do that if the bulkhead is as black as the corridor.
+- **`renderer.outputColorSpace` is `LinearSRGBColorSpace` on purpose.** The
+  fog curve, the lamp, `LAMP_MAX` and every sector level in `level.ts` were
+  tuned against a canvas 2D renderer multiplying 8-bit sRGB bytes. Left at
+  three's default the same numbers go through a linear→sRGB encode, every
+  midtone lifts by about a third, a dead compartment reads as half-lit and the
+  airlock blows out. Tell the renderer the frame is already in the output
+  space and the tuning carries over exactly.
+- **The projection is the art direction's.** `PLANE`/`WALL_H` of 0.8/1.0 is a
+  53.13° vertical FOV (`tan(fov/2) = 0.5`), so at 16:10 the horizontal
+  half-tangent is 0.8 and a world unit of height covers exactly the pixels a
+  world unit of width does. A section authored to the reference's fractions
+  *is* those fractions on screen.
+- **Billboards go through the same two light terms as the walls.** Every
+  surface already knows its own distance; if any one skipped the lamp they
+  would disagree about how far away things are, and a Wraith lit differently
+  from the deck it stands on reads as a decal. Sheets are `NearestFilter` —
+  any linear tap across a frame edge bleeds the neighbouring rotation into the
+  silhouette. Explosions are additive and unfogged.
+- **The GL context lives on its own canvas and the frame is `drawImage`d into
+  the game's 2D canvas.** `Game` owns one canvas and the HUD, viewmodel and
+  end cards are all canvas 2D, so seizing the element would mean reproducing
+  the rest of the UI in WebGL. The copy stays on the GPU. If frame time ever
+  matters, layering the GL canvas *under* a transparent `#game` is the lever —
+  it was measured and deliberately not taken.
+- Tiles still do **not** load through `getSprite`/`getPict`, which hardcode the
+  `nova/sprites/` and `nova/picts/` prefixes; `glscene.ts` loads them through
+  `asset()`.
+
+**Frame time.** Measured in the headless container, which has **no GPU** —
+Chromium reports ANGLE/Vulkan on *SwiftShader* whatever launch flags you pass,
+so everything below is a software rasterizer shading every pixel on the CPU.
+At 1280×800 a full `FpsSession.render` (world + viewmodel + HUD + the blit) is
+**~186 ms**; it scales essentially linearly with pixels — 111 ms at 960×600,
+56 ms at 640×400, **40 ms at 480×300**. That last number is the like-for-like
+comparison: the old raycaster's published 27 ms was its 480-wide buffer, never
+1280×800, and it would have cost the same order at full resolution. The
+CPU-side cost — scene update plus draw submission, which is all that survives
+on real hardware — is **0.2–0.3 ms/frame**. 7.7k triangles, nine draw calls and
+a ~35-instruction fragment shader is not something a GPU notices, so 60fps at
+1280×800 has enormous headroom; there is simply no GPU here to prove it on. MSAA
+costs ~24% and anisotropy 8→1 another ~30% *in software*, which is why both are
+kept modest (4× aniso) but on.
 
 Structural notes that are easy to get wrong:
 
@@ -157,79 +539,19 @@ Structural notes that are easy to get wrong:
 - **Losing the pointer lock pauses; it must not exit.** Esc is how the browser
   hands the pointer back, and the landed Esc handler departs the planet.
   Leaving is Q, or the pause card.
-- One projection constant (`proj = H * WALL_H`) drives walls, the three wall
-  bands, the deck cast *and* billboards. Scaling only the walls lifts a
-  Wraith's feet off the deck.
-- **The deck and overhead are cast per pixel** against `deck-plate.png` — a row
-  at screen y is a known distance (`rise · proj / |y − half|`), the world span
-  across it is linear in that, so one walk per row lands every pixel on the
-  tile. That is what gives the plate seams that converge with the corridor and
-  the worn centre runner. There is still no *ceiling* art anywhere, so the
-  overhead borrows the same plate knocked down and cooled; left flat it read as
-  a void hanging over the corridor. The loop is pure JS and does not get faster
-  on better hardware: pixels are packed as `Uint32` words, and sector light is
-  cached per cell rather than looked up per pixel (~4.3 ms → ~1.3 ms).
 - **Levels carry sectors, Doom-style** — a parallel ASCII layer in `level.ts`
   names a region per cell, and each region has `light`, `height` and `chamfer`.
-  Light belongs to an area, not a wall; a wall takes the sector of the last
-  *open* cell before the hit, which is Doom's rule and is what lets a dead
-  section stay black while the one you came from is lit. `chamfer` is per
-  sector because the art direction states it as a fraction of *corridor width*,
-  and only the sector knows how wide its corridors are.
-- **Bay frames are applied in `parseLevel`, not authored.** A hull cell on the
-  bay grid (every 3 cells) becomes `WALL.frame`. Which grid line depends on
-  which way the wall faces — a wall seen from the east or west runs north/south
-  so its frames step in `y`, and testing both axes on every cell turns the
-  entire `x % bay === 0` column into frames.
-- **The suit lamp is a second light term, on real distance, and it is the
-  mechanic.** Sector light alone made a dead section uniformly black and you
-  navigated it by the minimap, which is wrong at the level of premise: you are
-  carrying the only light on a dead ship, so dark has to mean "you can see
-  three metres". `lampAt()` in `raycast.ts` is an inverse-square core with a
-  hard cutoff at 7 cells, summed with the sector term and clamped, and it goes
-  through walls, chamfers, deck, overhead **and** billboards — all five already
-  know their own distance, and if any one of them skipped it they would
-  disagree about how far away things are. A mild per-column cone (`coneTable`)
-  biases it toward the view axis. The old radial `drawLamp()` vignette is
-  deleted: a gradient over the finished frame moves with the camera rather than
-  with the ship and reads as a smudged lens, not a lamp. **`LAMP_MAX` stays
-  under 1** — at 1.06 every dead compartment lit to white as soon as you stood
-  near a wall, i.e. looked *powered*. The sector levels in `level.ts` were all
-  roughly halved when this landed (airlock 0.85 → 0.45, forward third 0.14 →
-  0.03), because a sector level is now what the *ship* is still putting out and
-  the lamp owns the near field.
-- **The chamfers have their own 3:1 tiles.** A chamfer band is ~28% of a
-  column's height, so a square tile squashed into it loses all vertical
-  structure and comes out as lengthwise ribbons — the smearing down every wall
-  in the first pass. `chamfer-{main,grimy,trim}.png` are full-width 341px bands
-  cut from the same sources by `scripts/fps-tiles.mjs`, sampled at the
-  proportion the band actually occupies. `GLOW_V0/V1` and `HALO_V0/V1` are
-  measured off `chamfer-trim.png`'s fixture (channel y 483..533, housing
-  455..567 of the 1024px source); move the crop and those move with it.
-- **Tile repetition is broken per cell, on the vertical face only.**
-  `cellVariant(x, y)` hashes the grid position into an alternate tile (one cell
-  in eight), a quarter-tile u offset and a mirror. It is deliberately *not*
-  applied to the chamfers: those carry continuous horizontal structure — a
-  conduit run, a bench, a light channel — that has to survive from one cell to
-  the next or the corridor stops reading as one corridor.
-- **A bay rib is geometry, not paint: `Material.inset` steps its wall plane
-  0.15 cells in toward the corridor centre.** Brightness on a smooth tube left
-  the silhouette as two perfectly converging lines; the references are nested
-  octagon ribs receding, and the ribs' outlines are the depth cue. It costs one
-  subtraction because the DDA's distance *is* the ray parameter, so a plane
-  `inset` nearer is reached `inset * delta` earlier. Two details are not
-  optional: the rib is a **box**, so when the stepped-in plane lies behind the
-  cell's along-wall entry the ray comes in through the rib's **return face**
-  instead (`side` flips, and that strip is what occludes); and the entry must be
-  **in front of the camera**, or at a grazing angle `inset * delta` puts it
-  behind you, the column takes a distance of ~0 and paints a black full-height
-  slab down the frame. The return face is only `inset` cells across, so
-  `repScale = 1 / inset` puts its texel density back.
+  `chamfer` is per sector because the art direction states it as a fraction of
+  *corridor width*, and only the sector knows how wide its corridors are.
+- **The start faces the longest open run out of the start cell.** It used to be
+  hardcoded north — true of the first deck authored and of no other, so a new
+  run on the derelict began with the camera half a cell from a bulkhead. Read
+  off the plan it gives every deck the art direction's opening shot: a long
+  sightline terminating on a door.
 - **Every long run is capped with a `D`.** Rule 6 of the art direction is that
-  a sightline terminates on a bulkhead; the door material is also the only one
-  with a nonzero `wallEmit`, a small self-illumination added after fog and
-  lamp, so the far bulkhead is visible from beyond the lamp's reach instead of
-  the run ending in undifferentiated black.
+  a sightline terminates on a bulkhead; the door material is also the one with
+  a real emission floor, so the far bulkhead is visible from beyond the lamp's
+  reach instead of the run ending in undifferentiated black.
 - Keep corridors **1-2 cells wide** — an open hall renders as a distant ribbon
   with no depth cues. Validate a new deck for equal row widths, a sealed
   border and no orphaned cells before shipping it.
@@ -237,8 +559,13 @@ Structural notes that are easy to get wrong:
   `window.game` and from nothing in the UI) is the art-direction rig: one
   straight 17-cell run, framed every 3, three sectors stepping from powered to
   dead, terminating on a door.
-- Known limitation: `depth[x]` holds the *wall* distance, so a billboard
-  between the chamfer's near edge and the wall can draw over a near chamfer.
+- **Two probe hooks, both off in play.** `fps.noTextures` drops every tile so
+  the frame is flat-shaded surfaces only — what is being judged then is the
+  section's silhouette, and greebled photographic metal hides it completely.
+  `fps.lightFloor` raises every sector, so the same viewpoint can be looked at
+  as the reference's "after" state (`corridor-lit.png`, floor 0.9) and as its
+  resting state (`damage.png`, floor 0). `fps.frameMs` and `fps.glTris` are
+  there for measuring.
 - `SHOT_RANGE` is deliberately *not* derived from the wëap's
   `durationSec × speed`: 650 px is calibrated for ships crossing a system and
   there is no honest cells-per-pixel. `reloadSec`, `accuracy` (the spread cone,

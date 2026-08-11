@@ -6,8 +6,8 @@
  * anything else indexes a wall material — plus the player start, the extract
  * point and the spawn list.
  *
- * Two things sit on top of that grid, and both are Doom's data model rather
- * than a raycaster's:
+ * Three things sit on top of that grid, and the first two are Doom's data model
+ * rather than a raycaster's:
  *
  * **Sectors.** A second, parallel ASCII layer names a region per cell, and each
  * region carries a light level and an overhead height. Light belongs to an
@@ -21,6 +21,11 @@
  * than authored glyph by glyph: any hull cell standing on the bay grid is
  * promoted to `WALL.frame`, so the rhythm is a property of the deck and every
  * corridor gets it for free, whichever way it runs.
+ *
+ * **The section.** The 45 degree fold is not derived here at all any more: the
+ * corridor is real geometry, built from this grid once at level load by
+ * `mesh.ts`. What this file still owes it is `freeSpan` — how wide the space
+ * through each cell is — because the chamfer is a *fraction* of that.
  */
 
 import { WALL } from "./textures";
@@ -113,8 +118,10 @@ export interface ParseOptions {
 }
 
 /**
- * The section of a one-cell corridor: the art direction's fractions of corridor
- * width (floor ~0.45, chamfer ~0.275 each side) taken against a width of 1.
+ * The reference's own profile: floor ~0.45 of the width, a chamfer of ~0.275 of
+ * the width on each side. `chamfer` is that **fraction**, applied against
+ * whatever the space's free span turns out to be — see `chamferRun` in
+ * `mesh.ts`.
  */
 const DEFAULT_SECTOR: FpsSector = {
   light: 1,
@@ -179,7 +186,7 @@ const DECK = [
  * used to be the only light in the game, so they had to carry the near field as
  * well as the far, and the airlock at 0.85 came out looking fully powered
  * rather than emergency-lit on a corpse. The lamp owns the near field now — see
- * `lampAt` in `raycast.ts` — so a sector level is what the *ship* is still
+ * the lamp term in `glscene.ts` — so a sector level is what the *ship* is still
  * putting out, and 0.03 forward is honest: that third is dead, and what you see
  * of it is what you brought.
  */
@@ -211,16 +218,25 @@ const DECK_SECTORS = [
 ];
 
 /**
- * The freighter's own section is tighter than the test corridor's: its rooms
- * are one cell wide, so the chamfer keeps the 0.275-of-width fraction against a
- * width of 1 and the overhead stays low. The reactor bay is the exception and
- * is the reason sector height exists — two decks of it, open to the frames.
+ * The freighter's own section. Every sector keeps the reference's 0.275 of the
+ * span, so the *shape* is one shape everywhere and only the size of the space
+ * changes it: a one-cell passage gets a 0.275 chamfer and a 45% deck, the
+ * two-cell spine asks for 0.55, and the wide compartments ask for more still.
+ *
+ * The overhead is what actually pays for that, which is why these are 1.2 and
+ * not the 1.0 they used to be. Two chamfers eat `2c` of height between them, so
+ * a 1.0 overhead can only afford 0.41 and the spine's deck would come out at
+ * 59% of its width instead of the reference's 45%. At 1.2 it can afford 0.51,
+ * which is 49% — and the eye, still fixed half a cell above the deck, still
+ * sits at 40% of the overhead, which is where the reference's camera is. The
+ * reactor bay is the exception and is the reason sector height exists: two
+ * decks of it, open to the frames, and wide enough to take the full 0.55.
  */
 const DECK_SECTOR_DEFS: Record<string, SectorSpec> = {
-  a: { light: 0.45, height: 1.0, chamfer: 0.275, name: "airlock" },
-  m: { light: 0.16, height: 1.0, chamfer: 0.275, name: "midships" },
-  d: { light: 0.03, height: 1.0, chamfer: 0.275, name: "forward (dead)" },
-  r: { light: 0.06, height: 1.6, chamfer: 0.34, name: "reactor bay" },
+  a: { light: 0.3, height: 1.2, chamfer: 0.275, name: "airlock" },
+  m: { light: 0.085, height: 1.2, chamfer: 0.275, name: "midships" },
+  d: { light: 0.009, height: 1.2, chamfer: 0.275, name: "forward (dead)" },
+  r: { light: 0.025, height: 1.9, chamfer: 0.275, name: "reactor bay" },
 };
 
 const WALL_GLYPHS: Record<string, number> = {
@@ -279,9 +295,9 @@ export function parseLevel(
       const cx = x + 0.5;
       const cy = y + 0.5;
       switch (ch) {
-        // the deck runs north, so you come aboard facing up the hull
+        // the angle is filled in below, from the plan
         case "@":
-          start = { x: cx, y: cy, angle: -Math.PI / 2 };
+          start = { x: cx, y: cy, angle: 0 };
           break;
         case "X":
           exit = { x: cx, y: cy };
@@ -329,7 +345,102 @@ export function parseLevel(
     }
   }
 
-  return { name, w, h, cells, sectorOf, sectors, start, exit, spawns };
+  /*
+   * Which way you are looking when you come aboard.
+   *
+   * This used to be hardcoded north — "the deck runs north, so you come aboard
+   * facing up the hull" — which was true of the first deck authored and of no
+   * other: the derelict's airlock opens onto a corridor running *east*, so a
+   * new run began with the camera 0.5 of a cell from a bulkhead. Taking the
+   * longest open run out of the start cell states the intent instead of the
+   * accident, and gives every deck the art direction's opening shot: a long
+   * sightline terminating on a door.
+   */
+  {
+    const gx = Math.floor(start.x);
+    const gy = Math.floor(start.y);
+    let best = -1;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      let n = 0;
+      let x = gx + dx;
+      let y = gy + dy;
+      while (x >= 0 && y >= 0 && x < w && y < h && cells[y * w + x] === 0) {
+        n++;
+        x += dx;
+        y += dy;
+      }
+      if (n > best) {
+        best = n;
+        start.angle = Math.atan2(dy, dx);
+      }
+    }
+  }
+
+  const freeSpan = freeSpans(w, h, cells);
+
+  return {
+    name,
+    w,
+    h,
+    cells,
+    sectorOf,
+    sectors,
+    freeSpan,
+    start,
+    exit,
+    spawns,
+  };
+}
+
+/* -------------------------------------------------------------- free span */
+
+/**
+ * How wide the space through each open cell is: the shorter of its horizontal
+ * and vertical runs of open cells.
+ *
+ * The shorter one is the answer because the chamfer is a single 45 degree fold
+ * that goes all the way round a compartment. A room 7 cells by 4 takes its
+ * section from the 4 — the same octagon on every wall, the way a hull is
+ * actually built — where taking each wall's own perpendicular run would give
+ * the long walls a chamfer nearly twice the short walls' and no two of them
+ * would meet in the corners.
+ */
+function freeSpans(w: number, h: number, cells: Uint8Array): Uint8Array {
+  const spanX = new Uint8Array(w * h);
+  const spanY = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    let x = 0;
+    while (x < w) {
+      if (cells[y * w + x] !== 0) {
+        x++;
+        continue;
+      }
+      let e = x;
+      while (e < w && cells[y * w + e] === 0) e++;
+      const len = Math.min(255, e - x);
+      for (let i = x; i < e; i++) spanX[y * w + i] = len;
+      x = e;
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let y = 0;
+    while (y < h) {
+      if (cells[y * w + x] !== 0) {
+        y++;
+        continue;
+      }
+      let e = y;
+      while (e < h && cells[e * w + x] === 0) e++;
+      const len = Math.min(255, e - y);
+      for (let i = y; i < e; i++) spanY[i * w + x] = len;
+      y = e;
+    }
+  }
+  const out = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    out[i] = spanX[i] < spanY[i] ? spanX[i] : spanY[i];
+  }
+  return out;
 }
 
 export const DERELICT = parseLevel("Derelict", DECK, {
@@ -414,9 +525,9 @@ const CORRIDOR_SECTORS = [
 export const TEST_CORRIDOR = parseLevel("Test corridor", CORRIDOR, {
   sectorMap: CORRIDOR_SECTORS,
   sectors: {
-    p: { light: 0.85, name: "powered" },
-    k: { light: 0.26, name: "browned out" },
-    l: { light: 0.045, name: "dead" },
+    p: { light: 0.62, name: "powered" },
+    k: { light: 0.15, name: "browned out" },
+    l: { light: 0.02, name: "dead" },
   },
   bay: 3,
 });

@@ -23,3 +23,8 @@ AGENTS.md
 # once from a sync; ignore them so they never get committed by `git add -A`.
 * 2.*
 * [0-9].*
+
+# Throwaway probe scripts belong in scratch/ (which self-ignores). These two
+# patterns catch the ones that still land in the project root out of habit.
+/scratch-*.mjs
+/*-probe.mjs

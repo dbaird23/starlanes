@@ -19,13 +19,27 @@ import { PNG } from "pngjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** file, output size. */
+/** file, output size, and whether to transpose it on the way out. */
 const TILES = [
   ["materials/wall-main.png", "wall-main.png", 256],
   ["materials/wall-grimy.png", "wall-grimy.png", 256],
   ["materials/trim-light-channel.png", "trim-light-channel.png", 256],
   ["materials/deck-plate.png", "deck-plate.png", 256],
   ["materials/door-face.png", "door-face.png", 192],
+  ["materials/overhead.png", "overhead.png", 256],
+  ["materials/deck-runner.png", "deck-runner.png", 256],
+  /*
+   * **The frame tile ships transposed**, and that is not a preference.
+   *
+   * On a rib the tile wraps *around* the octagon — `u` is normalised arc along
+   * the profile, `v` is position along the corridor — and the source draws its
+   * bolted stiles as columns, i.e. at constant x. Mapped straight through, a
+   * line of bolts is a line of constant `u`: a stripe running lengthwise down a
+   * band that is only one cell long, which reads as pipes threaded through the
+   * frame. Transposed, the same line is constant `v` and varies through `u`, so
+   * it hoops the corridor — which is what a bolted flange on a ring is.
+   */
+  ["materials/frame-rib.png", "frame-rib.png", 256, true],
 ];
 
 /**
@@ -51,6 +65,14 @@ const TILES = [
  * set to. Move this crop and those constants move with it.
  */
 const CHAMFERS = [
+  /*
+   * The bench's own band. `bench-conduit.png` draws two full stories of
+   * services over its 1024 — a clipped pipe rail, a row of inspection plates,
+   * a bundled cable run, then the step — so a third of the source is one
+   * story, and 240..581 is the one that puts the plates high on the bench, the
+   * cable run through its middle and the step down by the toe.
+   */
+  ["materials/bench-conduit.png", "bench-conduit.png", 240, 581, 384, 128],
   ["materials/trim-light-channel.png", "chamfer-trim.png", 338, 679, 384, 128],
   // the same tile's upper third: a panel run, a conduit run and a panel band,
   // no fixture — horizontal structure, which is what a bench-like chamfer wants
@@ -101,9 +123,26 @@ function emit(to, out) {
   console.log(`${to}  ${out.width}x${out.height}  ${(buf.length / 1024).toFixed(0)} KB`);
 }
 
-for (const [from, to, size] of TILES) {
+/** Swap the two axes of a square tile. */
+function transpose(img) {
+  const out = new PNG({ width: img.height, height: img.width });
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      const p = (y * img.width + x) << 2;
+      const q = (x * img.height + y) << 2;
+      out.data[q] = img.data[p];
+      out.data[q + 1] = img.data[p + 1];
+      out.data[q + 2] = img.data[p + 2];
+      out.data[q + 3] = 255;
+    }
+  }
+  return out;
+}
+
+for (const [from, to, size, flip] of TILES) {
   const src = PNG.sync.read(readFileSync(resolve(root, "art-reference", from)));
-  emit(to, boxDown(src, size, size));
+  const out = boxDown(src, size, size);
+  emit(to, flip ? transpose(out) : out);
 }
 
 for (const [from, to, y0, y1, w, h] of CHAMFERS) {
