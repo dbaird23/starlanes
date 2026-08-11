@@ -74,7 +74,11 @@ export class FpsSession {
     this.world = new FpsWorld(opts);
     try {
       this.gl = new GlScene(opts.level);
-      this.gl.setStations(this.world.run.stations);
+      this.gl.setStations(this.world.run.stations, (x, y) =>
+        opts.level.sectorOf[
+          Math.floor(y) * opts.level.w + Math.floor(x)
+        ] ?? 0,
+      );
     } catch (e) {
       // no WebGL: the session still runs, it just has nothing to look at
       console.error("fps: WebGL unavailable", e);

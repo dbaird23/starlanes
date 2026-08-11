@@ -155,6 +155,17 @@ Three things about it are load-bearing:
   anywhere, and it lit the compartment that was already the brightest on the
   ship.
 
+**A station is a housing plus a lens, and they are lit differently on purpose.**
+The housing is a box standing 0.07 proud, wearing `frame-rib` and going through
+the **level's own shader** (`levelMaterial` / `dressProp` bake the four extra
+attributes uniformly), so the lamp rakes across it exactly as it rakes across
+the bulkhead it is bolted to — lit any other way a panel is a decal. The lens is
+a small `MeshBasicMaterial` strip that ignores the sector, the lamp and the fog
+alike, because it is the one thing on a dead ship that has to be findable from
+beyond the lamp's reach. Sized to the whole housing it was a flat amber slab
+that filled the screen at arm's length; it is a fraction of it, off-centre, so
+the steel carries the size and the light carries the state.
+
 **`Station.facing` points out of the bulkhead into the cell.** Everything
 downstream is an offset along it and every sign error looks like a different
 bug: the housing added instead of subtracted hangs in mid-corridor (and at half

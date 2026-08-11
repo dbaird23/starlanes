@@ -544,6 +544,7 @@ interface SpriteSlot {
 
 export class GlScene {
   private stationMeshes: THREE.Mesh[] = [];
+  private stationHousings: THREE.Mesh[] = [];
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
@@ -586,27 +587,62 @@ export class GlScene {
     this.mesh = buildLevelMesh(level);
     this.tris = this.mesh.tris;
     for (const g of this.mesh.groups) {
-      const tm = matOf(g.mat);
-      const mat = new THREE.ShaderMaterial({
-        uniforms: {
-          ...SHARED_UNIFORMS,
-          map: { value: this.tile(g.tile) },
-          uTint: { value: new THREE.Color(g.tint[0], g.tint[1], g.tint[2]) },
-          uBase: { value: new THREE.Color(tm.base[0], tm.base[1], tm.base[2]) },
-          uGlow: { value: new THREE.Color(tm.glow[0], tm.glow[1], tm.glow[2]) },
-          uSpec: { value: specOf(tm) },
-          uMat: { value: new THREE.Vector3(tm.rough, tm.metal, tm.bump) },
-        },
-        vertexShader: VERT,
-        fragmentShader: FRAG,
-        side: THREE.FrontSide,
-      });
+      const mat = this.levelMaterial(g.tile, g.mat, g.tint);
       const m = new THREE.Mesh(g.geometry, mat);
       // named so a probe can say which tile a measurement belongs to
       m.name = `${g.tile}|${g.mat}`;
       m.frustumCulled = true;
       this.scene.add(m);
     }
+  }
+
+  /**
+   * The level's own material, for one tile.
+   *
+   * Factored out so the props can wear it. A station housing lit any other way
+   * — a flat colour, an unlit basic material — reads as a decal stuck on the
+   * wall, because everything around it is responding to a lamp on your chest
+   * and it is not. Wearing this, a panel is a piece of steel bolted to a
+   * bulkhead and the lamp rakes across it exactly as it rakes across the
+   * bulkhead.
+   */
+  private levelMaterial(
+    tile: string,
+    mat: string,
+    tint: [number, number, number] = [1, 1, 1],
+  ): THREE.ShaderMaterial {
+    const tm = matOf(mat);
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        ...SHARED_UNIFORMS,
+        map: { value: this.tile(tile) },
+        uTint: { value: new THREE.Color(tint[0], tint[1], tint[2]) },
+        uBase: { value: new THREE.Color(tm.base[0], tm.base[1], tm.base[2]) },
+        uGlow: { value: new THREE.Color(tm.glow[0], tm.glow[1], tm.glow[2]) },
+        uSpec: { value: specOf(tm) },
+        uMat: { value: new THREE.Vector3(tm.rough, tm.metal, tm.bump) },
+      },
+      vertexShader: VERT,
+      fragmentShader: FRAG,
+      side: THREE.FrontSide,
+    });
+  }
+
+  /**
+   * A prop's geometry needs the level shader's four extra attributes, and they
+   * are constant over the whole prop: one sector, one place in the brightness
+   * staircase, no keyed emission, no strip. Baking them uniformly is what lets a
+   * box built by `THREE.BoxGeometry` go through the same shader as the deck.
+   */
+  private dressProp(g: THREE.BufferGeometry, sector: number, gain: number): void {
+    const n = g.getAttribute("position").count;
+    const fill = (name: string, v: number): void =>
+      void g.setAttribute(name, new THREE.Float32BufferAttribute(new Float32Array(n).fill(v), 1));
+    fill("aLight", 0);
+    fill("aSector", sector);
+    fill("aGain", gain);
+    fill("aEmit", 0);
+    fill("aStrip", 0);
   }
 
   /** The GL canvas, for the caller to blit. */
@@ -682,36 +718,91 @@ export class GlScene {
     }
   }
 
-  setStations(stations: Station[]): void {
+  setStations(stations: Station[], sectorOf: (x: number, y: number) => number): void {
     for (const m of this.stationMeshes) {
+      this.scene.remove(m);
+      m.geometry.dispose();
+    }
+    for (const m of this.stationHousings) {
       this.scene.remove(m);
       m.geometry.dispose();
       (m.material as THREE.Material).dispose();
     }
     this.stationMeshes = [];
+    this.stationHousings = [];
+
     for (const st of stations) {
-      const g = new THREE.PlaneGeometry(
-        st.kind === "breaker" ? 0.34 : 0.44,
-        st.kind === "breaker" ? 0.44 : 0.6,
-      );
+      const breaker = st.kind === "breaker";
+      const w = breaker ? 0.34 : 0.44;
+      const hgt = breaker ? 0.44 : 0.6;
+      const y = breaker ? 0.52 : 0.34;
+      /*
+       * **The lens is a fraction of the housing, not the whole face of it.**
+       *
+       * Sized to the housing it was a flat amber slab a third of a metre across
+       * — legible, certainly, but the legible thing was a colour rather than an
+       * object, and at arm's length it filled the screen with one flat value.
+       * A breaker gets a tall indicator strip beside where its lever would be
+       * and a locker a small latch light, so what carries the size is the steel
+       * and what carries the state is a light set into it. Bright pixels read at
+       * distance whatever their area, so this costs nothing in legibility.
+       */
+      const lw = breaker ? 0.1 : 0.13;
+      const lh = breaker ? 0.28 : 0.07;
+      // ...and it sits off-centre, which is what stops it reading as a sign
+      const lx = breaker ? -w * 0.28 : 0;
+      const ly = breaker ? 0 : -hgt * 0.3;
+      /*
+       * `d` is measured **from the station, toward the wall it is mounted on**.
+       * `facing` points out of that wall into the cell, so subtracting a
+       * multiple of it walks back into the bulkhead — and the station itself is
+       * already `MOUNT_OFF` (0.34) that way from the cell centre, which puts the
+       * wall plane 0.16 further on. Measuring these from the cell centre
+       * instead, which the first cut did, buried both the housing and the lens
+       * a quarter of a cell inside the wall, where they are simply not there.
+       */
+      const cosF = Math.cos(st.facing);
+      const sinF = Math.sin(st.facing);
+      const at = (d: number): [number, number] => [st.x - cosF * d, st.y - sinF * d];
+      // the box is 0.07 deep, so a centre at 0.125 stands its face 0.07 proud
+      const D_HOUSING = 0.125;
+      const D_LENS = 0.085;
+
+      /*
+       * **The housing is a box, and it is what makes the panel a fitting.**
+       *
+       * A lit rectangle on the wall reads across a dark corridor, which is what
+       * a breaker has to do, but on its own it is a decal: no thickness, no
+       * shadow line, nothing for the lamp to catch as you come up to it. The box
+       * stands 0.07 proud, wears the frame tile, and goes through the level's
+       * own shader — so the last two metres of the approach are a piece of
+       * bolted steel resolving out of the dark, and the lens is set into it.
+       */
+      const hg = new THREE.BoxGeometry(w + 0.12, hgt + 0.12, 0.07);
+      this.dressProp(hg, sectorOf(st.x, st.y), 0.9);
+      const hm = new THREE.Mesh(hg, this.levelMaterial("frame-rib.png", "frame-rib.png"));
+      const hp = at(D_HOUSING);
+      hm.position.set(hp[0], y, hp[1]);
+      hm.rotation.y = -st.facing + Math.PI / 2;
+      hm.frustumCulled = false;
+      this.scene.add(hm);
+      this.stationHousings.push(hm);
+
+      /*
+       * ...and the lens, which is unlit on purpose. It is the one thing on a
+       * dead ship that has to be visible from beyond the suit lamp's reach —
+       * a breaker you cannot find is a breaker that is not in the game — so it
+       * ignores the sector, the lamp and the fog alike.
+       */
+      const g = new THREE.PlaneGeometry(lw, lh);
       const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
       const m = new THREE.Mesh(g, mat);
-      /*
-       * **Back toward the wall, not out into the corridor.** `Station.facing`
-       * points *out* of the bulkhead into the cell, so the station's own
-       * position is already `MOUNT_OFF` toward the wall and the housing has to
-       * go further the same way — added instead of subtracted it hung in the
-       * middle of the passage, and at half a metre from the eye a 0.34-cell
-       * plane is most of the screen.
-       *
-       * 0.13 puts its face at 0.47 from the cell centre, a hair inside the
-       * bulkhead plane at 0.5, so it cannot z-fight the moulding it is bolted
-       * to.
-       */
+      const lp = at(D_LENS);
+      // `lx` runs along the wall, which is the facing turned a quarter
       m.position.set(
-        st.x - Math.cos(st.facing) * 0.13,
-        st.kind === "breaker" ? 0.52 : 0.34,
-        st.y - Math.sin(st.facing) * 0.13,
+        lp[0] + Math.cos(st.facing + Math.PI / 2) * lx,
+        y + ly,
+        lp[1] + Math.sin(st.facing + Math.PI / 2) * lx,
       );
       m.rotation.y = -st.facing + Math.PI / 2;
       m.frustumCulled = false;
