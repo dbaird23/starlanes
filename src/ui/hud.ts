@@ -407,8 +407,9 @@ export class HudUi {
   // ---------------- nav ----------------
 
   private drawNav(g: Game): void {
-    const dest = g.routeDest ? getSystem(g.routeDest).name : null;
     // Nova's own wording for the nav box, which names the kind of destination
+    const nextId = g.route[0] ?? g.routeDest;
+    const dest = nextId ? getSystem(nextId).name : null;
     const kind = dest
       ? "Hyperspace"
       : g.targetPlanet
