@@ -282,14 +282,16 @@ projecting structural frames**, and every one of those five surfaces has a step
 in it. So `section()` is eleven segments, three of which are *trays* rather
 than planes:
 
-- the **lower chamfer is a bench** — toe kick off the deck, step back, the 45°
+- the **lower chamfer is a bench** — toe kick off the deck, step back, the
   face proper, riser, ledge into the wall. `TOE_H === TOE_D` is deliberate: it
-  puts the step exactly where a plain 45° line from the foot would have been,
-  so the bench's slope is still the reference's slope and the toe is carved out
-  of it rather than added on top;
+  puts the step exactly where a plain straight line from the foot would have
+  been, so the bench's slope is still the reference's slope and the toe is
+  carved out of it rather than added on top;
 - the **vertical face is a recessed panel inside a raised border** — one step
   back is enough, it is the shadow line at the step that does the work;
-- the **upper chamfer is the bench mirrored** — soffit ledge, riser, 45°, return;
+- the **upper chamfer is the bench's moulding, not its size** — soffit ledge,
+  riser, face, return. **The two folds are deliberately different**: see
+  `LOWER_K`/`UPPER_K`/`*_RISE` below;
 - the **overhead is coffered**, a dark border ring with raised panels either
   side of a machinery/light spine that runs *down* the corridor (from the cell's
   own longer open run) and sits at the border's height so it carries through
@@ -299,6 +301,27 @@ The recess on a tray is taken along the **segment's own normal**, not the
 wall's, so a panel sunk into the 45° bench sinks into the bench instead of
 sideways through it. Proportions are untouched — deck ~45% of the width, 45°
 bevels, a corridor about as wide as it is tall. The relief lives *inside* them.
+
+**The two chamfers are not the same size, and that is the section's whole
+character.** Measured off the reference photograph, the deck is about **83%** of
+the corridor's width and the overhead about **72%** — so the fold at the deck is
+small and the one at the overhead is nearly twice its run. The first cut
+mirrored one 45° fold top and bottom, which gave a deck of 45% and made the two
+interchangeable. Four constants in `mesh.ts` state it, all relative to the run
+`cornerFields` resolves so a wide compartment and a one-cell passage still scale
+together:
+
+- `LOWER_K` 0.31 and `UPPER_K` 0.51 are each fold's horizontal run. Against the
+  authored 0.275 they land at 0.085 and 0.140 of the free span, giving a deck of
+  1 − 2(0.085) = **0.829** and an overhead of **0.719**.
+- `LOWER_RISE` 1.20 and `UPPER_RISE` 1.11 are each fold's rise over its run —
+  50.2° and 48.0° from horizontal. Both sit a little past 45°, the lower steeper
+  than the upper, which is what the outline measures and is why one number could
+  not describe both.
+
+Changing these four changes every corridor in the game, not one hallway; the
+mesh stays watertight through it (`scratch/magenta.mjs` reads 0 at all seven
+gameplay viewpoints after the change).
 
 Things about the build that are load-bearing:
 

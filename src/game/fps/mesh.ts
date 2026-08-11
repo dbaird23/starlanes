@@ -88,6 +88,32 @@ import {
 } from "./textures";
 import type { FpsLevel } from "./types";
 
+/**
+ * **The section's proportions, measured off the reference photograph.**
+ *
+ * The two chamfers are not the same size and never were — the corridor this is
+ * drawn from has a small bench-height fold at the deck and a much larger one at
+ * the overhead, and the deck between them is most of the corridor's width. The
+ * first cut here mirrored one 45° fold top and bottom, which gave a deck 45% of
+ * the width where the reference is nearer 83%, and made the two folds
+ * interchangeable when the whole character of the section is that they are not.
+ *
+ * Everything is stated relative to `c`, the run `cornerFields` resolves from the
+ * sector's own `chamfer` fraction, so a wide compartment and a one-cell passage
+ * still scale together:
+ *
+ * - `LOWER_K` / `UPPER_K` are each fold's **horizontal run**. Against the
+ *   authored 0.275 they land at 0.085 and 0.140 of the free span, so the deck
+ *   comes out at 1 - 2(0.085) = 0.83 and the overhead at 1 - 2(0.140) = 0.72.
+ * - `*_RISE` is each fold's rise over its run — i.e. its angle. Both sit a
+ *   little past 45°, the lower slightly steeper than the upper, which is what
+ *   the outline measures and is why one number could not describe both.
+ */
+const LOWER_K = 0.31;
+const UPPER_K = 0.51;
+const LOWER_RISE = 1.2;
+const UPPER_RISE = 1.11;
+
 /** The vertical face never gets thinner than this, in cells. */
 const FACE_MIN = 0.18;
 /** ...and the chamfer never gets thinner than this, so a fold stays a fold. */
@@ -197,23 +223,28 @@ const LIP_W = 0.18;
  * frame's ring is the same moulding 0.15 nearer.
  */
 function section(c: number, ceil: number, off: number): [number, number][] {
-  const top = Math.max(c + 0.02, ceil - c);
-  const k = TOE_H * c;
-  const s = TOE_D * c;
-  const l = LIP_W * c;
-  // the upper chamfer takes whatever height is actually left, which is `c`
+  const cl = c * LOWER_K;
+  const rl = cl * LOWER_RISE;
+  const cu0 = c * UPPER_K;
+  const ru = cu0 * UPPER_RISE;
+  const top = Math.max(rl + 0.02, ceil - ru);
+  const k = TOE_H * cl;
+  const s = TOE_D * cl;
+  const l = LIP_W * cl;
+  // the upper chamfer takes whatever height is actually left, which is `ru`
   // everywhere `cornerFields` has done its job but need not be assumed
-  const cu = ceil - top;
+  const rem = ceil - top;
+  const cu = ru > 1e-6 ? (cu0 * rem) / ru : cu0;
   const ku = TOE_H * cu;
   const su = TOE_D * cu;
   const lu = LIP_W * cu;
   return [
-    [off + c, 0],
-    [off + c, k],
-    [off + c - s, k],
-    [off + l, c - l],
-    [off + l, c],
-    [off, c],
+    [off + cl, 0],
+    [off + cl, k],
+    [off + cl - s, k],
+    [off + l, rl - l],
+    [off + l, rl],
+    [off, rl],
     [off, top],
     [off + lu, top],
     [off + lu, top + lu],
