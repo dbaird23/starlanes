@@ -2764,7 +2764,7 @@ export class Game {
     if (t.disabled) return { text: "Disabled", tone: "bad" };
     if (t.hostile) return { text: "Hostile", tone: "bad" };
     if (t.ally) return { text: "Escort", tone: "good" };
-    if (t.phase === "leaving") return { text: "Outbound", tone: "plain" };
+    if (t.phase === "leaving" || t.phase === "leavingBurn") return { text: "Outbound", tone: "plain" };
     return { text: "Neutral", tone: "plain" };
   }
 
@@ -3087,8 +3087,12 @@ export class Game {
             this.player.credits -= bribe;
             t.hostile = false;
             t.phase = "leaving";
-            const ang = Math.random() * Math.PI * 2;
-            t.target = { x: Math.cos(ang) * 2400, y: Math.sin(ang) * 2400 };
+            const ang =
+              Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
+            t.target = {
+              x: t.pos.x + Math.cos(ang) * 5000,
+              y: t.pos.y + Math.sin(ang) * 5000,
+            };
             return `"${bribe.toLocaleString()} credits. Pleasure doing business — we were never here."`;
           },
         });
@@ -3102,8 +3106,12 @@ export class Game {
             if (merciful) {
               t.hostile = false;
               t.phase = "leaving";
-              const ang = Math.random() * Math.PI * 2;
-              t.target = { x: Math.cos(ang) * 2400, y: Math.sin(ang) * 2400 };
+              const ang =
+                Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
+              t.target = {
+                x: t.pos.x + Math.cos(ang) * 5000,
+                y: t.pos.y + Math.sin(ang) * 5000,
+              };
               this.message("The attacker breaks off.");
               return `"...Fine. You're not worth the plating. Get out of our sight."`;
             }
@@ -4373,8 +4381,12 @@ export class Game {
     if (npc.aiType === 1) {
       if (npc.phase !== "leaving") {
         npc.phase = "leaving";
-        const ang = Math.random() * Math.PI * 2;
-        npc.target = { x: Math.cos(ang) * 2400, y: Math.sin(ang) * 2400 };
+        const ang =
+          Math.atan2(npc.pos.y, npc.pos.x) + (Math.random() - 0.5) * Math.PI;
+        npc.target = {
+          x: npc.pos.x + Math.cos(ang) * 5000,
+          y: npc.pos.y + Math.sin(ang) * 5000,
+        };
       }
       return;
     }
@@ -7305,10 +7317,14 @@ export class Game {
       npc.target = { x: via.pos.x, y: via.pos.y };
       return;
     }
-    const outAng = Math.random() * Math.PI * 2;
+    const outAng =
+      Math.atan2(npc.pos.y, npc.pos.x) + (Math.random() - 0.5) * Math.PI;
     npc.phase = "leaving";
     npc.targetPlanetId = null;
-    npc.target = { x: Math.cos(outAng) * 2100, y: Math.sin(outAng) * 2100 };
+    npc.target = {
+      x: npc.pos.x + Math.cos(outAng) * 5000,
+      y: npc.pos.y + Math.sin(outAng) * 5000,
+    };
   }
 
   /**

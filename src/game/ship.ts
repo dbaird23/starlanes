@@ -258,7 +258,7 @@ export class Ship {
  * in orbit around a planet if he can't find any". So only 1 and 2 ever set
  * down; a warship leaves through hyperspace and an interceptor loiters.
  */
-export type NpcPhase = "toPlanet" | "orbit" | "leaving";
+export type NpcPhase = "toPlanet" | "orbit" | "leaving" | "leavingBurn";
 
 /**
  * Standing orders for the ships flying with you. "defend" keeps them on your
@@ -362,8 +362,8 @@ export class NpcShip extends Ship {
       this.vel = { x: 0, y: 0 };
       return;
     }
-    if (this.phase === "leaving" && dist < 120) {
-      this.done = true; // "jumped out"
+    if (this.phase === "leavingBurn" && Math.hypot(this.pos.x, this.pos.y) > 3200) {
+      this.done = true; // jumped out
       return;
     }
 
@@ -399,6 +399,54 @@ export class NpcShip extends Ship {
         Math.atan2(want.y - this.pos.y, want.x - this.pos.x),
       );
       this.update(dt, 0, facing && gap > 40);
+      return;
+    }
+
+    // Jump exit sequence: brake to near-stop, then streak out at boosted speed.
+    if (this.phase === "leaving") {
+      this.unfolding = true;
+      // Can't jump from inside the gravity well (radius 1000). Fly outward
+      // toward the exit target first, matching the player's autopilot rule.
+      if (Math.hypot(this.pos.x, this.pos.y) < 1000) {
+        const outAng = Math.atan2(
+          this.target.y - this.pos.y,
+          this.target.x - this.pos.x,
+        );
+        const facing = this.steerToward(dt, outAng);
+        this.update(dt, 0, facing);
+        return;
+      }
+      if (this.speed < 45) {
+        // Snap the exit target very far in the current exit direction so the
+        // bearing stays constant during the burn — no zig-zagging as the ship
+        // passes the original (closer) target point.
+        const ang = Math.atan2(
+          this.target.y - this.pos.y,
+          this.target.x - this.pos.x,
+        );
+        this.target = {
+          x: this.pos.x + Math.cos(ang) * 20000,
+          y: this.pos.y + Math.sin(ang) * 20000,
+        };
+        this.phase = "leavingBurn";
+      } else {
+        const brakeAngle = Math.atan2(-this.vel.y, -this.vel.x);
+        const facing = this.steerToward(dt, brakeAngle);
+        this.update(dt, 0, facing);
+        return;
+      }
+    }
+    if (this.phase === "leavingBurn") {
+      this.unfolding = true;
+      const base = this.stats;
+      this.stats = {
+        ...base,
+        maxSpeed: Math.max(base.maxSpeed * 4.5, 950),
+        accel: Math.max(base.accel * 3.5, 600),
+      };
+      const facing = this.steerToward(dt, Math.atan2(dy, dx));
+      this.update(dt, 0, facing);
+      this.stats = base;
       return;
     }
 
