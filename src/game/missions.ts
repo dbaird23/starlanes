@@ -164,7 +164,14 @@ export function availableMissions(
     if (m.shipCount > 0 && m.shipGoal > 5) continue;
     // pay < 0 encodes an outfit grant: -(count * 10000 + outfitNovaId); handled at completion
     if (m.flags & 0x0400) continue; // invisible missions
-    const record = getRecord(player, SPOB_GOVT.get(spob.id) ?? -1);
+    // Bible: "your legal record in this system" — use the system's government,
+    // not the spob's. For a Rebel world inside a Federation system this makes
+    // a meaningful difference (and avoids triggering Rebel hostility when the
+    // player deliberately takes a minor crime against the Federation to qualify).
+    const systemGovt =
+      getSystem(SPOB_INDEX.get(spob.id)?.systemId ?? "")?.govtId ??
+      (SPOB_GOVT.get(spob.id) ?? -1);
+    const record = getRecord(player, systemGovt);
     // -32000 and below is Nova's sentinel for "only once you hold this world".
     // No mission in the stock scenario uses it, but plug-ins do.
     if (m.availRecord <= -32000 && !player.dominated.includes(spob.id))
