@@ -1163,6 +1163,21 @@ export class Game {
   get hudClock(): number {
     return this.time;
   }
+  /** Debug helper: player.records keyed by government name instead of numeric ID. */
+  get namedRecords(): Record<string, number> {
+    const nameCounts: Record<string, number> = {};
+    for (const g of Object.values(GOVTS)) {
+      nameCounts[g.name] = (nameCounts[g.name] ?? 0) + 1;
+    }
+    const out: Record<string, number> = {};
+    for (const [idStr, val] of Object.entries(this.player.records)) {
+      const g = GOVTS[idStr];
+      if (!g) continue;
+      const key = nameCounts[g.name] > 1 ? `${g.name} (${idStr})` : g.name;
+      out[key] = val;
+    }
+    return out;
+  }
   get hasDensityScanner(): boolean {
     return this.gear.densityScanner;
   }
@@ -4246,6 +4261,12 @@ export class Game {
           npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
         if (pathHitsCircle(x0, y0, p.x, p.y, npc.pos.x, npc.pos.y, r)) {
           npc.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
+          if (p.weap.impact > 0) {
+            const mass = SHIPS[npc.typeId ?? ""]?.mass ?? 200;
+            const shove = (p.weap.impact * 12) / mass;
+            npc.vel.x += Math.cos(p.angle) * shove;
+            npc.vel.y += Math.sin(p.angle) * shove;
+          }
           npc.lastAttacker = p.fromPlayer ? this.ship : (p.owner as Ship);
           if (p.weap.ionization > 0) {
             npc.ion = Math.min(npc.maxIon, npc.ion + p.weap.ionization);
@@ -4276,6 +4297,12 @@ export class Game {
           pathHitsCircle(x0, y0, p.x, p.y, this.ship.pos.x, this.ship.pos.y, r)
         ) {
           this.ship.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
+          if (p.weap.impact > 0) {
+            const mass = SHIPS[this.player.shipId]?.mass ?? 200;
+            const shove = (p.weap.impact * 12) / mass;
+            this.ship.vel.x += Math.cos(p.angle) * shove;
+            this.ship.vel.y += Math.sin(p.angle) * shove;
+          }
           if (p.weap.ionization > 0) {
             this.ship.ion = Math.min(
               this.ship.maxIon,
