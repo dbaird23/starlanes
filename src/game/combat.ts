@@ -177,12 +177,12 @@ export function isFighterBay(weap: WeaponType): boolean {
 
 /** Turret-style weapons swivel to the selected target. */
 export function isTurret(weap: WeaponType): boolean {
-  return (
-    weap.guidance === 3 ||
-    weap.guidance === 4 ||
-    weap.guidance === 7 ||
-    weap.guidance === 8
-  );
+  return weap.guidance === 3 || weap.guidance === 4;
+}
+
+/** Guidance 7 (front ±45°) and 8 (rear ±45°) — auto-aim within a limited arc. */
+export function isQuadrantGun(weap: WeaponType): boolean {
+  return weap.guidance === 7 || weap.guidance === 8;
 }
 
 export function isPrimary(weap: WeaponType): boolean {

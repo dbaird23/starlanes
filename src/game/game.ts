@@ -160,6 +160,7 @@ import {
   isPrimary,
   isSecondary,
   isTurret,
+  isQuadrantGun,
   countMounts,
   mountKind,
   mountLimits,
@@ -1869,9 +1870,10 @@ export class Game {
           }
         }
         // afterburner: hold to trade fuel for speed (100 units = 1 jump)
+        // Implies thrust — activating the burner accelerates the ship even
+        // without the thrust key held.
         this.afterburning =
           this.afterburnerBurn > 0 &&
-          thrust &&
           actionDown(this.input, "afterburner") &&
           this.player.fuelJumps > 0.05;
         if (this.inertialess && !thrust && !braking) {
@@ -1895,7 +1897,7 @@ export class Game {
             maxSpeed: base.maxSpeed * 1.5,
             accel: base.accel * 3,
           };
-          this.ship.update(dt, turn as -1 | 0 | 1, thrust);
+          this.ship.update(dt, turn as -1 | 0 | 1, true);
           this.ship.stats = base;
         } else {
           this.ship.update(dt, turn as -1 | 0 | 1, thrust);
@@ -3269,16 +3271,30 @@ export class Game {
           playSnd(slot.weap.sndId, 0.35);
         // turrets swivel onto the selected target; everything else fires ahead
         let aim: number | undefined;
-        if (isTurret(slot.weap) && this.targetNpc) {
+        if (this.targetNpc && (isTurret(slot.weap) || isQuadrantGun(slot.weap))) {
           // beams are instant — aim at current position; projectiles lead
           const aimPos =
             isBeam(slot.weap)
               ? this.targetNpc.pos
               : leadPoint(this.ship, this.targetNpc, slot.weap.speed);
-          aim = Math.atan2(
+          const aimAngle = Math.atan2(
             aimPos.y - this.ship.pos.y,
             aimPos.x - this.ship.pos.x,
           );
+          if (isTurret(slot.weap)) {
+            aim = aimAngle;
+          } else {
+            // Quadrant gun: aim only if target is within ±45° of the arc centre.
+            // Guidance 7 = front (nose), guidance 8 = rear (nose + π).
+            const centre =
+              slot.weap.guidance === 8
+                ? this.ship.angle + Math.PI
+                : this.ship.angle;
+            let diff = aimAngle - centre;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            if (Math.abs(diff) <= Math.PI / 4) aim = aimAngle;
+          }
         }
         if (isBeam(slot.weap)) {
           this.fireBeam(this.ship, slot.weap, volley, true, aim);
@@ -4006,6 +4022,7 @@ export class Game {
           ? !this.ship.disabled && !this.playerDeath
           : this.npcs.includes(npcA) && !npcA.done;
       if (valid) {
+        if (a === this.ship) this.setNpcHostile(npc);
         this.attackAi(npc, dt, a);
         return;
       }
@@ -4015,6 +4032,7 @@ export class Game {
     let best = 1600;
     for (const other of this.npcs) {
       if (!other.hostile || other === npc) continue;
+      if (!govtEnemy(npc.govtId, other.govtId)) continue;
       const d = Math.hypot(other.pos.x - npc.pos.x, other.pos.y - npc.pos.y);
       if (d < best) {
         best = d;
@@ -4130,13 +4148,20 @@ export class Game {
       person && person.aggress > 0 ? 350 + person.aggress * 350 : 700;
     if (!fleeing && weap && stock && npc.fireCooldown <= 0 && dist < reach) {
       const turret = isTurret(weap);
+      const quadrant = isQuadrantGun(weap);
       let diff = desired - npc.angle;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      // Turrets swivel independently — they can fire at the intercept point
-      // regardless of which way the hull is pointing. Fixed guns need the
-      // nose within ~11° of the intercept before firing.
-      if (turret || Math.abs(diff) < 0.2) {
+      // Turrets swivel independently. Quadrant guns fire within ±45° of their
+      // arc centre. Fixed guns need the nose within ~11° of the intercept.
+      const arcCentre =
+        weap.guidance === 8 ? npc.angle + Math.PI : npc.angle;
+      let quadDiff = desired - arcCentre;
+      while (quadDiff > Math.PI) quadDiff -= Math.PI * 2;
+      while (quadDiff < -Math.PI) quadDiff += Math.PI * 2;
+      const canFire =
+        turret || (quadrant && Math.abs(quadDiff) <= Math.PI / 4) || Math.abs(diff) < 0.2;
+      if (canFire) {
         const volley = volleyCount(weap, stock.count);
         npc.fireCooldown = reloadInterval(weap, stock.count);
         if (weap.sndId) {
@@ -4154,11 +4179,11 @@ export class Game {
           );
           this.fireBeamFromNpc(npc, weap, volley, target, aim);
         } else {
-          // Turrets fire at the pre-computed intercept angle; fixed guns fire
-          // straight ahead (the hull is now already pointing at the intercept).
-          const aimAngle = turret
-            ? Math.atan2(aimPos.y - npc.pos.y, aimPos.x - npc.pos.x)
-            : undefined;
+          // Turrets and quadrant guns fire at the intercept; fixed guns fire ahead.
+          const aimAngle =
+            turret || quadrant
+              ? Math.atan2(aimPos.y - npc.pos.y, aimPos.x - npc.pos.x)
+              : undefined;
           this.projectiles.push(
             ...fireWeapon(npc, weap, volley, false, target, aimAngle),
           );
@@ -4472,8 +4497,8 @@ export class Game {
   ): void {
     npc.done = true;
     if (this.targetNpc === npc) this.targetNpc = null;
-    // the escort that made the kill crows about it
-    if (killer && !killer.done) this.speak(killer, VOICE.VICTORY);
+    // a player escort that made the kill crows about it
+    if (killer && !killer.done && killer.ally) this.speak(killer, VOICE.VICTORY);
     this.spawnExplosion(
       npc.pos.x,
       npc.pos.y,
