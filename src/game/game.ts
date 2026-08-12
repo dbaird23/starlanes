@@ -210,8 +210,10 @@ import { NpcShip, SPARROW, Ship, type EscortOrder } from "./ship";
 import { FpsSession } from "./fps";
 import { DERELICT, TEST_CORRIDOR } from "./fps/level";
 import type { FpsOptions } from "./fps/types";
+import { RaceSession } from "./race";
+import type { RaceOptions } from "./race/types";
 
-type Mode = "menu" | "flight" | "map" | "landed" | "fps";
+type Mode = "menu" | "flight" | "map" | "landed" | "fps" | "race";
 
 /**
  * Hyperspace entry, as Nova plays it (and as the SDA notes spell out):
@@ -461,6 +463,9 @@ export class Game {
   /** the on-foot mini-game, while one is running */
   fps: FpsSession | null = null;
   private fpsReturn: Mode = "landed";
+  /** the GRN race, while one is running */
+  race: RaceSession | null = null;
+  private raceReturn: Mode = "landed";
   player: PlayerState;
   pilotId: string | null = null;
   pilotName = "Captain";
@@ -1143,6 +1148,16 @@ export class Game {
    * still load from disk (and replace this session). Death also clears it.
    */
   exitToMenu(): void {
+    /*
+     * A mini-game must be torn down here, not stashed. Both sessions hold a live
+     * WebGL context and a set of window listeners, and `tryResume` maps anything
+     * it does not recognise to `"flight"` — so a stashed session would leak its
+     * context *and* resume into the wrong mode. Neither is reachable today,
+     * because both branches swallow Escape, but neither is going to stay
+     * unreachable either.
+     */
+    if (this.fps) this.endFps();
+    if (this.race) this.endRace();
     if (this.mode !== "menu" && this.pilotId) {
       this.resumeMode = this.mode;
     } else {
@@ -1281,7 +1296,9 @@ export class Game {
    * filling that callback in; see `tryBoard`.
    */
   startFps(opts: FpsOptions): void {
-    if (this.fps) return;
+    // two live WebGL contexts is a real leak — browsers cap at around sixteen —
+    // and the two mini-games would both be reading the keyboard besides
+    if (this.fps || this.race) return;
     this.fpsReturn = this.mode;
     this.fps = new FpsSession(this.canvas, opts);
     this.mode = "fps";
@@ -1311,6 +1328,52 @@ export class Game {
       health: 100,
       wallPlate: 700,
       ambientSnd: 10034, // "Rundown station"
+    });
+  }
+
+  /**
+   * The Galaxy Racing Network, flown rather than bet on.
+   *
+   * Same shape as `startFps`, and for the same reason — the landed DOM screen is
+   * suspended, the shared canvas is taken over, and `resume()` brings back the
+   * counter you left.
+   *
+   * **The stake is debited here**, on the way in, and nowhere else. That is what
+   * makes a mid-race forfeit need no bookkeeping at all: the money is already
+   * gone, so retiring is simply a result that pays nothing. `onOutcome` is the
+   * only path back to the pilot's credits, and a practice run omits it.
+   */
+  startRace(opts: RaceOptions): void {
+    if (this.fps || this.race) return;
+    if (opts.stake > 0) this.player.credits -= Math.min(opts.stake, this.player.credits);
+    this.raceReturn = this.mode;
+    this.race = new RaceSession(this.canvas, opts);
+    this.mode = "race";
+    if (this.raceReturn === "landed") this.landedUi.suspend();
+  }
+
+  /** Out of the cockpit, back to whichever screen sent us there. */
+  endRace(): void {
+    this.race?.dispose();
+    this.race = null;
+    this.mode = this.raceReturn === "landed" ? "landed" : "flight";
+    if (this.mode === "landed") this.landedUi.resume();
+    this.raceReturn = "landed";
+  }
+
+  /**
+   * The arcade entry, reachable from `window.game` and from nothing in the UI
+   * yet. No stake and no `onOutcome`, so it cannot touch the pilot at all —
+   * the same property that makes the derelict a diversion.
+   */
+  startTestRace(seed = 1234): void {
+    this.startRace({
+      title: "Practice",
+      seed,
+      laps: 3,
+      livery: 0,
+      shipId: "167", // the Comara Racing Viper
+      stake: 0,
     });
   }
 
@@ -1699,6 +1762,28 @@ export class Game {
       if (this.fps) {
         this.fps.update(dt, this.input);
         if (this.fps.wantsExit) this.endFps();
+      }
+      this.input.endFrame();
+      return;
+    }
+
+    /*
+     * The race, on the same terms as the on-foot run: above the flight and map
+     * handlers, swallowing Escape (the landed handler would depart the planet)
+     * and M (the galaxy map).
+     *
+     * **The Caps Lock clock is divided back out.** `main.ts` hands every mode
+     * `raw * timeScale`, and Nova's 2× fast-forward is a fine thing to have in
+     * flight and a straightforward cheat in a race with money on it — a doubled
+     * clock is a different course. The race is the one mode that has to run on
+     * wall time.
+     */
+    if (this.mode === "race") {
+      this.input.consume("Escape");
+      this.input.consume("KeyM");
+      if (this.race) {
+        this.race.update(dt / this.timeScale, this.input);
+        if (this.race.wantsExit) this.endRace();
       }
       this.input.endFrame();
       return;
@@ -7531,6 +7616,10 @@ export class Game {
       this.fps?.requestLock();
       return;
     }
+    if (this.mode === "race") {
+      this.race?.requestLock();
+      return;
+    }
     // Flight targeting is the selectUnderCursor bind (not a free left-click).
     if (this.mode !== "map") return;
     if (this.lastDragMoved > 6) return; // was a pan, not a click
@@ -7626,6 +7715,10 @@ export class Game {
 
     if (this.mode === "fps") {
       this.fps?.render(ctx, w, h);
+      return;
+    }
+    if (this.mode === "race") {
+      this.race?.render(ctx, w, h);
       return;
     }
 

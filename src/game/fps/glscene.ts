@@ -77,6 +77,7 @@ import { TILE_FILES, matOf } from "./textures";
 import type { Prop } from "./props";
 import type { Station } from "./salvage";
 import type { FpsLevel, FpsSprite } from "./types";
+import { TONEMAP } from "./shader-common";
 
 /** The eye, half a cell above the deck — what `hover` 0.5 means to a billboard. */
 export const EYE = 0.5;
@@ -86,7 +87,7 @@ const FOV_DEG = (2 * Math.atan(0.5) * 180) / Math.PI;
 
 /* ------------------------------------------------------------ the lighting */
 
-/**
+/*
  * The whole model runs in **linear light and is tone mapped**, which the first
  * lit pass did not do and is most of why it looked like a turned-down brightness
  * slider. Multiplying 8-bit sRGB by a dim number moves everything toward the
@@ -100,8 +101,11 @@ const FOV_DEG = (2 * Math.atan(0.5) * 180) / Math.PI;
  * `sqrt`. Values above 1 are then meaningful rather than clipped, which is what
  * lets a specular hit on a bay frame read as a *light source* while the panel
  * two metres behind it stays black.
+ *
+ * The curve itself now lives in `shader-common.ts`, because the race scene is a
+ * second renderer with its own materials and the two have to agree about what a
+ * given brightness means.
  */
-const WHITE = 1.9;
 
 /**
  * The suit lamp: the mechanic, and the only real source on a dead ship.
@@ -254,14 +258,7 @@ void main() {
  * between doing this and not doing it.
  */
 const COMMON = /* glsl */ `
-vec3 lin(vec3 c) { return c * c; }
-vec3 encode(vec3 c) {
-  c = max(c, vec3(0.0));
-  // extended Reinhard: unity slope through the midtones, a soft shoulder, so a
-  // specular streak stays a streak instead of clipping to a flat white blob
-  c = c * (1.0 + c / ${(WHITE * WHITE).toFixed(2)}) / (1.0 + c);
-  return sqrt(c);
-}
+${TONEMAP}
 /** Distance falloff for the suit lamp: inverse-square core, hard cutoff. */
 float lampFall(float d) {
   float q = d / ${LAMP_HALF.toFixed(3)};
