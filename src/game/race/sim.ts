@@ -189,6 +189,7 @@ export class RaceWorld {
       boost: 0,
       gatesCleared: 0,
       nextGate: 0,
+      missed: 0,
       lap: 0,
       param: ((t % 1) + 1) % 1,
       progress: 0,
@@ -230,7 +231,7 @@ export class RaceWorld {
     forwardOf(r, _b);
     r.pos.addScaledVector(_b, r.speed * dt);
 
-    this.checkGate(r, prev, r.pos);
+    this.checkGate(r, prev, r.pos, dt);
 
     r.param = this.course.advanceParam(r.param, r.pos);
     r.progress = r.gatesCleared + this.gateFraction(r);
@@ -255,7 +256,7 @@ export class RaceWorld {
    * - outside the hoop altogether → a miss, and the gate index does not advance,
    *   so the punishment is exactly the time it costs to come back for it.
    */
-  private checkGate(r: Racer, prev: THREE.Vector3, cur: THREE.Vector3): void {
+  private checkGate(r: Racer, prev: THREE.Vector3, cur: THREE.Vector3, dt: number): void {
     const gates = this.course.gates;
     const g = gates[r.nextGate % gates.length];
 
@@ -270,7 +271,17 @@ export class RaceWorld {
     const radial = rel.addScaledVector(g.normal, -rel.dot(g.normal)).length();
 
     if (radial >= GATE_RADIUS) {
-      // went past outside the hoop
+      /*
+       * Went past outside the hoop. The gate index deliberately does not
+       * advance — the punishment is the time it costs to come back for it, for
+       * a rival exactly as for the player.
+       *
+       * The per-racer tally is not decoration: rival misses were invisible when
+       * only the human's were counted, and an AI that had quietly stopped
+       * taking gates looked identical at the finish to one that was merely
+       * slow. It is the cheapest possible check that the rivals are racing.
+       */
+      r.missed++;
       if (r.human) {
         this.gatesMissed++;
         this.say("MISSED GATE");
@@ -306,7 +317,16 @@ export class RaceWorld {
       }
       if (r.lap >= this.opts.laps) {
         r.finished = true;
-        r.finishTime = this.time;
+        /*
+         * **The finish time is sub-frame**, taken at the crossing rather than at
+         * the end of the step that contained it. `u` is already solved for the
+         * gate test, so this costs one multiply — and without it two racers who
+         * cross the line in the same frame get *identical* times and share a
+         * place, which was reproducible rather than theoretical: seed 1234 put
+         * two rivals on the same 92.0s and left nobody in second. With money
+         * riding on placement a dead heat is not a result.
+         */
+        r.finishTime = this.time - dt * (1 - u);
       }
     }
   }

@@ -13,7 +13,8 @@ import { asset } from "../../asset";
 import { SHIP_SPRITES } from "../../data/universe";
 import { getSprite, rotationFrame } from "../../engine/sprites";
 import { RaceScene, FOV_DEG, FOV_BOOST } from "./scene";
-import { BOOST_MAX, RaceWorld, aimCommand, forwardOf } from "./sim";
+import { BOOST_MAX, RaceWorld, forwardOf } from "./sim";
+import { rivalCommand, type RivalContext } from "./ai";
 import type { RaceCommand, RaceOptions, RaceSprite } from "./types";
 
 const MOUSE_SENS = 0.0022;
@@ -49,6 +50,31 @@ const BEZEL = {
   right: { x0: 0.710, x1: 0.864 },
 };
 
+/**
+ * What the autopilot probe flies as: a competent line, no deliberate error.
+ * Zero `lineError` puts it on the centreline, so its lap time is the benchmark
+ * the rivals' skill draws are measured against.
+ */
+const AUTOPILOT_SKILL = { lineError: 0, lookAhead: 0.7, throttleCaution: 0.7, phase: 0 };
+
+/** The Comara Racing Viper's hull length, in world units — its sprite is 32px. */
+const HULL_LEN = 34;
+
+/**
+ * Overall gain on the engine cones.
+ *
+ * The sprite shader multiplies an additive sprite by 3.0 — that is what makes an
+ * explosion read as light rather than paint — so a tint near 1.0 arrives at the
+ * tone-map curve around 3.75 and clips to a flat white disc. 0.45 puts the core
+ * just over 1.0, where the shoulder rolls it off and it reads as *hot* instead
+ * of as a hole in the frame.
+ *
+ * Declared **above** `GLOW_TINT`, which multiplies by it at module load: the
+ * other order is a temporal dead zone error that typechecks cleanly and throws
+ * on import.
+ */
+const GLOW_GAIN = 0.45;
+
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
 const DISPLAY = '"Chakra Petch", "Verdana", sans-serif';
 
@@ -60,6 +86,22 @@ const LIVERY_TINT: [number, number, number][] = [
   [1.35, 1.15, 0.35],
   [1.4, 0.42, 0.38],
 ];
+
+/**
+ * The same four liveries, pulled most of the way to warm white, for the engine
+ * cones.
+ *
+ * Every exhaust in the source movies is orange, and tinting a cone fully blue or
+ * green to match its hull throws that away. But at five hundred units the cone
+ * is all you can see, and four identical flames tell you nothing about who is
+ * who in a race you are being paid on. Blending 0.6 toward white keeps them all
+ * reading as fire while leaving just enough hue to sort the pack.
+ */
+const GLOW_TINT: [number, number, number][] = LIVERY_TINT.map((c) => [
+  (c[0] * 0.4 + 1.25 * 0.6) * GLOW_GAIN,
+  (c[1] * 0.4 + 1.05 * 0.6) * GLOW_GAIN,
+  (c[2] * 0.4 + 0.8 * 0.6) * GLOW_GAIN,
+]) as [number, number, number][];
 const LIVERY_CSS = ["#6a9cff", "#5fd46a", "#e0c94a", "#e0605a"];
 
 /**
@@ -107,6 +149,17 @@ export class RaceSession {
    */
   private cockpit: HTMLImageElement | null = null;
 
+  /**
+   * The engine cone. Drawn procedurally at construction so the rivals are
+   * trackable *now*, and replaced by `race/engine-glow.png` if that file exists.
+   *
+   * A radial gradient is an honest stand-in for this one asset in a way it would
+   * not be for the canopy or the hoop: what the movies show at range is a soft
+   * white-hot core falling off through orange, which is exactly what a gradient
+   * is. Authored art will beat it on the flare's shape, not its behaviour.
+   */
+  private glow: HTMLImageElement | null = null;
+
   private onLockChange = (): void => {
     this.locked = document.pointerLockElement === this.canvas;
     // Esc is how the browser hands the pointer back, so losing the lock has to
@@ -142,6 +195,18 @@ export class RaceSession {
       this.cockpit = canopy;
     };
     canopy.src = asset("race/cockpit.png");
+
+    const stand = new Image();
+    stand.onload = (): void => {
+      this.glow = this.glow ?? stand;
+    };
+    stand.src = engineGlowDataUrl();
+    // an authored cone wins if one has been dropped in
+    const authored = new Image();
+    authored.onload = (): void => {
+      this.glow = authored;
+    };
+    authored.src = asset("race/engine-glow.png");
 
     document.addEventListener("pointerlockchange", this.onLockChange);
     window.addEventListener("mousemove", this.onMouseMove);
@@ -235,21 +300,40 @@ export class RaceSession {
     this.mouseDy = 0;
 
     /*
-     * Probe hook, off in play: fly the course by itself, so a frame can be
-     * looked at from somewhere on the line rather than from wherever a
-     * hands-off ship drifted to. It shares `aimCommand` with the rivals, so
-     * what it proves about steering is what they will do.
+     * Probe hook, off in play: fly the course by itself.
+     *
+     * It runs the **rivals' own policy**, not a simpler one, and that is what
+     * makes it useful for more than screenshots — it is the benchmark that says
+     * whether the AI is fast because it drives well or because it is cheating.
+     * A naive version (aim at the gate centre, full throttle, never lift) was
+     * tried first and lapped 40% slower than the rivals, which proves nothing
+     * about them and only that ignoring the speed/turn coupling is punished.
      */
     if (this.autopilot) {
-      const g = this.world.course.gates[
-        this.world.player.nextGate % this.world.course.gates.length
-      ];
-      aimCommand(this.world.player, g.pos, dt, tr, cmd);
-      cmd.roll = 0;
-      cmd.throttle = 1;
+      const me = this.world.player;
+      const saved = me.skill;
+      me.skill = AUTOPILOT_SKILL;
+      Object.assign(
+        cmd,
+        rivalCommand(me, {
+          course: this.world.course,
+          playerProgress: me.progress,
+          raceGates: this.world.course.gates.length * this.world.opts.laps,
+          turnRate: tr,
+          dt,
+        }),
+      );
+      me.skill = saved;
     }
 
-    this.world.update(dt, cmd);
+    const ctx: RivalContext = {
+      course: this.world.course,
+      playerProgress: this.world.player.progress,
+      raceGates: this.world.course.gates.length * this.world.opts.laps,
+      turnRate: tr,
+      dt,
+    };
+    this.world.update(dt, cmd, (r) => rivalCommand(r, ctx));
 
     // the camera trails the hull rather than being welded to it
     const k = 1 - Math.exp(-dt / CAM_TAU);
@@ -258,18 +342,57 @@ export class RaceSession {
     this.camFov += (wantFov - this.camFov) * (1 - Math.exp(-dt / 0.12));
   }
 
-  /** The rivals, as billboards. */
+  /**
+   * The rivals, as billboards — hull plus engine cone.
+   *
+   * **The glow is what you actually track.** A 32x32 Nova sheet at five hundred
+   * units is a handful of pixels whichever way it is filtered, and Nova's hulls
+   * are drawn from directly above besides, so the silhouette is never quite the
+   * one a level camera should see. The source movies solve it for us: what reads
+   * across those four seconds is four orange engine cones, and the hulls only
+   * have to hold up once something is close. So each rival gets an additive
+   * glow, larger than the hull and unfogged, and the sprite behind it is a
+   * bonus rather than the load-bearing cue.
+   */
   private sprites(cam: THREE.Vector3): RaceSprite[] {
     const out: RaceSprite[] = [];
     const meta = SHIP_SPRITES[this.world.opts.shipId];
-    if (!meta) return out;
-    const img = getSprite(meta.file);
-    // getSprite returns null until the image is decoded — skip, every frame
-    if (!img) return out;
+    const img = meta ? getSprite(meta.file) : null;
+    const glow = this.glow;
 
     const fwd = new THREE.Vector3();
     for (const r of this.world.racers) {
       if (r.human) continue;
+
+      // the cone sits behind the hull, along its own thrust axis
+      if (glow?.naturalWidth) {
+        forwardOf(r, fwd);
+        out.push({
+          pos: r.pos.clone().addScaledVector(fwd, -HULL_LEN * 0.55),
+          img: glow,
+          frameSize: glow.naturalWidth,
+          frame: 0,
+          /*
+           * Sized against the hull, not against what looks findable at range.
+           * The first cut used 34..60 units — *larger than the 48-unit gate
+           * radius* — which at seventy metres filled a third of the canopy with
+           * a white blob. A 34-unit hull already subtends a comfortable 30-70px
+           * at five hundred units, so nothing needed oversizing; the earlier
+           * worry was simply wrong.
+           *
+           * It still flares with throttle, so a rival lifting for a corner
+           * visibly backs off — the one piece of their driving readable at range.
+           */
+          scale: HULL_LEN * (0.38 + 0.3 * Math.min(1, r.speed / this.world.stats.maxSpeed)),
+          alpha: 1,
+          additive: true,
+          smooth: true,
+          tint: GLOW_TINT[r.livery],
+        });
+      }
+
+      // getSprite returns null until the image is decoded — skip, every frame
+      if (!img || !meta) continue;
       forwardOf(r, fwd);
       const heading = Math.atan2(fwd.z, fwd.x);
       const camBearing = Math.atan2(r.pos.z - cam.z, r.pos.x - cam.x);
@@ -280,13 +403,9 @@ export class RaceSession {
         img,
         frameSize: meta.w,
         frame,
-        /*
-         * Oversized against the 32-unit hull on purpose. Nova draws every ship
-         * at a fixed sprite size whatever the range, so magnifying here is in
-         * keeping rather than a cheat — and a 32px sheet at 500 units is
-         * otherwise a smear you cannot race against.
-         */
-        scale: 56,
+        // the hull's real length; see the glow above for why this is not
+        // oversized the way the first cut assumed it had to be
+        scale: HULL_LEN,
         alpha: 1,
         tint: LIVERY_TINT[r.livery],
       });
@@ -607,4 +726,28 @@ const CORNERS: [number, number][] = [
 
 function ordinal(n: number): string {
   return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
+}
+
+/**
+ * The stand-in engine cone: white-hot core, orange shoulder, transparent edge.
+ *
+ * Built as a data URL rather than a canvas handed straight to three, because the
+ * scene keys its texture cache on `img.src` — a canvas has none, so every rival
+ * would allocate a fresh GPU texture every frame.
+ */
+function engineGlowDataUrl(): string {
+  const n = 128;
+  const c = document.createElement("canvas");
+  c.width = n;
+  c.height = n;
+  const ctx = c.getContext("2d");
+  if (!ctx) return "";
+  const g = ctx.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+  g.addColorStop(0, "rgba(255,255,250,1)");
+  g.addColorStop(0.22, "rgba(255,214,140,0.95)");
+  g.addColorStop(0.5, "rgba(255,130,40,0.45)");
+  g.addColorStop(1, "rgba(255,90,20,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, n, n);
+  return c.toDataURL("image/png");
 }

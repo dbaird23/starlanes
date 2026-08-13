@@ -626,16 +626,30 @@ export class RaceScene {
     return s;
   }
 
-  /** A Nova sheet as a texture. `NearestFilter`: see `glscene.ts`. */
-  private sheet(img: HTMLImageElement): THREE.Texture {
-    let t = this.sheets.get(img.src);
+  /**
+   * A sprite sheet as a texture.
+   *
+   * `NearestFilter` by default, for the reason `glscene.ts` gives: the sheets
+   * are horizontal strips of 36 rotations and any linear tap across a frame edge
+   * bleeds the neighbouring rotation into the silhouette. `smooth` opts out, and
+   * the engine cone needs it — that is a single continuous gradient with no
+   * frames to bleed between, and magnified nearest renders it as a staircase of
+   * visible squares.
+   *
+   * The cache is keyed on the filter too, so one image used both ways cannot
+   * come back with the wrong one.
+   */
+  private sheet(img: HTMLImageElement, smooth = false): THREE.Texture {
+    const key = `${smooth ? "L" : "N"}|${img.src}`;
+    let t = this.sheets.get(key);
     if (!t) {
       t = new THREE.Texture(img);
-      t.magFilter = THREE.NearestFilter;
-      t.minFilter = THREE.NearestFilter;
+      const f = smooth ? THREE.LinearFilter : THREE.NearestFilter;
+      t.magFilter = f;
+      t.minFilter = f;
       t.generateMipmaps = false;
       t.needsUpdate = true;
-      this.sheets.set(img.src, t);
+      this.sheets.set(key, t);
     }
     return t;
   }
@@ -698,7 +712,7 @@ export class RaceScene {
       slot.mesh.quaternion.copy(cam.quat);
       slot.mesh.renderOrder = s.additive ? 2 : 1;
       const u = slot.mat.uniforms;
-      u.map.value = this.sheet(s.img);
+      u.map.value = this.sheet(s.img, s.smooth);
       (u.uFrame.value as THREE.Vector2).set(s.frame / cols, 1 / cols);
       (u.uCam.value as THREE.Vector3).copy(cam.pos);
       u.uAlpha.value = s.alpha;

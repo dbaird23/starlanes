@@ -73,6 +73,8 @@ export interface Racer {
   gatesCleared: number;
   /** index of the gate being aimed at now */
   nextGate: number;
+  /** gate planes crossed outside the hoop; tracked for every racer, not just you */
+  missed: number;
   lap: number;
   /** spline parameter, tracked incrementally — never searched for globally */
   param: number;
@@ -121,6 +123,15 @@ export interface RaceSprite {
   additive?: boolean;
   /** multiplies the texel; how the four liveries get their colour */
   tint?: [number, number, number];
+  /**
+   * Filter this one linearly instead of nearest.
+   *
+   * Nearest is the right default and the scene says why: a linear tap across a
+   * frame edge of a 36-rotation sheet bleeds the neighbouring rotation into the
+   * silhouette. A glow is not a sheet — it is one smooth gradient — and
+   * magnified nearest turns it into visible squares.
+   */
+  smooth?: boolean;
 }
 
 export interface RaceOutcome {
