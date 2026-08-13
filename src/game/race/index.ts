@@ -9,6 +9,7 @@
 
 import * as THREE from "three";
 import type { Input } from "../../engine/input";
+import { asset } from "../../asset";
 import { SHIP_SPRITES } from "../../data/universe";
 import { getSprite, rotationFrame } from "../../engine/sprites";
 import { RaceScene, FOV_DEG, FOV_BOOST } from "./scene";
@@ -31,6 +32,22 @@ const clamp1 = (v: number): number => (v < -1 ? -1 : v > 1 ? 1 : v);
  * — at a level that survives both ends of the sky.
  */
 const LABEL = "rgba(214,228,244,0.82)";
+
+/**
+ * The dash's three recessed panels, **in the canopy art's own 0..1 space**.
+ *
+ * Measured off `cockpit.png` by scanning three rows across the dash band for
+ * dark opaque runs; all three rows agreed to within a few thousandths, which is
+ * what says these are panels and not a lucky threshold. Nothing reads the image
+ * at runtime — exactly the contract `OPENINGS` states for the status-bar plate —
+ * so **a revised canopy has to be re-measured and this table updated**, or the
+ * readouts will sit on the frame instead of in the wells.
+ */
+const BEZEL = {
+  left: { x0: 0.142, x1: 0.290 },
+  centre: { x0: 0.408, x1: 0.591 },
+  right: { x0: 0.710, x1: 0.864 },
+};
 
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
 const DISPLAY = '"Chakra Petch", "Verdana", sans-serif';
@@ -81,6 +98,15 @@ export class RaceSession {
   private camQuat = new THREE.Quaternion();
   private camFov = FOV_DEG;
 
+  /**
+   * The canopy. Loaded straight through `asset()` rather than `getSprite`,
+   * which hardcodes the `nova/sprites/` prefix — the same reason `glscene.ts`
+   * loads its tiles that way. Null until decoded, and the HUD simply falls back
+   * to screen-margin readouts until then, so a missing file is a playable game
+   * rather than a blank frame.
+   */
+  private cockpit: HTMLImageElement | null = null;
+
   private onLockChange = (): void => {
     this.locked = document.pointerLockElement === this.canvas;
     // Esc is how the browser hands the pointer back, so losing the lock has to
@@ -110,6 +136,12 @@ export class RaceSession {
       console.error("race: WebGL unavailable", e);
     }
     this.camQuat.copy(this.world.player.quat);
+
+    const canopy = new Image();
+    canopy.onload = (): void => {
+      this.cockpit = canopy;
+    };
+    canopy.src = asset("race/cockpit.png");
 
     document.addEventListener("pointerlockchange", this.onLockChange);
     window.addEventListener("mousemove", this.onMouseMove);
@@ -285,12 +317,55 @@ export class RaceSession {
 
   /* ------------------------------------------------------------------ 2D */
 
+  /**
+   * The canopy: scaled **by width**, anchored to the bottom, top allowed to
+   * crop. The status-bar plate's rule exactly — artwork is never scaled to fit.
+   *
+   * Cover-scaling was tried first and is wrong, for a reason worth recording.
+   * On any window taller than the art's 16:10 it scales by height instead, and
+   * the overflow goes sideways: the outer bezels slide off the screen and take
+   * the speed readout with them. Losing an instrument is a much worse failure
+   * than the A-pillars not quite reaching the top, and width-scaling only
+   * degrades that way on aspects taller than 16:10, which no game window is —
+   * 16:9, 16:10 and ultrawide all overflow vertically and crop the top, which is
+   * exactly what you want.
+   *
+   * Returns the rect it drew into, because the readouts are positioned in the
+   * art's own space and need it to get back to pixels.
+   */
+  private drawCockpit(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ): { x: number; y: number; w: number; h: number } | null {
+    const img = this.cockpit;
+    if (!img?.naturalWidth) return null;
+    const scale = w / img.naturalWidth;
+    const dw = img.naturalWidth * scale;
+    const dh = img.naturalHeight * scale;
+    const dx = (w - dw) / 2;
+    const dy = h - dh;
+    ctx.drawImage(img, dx, dy, dw, dh);
+    return { x: dx, y: dy, w: dw, h: dh };
+  }
+
   private drawHud(ctx: CanvasRenderingContext2D, w: number, h: number): void {
     const world = this.world;
     const p = world.player;
     // one scalar drives every margin and font, so the panel thins on an
     // ultrawide instead of eating the view
     const s = Math.max(0.75, Math.min(1.4, Math.min(w / 1280, h / 800)));
+
+    // the canopy goes down first and unshadowed — it is the surface the
+    // readouts are lit against, not another readout
+    const art = this.drawCockpit(ctx, w, h);
+    /** A bezel's centre, and its width, in screen pixels. */
+    const bez = (b: { x0: number; x1: number }): { cx: number; wide: number } =>
+      art
+        ? { cx: art.x + ((b.x0 + b.x1) / 2) * art.w, wide: (b.x1 - b.x0) * art.w }
+        : { cx: w / 2, wide: 200 * s };
+    /** A y fraction of the art, in screen pixels. */
+    const ay = (f: number): number => (art ? art.y + f * art.h : h * f);
 
     /*
      * **Everything on this layer carries a drop shadow, and it is not styling.**
@@ -319,45 +394,61 @@ export class RaceSession {
       this.drawGateArrow(ctx, w, h, s);
     }
 
-    const pad = 26 * s;
     ctx.textBaseline = "alphabetic";
-
-    /* speed, bottom left */
-    ctx.fillStyle = LABEL;
-    ctx.font = `${10 * s}px ${MONO}`;
-    ctx.textAlign = "left";
-    ctx.fillText("SPEED", pad, h - pad - 26 * s);
-    ctx.fillStyle = "rgba(196,214,232,0.92)";
-    ctx.font = `${30 * s}px ${DISPLAY}`;
-    ctx.fillText(String(Math.round(p.speed)), pad, h - pad);
-
-    /* boost, bottom right */
-    const bw = 120 * s;
-    ctx.fillStyle = LABEL;
-    ctx.font = `${10 * s}px ${MONO}`;
-    ctx.textAlign = "right";
-    ctx.fillText("BOOST", w - pad, h - pad - 26 * s);
-    ctx.fillStyle = "rgba(20,26,34,0.75)";
-    ctx.fillRect(w - pad - bw, h - pad - 18 * s, bw, 10 * s);
-    ctx.fillStyle = "#e0a83c";
-    ctx.fillRect(w - pad - bw, h - pad - 18 * s, bw * Math.min(1, p.boost / BOOST_MAX), 10 * s);
-
-    /* lap and place, top centre */
     ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(196,214,232,0.92)";
-    ctx.font = `${22 * s}px ${DISPLAY}`;
-    const laps = world.opts.laps;
-    ctx.fillText(
-      `LAP ${Math.min(p.lap + 1, laps)}/${laps}    POS ${world.placeOf(p)}/4`,
-      w / 2,
-      pad + 20 * s,
-    );
+
+    /*
+     * The three readouts sit **inside the dash's own recessed panels**, measured
+     * off the art rather than floated at screen margins. It is the same contract
+     * the status-bar plate states in `OPENINGS`: nothing reads the image at
+     * runtime, so a revised canopy has to be re-measured and these updated. The
+     * fallback when the art has not loaded keeps the game playable, which is why
+     * `bez` has one.
+     */
+    const labelY = ay(0.893);
+    const valueY = ay(0.941);
+
+    /* speed — left bezel */
+    const bl = bez(BEZEL.left);
     ctx.fillStyle = LABEL;
-    ctx.font = `${11 * s}px ${MONO}`;
+    ctx.font = `${10 * s}px ${MONO}`;
+    ctx.fillText("SPEED", bl.cx, labelY);
+    ctx.fillStyle = "rgba(214,230,246,0.95)";
+    ctx.font = `${28 * s}px ${DISPLAY}`;
+    ctx.fillText(String(Math.round(p.speed)), bl.cx, valueY);
+
+    /* lap and place — centre bezel */
+    const bc = bez(BEZEL.centre);
+    const laps = world.opts.laps;
+    ctx.fillStyle = LABEL;
+    ctx.font = `${10 * s}px ${MONO}`;
     ctx.fillText(
       `GATE ${p.nextGate + 1}/${world.course.gates.length}   ${world.time.toFixed(1)}s`,
-      w / 2,
-      pad + 46 * s,
+      bc.cx,
+      labelY,
+    );
+    ctx.fillStyle = "rgba(214,230,246,0.95)";
+    ctx.font = `${24 * s}px ${DISPLAY}`;
+    ctx.fillText(
+      `LAP ${Math.min(p.lap + 1, laps)}/${laps}   POS ${world.placeOf(p)}/4`,
+      bc.cx,
+      valueY,
+    );
+
+    /* boost — right bezel */
+    const br = bez(BEZEL.right);
+    const bw = br.wide * 0.72;
+    ctx.fillStyle = LABEL;
+    ctx.font = `${10 * s}px ${MONO}`;
+    ctx.fillText("BOOST", br.cx, labelY);
+    ctx.fillStyle = "rgba(12,16,22,0.8)";
+    ctx.fillRect(br.cx - bw / 2, valueY - 12 * s, bw, 11 * s);
+    ctx.fillStyle = "#e0a83c";
+    ctx.fillRect(
+      br.cx - bw / 2,
+      valueY - 12 * s,
+      bw * Math.min(1, p.boost / BOOST_MAX),
+      11 * s,
     );
 
     /* transient note */
