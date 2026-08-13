@@ -4237,6 +4237,42 @@ export class Game {
         this.projectiles.push(
           ...fireWeapon(npc, missileWeap, volley, false, target, undefined),
         );
+      } else {
+        // Fighter bays: deploy one fighter per reload cycle.
+        const bayStock = armament?.find((sw) => {
+          const w = WEAPONS[String(sw.id)];
+          return w && isFighterBay(w) && sw.count > 0 && sw.ammo !== 0;
+        });
+        if (bayStock) {
+          const bayWeap = WEAPONS[String(bayStock.id)]!;
+          npc.missileCooldown = reloadInterval(bayWeap, bayStock.count);
+          if (bayStock.ammo > 0) bayStock.ammo -= 1;
+          const typeId = String(bayWeap.ammoType);
+          const fType = SHIPS[typeId];
+          if (fType) {
+            const fighter = new NpcShip({
+              turnRate: fType.turnRate,
+              accel: fType.accel,
+              maxSpeed: fType.maxSpeed,
+            });
+            fighter.typeId = typeId;
+            fighter.govtId = npc.govtId;
+            fighter.initDefense(fType.shield, fType.armor, fType.shieldRechPerSec);
+            fighter.sprite = SHIP_SPRITES[typeId] ?? null;
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const off = npc.radius + 20;
+            fighter.pos = {
+              x: npc.pos.x + Math.cos(npc.angle + (Math.PI / 2) * side) * off,
+              y: npc.pos.y + Math.sin(npc.angle + (Math.PI / 2) * side) * off,
+            };
+            fighter.angle = npc.angle;
+            fighter.vel = { ...npc.vel };
+            this.setNpcHostile(fighter);
+            this.npcs.push(fighter);
+            if (bayWeap.sndId)
+              playSndAt(bayWeap.sndId, 0.35, npc.pos.x - this.ship.pos.x, npc.pos.y - this.ship.pos.y);
+          }
+        }
       }
     }
   }
