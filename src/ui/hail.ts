@@ -13,7 +13,13 @@ import type { PlanetDef } from "../types";
 
 export interface HailOption {
   label: string;
-  action: () => string | void;
+  /**
+   * Return a string to update the reply and re-render.
+   * Return null when the action already called showPlanet (negotiation steps)
+   * so the handler neither closes nor double-renders.
+   * Return void to close the channel.
+   */
+  action: () => string | null | void;
 }
 
 /**
@@ -26,6 +32,7 @@ export class HailUi {
   private target: NpcShip | null = null;
   private planet: PlanetDef | null = null;
   private planetOptions: HailOption[] = [];
+  private currentOptions: HailOption[] = [];
   private reply = "";
 
   constructor(game: Game) {
@@ -69,6 +76,29 @@ export class HailUi {
     playMenuClose();
   }
 
+  handleKey(code: string): void {
+    const letter = code.startsWith("Key") ? code.slice(3).toLowerCase() : null;
+    if (!letter) return;
+    const matches: Record<string, (label: string) => boolean> = {
+      g: (l) => l.startsWith("g"),
+      o: (l) => l.startsWith("o"),
+      a: (l) => l.startsWith("a"),
+      l: (l) => l.startsWith("l"),
+      d: (l) => l.startsWith("d") || l.startsWith("release"),
+    };
+    const test = matches[letter];
+    if (!test) return;
+    const opt = this.currentOptions.find((o) => test(o.label.toLowerCase()));
+    if (!opt) return;
+    const result = opt.action();
+    if (typeof result === "string") {
+      this.reply = result;
+      this.render();
+    } else if (result !== null) {
+      this.close();
+    }
+  }
+
   private render(): void {
     const t = this.target;
     const p = this.planet;
@@ -106,6 +136,7 @@ export class HailUi {
     }
     const title = p ? p.name : this.game.hailLabel(t!);
     const options = p ? this.planetOptions : this.game.hailOptions(t!);
+    this.currentOptions = options;
 
     this.root.innerHTML = `
       <div class="comms">
@@ -144,9 +175,10 @@ export class HailUi {
         if (typeof result === "string") {
           this.reply = result;
           this.render();
-        } else {
+        } else if (result !== null) {
           this.close();
         }
+        // result === null: action called showPlanet itself; already rendered.
       });
     });
   }

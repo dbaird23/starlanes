@@ -144,6 +144,8 @@ export interface PlayerState {
   /** spob ids the player has dominated, and the day tribute was last paid */
   dominated: string[];
   tributeDay: number;
+  /** per-planet reputation delta (combined with govt record for landing/hostility checks) */
+  planetRecords?: Record<string, number>;
   /** system ids the player has visited or charted */
   explored: string[];
   /** running crön events */

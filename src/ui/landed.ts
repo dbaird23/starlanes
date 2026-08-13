@@ -182,6 +182,8 @@ export class LandedUi {
     payout: number;
   } | null = null;
   private barMissions: MissionType[] = [];
+  /** Where to go when the events queue drains (default: spaceport). */
+  private afterEventsView: View = "spaceport";
   private spaceportOffers: MissionType[] = [];
   /**
    * mïsn AvailLoc 4/5/6 — jobs handed over at the trade, shipyard and outfit
@@ -877,6 +879,7 @@ export class LandedUi {
     this.view = view;
     this.render();
     this.maybeCounterOffer(view);
+    if (view === "bar") this.maybeBarOffer();
   }
 
   show(planet: PlanetDef, system: SystemDef): void {
@@ -1040,6 +1043,16 @@ export class LandedUi {
     });
   }
 
+  /**
+   * Bar missions (AvailLoc 1) pop up automatically when entering the bar,
+   * one at a time, rather than appearing as a list to click through.
+   * Shifts from barMissions so each is offered exactly once per landing.
+   */
+  private maybeBarOffer(): void {
+    const m = this.barMissions.shift();
+    if (m) this.openOffer(m, "bar");
+  }
+
   /** Story missions offered right in the spaceport (AvailLoc 3) pop up on landing — one per visit. */
   private maybeSpaceportOffer(): void {
     const m = this.spaceportOffers.shift();
@@ -1117,8 +1130,10 @@ export class LandedUi {
   private renderEvents(): void {
     const ev = this.events[0];
     if (!ev) {
-      this.setView("spaceport");
-      this.maybeSpaceportOffer();
+      const target = this.afterEventsView;
+      this.afterEventsView = "spaceport";
+      this.setView(target);
+      if (target === "spaceport") this.maybeSpaceportOffer();
       return;
     }
     this.root.innerHTML = `
@@ -1166,10 +1181,12 @@ export class LandedUi {
         ${active.cargoQty > 0 && active.cargoName ? `<p class="hint">Cargo: ${active.cargoQty}t of ${active.cargoName}${m.timeLimit > 0 ? ` · Time limit: ${m.timeLimit} days` : ""}</p>` : m.timeLimit > 0 ? `<p class="hint">Time limit: ${m.timeLimit} days</p>` : ""}
         ${noSpaceNote}
         <div class="btnrow">
-          <button class="evbtn primary" id="btn-accept" data-modal-default ${fits ? "" : "disabled"}>Accept</button>
+          ${cantRefuse && back === "shipOffer"
+            ? '<button class="evbtn primary" id="btn-accept" data-modal-default>Okay</button>'
+            : `<button class="evbtn primary" id="btn-accept" data-modal-default ${fits ? "" : "disabled"}>Accept</button>
           ${!cantRefuse ? '<button class="evbtn" id="btn-refuse" data-modal-cancel>Refuse</button>' : ""}
           ${cantRefuse && !fits ? '<button class="evbtn" id="btn-decline" data-modal-cancel>Decline</button>' : ""}
-          <button class="evbtn" id="btn-offer-map">Map</button>
+          <button class="evbtn" id="btn-offer-map">Map</button>`}
         </div>
       </div>`;
     this.markModalFocus();
@@ -1210,6 +1227,7 @@ export class LandedUi {
           ),
         });
         this.pendingOffer = null;
+        if (back === "bar") this.afterEventsView = "bar";
         this.setView("events");
         return;
       }

@@ -299,21 +299,28 @@ export class HudUi {
 
     for (const p of g.system.planets) {
       const pt = to(p.pos.x, p.pos.y);
-      ctx.fillStyle = "#8fb4d4";
-      ctx.shadowColor = "rgba(143,180,212,.5)";
+      const isGate = p.isHypergate || p.isWormhole;
+      let dotColor: string;
+      if (g.player.dominated.includes(p.id)) {
+        dotColor = "#6fce8a"; // dominated — green
+      } else if (isGate) {
+        const accessible = g.gateIsWorking(p) && g.hasHypergateAccess;
+        dotColor = accessible ? "#e8d060" : "#e06a5a";
+      } else if (p.landable && g.clearedToLand(p, g.system.govtId)) {
+        dotColor = "#e8d060"; // friendly — yellow
+      } else if (p.landable) {
+        dotColor = "#e06a5a"; // hostile — red
+      } else {
+        dotColor = "#8fb4d4"; // uninhabited / non-landable — blue-grey
+      }
+      const dotR = isGate ? 1.2 : 2;
+      ctx.fillStyle = dotColor;
+      ctx.shadowColor = dotColor + "80";
       ctx.shadowBlur = 7;
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, dotR, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-    }
-
-    if (g.hasDensityScanner) {
-      for (const a of g.asteroids) {
-        const pt = to(a.x, a.y);
-        ctx.fillStyle = "rgba(150,140,120,0.55)";
-        ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
-      }
     }
 
     /*
@@ -334,37 +341,84 @@ export class HudUi {
         pt.x += Math.sin(g.hudClock + npc.pos.y * 0.02) * murk * 6;
         pt.y += Math.cos(g.hudClock + npc.pos.x * 0.02) * murk * 6;
       }
-      // ïntf BrightRadar/DimRadar; without an IFF unit every contact is the
-      // same anonymous dot, and a derelict reads dim whatever it is
-      ctx.fillStyle = !g.hasIff
-        ? INTERFACE.brightRadar
-        : npc.ally
-          ? "#6fce8a"
-          : npc.hostile
-            ? "#e06a5a"
-            : "#e8eef1";
-      if (npc.disabled) ctx.fillStyle = INTERFACE.dimRadar;
+      // Escorts and allies green, hostile red, neutral blue, disabled dim.
+      let blipColor = npc.ally
+        ? "#6fce8a"
+        : npc.hostile
+          ? "#e06a5a"
+          : "#5aabe0";
+      if (npc.disabled) blipColor = INTERFACE.dimRadar;
+      if (npc === g.targetNpc) blipColor = "#ffffff";
+      ctx.fillStyle = blipColor;
+      // Gravimetric sensors scale blip size by ship mass (approximated by
+      // sprite radius): fighters match the player dot (0.8px), capital ships
+      // up to ~2.5px. Without the scanner every contact is fighter-sized.
+      const blipR = g.hasDensityScanner
+        ? Math.min(1.5, Math.max(0.8, npc.radius / 25))
+        : 0.8;
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, blipR, 0, Math.PI * 2);
       ctx.fill();
-      if (npc === g.targetNpc) {
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
-        ctx.stroke();
-      }
     }
 
     if (!g.cloaked || (g.cloakBits & CLOAK_VISIBLE_ON_RADAR) !== 0) {
-      ctx.fillStyle = g.cloaked ? INTERFACE.dimRadar : INTERFACE.brightRadar;
-      ctx.shadowColor = INTERFACE.brightRadar;
-      ctx.shadowBlur = 7;
+      const playerColor = g.cloaked ? INTERFACE.dimRadar : "#6fce8a";
+      ctx.fillStyle = playerColor;
+      ctx.shadowColor = playerColor;
+      ctx.shadowBlur = 5;
       ctx.beginPath();
-      ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 0.8, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
     }
+
+    // Off-radar arrow: if the selected target is outside the radar's circular
+    // boundary, draw a small triangle on the rim pointing toward it.
+    const selPos = g.targetNpc
+      ? g.targetNpc.pos
+      : g.targetPlanet
+        ? g.targetPlanet.pos
+        : null;
+    if (selPos) {
+      const tpt = to(selPos.x, selPos.y);
+      const dx = tpt.x - cx;
+      const dy = tpt.y - cy;
+      const radarR = Math.min(w, h) / 2;
+      if (Math.hypot(dx, dy) > radarR) {
+        const ang = Math.atan2(dy, dx);
+        const flash = Math.sin(g.hudClock * 2) * 0.4 + 0.6;
+        const headLen = 4;
+        const headHalf = 2;
+        const tipR = radarR * 0.75;
+        const innerR = radarR * 0.25;
+        const tipX = cx + Math.cos(ang) * tipR;
+        const tipY = cy + Math.sin(ang) * tipR;
+        const baseX = cx + Math.cos(ang) * (tipR - headLen);
+        const baseY = cy + Math.sin(ang) * (tipR - headLen);
+        const shaftStartX = cx + Math.cos(ang) * innerR;
+        const shaftStartY = cy + Math.sin(ang) * innerR;
+        const shaftEndX = baseX;
+        const shaftEndY = baseY;
+        const perpX = -Math.sin(ang);
+        const perpY = Math.cos(ang);
+        ctx.globalAlpha = flash;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(shaftStartX, shaftStartY);
+        ctx.lineTo(shaftEndX, shaftEndY);
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(baseX + perpX * headHalf, baseY + perpY * headHalf);
+        ctx.lineTo(baseX - perpX * headHalf, baseY - perpY * headHalf);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
     ctx.restore();
   }
 

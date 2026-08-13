@@ -93,6 +93,7 @@ import { runOopses } from "./oops";
 import {
   descText,
   instantiateMission,
+  isSilentMission,
   missionDisplayName,
   substituteTags,
   testContext,
@@ -112,6 +113,7 @@ import {
   contraband,
   crimeTolerance,
   getRecord,
+  ratingLevel,
   ratingName,
 } from "./reputation";
 import {
@@ -373,6 +375,7 @@ function defaultPlayer(): PlayerState {
     personsKilled: [],
     dominated: [],
     tributeDay: 0,
+    planetRecords: {},
     explored: [],
     crons: [],
     oopses: [],
@@ -528,6 +531,18 @@ export class Game {
   targetNpc: NpcShip | null = null;
   /** EV targets stellars too: L cycles them, a second press lands */
   targetPlanet: PlanetDef | null = null;
+  /** Planets cleared by a paid bribe this flight session (resets on new system entry). */
+  private bribedPlanets = new Set<string>();
+  /**
+   * Per-planet bribe negotiation state for this system visit.
+   * rejected:      refused a lower-price request this hail session — cleared on re-hail.
+   * nextAmount:    opening ask for the next hail (raised after each refusal).
+   * lowestOffered: floor price; they will never agree to go at or below this again.
+   */
+  private bribeState = new Map<
+    string,
+    { rejected: boolean; nextAmount: number; lowestOffered: number }
+  >();
   /** the autopilot has the stick (Q) */
   private autopilot = false;
   /**
@@ -1184,6 +1199,10 @@ export class Game {
   get hasIff(): boolean {
     return this.gear.iff;
   }
+  /** Rank 147 "Have Access to Hypergate System" — granted by Sigma4 and the Rebel sideline. */
+  get hasHypergateAccess(): boolean {
+    return this.player.ranks.includes(147);
+  }
   get cloakBits(): number {
     return this.cloakFlags;
   }
@@ -1709,6 +1728,13 @@ export class Game {
           this.infoUi.handleArrow(1);
         } else if (this.input.consume("ArrowUp")) {
           this.infoUi.handleArrow(-1);
+        }
+      } else if (this.hailUi.open) {
+        for (const code of ["KeyG", "KeyO", "KeyA", "KeyL", "KeyD"] as const) {
+          if (this.input.consume(code)) {
+            this.hailUi.handleKey(code);
+            break;
+          }
         }
       }
       this.input.endFrame();
@@ -2346,9 +2372,16 @@ export class Game {
    */
   clearedToLand(planet: PlanetDef, systemGovtId: number): boolean {
     if (this.player.dominated.includes(planet.id)) return true;
+    if (this.bribedPlanets.has(planet.id)) return true;
     const govtId = landingGovtId(planet, systemGovtId);
     if (govtId >= 128 && this.rankFlag(govtId, 0x0200)) return true;
-    return landingAllowed(planet, getRecord(this.player, govtId));
+    // Block landing while a tribute siege is active (fleet not yet defeated, or
+    // fleet defeated but planet not yet formally submitted on a second demand).
+    if (this.domination.has(planet.id)) return false;
+    const govtRecord = getRecord(this.player, govtId);
+    const planetRecord = (this.player.planetRecords ?? {})[planet.id];
+    const record = planetRecord !== undefined ? planetRecord : govtRecord;
+    return landingAllowed(planet, record);
   }
 
   /**
@@ -2529,9 +2562,17 @@ export class Game {
     // spacers are not soldiers: they count for a quarter of what marines do,
     // and a hull with no crew of its own musters a token party of two.
     const myCrew = Math.max(2, SHIPS[this.player.shipId]?.crew ?? 0);
-    const boarders = this.gear.marines > 0 ? this.gear.marines : myCrew * 0.25;
-    const withMarines = this.gear.marines > 0;
-    const odds = t.typeId && !t.ally ? boarders / (boarders + crew) : null;
+    // ModType 25 marines split by sign per the Bible:
+    //   positive ModVal → adds to effective crew (trained fighters count fully)
+    //   negative ModVal → direct percentage boost (e.g. -5 → +5% capture odds)
+    // Untrained spacers count for a quarter of their number; marines add on top.
+    const marineCrew = Math.max(0, this.gear.marines);
+    const marineBonus = this.gear.marines < 0 ? -this.gear.marines / 100 : 0;
+    const withMarines = marineCrew > 0;
+    const effectiveCrew = myCrew * 0.25 + marineCrew;
+    const odds = t.typeId && !t.ally
+      ? Math.min(0.75, effectiveCrew / (effectiveCrew + crew) + marineBonus)
+      : null;
 
     /*
      * A named captain can hand over an outfit when boarded: përs GrantClass
@@ -2812,19 +2853,21 @@ export class Game {
     if (active.shipsKilled >= active.shipsTotal) {
       active.shipsDone = true;
       applySet(m.onShipDone, this.player.bits, this.bitHandlers());
-      this.message(`Objective complete: ${active.name}.`);
-      const doneText = descText(m.shipDoneText);
-      if (doneText) {
-        this.pendingMissionEvents.push({
-          title: active.name,
-          text: substituteTags(
-            doneText,
-            m,
-            active,
-            this.pilotName,
-            this.rankTags(),
-          ),
-        });
+      if (!isSilentMission(m)) {
+        this.message(`Objective complete: ${active.name}.`);
+        const doneText = descText(m.shipDoneText);
+        if (doneText) {
+          this.pendingMissionEvents.push({
+            title: active.name,
+            text: substituteTags(
+              doneText,
+              m,
+              active,
+              this.pilotName,
+              this.rankTags(),
+            ),
+          });
+        }
       }
     }
   }
@@ -2853,14 +2896,6 @@ export class Game {
       );
       return;
     }
-    const dist = Math.hypot(
-      t.pos.x - this.ship.pos.x,
-      t.pos.y - this.ship.pos.y,
-    );
-    if (dist > 2400) {
-      this.message("Target out of communications range.");
-      return;
-    }
     // gövt Flags 0x0400: "Can't hail ships of this govt." The Wraith and the
     // Krypt carry it — there is nobody in there to answer the radio.
     if (
@@ -2870,16 +2905,15 @@ export class Game {
       this.message("No response on any frequency.");
       return;
     }
-    playSnd(151, 0.4);
-    this.hailUi.show(t, this.hailGreeting(t));
+    playSnd(154, 0.4);
+    this.hailUi.show(t, "Communications channel open.");
   }
 
   /** Call a world's traffic control. */
   private hailPlanet(p: PlanetDef): void {
     const govtId = SPOB_GOVT.get(p.id) ?? -1;
     const record = getRecord(this.player, govtId);
-    const govt = this.govtLabel(govtId);
-    playSnd(151, 0.4);
+    playSnd(154, 0.4);
 
     if (p.uninhabited || !p.landable) {
       this.hailUi.showPlanet(
@@ -2896,64 +2930,147 @@ export class Game {
           ? `"${p.name} control. Always a pleasure — the pads are clear whenever you want them."`
           : `"${p.name} traffic control, go ahead."`;
 
-    const opts: { label: string; action: () => string | void }[] = [
-      {
-        label: "Request landing clearance",
+    // gövt Flags 0x4000: planets take bribes. 0x8000: always take bribes and
+    // demand a higher cut (same flag as ship greedy-bribe rule).
+    const govtFlags = GOVT_FLAGS[String(govtId)] ?? 0;
+    const planetTakesBribes =
+      (govtFlags & 0x4000) !== 0 || (govtFlags & 0x8000) !== 0;
+    const alreadyCleared = this.clearedToLand(p, this.system.govtId);
+    const hostile = !alreadyCleared && p.minStatus !== MIN_STATUS_NEVER;
+
+    const opts: { label: string; action: () => string | null | void }[] = [];
+
+    // Friendly: Greetings. Hostile (bribeable): Offer bribe. Otherwise nothing.
+    if (!hostile) {
+      opts.push({
+        label: "Greetings",
         action: () => {
-          if (this.ship.disabled) {
-            return `"You're dead in space, Captain — we can't clear a disabled ship to dock. Get engines back online first."`;
-          }
-          const dist = Math.hypot(
-            p.pos.x - this.ship.pos.x,
-            p.pos.y - this.ship.pos.y,
-          );
-          if (dist > p.radius * LAND_DIST + 60)
-            return `"You're not close enough to dock. Come on in."`;
-          this.hailUi.close();
-          this.tryLand(p);
-          return;
+          playSnd(151, 0.4);
+          return greeting;
         },
-      },
-      {
-        label: "Ask about the world",
-        action: () => {
-          const trades = Object.keys(p.prices).length;
-          const bits: string[] = [];
-          if (p.shipyard) bits.push("a shipyard");
-          if (p.outfitter) bits.push("an outfitter");
-          if (p.bar) bits.push("a bar");
-          if (trades > 0) bits.push(`${trades} commodities on the exchange`);
-          return bits.length
-            ? `"${p.name} is ${govt} space, tech level ${p.techLevel}. We've got ${bits.join(", ")}."`
-            : `"Not much here, Captain. ${govt} space, tech level ${p.techLevel}."`;
-        },
-      },
-    ];
+      });
+    }
+
     if (!p.uninhabited && p.landable) {
       const held = this.player.dominated.includes(p.id);
+      const DEADLY_LEVEL = 6; // index of "Deadly" in RATING_LEVELS
+      const tributeDismissals = [
+        `"You're far too puny to be anything but a bother to us. Go away."`,
+        `"Ha! Come back when you've actually won a fight or two."`,
+        `"We don't take demands from lightweights. Move along."`,
+        `"Is this some kind of joke? Get out of our airspace."`,
+        `"You haven't earned the right to threaten us. Not even close."`,
+        `"Try that again after you've actually scared someone. Goodbye."`,
+      ];
       opts.push({
         label: held ? "Release from tribute" : "Demand tribute",
         action: () => {
+          playSnd(151, 0.4);
+          if (!held && ratingLevel(this.player.ratingPoints) < DEADLY_LEVEL) {
+            return tributeDismissals[
+              Math.floor(Math.random() * tributeDismissals.length)
+            ];
+          }
+          // Demanding tribute from a previously friendly world turns them hostile.
+          // Only the planet's own record is marked — the government at large
+          // is unaffected; combined record (govt + planet) now falls below
+          // minStatus, blocking landing and setting the hail to hostile mode.
+          if (!hostile) {
+            this.player.planetRecords ??= {};
+            this.player.planetRecords[p.id] = -1000;
+          }
           this.hailUi.close();
           this.tryDominate(p);
+          return null;
         },
       });
     }
-    if (record < 0) {
-      const bribe = Math.min(this.player.credits, 5000);
+
+    if (planetTakesBribes && hostile) {
+      // On a fresh hail, clear the rejected flag so the player can offer again,
+      // but keep nextAmount and lowestOffered so the history carries over.
+      const existing = this.bribeState.get(p.id);
+      if (existing?.rejected) {
+        this.bribeState.set(p.id, { ...existing, rejected: false });
+      }
+
+      const rejectionLines = [
+        `"Your greed has been noted. Go away."`,
+        `"Price goes up, not down. You had your chance."`,
+        `"We don't negotiate with hagglers. Get out of our airspace."`,
+        `"You're testing our patience. Close this channel."`,
+        `"That's not how this works. The price just went up."`,
+      ];
+
+      const showBribeOffer = (amount: number): void => {
+        const capped = Math.min(this.player.credits, Math.round(amount));
+        const st = this.bribeState.get(p.id) ?? {
+          rejected: false,
+          nextAmount: capped,
+          lowestOffered: capped,
+        };
+        // Track the lowest price offered so far — this becomes the floor.
+        const lowestOffered = Math.min(st.lowestOffered, capped);
+        this.bribeState.set(p.id, { ...st, rejected: false, nextAmount: capped, lowestOffered });
+        this.hailUi.showPlanet(
+          p,
+          `"${capped.toLocaleString()} credits for landing clearance. Cash."`,
+          [
+            {
+              label: "Accept Price",
+              action: () => {
+                if (this.player.credits < capped)
+                  return `"You don't have the funds. Come back when you do."`;
+                playSnd(151, 0.4);
+                this.player.credits -= capped;
+                this.bribedPlanets.add(p.id);
+                this.bribeState.delete(p.id);
+                this.hailUi.close();
+                this.tryLand(p);
+                return null;
+              },
+            },
+            {
+              label: "Lower Price",
+              action: () => {
+                const cur = this.bribeState.get(p.id)!;
+                const proposed = amount * (0.7 + Math.random() * 0.15);
+                const higher = Math.round(amount * (1.15 + Math.random() * 0.15));
+                // Refuse if the proposed lower would hit or beat the previous floor,
+                // guaranteeing they never agree to the lowest amount offered before.
+                if (Math.random() < 0.5 && proposed > cur.lowestOffered) {
+                  // Agree — go lower.
+                  showBribeOffer(proposed);
+                } else {
+                  // Refuse — raise price, lock out further bargaining this hail.
+                  playSnd(153, 0.4);
+                  this.bribeState.set(p.id, { ...cur, rejected: true, nextAmount: higher });
+                  const msg = rejectionLines[Math.floor(Math.random() * rejectionLines.length)];
+                  this.hailUi.showPlanet(p, msg, opts);
+                }
+                return null;
+              },
+            },
+          ],
+        );
+      };
+
       opts.push({
-        label: `Bribe traffic control (${bribe.toLocaleString()} cr)`,
+        label: "Offer Bribe",
         action: () => {
-          if (this.player.credits < bribe || bribe <= 0)
+          const current = this.bribeState.get(p.id);
+          if (current?.rejected)
+            return `"We already told you — get lost."`;
+          const startAmount = current?.nextAmount ?? 5000;
+          if (this.player.credits < startAmount)
             return `"Don't waste our time."`;
-          this.player.credits -= bribe;
-          const key = String(govtId);
-          this.player.records[key] = (this.player.records[key] ?? 0) + 10;
-          return `"...The paperwork does seem to have a few errors. Welcome to ${p.name}."`;
+          playSnd(151, 0.4);
+          showBribeOffer(startAmount);
+          return null;
         },
       });
     }
-    this.hailUi.showPlanet(p, greeting, opts);
+    this.hailUi.showPlanet(p, "Communications channel open.", opts);
   }
 
   private hailGreeting(t: NpcShip): string {
@@ -3051,8 +3168,8 @@ export class Game {
    * 0x0008 stops it answering greetings at all. That pair is set on the Wraith
    * and the Krypt, which is why neither ever replies.
    */
-  hailOptions(t: NpcShip): { label: string; action: () => string | void }[] {
-    const opts: { label: string; action: () => string | void }[] = [];
+  hailOptions(t: NpcShip): { label: string; action: () => string | null | void }[] {
+    const opts: { label: string; action: () => string | null | void }[] = [];
     const record = getRecord(this.player, t.govtId);
     const flags2 = t.govtId >= 128 ? (GOVT_FLAGS2[String(t.govtId)] ?? 0) : 0;
     const untalkative = (flags2 & 0x0001) !== 0;
@@ -3105,6 +3222,7 @@ export class Game {
           action: () => {
             if (this.player.credits < bribe)
               return `"Your account's as empty as your threats."`;
+            playSnd(151, 0.4);
             this.player.credits -= bribe;
             t.hostile = false;
             t.phase = "leaving";
@@ -3146,7 +3264,7 @@ export class Game {
     if (!noGreeting) {
       opts.push({
         label: this.btnLabel(21, "Greetings"),
-        action: () => this.greetingInfo(t),
+        action: () => { playSnd(151, 0.4); return this.hailGreeting(t); },
       });
     }
     if (!untalkative) {
@@ -4333,7 +4451,9 @@ export class Game {
             };
             fighter.angle = npc.angle;
             fighter.vel = { ...npc.vel };
-            this.setNpcHostile(fighter);
+            fighter.lastAttacker = npc.lastAttacker;
+            if (npc.hostile) this.setNpcHostile(fighter);
+            else if (npc.ally) fighter.ally = true;
             this.npcs.push(fighter);
             if (bayWeap.sndId)
               playSndAt(bayWeap.sndId, 0.35, npc.pos.x - this.ship.pos.x, npc.pos.y - this.ship.pos.y);
@@ -4636,19 +4756,21 @@ export class Game {
       if (mine.length === 0 || !mine.every((n) => n.disabled)) continue;
       active.shipsDone = true;
       applySet(m.onShipDone, this.player.bits, this.bitHandlers());
-      this.message(`Objective complete: ${active.name}.`);
-      const doneText = descText(m.shipDoneText);
-      if (doneText) {
-        this.pendingMissionEvents.push({
-          title: active.name,
-          text: substituteTags(
-            doneText,
-            m,
-            active,
-            this.pilotName,
-            this.rankTags(),
-          ),
-        });
+      if (!isSilentMission(m)) {
+        this.message(`Objective complete: ${active.name}.`);
+        const doneText = descText(m.shipDoneText);
+        if (doneText) {
+          this.pendingMissionEvents.push({
+            title: active.name,
+            text: substituteTags(
+              doneText,
+              m,
+              active,
+              this.pilotName,
+              this.rankTags(),
+            ),
+          });
+        }
       }
     }
   }
@@ -4687,21 +4809,23 @@ export class Game {
         this.player.activeMissions = this.player.activeMissions.filter(
           (a) => a !== active,
         );
-        this.message(
-          `Mission failed: ${active.name} — the ship you were escorting was destroyed.`,
-        );
-        const failText = descText(m.failText);
-        if (failText) {
-          this.pendingMissionEvents.push({
-            title: `Mission failed: ${active.name}`,
-            text: substituteTags(
-              failText,
-              m,
-              active,
-              this.pilotName,
-              this.rankTags(),
-            ),
-          });
+        if (!isSilentMission(m)) {
+          this.message(
+            `Mission failed: ${active.name} — the ship you were escorting was destroyed.`,
+          );
+          const failText = descText(m.failText);
+          if (failText) {
+            this.pendingMissionEvents.push({
+              title: `Mission failed: ${active.name}`,
+              text: substituteTags(
+                failText,
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ),
+            });
+          }
         }
       }
     }
@@ -4748,21 +4872,23 @@ export class Game {
         if (active.shipsKilled >= active.shipsTotal) {
           active.shipsDone = true;
           applySet(m.onShipDone, this.player.bits, this.bitHandlers());
-          this.message(`Objective complete: ${active.name}.`);
-          const doneText = descText(m.shipDoneText);
-          if (doneText) {
-            this.pendingMissionEvents.push({
-              title: active.name,
-              text: substituteTags(
-                doneText,
-                m,
-                active,
-                this.pilotName,
-                this.rankTags(),
-              ),
-            });
+          if (!isSilentMission(m)) {
+            this.message(`Objective complete: ${active.name}.`);
+            const doneText = descText(m.shipDoneText);
+            if (doneText) {
+              this.pendingMissionEvents.push({
+                title: active.name,
+                text: substituteTags(
+                  doneText,
+                  m,
+                  active,
+                  this.pilotName,
+                  this.rankTags(),
+                ),
+              });
+            }
           }
-        } else {
+        } else if (!isSilentMission(m)) {
           this.message(
             `${active.name}: ${active.shipsKilled}/${active.shipsTotal} destroyed.`,
           );
@@ -4833,7 +4959,7 @@ export class Game {
         this.npcs.push(npc);
       }
       // escorts and protectors are not contacts to warn about
-      if (hostileSpawned) this.message(`Hostile contacts: ${active.name}.`);
+      if (hostileSpawned && (!mDef || !isSilentMission(mDef))) this.message(`Hostile contacts: ${active.name}.`);
     }
   }
 
@@ -4860,19 +4986,21 @@ export class Game {
         if (seen) {
           active.shipsDone = true;
           applySet(m.onShipDone, this.player.bits, this.bitHandlers());
-          this.message(`Observation complete: ${active.name}.`);
-          const doneText = descText(m.shipDoneText);
-          if (doneText) {
-            this.pendingMissionEvents.push({
-              title: active.name,
-              text: substituteTags(
-                doneText,
-                m,
-                active,
-                this.pilotName,
-                this.rankTags(),
-              ),
-            });
+          if (!isSilentMission(m)) {
+            this.message(`Observation complete: ${active.name}.`);
+            const doneText = descText(m.shipDoneText);
+            if (doneText) {
+              this.pendingMissionEvents.push({
+                title: active.name,
+                text: substituteTags(
+                  doneText,
+                  m,
+                  active,
+                  this.pilotName,
+                  this.rankTags(),
+                ),
+              });
+            }
           }
         }
       }
@@ -5940,7 +6068,10 @@ export class Game {
     this.infoUi.show({
       title: "Mission Log",
       sections: () =>
-        this.player.activeMissions.length
+        this.player.activeMissions.some((a) => {
+          const m = MISSIONS[String(a.misnId)];
+          return !m || !isSilentMission(m);
+        })
           ? []
           : [
               {
@@ -5950,7 +6081,12 @@ export class Game {
               },
             ],
       pickList: () =>
-        this.player.activeMissions.map((a) => this.missionPickItem(a)),
+        this.player.activeMissions
+          .filter((a) => {
+            const m = MISSIONS[String(a.misnId)];
+            return !m || !isSilentMission(m);
+          })
+          .map((a) => this.missionPickItem(a)),
       onAbortPick: (id) => {
         const active = this.player.activeMissions.find(
           (a) => this.missionPickId(a) === id,
@@ -6244,6 +6380,7 @@ export class Game {
     const { planet, dist } = near;
     if (dist > planet.radius * LAND_DIST + 60) {
       this.message(`Too far from ${planet.name} to land.`);
+      playSnd(SND.LANDING_DENIED, 0.55);
       return;
     }
     const isGate = planet.isHypergate || planet.isWormhole;
@@ -6254,12 +6391,20 @@ export class Game {
       );
       return;
     }
+    if (isGate && !this.hasHypergateAccess) {
+      this.message(
+        `${planet.name} requires a hypergate access code. Complete the Sigma Shipyards missions to obtain one.`,
+      );
+      playSnd(SND.LANDING_DENIED, 0.55);
+      return;
+    }
     if (!planet.landable && !isGate) {
       this.message(`You cannot land on ${planet.name}.`);
       return;
     }
     if (this.ship.speed > LAND_SPEED) {
       this.message("You are moving too fast to land.");
+      playSnd(SND.LANDING_DENIED, 0.55);
       return;
     }
 
@@ -6283,7 +6428,7 @@ export class Game {
           ? `${planet.name} refuses all traffic. You are not getting down there.`
           : `${planet.name} denies you landing clearance. They want a better record than yours.`,
       );
-      playSnd(SND.LANDING_DENIED, 0.55); // snd 153
+      playSnd(SND.LANDING_DENIED, 0.55); // snd 154
       return;
     }
 
@@ -6820,7 +6965,7 @@ export class Game {
         this.player.activeMissions = this.player.activeMissions.filter(
           (a) => a !== active,
         );
-        this.message(`Mission failed: ${active.name}.`);
+        if (!isSilentMission(m)) this.message(`Mission failed: ${active.name}.`);
       },
       moveToSystem: (systemId: number, keepPos: boolean) => {
         let sys;
@@ -6947,6 +7092,8 @@ export class Game {
       const m = MISSIONS[String(active.misnId)];
       if (!m) continue;
 
+      const silent = isSilentMission(m);
+
       // time limit
       if (
         active.timeLimit > 0 &&
@@ -6954,17 +7101,19 @@ export class Game {
       ) {
         applySet(m.onFailure, this.player.bits, this.bitHandlers());
         applyCompReward(this.player, m.compGovt, m.compReward, true);
-        const fail = descText(m.failText);
-        events.push({
-          title: `Mission failed: ${active.name}`,
-          text: substituteTags(
-            fail ?? "You have run out of time.",
-            m,
-            active,
-            this.pilotName,
-            this.rankTags(),
-          ),
-        });
+        if (!silent) {
+          const fail = descText(m.failText);
+          events.push({
+            title: `Mission failed: ${active.name}`,
+            text: substituteTags(
+              fail ?? "You have run out of time.",
+              m,
+              active,
+              this.pilotName,
+              this.rankTags(),
+            ),
+          });
+        }
         continue;
       }
 
@@ -6974,20 +7123,22 @@ export class Game {
         if (dest === null || dest === planetId) {
           active.shipsDone = true;
           applySet(m.onShipDone, this.player.bits, this.bitHandlers());
-          const doneText = descText(m.shipDoneText);
-          if (doneText) {
-            events.push({
-              title: active.name,
-              text: substituteTags(
-                doneText,
-                m,
-                active,
-                this.pilotName,
-                this.rankTags(),
-              ),
-            });
-          } else {
-            this.message(`${active.name}: your charges are safely delivered.`);
+          if (!silent) {
+            const doneText = descText(m.shipDoneText);
+            if (doneText) {
+              events.push({
+                title: active.name,
+                text: substituteTags(
+                  doneText,
+                  m,
+                  active,
+                  this.pilotName,
+                  this.rankTags(),
+                ),
+              });
+            } else {
+              this.message(`${active.name}: your charges are safely delivered.`);
+            }
           }
         }
       }
@@ -6997,18 +7148,20 @@ export class Game {
         active.travelDone = true;
         if (!active.cargoLoaded && active.cargoQty > 0) {
           active.cargoLoaded = true;
-          const load = descText(m.loadCargText);
-          if (load) {
-            events.push({
-              title: active.name,
-              text: substituteTags(
-                load,
-                m,
-                active,
-                this.pilotName,
-                this.rankTags(),
-              ),
-            });
+          if (!silent) {
+            const load = descText(m.loadCargText);
+            if (load) {
+              events.push({
+                title: active.name,
+                text: substituteTags(
+                  load,
+                  m,
+                  active,
+                  this.pilotName,
+                  this.rankTags(),
+                ),
+              });
+            }
           }
         } else if (
           active.cargoLoaded &&
@@ -7022,18 +7175,20 @@ export class Game {
            * regardless, so a mode-1 job unloaded a leg early.
            */
           active.cargoLoaded = false;
-          const drop = descText(m.dropCargText);
-          if (drop) {
-            events.push({
-              title: active.name,
-              text: substituteTags(
-                drop,
-                m,
-                active,
-                this.pilotName,
-                this.rankTags(),
-              ),
-            });
+          if (!silent) {
+            const drop = descText(m.dropCargText);
+            if (drop) {
+              events.push({
+                title: active.name,
+                text: substituteTags(
+                  drop,
+                  m,
+                  active,
+                  this.pilotName,
+                  this.rankTags(),
+                ),
+              });
+            }
           }
         }
       }
@@ -7059,18 +7214,20 @@ export class Game {
         // DropOffMode 1 delivers at the end of the run rather than mid-way
         if (active.cargoLoaded && m.dropOffMode === 1) {
           active.cargoLoaded = false;
-          const drop = descText(m.dropCargText);
-          if (drop) {
-            events.push({
-              title: active.name,
-              text: substituteTags(
-                drop,
-                m,
-                active,
-                this.pilotName,
-                this.rankTags(),
-              ),
-            });
+          if (!silent) {
+            const drop = descText(m.dropCargText);
+            if (drop) {
+              events.push({
+                title: active.name,
+                text: substituteTags(
+                  drop,
+                  m,
+                  active,
+                  this.pilotName,
+                  this.rankTags(),
+                ),
+              });
+            }
           }
         }
         applySet(m.onSuccess, this.player.bits, this.bitHandlers());
@@ -7082,21 +7239,23 @@ export class Game {
          */
         if (m.datePostInc > 0) this.advanceDays(m.datePostInc);
         applyCompReward(this.player, m.compGovt, m.compReward, false);
-        const comp = descText(m.compText);
-        events.push({
-          title: `Mission complete: ${active.name}`,
-          text:
-            substituteTags(
-              comp ?? "",
-              m,
-              active,
-              this.pilotName,
-              this.rankTags(),
-            ) ||
-            (active.pay > 0
-              ? `You are paid ${active.pay.toLocaleString()} credits.`
-              : "The job is done."),
-        });
+        if (!silent) {
+          const comp = descText(m.compText);
+          events.push({
+            title: `Mission complete: ${active.name}`,
+            text:
+              substituteTags(
+                comp ?? "",
+                m,
+                active,
+                this.pilotName,
+                this.rankTags(),
+              ) ||
+              (active.pay > 0
+                ? `You are paid ${active.pay.toLocaleString()} credits.`
+                : "The job is done."),
+          });
+        }
         continue;
       }
       remaining.push(active);
@@ -7304,6 +7463,8 @@ export class Game {
   // ---------------- NPCs ----------------
 
   private populateNpcs(): void {
+    this.bribedPlanets.clear(); // planet bribes don't carry across system entry
+    this.bribeState.clear();
     const n = Math.min(this.system.traffic, 2);
     for (let i = 0; i < n; i++) this.spawnNpc(true);
     this.placeLinkedPersons();

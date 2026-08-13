@@ -34,6 +34,15 @@ export function missionDisplayName(m: MissionType): string {
 }
 
 /**
+ * "Silent" missions run in the background: their names start with "Silent"
+ * (case-insensitive). They never appear in the mission log and don't generate
+ * completion or progress popups.
+ */
+export function isSilentMission(m: MissionType): boolean {
+  return m.name.toLowerCase().startsWith("silent");
+}
+
+/**
  * CargoType indexes STR# 4000, Nova's own list of the eighty things a mission
  * can ask you to carry. Its first six entries are the standard commodities, so
  * 0-5 still line up with the trade goods; beyond that it names the cargo the
