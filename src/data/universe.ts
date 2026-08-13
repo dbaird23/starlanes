@@ -981,7 +981,13 @@ export async function loadUniverse(): Promise<void> {
       armorDmg: w.armorDmg,
       shieldDmg: w.shieldDmg,
       guidance: w.guidance,
-      speed: w.speed * 0.6, // same scale factor as ship speeds
+      // wëap Speed is "pixels per frame * 100" (Bible, wëap section).
+      // At 30 fps: raw / 100 * 30 = raw * 0.3.  Ships use a different unit
+      // (the Bible gives no formula for shïp Speed, just "300 is average"),
+      // so the two scales are independent — and fast ships (Viper raw 525 →
+      // 315 px/s) should outrun EMP Torps (raw 750 → 225 px/s), which is a
+      // known Nova mechanic that the earlier * 0.6 factor broke.
+      speed: w.speed * 0.3,
       ammoType: w.ammoType,
       spinId: w.graphic >= 0 ? 3000 + w.graphic : null,
       sndId: w.sound >= 0 ? 200 + w.sound : null,

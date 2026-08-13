@@ -285,6 +285,7 @@ export class NpcShip extends Ship {
   done = false;
   hostile = false;
   fireCooldown = 0;
+  missileCooldown = 0;
   govtId = -1;
   aiType = 1;
   /** düde class this ship was drawn from — its InfoTypes drive hail replies */

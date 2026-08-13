@@ -417,7 +417,7 @@ export function personLoadout(
   person: PersonType,
   type: ShipType,
 ): StockWeapon[] {
-  if (!person.loadout.length) return type.stockWeapons;
+  if (!person.loadout.length) return type.stockWeapons.map((w) => ({ ...w, ammo: w.ammo === 0 ? -1 : w.ammo }));
   const merged = type.stockWeapons.map((w) => ({ ...w }));
   for (const extra of person.loadout) {
     const hit = merged.find((w) => w.id === extra.id);
@@ -428,7 +428,7 @@ export function personLoadout(
       merged.push({ ...extra });
     }
   }
-  return merged.filter((w) => w.count > 0);
+  return merged.filter((w) => w.count > 0).map((w) => ({ ...w, ammo: w.ammo === 0 ? -1 : w.ammo }));
 }
 
 export function stockAmmo(shipId: string): Record<string, number> {

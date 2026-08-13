@@ -8,18 +8,27 @@ import {
 } from "../data/universe";
 import type { PlayerState } from "../types";
 
-/** EV-style combat rating levels, thresholds in strength points. */
+/**
+ * EV-style combat rating levels, thresholds in accumulated strength points.
+ *
+ * The Bible (Appendix I) lists thresholds of 0, 1, 100, 200 … 25600, but notes
+ * they are multiplied by "some internal multiplier for adjustment". Ship
+ * strengths (Viper=30, Thunderhead=120, Kestrel=400) are the raw resource
+ * values; without a multiplier even one kill jumps several levels. The 10×
+ * scale applied here puts a new pilot ~30 Viper kills from "Not a Threat" and
+ * ~270 kills from "Dangerous", which matches the feel of the original.
+ */
 const RATING_LEVELS: [number, string][] = [
   [0, "Harmless"],
   [1, "Mostly Harmless"],
-  [100, "Not a Threat"],
-  [200, "Above Average"],
-  [400, "Respected"],
-  [800, "Dangerous"],
-  [1600, "Deadly"],
-  [3200, "Truly Fearsome"],
-  [6400, "Feared"],
-  [12800, "Ultimate Rating"],
+  [1000, "Not a Threat"],
+  [2000, "Above Average"],
+  [4000, "Respected"],
+  [8000, "Dangerous"],
+  [16000, "Deadly"],
+  [32000, "Truly Fearsome"],
+  [64000, "Feared"],
+  [128000, "Ultimate Rating"],
 ];
 
 export function ratingLevel(points: number): number {

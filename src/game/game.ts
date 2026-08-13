@@ -4131,6 +4131,14 @@ export class Game {
     // point rather than the target's current position — a crossing target at
     // speed will always be missed if we aim at where it is now.
     const type = npc.typeId ? SHIPS[npc.typeId] : null;
+    // Ensure each NPC has its own weapons array so ammo can be tracked per-ship.
+    // Normalize sw.ammo: 0 (unlimited) → -1 so that 0 can mean "depleted".
+    if (!npc.weapons && type) {
+      npc.weapons = type.stockWeapons.map((w) => ({
+        ...w,
+        ammo: w.ammo === 0 ? -1 : w.ammo,
+      }));
+    }
     const armament = npc.weapons ?? type?.stockWeapons;
     const stock = armament?.find((sw) => {
       const w = WEAPONS[String(sw.id)];
@@ -4154,6 +4162,7 @@ export class Game {
     if (fleeing && dist > 2400) npc.done = true; // escaped
 
     npc.fireCooldown = Math.max(0, npc.fireCooldown - dt);
+    npc.missileCooldown = Math.max(0, npc.missileCooldown - dt);
     /*
      * Aggress is "how close ships have to be before the person will attack
      * them, on a scale of 1 (close) to 3 (far)"; everything else keeps the
@@ -4203,6 +4212,31 @@ export class Game {
             ...fireWeapon(npc, weap, volley, false, target, aimAngle),
           );
         }
+      }
+    }
+
+    // Secondary weapons (missiles, rockets) fire independently on their own cooldown.
+    if (!fleeing && npc.missileCooldown <= 0 && dist < reach) {
+      const missileStock = armament?.find((sw) => {
+        const w = WEAPONS[String(sw.id)];
+        return w && isSecondary(w) && sw.count > 0 && sw.ammo !== 0;
+      });
+      if (missileStock) {
+        const missileWeap = WEAPONS[String(missileStock.id)]!;
+        const volley = volleyCount(missileWeap, missileStock.count);
+        npc.missileCooldown = reloadInterval(missileWeap, missileStock.count);
+        if (missileStock.ammo > 0) missileStock.ammo -= volley;
+        if (missileWeap.sndId) {
+          playSndAt(
+            missileWeap.sndId,
+            0.35,
+            npc.pos.x - this.ship.pos.x,
+            npc.pos.y - this.ship.pos.y,
+          );
+        }
+        this.projectiles.push(
+          ...fireWeapon(npc, missileWeap, volley, false, target, undefined),
+        );
       }
     }
   }
