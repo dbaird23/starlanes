@@ -473,8 +473,16 @@ export class HudUi {
     }
     this.target.classList.remove("empty");
     const type = t.typeId ? SHIPS[t.typeId] : undefined;
-    const [, subtitle] = (type?.name ?? "").split(";");
-    const tone = t.hostile ? "hostile" : t.personId !== null ? "named" : "";
+    const typeName = (type?.name ?? "").split(";")[0];
+    const isNamed = t.personId !== null;
+    // Named captains: head shows their personal name, so show the hull type +
+    // subtitle below (e.g. "Pirate Starbridge Class B"). Unnamed contacts: head
+    // already shows the hull class, so show only the subtitle (e.g. "Class B").
+    const hullVariant = type?.subtitle?.trim() || undefined;
+    const variant: string | undefined = isNamed
+      ? [typeName, hullVariant].filter(Boolean).join(" ") || undefined
+      : hullVariant;
+    const tone = t.hostile ? "hostile" : isNamed ? "named" : "";
     const status = t.disabled
       ? "Disabled"
       : t.shield >= t.maxShield * 0.01 || !t.maxShield
@@ -492,7 +500,7 @@ export class HudUi {
     setHtml(
       this.target,
       `<div class="hud-targ-head ${tone}">${esc(g.hailLabel(t))}</div>
-       ${subtitle ? `<div class="hud-targ-sub">${esc(subtitle.trim())}</div>` : ""}
+       ${variant ? `<div class="hud-targ-sub">${esc(variant)}</div>` : ""}
        <div class="hud-targ-art"></div>
        <div class="hud-targ-foot">
          <span class="${t.disabled ? "bad" : ""}">${esc(status)}</span>
