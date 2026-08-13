@@ -74,25 +74,29 @@ const GATE_TINT = new THREE.Color(0.88, 0.91, 1.0);
  * is the wrong half of the reference: the movies' hoops are dark *and* you can
  * read their construction.
  *
- * Measured against the stand-in sky at 120 units, reading the ring's own pixel
- * spread as the test of whether the tile is doing anything:
+ * Measured against the **authored** nebula at 130 units, isolating the hoop's
+ * pixels by differencing a frame with the gates hidden — the sky is far too
+ * high-contrast for "the darkest few percent of the frame" to mean the ring:
  *
- * | flat/rim  | ring | spread | sky  |
- * |-----------|------|--------|------|
- * | 0.55/0.9  | 37.7 | 1.31   | 77.5 |
- * | 1.6/2.0   | 50.9 | 2.16   | 77.6 |
- * | 2.4/2.6   | 56.3 | 2.12   | 77.8 |
- * | 3.4/3.4   | 58.9 | 3.42   | 78.9 |
+ * | flat/rim | ring | vs sky |
+ * |----------|------|--------|
+ * | 1.6/2.0  | 34.7 | 0.51   |
+ * | 4/5      | 48.5 | 0.72   |
+ * | 7/9      | 61.0 | 0.90   |
+ * | 11/14    | 73.8 | 1.09   |
  *
- * 1.6/2.0 recovers the material — spread 1.31 to 2.16, as much as 2.4 gets —
- * while leaving the hoop darker, and dark against bright is the reference.
+ * (sky mean 67.7.) 1.6/2.0 is kept: the tile's rivet collars are plainly legible
+ * there, and a ratio of 0.51 leaves the hoop clearly darker than the cloud —
+ * which is both what the source movies do *and* what the mini-game needs, since
+ * an unlit gate must not compete with the lit one you are being sent through.
  *
- * **These want a final pass once the authored nebula lands**, and so does
- * `uSky`: it is a *constant*, not sampled from the sky texture, so a brighter
- * authored nebula lifts the background without lifting the hoop. That happens to
- * push contrast the right way, but it is luck rather than design — when
- * `race/nebula.jpg` is final, average it and feed the result in here.
- * `setAmbient` exists to make that pass cheap.
+ * Note the spread-within-the-ring measure used while the sky was a procedural
+ * stand-in is useless here: against a high-contrast nebula it is dominated by
+ * silhouette edges and reads flat (~11) at every gain. Mean against sky is the
+ * signal.
+ *
+ * `setAmbient` keeps these live-tunable, because they are a ratio against the
+ * sky and the sky is now art that may be revised.
  */
 const RING_AMB = 1.6;
 const RING_AMB_RIM = 2.0;
@@ -466,13 +470,89 @@ export class RaceScene {
       asset("race/nebula.jpg"),
       (t) => {
         t.wrapS = THREE.RepeatWrapping;
+        // the top and bottom of an equirect are the poles, not a wrap — repeat
+        // here and the zenith samples the nadir
         t.wrapT = THREE.ClampToEdgeWrapping;
+        /*
+         * **No mipmaps on the sky, and this is a correctness fix rather than a
+         * quality one.**
+         *
+         * The equirect lookup derives `u` from `atan(d.z, d.x)`, which has a
+         * branch cut at -X: across the single triangle straddling it, `u` sweeps
+         * the whole 0..1 range. The GPU picks its mip level from the screen-space
+         * derivative of the uv, so at that one seam the derivative is enormous,
+         * it selects the smallest mip — a 1x1 average of the entire nebula — and
+         * paints it as a hairline of flat grey straight down the sky. It reads as
+         * a tear in the texture and is nothing of the kind.
+         *
+         * Dropping mips removes the mechanism outright, and costs nothing here:
+         * the sky is a fixed distance from the eye and covers the frame at a
+         * near-constant texel density (3548px over 360 degrees against a viewport
+         * of ~800px over 53), so it is being magnified, not minified. There is no
+         * mip to want.
+         */
+        t.generateMipmaps = false;
+        t.minFilter = THREE.LinearFilter;
         this.skyMat.uniforms.map.value = t;
         this.skyMat.uniforms.uTexMix.value = 1;
+        /*
+         * **The painted sky brings its own stars, so ours have to go.** The
+         * point cloud exists to keep the stand-in sky from being an empty
+         * gradient; over an authored nebula it is a second, differently-scaled
+         * starfield laid on top of the first, and the two do not agree about
+         * depth or density. It reads as dirt on the lens.
+         */
+        this.starField.visible = false;
+        this.sampleSky(t);
       },
       undefined,
       () => {},
     );
+  }
+
+  /**
+   * Light the hoops with the sky they are actually in.
+   *
+   * `uSky` was a hand-picked constant, which was fine while the sky was a
+   * procedural gradient and wrong the moment real art landed: a bright nebula
+   * lifted the background and left the rings lit by a dim grey that no longer
+   * existed anywhere in frame. Averaging the texture ties the two together, so
+   * swapping the nebula for a darker or warmer one relights the course for free.
+   *
+   * The mean is taken in **linear** light (the texel squared), because that is
+   * the space the shader multiplies albedo in — averaging the sRGB bytes instead
+   * over-reports a high-contrast image like this one, where most of the frame is
+   * dark dust and the bright cores are small.
+   */
+  private sampleSky(t: THREE.Texture): void {
+    const img = t.image as HTMLImageElement;
+    if (!img?.width) return;
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 32;
+    const cx = c.getContext("2d", { willReadFrequently: true });
+    if (!cx) return;
+    cx.drawImage(img, 0, 0, 64, 32);
+    const d = cx.getImageData(0, 0, 64, 32).data;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    const n = d.length / 4;
+    for (let i = 0; i < d.length; i += 4) {
+      r += (d[i] / 255) ** 2;
+      g += (d[i + 1] / 255) ** 2;
+      b += (d[i + 2] / 255) ** 2;
+    }
+    this.skyCol.setRGB(r / n, g / n, b / n);
+    for (const s of this.gateSlots) (s.mat.uniforms.uSky.value as THREE.Color).copy(this.skyCol);
+    for (const s of this.spriteSlots) {
+      if (s) (s.mat.uniforms.uSky.value as THREE.Color).copy(this.skyCol);
+    }
+  }
+
+  /** What the sky is currently contributing as ambient. Probe hook. */
+  get ambientColour(): [number, number, number] {
+    return [this.skyCol.r, this.skyCol.g, this.skyCol.b];
   }
 
   /** A deterministic point cloud, from the course's own seed. */

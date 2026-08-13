@@ -21,6 +21,17 @@ const KEY_TURN = 1;
 
 const clamp1 = (v: number): number => (v < -1 ? -1 : v > 1 ? 1 : v);
 
+/**
+ * The secondary readout colour, and it is *not* the on-foot HUD's `#7d8a99`.
+ *
+ * That grey was chosen against a dead corridor, where the darkest thing in frame
+ * is the background. Here the background is an authored nebula with cores far
+ * brighter than the type, and a mid grey simply disappears over them. This keeps
+ * the same hierarchy — secondary is still visibly quieter than the white values
+ * — at a level that survives both ends of the sky.
+ */
+const LABEL = "rgba(214,228,244,0.82)";
+
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
 const DISPLAY = '"Chakra Petch", "Verdana", sans-serif';
 
@@ -281,6 +292,21 @@ export class RaceSession {
     // ultrawide instead of eating the view
     const s = Math.max(0.75, Math.min(1.4, Math.min(w / 1280, h / 800)));
 
+    /*
+     * **Everything on this layer carries a drop shadow, and it is not styling.**
+     *
+     * The on-foot HUD's colours were picked against a dead corridor, which is
+     * near black — pale grey on black is a contrast ratio you cannot lose. Here
+     * the backdrop is an authored nebula whose bright cores are far lighter than
+     * the type, so the lap counter and the gate distance vanish exactly when you
+     * fly past something bright. A shadow costs one state change and holds the
+     * readouts legible over both ends of the sky.
+     */
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.9)";
+    ctx.shadowBlur = 4 * s;
+    ctx.shadowOffsetY = 1 * s;
+
     // the clip shake moves the *marker*, not the readouts — a lap timer that
     // jitters reads as a rendering fault rather than as an impact
     if (world.shake > 0) {
@@ -297,7 +323,7 @@ export class RaceSession {
     ctx.textBaseline = "alphabetic";
 
     /* speed, bottom left */
-    ctx.fillStyle = "#7d8a99";
+    ctx.fillStyle = LABEL;
     ctx.font = `${10 * s}px ${MONO}`;
     ctx.textAlign = "left";
     ctx.fillText("SPEED", pad, h - pad - 26 * s);
@@ -307,7 +333,7 @@ export class RaceSession {
 
     /* boost, bottom right */
     const bw = 120 * s;
-    ctx.fillStyle = "#7d8a99";
+    ctx.fillStyle = LABEL;
     ctx.font = `${10 * s}px ${MONO}`;
     ctx.textAlign = "right";
     ctx.fillText("BOOST", w - pad, h - pad - 26 * s);
@@ -326,7 +352,7 @@ export class RaceSession {
       w / 2,
       pad + 20 * s,
     );
-    ctx.fillStyle = "#7d8a99";
+    ctx.fillStyle = LABEL;
     ctx.font = `${11 * s}px ${MONO}`;
     ctx.fillText(
       `GATE ${p.nextGate + 1}/${world.course.gates.length}   ${world.time.toFixed(1)}s`,
@@ -377,6 +403,8 @@ export class RaceSession {
         "Enter — back to the bar",
       ]);
     }
+
+    ctx.restore();
   }
 
   /**
