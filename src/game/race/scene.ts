@@ -52,7 +52,50 @@ const FOG_K = 0.00055;
 /** Stars painted into the sky sphere as a point cloud. */
 const STAR_COUNT = 1400;
 
-const GATE_TINT = new THREE.Color(0.42, 0.45, 0.5);
+/**
+ * Barely a tint at all, and deliberately so.
+ *
+ * This was 0.42/0.45/0.50 while the hoop wore a flat 0.55 grey stand-in, where
+ * it was doing the work of *being* the material. `ring.png` is already dark
+ * oxidised steel, so the same multiplier darkens it a second time and the tile's
+ * rivet collars disappear into black — the texture loads, and you cannot tell.
+ * Left near white the tile's own value carries, and the cool cast stays because
+ * everything structural in this game leans cool.
+ */
+const GATE_TINT = new THREE.Color(0.88, 0.91, 1.0);
+
+/**
+ * How much of the nebula's light a hoop bounces — flat, and again along the rim.
+ *
+ * A hoop has no light on it but the sky, so this is the *only* thing deciding
+ * whether the tile's rivet collars are visible or crushed to black. At the
+ * original 0.55/0.9 a real dark-steel tile came out at about 27/255 against a
+ * sky at 88 — legible as a silhouette and completely mute as a material, which
+ * is the wrong half of the reference: the movies' hoops are dark *and* you can
+ * read their construction.
+ *
+ * Measured against the stand-in sky at 120 units, reading the ring's own pixel
+ * spread as the test of whether the tile is doing anything:
+ *
+ * | flat/rim  | ring | spread | sky  |
+ * |-----------|------|--------|------|
+ * | 0.55/0.9  | 37.7 | 1.31   | 77.5 |
+ * | 1.6/2.0   | 50.9 | 2.16   | 77.6 |
+ * | 2.4/2.6   | 56.3 | 2.12   | 77.8 |
+ * | 3.4/3.4   | 58.9 | 3.42   | 78.9 |
+ *
+ * 1.6/2.0 recovers the material — spread 1.31 to 2.16, as much as 2.4 gets —
+ * while leaving the hoop darker, and dark against bright is the reference.
+ *
+ * **These want a final pass once the authored nebula lands**, and so does
+ * `uSky`: it is a *constant*, not sampled from the sky texture, so a brighter
+ * authored nebula lifts the background without lifting the hoop. That happens to
+ * push contrast the right way, but it is luck rather than design — when
+ * `race/nebula.jpg` is final, average it and feed the result in here.
+ * `setAmbient` exists to make that pass cheap.
+ */
+const RING_AMB = 1.6;
+const RING_AMB_RIM = 2.0;
 /** The next hoop's amber. Deliberately the one warm thing in a cool frame. */
 const GATE_GLOW = new THREE.Color(1.0, 0.66, 0.22);
 
@@ -97,6 +140,7 @@ uniform vec3 uTint;
 uniform vec3 uGlow;
 uniform vec3 uCam;
 uniform vec3 uSky;
+uniform vec2 uAmb;      // x flat sky bounce, y extra along the rim
 uniform float uEmit;
 uniform float uPulse;
 varying vec2 vUv;
@@ -123,7 +167,7 @@ void main() {
   // a rim term, so the tube reads as a lit cylinder rather than a flat ribbon
   float rim = pow(1.0 - abs(dot(vNrm, V)), 2.0);
 
-  vec3 col = alb * (uSky * (0.55 + 0.9 * rim));
+  vec3 col = alb * (uSky * (uAmb.x + uAmb.y * rim));
   // the amber core sits above 1.0 and is rolled off by the shoulder, which is
   // what keeps a lit hoop reading as a light instead of a white blob
   col += uGlow * uEmit * (1.5 + 0.5 * uPulse) * (0.35 + 0.65 * rim);
@@ -331,6 +375,7 @@ export class RaceScene {
           uGlow: { value: GATE_GLOW.clone() },
           uCam: { value: new THREE.Vector3() },
           uSky: { value: this.skyCol.clone() },
+          uAmb: { value: new THREE.Vector2(RING_AMB, RING_AMB_RIM) },
           uEmit: { value: 0 },
           uPulse: { value: 0 },
         },
@@ -380,6 +425,17 @@ export class RaceScene {
   /** The GL canvas, for the caller to blit. */
   get domElement(): HTMLCanvasElement {
     return this.renderer.domElement;
+  }
+
+  /**
+   * Retune how much sky a hoop bounces, live. A probe hook for the art pass —
+   * the right values are a ratio against the nebula's own brightness, so they
+   * cannot be settled until the authored sky is in.
+   */
+  setAmbient(flat: number, rim: number): void {
+    for (const s of this.gateSlots) {
+      (s.mat.uniforms.uAmb.value as THREE.Vector2).set(flat, rim);
+    }
   }
 
   /**
