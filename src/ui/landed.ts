@@ -18,7 +18,7 @@ import {
   shipInfoPict,
   WEAPONS,
 } from "../data/universe";
-import type { Game, GateDestination } from "../game/game";
+import type { Game, GateDestination, RaceResult } from "../game/game";
 import {
   MAX_ESCORTS,
   escortHireFee,
@@ -131,6 +131,11 @@ function btnLabel(index: number, fallback: string): string {
   return STR_LISTS["150"]?.[index] ?? fallback;
 }
 
+/** How a placing is written on the results banner. */
+function ordinalWord(n: number): string {
+  return n === 1 ? "You win" : n === 2 ? "Second" : n === 3 ? "Third" : "Fourth";
+}
+
 /** Stable per-world number, so a day's news doesn't reshuffle on every redraw. */
 function spobSeed(id: string): number {
   let h = 0;
@@ -175,12 +180,13 @@ export class LandedUi {
   private selectedHire: string | null = null;
   private hireScroll = 0;
   private gamblePick: number | null = null;
-  private gambleResult: {
-    winner: number;
-    won: boolean;
-    stake: number;
-    payout: number;
-  } | null = null;
+  /**
+   * Set from the race's own `onOutcome` while the landed UI is suspended, and
+   * read when `resume()` re-renders the counter you left. That is the whole
+   * return path: the mini-game never reaches into this screen, it hands back a
+   * result and the screen redraws itself.
+   */
+  private gambleResult: RaceResult | null = null;
   private barMissions: MissionType[] = [];
   private spaceportOffers: MissionType[] = [];
   /**
@@ -1688,18 +1694,28 @@ export class LandedUi {
   }
 
   /**
-   * Gamble: Nova's Galaxy Racing Network. You back one of four racers, put
-   * money on it and watch the result. The art is all shipped — PICT 8529 is
-   * the backdrop and 8530-8533 / 8540-8543 / 8550-8553 / 8560-8563 are the
-   * four racers in their unclicked, clicked, winning and disabled states.
-   * Stakes come from STR# 150's own "Bet 1000" and "Bet 5000" captions.
+   * Nova's Galaxy Racing Network — the sign-on desk for a race you fly.
+   *
+   * It used to be the whole feature: back a colour, put money on it, and a die
+   * roll told you who won. **The colour you pick is now the Viper you get into**,
+   * and the other three become your rivals. That reading is what lets all
+   * sixteen shipped racer PICTs keep earning their place with no new art —
+   * 8530-8533 unclicked, 8540-8543 as your pick, 8550-8553 for whoever takes it,
+   * and 8560-8563, extracted years ago and reached by no code path until now, as
+   * the also-rans.
+   *
+   * Stakes still come from STR# 150's own "Bet 1000" and "Bet 5000" captions.
+   * The practice run is ours, and it earns its place: without it the first
+   * 5,000-credit bet is a bet on a course you have never seen, which is the die
+   * roll again with extra steps.
    */
   private renderGamble(): void {
     const g = this.game;
     const p = this.planet!;
     const bg = UI_PICTS["8529"];
-    const racer = (i: number, state: "idle" | "picked" | "won") => {
-      const base = state === "won" ? 8550 : state === "picked" ? 8540 : 8530;
+    const racer = (i: number, state: "idle" | "picked" | "won" | "beaten") => {
+      const base =
+        state === "won" ? 8550 : state === "beaten" ? 8560 : state === "picked" ? 8540 : 8530;
       return UI_PICTS[String(base + i)];
     };
     const picked = this.gamblePick;
@@ -1708,10 +1724,14 @@ export class LandedUi {
 
     const cells = [0, 1, 2, 3]
       .map((i) => {
-        const state = result
-          ? i === result.winner
-            ? "won"
-            : "idle"
+        // after a race the cells report the result: you in your own colour,
+        // everyone else beaten — or you beaten and nobody lit
+        const state: "idle" | "picked" | "won" | "beaten" = result
+          ? i === picked
+            ? result.won
+              ? "won"
+              : "beaten"
+            : "beaten"
           : i === picked
             ? "picked"
             : "idle";
@@ -1725,28 +1745,41 @@ export class LandedUi {
 
     let banner: string;
     if (result) {
-      banner = result.won
-        ? `${btnLabel(369, "Your winnings")}: ${result.payout.toLocaleString()} cr — ${RACER_NAMES[result.winner]} takes it.`
-        : `${RACER_NAMES[result.winner]} takes it. You lose ${result.stake.toLocaleString()} cr.`;
+      const where = ordinalWord(result.place);
+      const clock = `${result.totalSec.toFixed(1)}s, best lap ${result.bestLapSec > 0 ? result.bestLapSec.toFixed(2) + "s" : "—"}`;
+      if (result.retired) {
+        banner = result.stake
+          ? `You pulled out. ${result.stake.toLocaleString()} cr forfeit.`
+          : "You pulled out of the practice run.";
+      } else if (result.payout > result.stake) {
+        banner = `${where} — ${clock}. ${btnLabel(369, "Your winnings")}: ${result.payout.toLocaleString()} cr.`;
+      } else if (result.payout === result.stake && result.stake > 0) {
+        banner = `${where} — ${clock}. You get your ${result.stake.toLocaleString()} cr back.`;
+      } else if (result.stake > 0) {
+        banner = `${where} — ${clock}. You lose ${result.stake.toLocaleString()} cr.`;
+      } else {
+        banner = `${where} — ${clock}.`;
+      }
     } else if (picked === null) {
       banner =
-        "You're tuned to GRN, Galaxy Racing Network! Choose your color for the next race.";
-    } else if (!stakes.length) {
-      banner =
-        STR_LISTS["2002"]?.[360] ??
-        "Sorry, you don't have enough credits to bet today.";
+        "You're tuned to GRN, Galaxy Racing Network! Choose your color — you'll be flying it.";
     } else {
-      banner = `${RACER_NAMES[picked]} it is. ${STR_LISTS["2002"]?.[371] ?? "Amount to bet:"}`;
+      banner = `${RACER_NAMES[picked]} it is. ${
+        stakes.length
+          ? (STR_LISTS["2002"]?.[371] ?? "Amount to bet:")
+          : (STR_LISTS["2002"]?.[360] ?? "Not enough credits to bet — take a practice run.")
+      }`;
     }
 
     const betRow =
-      !result && picked !== null && stakes.length
-        ? stakes
-            .map(
+      !result && picked !== null
+        ? [
+            ...stakes.map(
               (v) =>
                 `<button class="evbtn" data-bet="${v}">${btnLabel(v === 1000 ? 13 : 14, `Bet ${v}`)}</button>`,
-            )
-            .join("")
+            ),
+            `<button class="evbtn" data-bet="0">Practice run</button>`,
+          ].join("")
         : "";
 
     this.root.innerHTML = `
@@ -1759,7 +1792,7 @@ export class LandedUi {
         </div>
         <div class="btnrow">
           ${betRow}
-          ${result ? `<button class="evbtn" id="btn-again">${btnLabel(58, "Bet")} again</button>` : ""}
+          ${result ? `<button class="evbtn" id="btn-again">Race again</button>` : ""}
           <button class="evbtn" id="btn-back">${btnLabel(0, "Leave")}</button>
         </div>
       </div>`;
@@ -1773,13 +1806,10 @@ export class LandedUi {
     });
     this.root.querySelectorAll("button[data-bet]").forEach((b) => {
       b.addEventListener("click", () => {
-        const stake = Number((b as HTMLButtonElement).dataset.bet);
-        this.gambleResult = g.runRace(this.gamblePick!, stake);
-        this.render();
+        this.startGrnRace(Number((b as HTMLButtonElement).dataset.bet));
       });
     });
     this.root.querySelector("#btn-again")?.addEventListener("click", () => {
-      this.gamblePick = null;
       this.gambleResult = null;
       this.render();
     });
@@ -1787,6 +1817,28 @@ export class LandedUi {
       this.gamblePick = null;
       this.gambleResult = null;
       this.setView("bar");
+    });
+  }
+
+  /**
+   * Hand over to the cockpit.
+   *
+   * The course is seeded from the **planet**, using the same `spobSeed` the news
+   * already uses for exactly this reason: every world then has its own permanent
+   * track. Betting 5,000 at Levo twice is betting on a course you now know, and
+   * a practice run is worth taking because what it teaches stays true.
+   *
+   * `Game.startRace` suspends this screen and debits the stake; the callback
+   * fires while we are suspended, so it only stores the result. `resume()` then
+   * re-renders the counter and the result appears — the mini-game never touches
+   * the DOM it came from.
+   */
+  private startGrnRace(stake: number): void {
+    const pick = this.gamblePick ?? 0;
+    const seed = spobSeed(this.planet!.id);
+    this.gambleResult = null;
+    this.game.startGrnRace(pick, stake, seed, (r) => {
+      this.gambleResult = r;
     });
   }
 

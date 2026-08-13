@@ -211,7 +211,24 @@ import { FpsSession } from "./fps";
 import { DERELICT, TEST_CORRIDOR } from "./fps/level";
 import type { FpsOptions } from "./fps/types";
 import { RaceSession } from "./race";
-import type { RaceOptions } from "./race/types";
+import type { RaceOptions, RaceOutcome } from "./race/types";
+
+/**
+ * What the bar screen shows after a race. A superset of the shape `runRace`
+ * returned, so the Galaxy Racing Network panel's banner and its winning-racer
+ * cell needed only cosmetic edits.
+ */
+export interface RaceResult {
+  /** 1-4 */
+  place: number;
+  won: boolean;
+  stake: number;
+  /** gross credited back; the stake was debited on entry */
+  payout: number;
+  retired: boolean;
+  totalSec: number;
+  bestLapSec: number;
+}
 
 type Mode = "menu" | "flight" | "map" | "landed" | "fps" | "race";
 
@@ -1362,9 +1379,33 @@ export class Game {
   }
 
   /**
-   * The arcade entry, reachable from `window.game` and from nothing in the UI
-   * yet. No stake and no `onOutcome`, so it cannot touch the pilot at all —
-   * the same property that makes the derelict a diversion.
+   * Enter a GRN meeting: the bar's entry point.
+   *
+   * `livery` is the colour you backed, and you *fly* it — the other three
+   * become your rivals, which is what lets the four shipped racer PICTs keep
+   * working with no new art.
+   *
+   * A stake of 0 is a practice run, and it is deliberately not a special case:
+   * `startRace` debits nothing, and `settleRace` multiplies zero by whatever the
+   * placement was worth. Without a practice run the first 5,000-credit bet is a
+   * bet on a course you have never seen, which is `Math.random()` with extra
+   * steps — the exact thing this replaces.
+   */
+  startGrnRace(livery: number, stake: number, seed: number, onDone: (r: RaceResult) => void): void {
+    this.startRace({
+      title: stake > 0 ? `${stake.toLocaleString()} cr` : "Practice run",
+      seed,
+      laps: 3,
+      livery,
+      shipId: "167", // the Comara Racing Viper — its own desc is about racing
+      stake,
+      onOutcome: (o) => onDone(this.settleRace(o)),
+    });
+  }
+
+  /**
+   * The arcade entry, reachable from `window.game` and from nothing in the UI.
+   * No stake and no `onOutcome`, so it cannot touch the pilot at all.
    */
   startTestRace(seed = 1234): void {
     this.startRace({
@@ -1372,7 +1413,7 @@ export class Game {
       seed,
       laps: 3,
       livery: 0,
-      shipId: "167", // the Comara Racing Viper
+      shipId: "167",
       stake: 0,
     });
   }
@@ -7113,21 +7154,40 @@ export class Game {
     return out;
   }
 
-  runRace(
-    pick: number,
-    stake: number,
-  ): {
-    winner: number;
-    won: boolean;
-    stake: number;
-    payout: number;
-  } {
-    const bet = Math.max(0, Math.min(stake, this.player.credits));
-    const winner = Math.floor(Math.random() * 4);
-    const won = winner === pick;
-    const payout = won ? bet * 3 : 0;
-    this.player.credits += won ? payout : -bet;
-    return { winner, won, stake: bet, payout };
+  /**
+   * Settle a race you have just flown. **The whole money model, in one place.**
+   *
+   * This replaces `runRace`, which rolled a uniform winner and paid 3x on a
+   * match. The payout table had to tighten once the result stopped being a die
+   * roll: a bet you can win *on purpose* pays out far more often than one in
+   * four, so 3x gross on top of a returned stake would be a money printer.
+   *
+   *   1st  3x stake gross  (net +2x)
+   *   2nd  1x stake gross  (net 0 — walk away even)
+   *   3rd  nothing         (net -1x)
+   *   4th  nothing         (net -1x)
+   *
+   * Second paying back the stake is the deliberate part. A decent pilot places
+   * second often, and a push is not a punishment for a run that nearly landed.
+   *
+   * **The stake is already gone** — `startRace` debits on entry — so this only
+   * ever pays out, and a retirement is simply a result that pays nothing. That
+   * is what makes forfeiting need no bookkeeping of its own.
+   */
+  settleRace(o: RaceOutcome): RaceResult {
+    const stake = o.stake;
+    const mult = o.retired ? 0 : o.place === 1 ? 3 : o.place === 2 ? 1 : 0;
+    const payout = Math.round(stake * mult);
+    this.player.credits += payout;
+    return {
+      place: o.place,
+      won: o.place === 1 && !o.retired,
+      stake,
+      payout,
+      retired: o.retired,
+      totalSec: o.totalSec,
+      bestLapSec: o.bestLapSec,
+    };
   }
 
   buyOutfit(outfId: string): { ok: boolean; reason?: string } {
