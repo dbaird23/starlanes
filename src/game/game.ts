@@ -2461,7 +2461,7 @@ export class Game {
       t.pos.x - this.ship.pos.x,
       t.pos.y - this.ship.pos.y,
     );
-    if (dist > t.radius + this.ship.radius + 60) {
+    if (dist > 20) {
       this.message("Too far away to board. Get closer.");
       return;
     }
@@ -2500,6 +2500,11 @@ export class Game {
    * commodities.
    */
   private openPlunder(t: NpcShip): void {
+    // Both ships come to a dead stop when the boarding party crosses over.
+    this.ship.vel.x = 0;
+    this.ship.vel.y = 0;
+    t.vel.x = 0;
+    t.vel.y = 0;
     const hold: PlunderHold = { credits: 0, cargo: {}, ammo: {}, energy: 0 };
     if (t.booty > 0 && (t.bootyFlags & 0x40) !== 0) hold.credits = t.booty;
     else if (t.booty > 0) hold.credits = t.booty;
@@ -4075,16 +4080,60 @@ export class Game {
       return;
     }
     if ((target as NpcShip).disabled) {
-      if (BOARDER_GOVTS.has(npc.govtId)) {
-        // Approach and hold on the disabled ship to board it.
+      if (BOARDER_GOVTS.has(npc.govtId) && !(target as NpcShip).boarded) {
+        // Three-phase boarding approach:
+        //   approach  → fly straight at the target
+        //   brake     → face retrograde and thrust until fully stopped
+        //               (boardingTimer = -1 marks this phase so an overshoot
+        //               doesn't flip back to approach)
+        //   dock      → if still too far, nudge slowly toward target and drift;
+        //               increment timer until boarding completes
         const dx = target.pos.x - npc.pos.x;
         const dy = target.pos.y - npc.pos.y;
         const dist = Math.hypot(dx, dy);
-        if (dist > 80) {
+        const DOCK_RANGE = 12;
+        const DOCK_SPEED = 15;
+        const DRIFT_SPEED = 30;
+        const BRAKE_DIST = 350; // commit to braking inside this distance
+        const BOARD_TIME = 2.0;
+
+        const braking = npc.boardingTimer === -1;
+        if (!braking && dist > BRAKE_DIST) {
+          // Approach — full thrust toward target.
           const facing = npc.steerToward(dt, Math.atan2(dy, dx));
-          npc.update(dt, 0, facing && dist > 120);
+          npc.update(dt, 0, facing);
+        } else if (braking || npc.speed > DOCK_SPEED) {
+          // Brake — committed; face retrograde and thrust until stopped.
+          npc.boardingTimer = -1;
+          if (npc.speed > DOCK_SPEED) {
+            const brakeAngle = Math.atan2(-npc.vel.y, -npc.vel.x);
+            const facing = npc.steerToward(dt, brakeAngle);
+            npc.update(dt, 0, facing);
+          } else {
+            // Fully stopped — exit braking phase.
+            npc.vel.x = 0;
+            npc.vel.y = 0;
+            npc.boardingTimer = 0;
+            npc.update(dt, 0, false);
+          }
         } else {
+          // Stopped. If too far away, add a slow drift toward the target.
+          if (dist > DOCK_RANGE) {
+            const len = dist || 1;
+            npc.vel.x = (dx / len) * DRIFT_SPEED;
+            npc.vel.y = (dy / len) * DRIFT_SPEED;
+          }
           npc.update(dt, 0, false);
+          if (dist <= DOCK_RANGE) {
+            npc.boardingTimer += dt;
+            if (npc.boardingTimer >= BOARD_TIME) {
+              (target as NpcShip).boarded = true;
+              npc.vel.x = 0;
+              npc.vel.y = 0;
+              target.vel.x = 0;
+              target.vel.y = 0;
+            }
+          }
         }
         return;
       }
@@ -4137,20 +4186,22 @@ export class Game {
       npc.weapons = type.stockWeapons.map((w) => ({
         ...w,
         ammo: w.ammo === 0 ? -1 : w.ammo,
+        cooldown: 0,
       }));
     }
     const armament = npc.weapons ?? type?.stockWeapons;
-    const stock = armament?.find((sw) => {
+    // First primary weapon drives the nose-aim / lead calculation for steering.
+    const firstPrimary = armament?.find((sw) => {
       const w = WEAPONS[String(sw.id)];
       return w && isPrimary(w);
     });
-    const weap = stock ? WEAPONS[String(stock.id)] : null;
+    const firstWeap = firstPrimary ? WEAPONS[String(firstPrimary.id)] : null;
 
     // Intercept point: for projectile weapons use leadPoint; beams are instant
     // so aim at the current position.
     const aimPos =
-      !fleeing && weap && !isBeam(weap) && weap.speed > 0
-        ? leadPoint(npc, target, weap.speed)
+      !fleeing && firstWeap && !isBeam(firstWeap) && firstWeap.speed > 0
+        ? leadPoint(npc, target, firstWeap.speed)
         : target.pos;
     const desired = fleeing
       ? Math.atan2(-dy, -dx)
@@ -4161,7 +4212,6 @@ export class Game {
     npc.update(dt, 0, thrust);
     if (fleeing && dist > 2400) npc.done = true; // escaped
 
-    npc.fireCooldown = Math.max(0, npc.fireCooldown - dt);
     npc.missileCooldown = Math.max(0, npc.missileCooldown - dt);
     /*
      * Aggress is "how close ships have to be before the person will attack
@@ -4170,46 +4220,62 @@ export class Game {
      */
     const reach =
       person && person.aggress > 0 ? 350 + person.aggress * 350 : 700;
-    if (!fleeing && weap && stock && npc.fireCooldown <= 0 && dist < reach) {
-      const turret = isTurret(weap);
-      const quadrant = isQuadrantGun(weap);
-      let diff = desired - npc.angle;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      // Turrets swivel independently. Quadrant guns fire within ±45° of their
-      // arc centre. Fixed guns need the nose within ~11° of the intercept.
-      const arcCentre =
-        weap.guidance === 8 ? npc.angle + Math.PI : npc.angle;
-      let quadDiff = desired - arcCentre;
-      while (quadDiff > Math.PI) quadDiff -= Math.PI * 2;
-      while (quadDiff < -Math.PI) quadDiff += Math.PI * 2;
-      const canFire =
-        turret || (quadrant && Math.abs(quadDiff) <= Math.PI / 4) || Math.abs(diff) < 0.2;
-      if (canFire) {
-        const volley = volleyCount(weap, stock.count);
-        npc.fireCooldown = reloadInterval(weap, stock.count);
-        if (weap.sndId) {
+    // Fire every primary weapon independently on its own per-weapon cooldown.
+    if (!fleeing && dist < reach) {
+      for (const sw of armament ?? []) {
+        const w = WEAPONS[String(sw.id)];
+        if (!w || !isPrimary(w)) continue;
+        if (sw.ammo === 0) continue; // depleted
+        sw.cooldown = Math.max(0, (sw.cooldown ?? 0) - dt);
+        if (sw.cooldown > 0) continue;
+        const turret = isTurret(w);
+        const quadrant = isQuadrantGun(w);
+        // Each weapon computes its own lead point so fast guns and slow guns
+        // aim correctly even when mounted on the same hull.
+        const wAimPos =
+          !isBeam(w) && w.speed > 0 ? leadPoint(npc, target, w.speed) : target.pos;
+        const wDesired = Math.atan2(
+          wAimPos.y - npc.pos.y,
+          wAimPos.x - npc.pos.x,
+        );
+        let wDiff = wDesired - npc.angle;
+        while (wDiff > Math.PI) wDiff -= Math.PI * 2;
+        while (wDiff < -Math.PI) wDiff += Math.PI * 2;
+        // Turrets swivel independently. Quadrant guns fire within ±45° of
+        // their arc centre. Fixed guns need the nose within ~11° of intercept.
+        const arcCentre = w.guidance === 8 ? npc.angle + Math.PI : npc.angle;
+        let quadDiff = wDesired - arcCentre;
+        while (quadDiff > Math.PI) quadDiff -= Math.PI * 2;
+        while (quadDiff < -Math.PI) quadDiff += Math.PI * 2;
+        const canFire =
+          turret ||
+          (quadrant && Math.abs(quadDiff) <= Math.PI / 4) ||
+          Math.abs(wDiff) < 0.2;
+        if (!canFire) continue;
+        const volley = volleyCount(w, sw.count);
+        sw.cooldown = reloadInterval(w, sw.count);
+        if (sw.ammo > 0) sw.ammo -= volley;
+        if (w.sndId) {
           playSndAt(
-            weap.sndId,
+            w.sndId,
             0.35,
             npc.pos.x - this.ship.pos.x,
             npc.pos.y - this.ship.pos.y,
           );
         }
-        if (isBeam(weap)) {
+        if (isBeam(w)) {
           const aim = Math.atan2(
             target.pos.y - npc.pos.y,
             target.pos.x - npc.pos.x,
           );
-          this.fireBeamFromNpc(npc, weap, volley, target, aim);
+          this.fireBeamFromNpc(npc, w, volley, target, aim);
         } else {
-          // Turrets and quadrant guns fire at the intercept; fixed guns fire ahead.
           const aimAngle =
             turret || quadrant
-              ? Math.atan2(aimPos.y - npc.pos.y, aimPos.x - npc.pos.x)
+              ? Math.atan2(wAimPos.y - npc.pos.y, wAimPos.x - npc.pos.x)
               : undefined;
           this.projectiles.push(
-            ...fireWeapon(npc, weap, volley, false, target, aimAngle),
+            ...fireWeapon(npc, w, volley, false, target, aimAngle),
           );
         }
       }

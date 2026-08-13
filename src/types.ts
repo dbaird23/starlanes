@@ -257,6 +257,8 @@ export interface StockWeapon {
   id: number;
   count: number;
   ammo: number;
+  /** per-weapon fire cooldown used by NPC gunnery; undefined on static data */
+  cooldown?: number;
 }
 
 /** A shïp DefaultItem: an oütf the hull arrives already carrying. */

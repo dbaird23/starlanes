@@ -338,6 +338,8 @@ export class NpcShip extends Ship {
   /** credits aboard, for boarding */
   booty = 0;
   bootyFlags = 0;
+  /** seconds spent docked on a disabled ship, for NPC boarding */
+  boardingTimer = 0;
 
   constructor(stats: ShipStats = MULE) {
     super(stats);

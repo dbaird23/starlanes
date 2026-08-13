@@ -1,6 +1,7 @@
 import {
   COMMODITIES,
   GOVT_COMM_NAMES,
+  GOVT_FLAGS,
   INTERFACE,
   SHIPS,
   STR_LISTS,
@@ -488,14 +489,20 @@ export class HudUi {
       : t.shield >= t.maxShield * 0.01 || !t.maxShield
         ? `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`
         : `Armor ${Math.round(100 * (t.maxArmor ? t.armor / t.maxArmor : 0))}%`;
+    // Only ships whose government carries the derelict flag (0x0800) are true
+    // drifting derelicts; a normally-disabled ship keeps its faction label.
+    const isDerelictGovt =
+      t.govtId >= 128 && ((GOVT_FLAGS[String(t.govtId)] ?? 0) & 0x0800) !== 0;
+    const govtLabel =
+      t.govtId >= 128
+        ? (GOVT_COMM_NAMES[String(t.govtId)] || g.govtLabel(t.govtId))
+        : "Independent";
     const affil =
       t.disabled && t.boarded
         ? "Plundered"
-        : t.disabled
+        : t.disabled && isDerelictGovt
           ? "Derelict"
-          : t.govtId >= 128
-            ? (GOVT_COMM_NAMES[String(t.govtId)] || g.govtLabel(t.govtId))
-            : "Independent";
+          : govtLabel;
 
     setHtml(
       this.target,
