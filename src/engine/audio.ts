@@ -636,6 +636,37 @@ export function sndDuration(sndId: number, fallback: number): number {
   return d && d > 0 ? d : fallback;
 }
 
+/**
+ * Retune a sustained sound that is already playing.
+ *
+ * `startSustained` deliberately no-ops when asked for a sound it is already
+ * playing — that is what stops a per-frame call from restarting the sample every
+ * frame — which also means it cannot be used to *change* one. Anything whose
+ * pitch or level tracks a continuous quantity needs this instead: the race's
+ * engine bed rises with speed, and calling `startSustained` for that would
+ * either do nothing or stutter.
+ *
+ * Both ramps are `setTargetAtTime` rather than immediate writes. A per-frame
+ * step change on a gain or a playback rate is a zipper — audible as a buzz on
+ * the value itself — and a 50ms time constant is short enough to feel
+ * instantaneous while still being a glide.
+ */
+export function setSustained(key: string, volume: number, playbackRate?: number): void {
+  const s = sustained.get(key);
+  if (!s || !ctx || !s.src || !s.gain) return;
+  const t = ctx.currentTime;
+  s.gain.gain.cancelScheduledValues(t);
+  s.gain.gain.setTargetAtTime(Math.max(0, volume), t, 0.05);
+  if (playbackRate !== undefined) {
+    s.src.playbackRate.cancelScheduledValues(t);
+    s.src.playbackRate.setTargetAtTime(
+      Math.max(0.25, Math.min(4, playbackRate)),
+      t,
+      0.05,
+    );
+  }
+}
+
 export function stopSustained(key: string): void {
   const s = sustained.get(key);
   sustained.delete(key);

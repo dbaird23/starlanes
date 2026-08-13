@@ -88,6 +88,17 @@ export function rightOf(r: Racer, out = new THREE.Vector3()): THREE.Vector3 {
 
 export type RaceState = "countdown" | "racing" | "done";
 
+/** Something worth hearing. Only the player's own events are emitted. */
+export type RaceEvent =
+  | "count"
+  | "go"
+  | "gate"
+  | "clean"
+  | "contact"
+  | "miss"
+  | "lap"
+  | "finish";
+
 /** Scratch, so the per-frame path allocates nothing. */
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
@@ -117,10 +128,22 @@ export class RaceWorld {
   shake = 0;
   offCourse = false;
 
+  /**
+   * What happened this frame, for the session to turn into sound and sparks.
+   *
+   * Strings rather than callbacks, and drained by the caller rather than pushed
+   * to it, so the sim stays exactly as free of the renderer and the audio engine
+   * as it is of `Game` — which is what lets it be stepped a few thousand times
+   * from a console with nothing attached.
+   */
+  events: RaceEvent[] = [];
+
   gatesMissed = 0;
   bestLapSec = 0;
   private lapStart = 0;
   private ended = false;
+  /** the countdown number last beeped for; -1 so the opening 3 is not skipped */
+  private counted = -1;
 
   constructor(opts: RaceOptions) {
     this.opts = opts;
@@ -285,6 +308,7 @@ export class RaceWorld {
       if (r.human) {
         this.gatesMissed++;
         this.say("MISSED GATE");
+        this.events.push("miss");
       }
       return;
     }
@@ -297,10 +321,16 @@ export class RaceWorld {
       if (r.human) {
         this.shake = 1;
         this.say("CONTACT");
+        this.events.push("contact");
       }
     } else if (radial <= CLEAN_RADIUS) {
       r.boost = Math.min(BOOST_MAX, r.boost + BOOST_REWARD);
-      if (r.human) this.say("CLEAN");
+      if (r.human) {
+        this.say("CLEAN");
+        this.events.push("clean");
+      }
+    } else if (r.human) {
+      this.events.push("gate");
     }
 
     r.gatesCleared++;
@@ -314,6 +344,7 @@ export class RaceWorld {
           this.bestLapSec = lap;
         }
         this.lapStart = this.time;
+        this.events.push(r.lap >= this.opts.laps ? "finish" : "lap");
       }
       if (r.lap >= this.opts.laps) {
         r.finished = true;
@@ -370,11 +401,29 @@ export class RaceWorld {
     if (this.state === "done") return;
 
     if (this.state === "countdown") {
+      /*
+       * One tick per number *shown*, which is not the same as one per crossing.
+       * Watching for crossings alone beeps on 3->2 and 2->1 and never on the 3
+       * itself, so the card reads "3 2 1 GO" over two beeps and a chime. Tracking
+       * the displayed value instead covers the first frame too, and still cannot
+       * double-fire on a short frame or skip on a long one.
+       */
+      const now0 = Math.ceil(this.countdown);
+      if (now0 !== this.counted && now0 > 0) {
+        this.counted = now0;
+        this.events.push("count");
+      }
       this.countdown -= dt;
+      const now = Math.ceil(this.countdown);
+      if (now !== this.counted && now > 0) {
+        this.counted = now;
+        this.events.push("count");
+      }
       if (this.countdown <= 0) {
         this.state = "racing";
         this.countdown = 0;
         this.lapStart = 0;
+        this.events.push("go");
       }
       return;
     }

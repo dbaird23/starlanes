@@ -10,10 +10,18 @@
 import * as THREE from "three";
 import type { Input } from "../../engine/input";
 import { asset } from "../../asset";
+import {
+  isSustaining,
+  playSnd,
+  preloadSnds,
+  setSustained,
+  startSustained,
+  stopSustained,
+} from "../../engine/audio";
 import { SHIP_SPRITES } from "../../data/universe";
 import { getSprite, rotationFrame } from "../../engine/sprites";
 import { RaceScene, FOV_DEG, FOV_BOOST } from "./scene";
-import { BOOST_MAX, RaceWorld, forwardOf } from "./sim";
+import { BOOST_MAX, RaceWorld, forwardOf, rightOf, upOf, type RaceEvent } from "./sim";
 import { rivalCommand, type RivalContext } from "./ai";
 import type { RaceCommand, RaceOptions, RaceSprite } from "./types";
 
@@ -56,6 +64,51 @@ const BEZEL = {
  * the rivals' skill draws are measured against.
  */
 const AUTOPILOT_SKILL = { lineError: 0, lookAhead: 0.7, throttleCaution: 0.7, phase: 0 };
+
+/**
+ * What each race event sounds like, from Nova's own bank.
+ *
+ * Beep3 is the shortest sample in the set (0.04s), which is what a gate wants —
+ * you take one every 1.6 seconds and anything longer becomes a stutter. A clean
+ * pass gets Beep2 instead so the reward is audible without looking at the boost
+ * bar, and a miss gets the Klaxxon, which is the one warning sound in the bank
+ * that is unmistakably bad news.
+ */
+const SND: Record<RaceEvent, { id: number; vol: number }> = {
+  count: { id: 150, vol: 0.5 },
+  go: { id: 153, vol: 0.7 },
+  gate: { id: 152, vol: 0.35 },
+  clean: { id: 151, vol: 0.5 },
+  contact: { id: 301, vol: 0.45 },
+  miss: { id: 371, vol: 0.4 },
+  lap: { id: 154, vol: 0.55 },
+  finish: { id: 603, vol: 0.7 },
+};
+
+/**
+ * The engine bed: **"Wind 2", not a warp sample.**
+ *
+ * There is no thruster loop anywhere in Nova's 227 sounds — the bank was built
+ * for a game with no cockpit. The obvious substitute is the hyperspace warp-up
+ * (128), and it is the wrong shape: it is a *rising sweep*, so looping it gives
+ * an obvious repeating whoop rather than a bed. A wind ambience is continuous by
+ * construction, which is exactly what an air-rush wants to be, and pitching it
+ * with speed is the same trick the hyperdrive already plays on its own sample.
+ */
+const ENGINE_SND = 10025;
+const ENGINE_KEY = "race-engine";
+/** Preloaded on entry, or the first gate of the first race swallows its beep. */
+const PRELOAD = [150, 151, 152, 153, 154, 301, 371, 603, ENGINE_SND];
+
+/**
+ * A rival is invisible inside `NEAR_OUT` and fully drawn beyond `NEAR_IN`,
+ * both in world units. See the fade in `sprites()` for why.
+ */
+const NEAR_OUT = 26;
+const NEAR_IN = 78;
+
+/** Struck-metal gold, per the debris in the source movies. */
+const SPARK_TINT: [number, number, number] = [1.5, 1.05, 0.35];
 
 /** The Comara Racing Viper's hull length, in world units — its sprite is 32px. */
 const HULL_LEN = 34;
@@ -160,6 +213,10 @@ export class RaceSession {
    */
   private glow: HTMLImageElement | null = null;
 
+  /** Collision debris. Cosmetic; see `burst`. */
+  private sparks: { pos: THREE.Vector3; vel: THREE.Vector3; life: number; age: number }[] =
+    [];
+
   private onLockChange = (): void => {
     this.locked = document.pointerLockElement === this.canvas;
     // Esc is how the browser hands the pointer back, so losing the lock has to
@@ -196,6 +253,8 @@ export class RaceSession {
     };
     canopy.src = asset("race/cockpit.png");
 
+    preloadSnds(PRELOAD);
+
     const stand = new Image();
     stand.onload = (): void => {
       this.glow = this.glow ?? stand;
@@ -230,6 +289,7 @@ export class RaceSession {
     window.removeEventListener("mousedown", this.onMouseDown);
     window.removeEventListener("mouseup", this.onMouseUp);
     if (document.pointerLockElement === this.canvas) document.exitPointerLock?.();
+    stopSustained(ENGINE_KEY);
     this.scene?.dispose();
     this.scene = null;
   }
@@ -334,12 +394,109 @@ export class RaceSession {
       dt,
     };
     this.world.update(dt, cmd, (r) => rivalCommand(r, ctx));
+    // events are pushed during that update, so they are drained after it
+    this.drainEvents();
+    this.stepSparks(dt);
+    this.engine(cmd);
 
     // the camera trails the hull rather than being welded to it
     const k = 1 - Math.exp(-dt / CAM_TAU);
     this.camQuat.slerp(this.world.player.quat, k);
     const wantFov = this.boosting && this.world.player.boost > 0 ? FOV_BOOST : FOV_DEG;
     this.camFov += (wantFov - this.camFov) * (1 - Math.exp(-dt / 0.12));
+  }
+
+  /** Turn this frame's sim events into sound and sparks, then clear them. */
+  private drainEvents(): void {
+    for (const e of this.world.events) {
+      const s = SND[e];
+      if (s) playSnd(s.id, s.vol);
+      if (e === "contact") this.burst();
+    }
+    this.world.events.length = 0;
+  }
+
+  /**
+   * The engine bed, pitched and levelled by speed.
+   *
+   * Started lazily rather than in the constructor: the session is built while
+   * the pause card is up and the pointer is not yet captured, and a loop that
+   * begins before the player has taken the controls is a loop playing over a
+   * menu. `setSustained` is what makes it track — `startSustained` no-ops when
+   * the sound is already running, by design.
+   */
+  private engine(cmd: RaceCommand): void {
+    if (this.world.state !== "racing") return;
+    const frac = Math.min(1, this.world.player.speed / this.world.stats.maxSpeed);
+    if (!isSustaining(ENGINE_KEY)) {
+      startSustained(ENGINE_KEY, ENGINE_SND, true, 0.001, 1);
+    }
+    // level follows speed, pitch follows it harder — and the throttle lifts the
+    // pitch a touch on its own, so easing off is audible before the ship has
+    // actually slowed
+    setSustained(
+      ENGINE_KEY,
+      0.06 + 0.20 * frac,
+      0.7 + 0.55 * frac + 0.1 * cmd.throttle,
+    );
+  }
+
+  /**
+   * Gold sparks off the rim, which is what the source movies show a collision
+   * as. Cosmetic only — they carry no state the sim can see.
+   *
+   * Seeded off the world clock rather than `Math.random`, for the same reason
+   * the course is: two runs of the same race should look the same. It matters
+   * less here than it does for the layout, but a deterministic sim with one
+   * stochastic sparkle in it is a sim you cannot diff.
+   */
+  private burst(): void {
+    const p = this.world.player;
+    const fwd = forwardOf(p, new THREE.Vector3());
+    let h = Math.floor(this.world.time * 1000) | 0;
+    const rnd = (): number => {
+      h = Math.imul(h ^ (h >>> 15), 2246822519);
+      return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
+    };
+    /*
+     * Spawned **out at the rim and abreast of the ship**, not ahead of the nose.
+     * The first cut put them 12 units in front of the eye, where a 6-unit sprite
+     * subtends half a radian and the burst reads as a wall of orange blocks
+     * rather than as debris. The contact happens at the hoop, which is roughly
+     * where the ship already is and about a hull's width off to the side, so
+     * that is where they go — and the ship then outruns them at 300 u/s, which
+     * is what makes them streak past instead of hanging in the view.
+     */
+    const up = upOf(p, new THREE.Vector3());
+    const right = rightOf(p, new THREE.Vector3());
+    for (let i = 0; i < 16; i++) {
+      const a = rnd() * Math.PI * 2;
+      const ca = Math.cos(a);
+      const sa = Math.sin(a);
+      const out = new THREE.Vector3()
+        .addScaledVector(right, ca)
+        .addScaledVector(up, sa);
+      this.sparks.push({
+        pos: p.pos
+          .clone()
+          .addScaledVector(fwd, 2)
+          .addScaledVector(out, 10 + rnd() * 16),
+        vel: out
+          .clone()
+          .multiplyScalar(35 + rnd() * 80)
+          .addScaledVector(fwd, rnd() * 40),
+        life: 0.45 + rnd() * 0.45,
+        age: 0,
+      });
+    }
+  }
+
+  private stepSparks(dt: number): void {
+    for (const s of this.sparks) {
+      s.age += dt;
+      s.pos.addScaledVector(s.vel, dt);
+    }
+    this.sparks = this.sparks.filter((s) => s.age < s.life);
   }
 
   /**
@@ -364,6 +521,26 @@ export class RaceSession {
     for (const r of this.world.racers) {
       if (r.human) continue;
 
+      /*
+       * **Fade a rival out as it gets close enough to be inside you.**
+       *
+       * Nothing stops two racers occupying the same space — there is no
+       * racer-to-racer collision, deliberately, because a bar game that can
+       * wreck you on someone else's mistake is a worse bet than one that
+       * cannot. The consequence is that a rival really does pass through the
+       * cockpit, and a 32x32 sheet at sixteen units subtends **1.7 times the
+       * screen height**: a wall of magnified pixels that reads as a rendering
+       * fault, not as a near miss. Measured, not guessed — Red at 16 units and
+       * Yellow at 28 were both filling the canopy.
+       *
+       * Drawing nothing is strictly better than that, and it costs nothing in
+       * information: at this range they are beside or behind you and the pack
+       * is read from the ones further out.
+       */
+      const dist = r.pos.distanceTo(cam);
+      const near = THREE.MathUtils.clamp((dist - NEAR_OUT) / (NEAR_IN - NEAR_OUT), 0, 1);
+      if (near <= 0.01) continue;
+
       // the cone sits behind the hull, along its own thrust axis
       if (glow?.naturalWidth) {
         forwardOf(r, fwd);
@@ -384,7 +561,7 @@ export class RaceSession {
            * visibly backs off — the one piece of their driving readable at range.
            */
           scale: HULL_LEN * (0.38 + 0.3 * Math.min(1, r.speed / this.world.stats.maxSpeed)),
-          alpha: 1,
+          alpha: near,
           additive: true,
           smooth: true,
           tint: GLOW_TINT[r.livery],
@@ -406,9 +583,27 @@ export class RaceSession {
         // the hull's real length; see the glow above for why this is not
         // oversized the way the first cut assumed it had to be
         scale: HULL_LEN,
-        alpha: 1,
+        alpha: near,
         tint: LIVERY_TINT[r.livery],
       });
+    }
+
+    // debris rides the same additive path as the engine cones
+    if (glow?.naturalWidth) {
+      for (const s of this.sparks) {
+        const k = 1 - s.age / s.life;
+        out.push({
+          pos: s.pos,
+          img: glow,
+          frameSize: glow.naturalWidth,
+          frame: 0,
+          scale: 2.6 * k + 0.9,
+          alpha: k,
+          additive: true,
+          smooth: true,
+          tint: SPARK_TINT,
+        });
+      }
     }
     return out;
   }
