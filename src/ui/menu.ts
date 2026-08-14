@@ -19,11 +19,14 @@ import {
   SHIPS,
   STR_LISTS,
   UI_PICTS,
-  getSystem,
   targetPict,
 } from "../data/universe";
 import { formatDate } from "../game/calendar";
-import { ratingName } from "../game/reputation";
+import {
+  getSystemRecord,
+  legalStatusName,
+  ratingName,
+} from "../game/reputation";
 import {
   createPilot,
   deletePilot,
@@ -522,12 +525,6 @@ export class MainMenu {
       return `<div class="ttl-info left">${field(ui(251, "Pilot Name:"), "—")}</div>
         <div class="ttl-info right">${field("", ui(276, "No Pilot File Loaded"))}</div>`;
     }
-    let place = "deep space";
-    try {
-      place = getSystem(state.systemId).name;
-    } catch {
-      /* uncharted */
-    }
     const ship = SHIPS[state.shipId];
     // the hull the pilot is flying, in the same red target silhouette the HUD
     // uses; variants without art of their own fall back to their base hull
@@ -546,7 +543,7 @@ export class MainMenu {
       </div>
       ${silhouette}
       <div class="ttl-info right">
-        ${field("Current system:", place)}
+        ${field(`${ui(278, "Legal status in")} ${ui(279, "current system:")}`, legalStatusName(getSystemRecord(state, state.systemId)))}
         ${field(ui(254, "Combat Rating:"), ratingName(state.ratingPoints ?? 0))}
         ${field(ui(252, "Current Date:"), formatDate(state.date ?? 0))}
       </div>`;

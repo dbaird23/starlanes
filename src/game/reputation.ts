@@ -60,6 +60,47 @@ export function ratingName(points: number): string {
   return STR_LISTS["138"]?.[i] ?? RATING_FALLBACK_NAMES[i];
 }
 
+/**
+ * The name Nova puts on a legal record, from STR# 134 "Legal Status".
+ *
+ * The bank holds 18 entries in three runs: a spare and the two clean states
+ * (1-3 "No Record", "No Record", "No Convictions"), the evil ladder (4-10,
+ * "Minor Offender" through "Public Enemy"), and the good one (11-16,
+ * "Citizen" through "Virtuous Citizen"). 17-18 are "Military Dictator" and
+ * "Military Governor", which belong to dominated worlds rather than to a
+ * record, and are not used here.
+ *
+ * **The thresholds are ours.** The Bible says the scale is relative to the
+ * system government's CrimeTol — "enough good or evil points to equal the
+ * government's crime tolerance is given a value of 1" — but CrimeTol reads
+ * **0 on all 68 shipped governments**, which makes that formula inoperative,
+ * so the original must fall back on something it does not document. The one
+ * measurement we have anchors the low end: a pilot at -6 in Altair showed
+ * "No Convictions" in the original. These bands reproduce that and keep the
+ * Bible's geometric ×4 shape above it.
+ */
+const STATUS_BANDS = [10, 40, 160, 640, 2560, 10240, 40960];
+
+export function legalStatusName(record: number): string {
+  const list = STR_LISTS["134"];
+  const pick = (entry: number, fallback: string): string =>
+    list?.[entry - 1] ?? fallback;
+  if (record === 0) return pick(2, "No Record");
+  const mag = Math.abs(record);
+  let step = 0;
+  while (step < STATUS_BANDS.length && mag >= STATUS_BANDS[step]) step++;
+  if (record < 0) {
+    // 3 "No Convictions", then 4..10 up to "Public Enemy"
+    const evil = ["No Convictions", "Minor Offender", "Offender", "Criminal",
+      "Wanted Criminal", "Fugitive", "Hunted Fugitive", "Public Enemy"];
+    return pick(3 + step, evil[Math.min(step, evil.length - 1)]);
+  }
+  // the good ladder is one shorter: 11..16
+  const good = ["Citizen", "Good Citizen", "Upstanding Citizen",
+    "Leading Citizen", "Model Citizen", "Virtuous Citizen"];
+  return pick(11 + Math.min(step, good.length - 1), good[Math.min(step, good.length - 1)]);
+}
+
 /*
  * Nova stores one legal record per SYSTEM, not per government. The original
  * pilot file settles it: the Windows .plt holds an int16 per sÿst id, seeded
