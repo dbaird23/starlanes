@@ -250,7 +250,33 @@ Verified in play: Sigma1 at Earth's shipyard, Tutorial 002 at the trade centre
 (the tutorial chain used to dead-end after step 1), and Fed1 at the outfitter
 — accepting it sets b511 and books 20t of Military Stores to Spacedock III,
 with its two ShipBehav-0 Aurorans waiting in Sol. Note Fed1 also wants
-**AvailRating 2**, so a brand-new pilot still cannot see it.
+AvailRecord 2, AvailRating 150 and AvailRandom 50, so a brand-new pilot still
+cannot see it (and even an eligible one only half the time per landing).
+
+**mïsn AvailRecord is @6 and AvailRating @8 — an earlier pass had them
+swapped, which broke every storyline gate in both directions.** The Bible's
+order (AvailStel, AvailLoc, AvailRecord, AvailRating, AvailRandom) is the
+struct order, and each field identifies itself: @8 is -1 on 184 missions —
+the documented "ignored" for AvailRating, absurd as a record gate — and runs
+0..12500 on the kill-point scale of STR# 138 (the bounty chain asks 5/100/200
+as the bounties grow, the Bounty Hunters intro 150, late Auroran war missions
+12500 — no legal record could reach that: all CompRewards for a single govt
+sum to a few hundred). @6 is small (0..50) and its only two -1s ("record must
+be <= -1", criminals only) sit on the two "Unregistered cutoff" missions. The
+swap surfaced as **"Return With McGowan's Rejection" (mïsn 647, Wild Geese
+7bII)**, offered in the bar on Harbor: read swapped it demanded pirate record
+5 from a player the storyline itself has been arming against pirates; in
+truth it has **no record gate at all** (@6 = 0) and wants 5 rating points.
+The original was verified three ways: raw bytes (647 reads 0/5/100, Fed1
+2/150/50), value distributions across all 791, and the user's own original
+pilot file — the Windows .plt is unencrypted, and its per-system legal array
+(base 5148, LE int16 per syst id) is seeded exactly from each govt's
+InitialRec and moves only where something actually happens. `availableMissions`
+now compares `player.ratingPoints` against AvailRating directly: it is a
+points threshold, not a level index. Two real divergences from Nova remain —
+see Known gaps: landing bribes (gövt Flags 0x4000/0x8000), and the record
+model itself (ours is per-govt with global kill propagation; Nova's is
+per-system).
 
 **Hypergates / wormholes (Bible-aligned transit).** Selecting a working
 hypergate (L cycle or click) starts the ring open animation; landing on it
@@ -768,6 +794,25 @@ happened to live there.
 
 ### Known gaps in completed work
 
+- **Landing bribes are not implemented, and Wild Geese 6b needs them.** gövt
+  Flags **0x4000** "Planets of this govt will take bribes" and **0x8000**
+  "... their planets will always take bribes" are extracted and unread. The
+  Pirate govt (137) sets both, which is how the original lets anyone land on
+  Harbor (spöb 422, MinStatus 2, the only world in Scheall): clearance is
+  refused and the pirates take a payoff instead. Without it, mïsn 645 "Take
+  Peace-Proposal to McGowan" (ReturnStel 422) cannot be completed by a player
+  the pirates dislike — which is every player on that storyline. Note the
+  pirates who shoot at you regardless are gövt Flags 0x0001 Xenophobic;
+  hostility says nothing about the landing rules.
+- **The legal-record model is per-govt; Nova's is per-system.** The original
+  pilot file stores one int16 per sÿst id, seeded from the owning govt's
+  InitialRec (verified against a real .plt: Nil'kemorya systems -5, Family
+  Dani +2, Krypt +10, everything else 0 — untouched by kills elsewhere).
+  `reputation.ts` keeps one number per govt and propagates every kill to
+  allies (-1/2) and enemies (+1/4) galaxy-wide, so a pirate-farming player is
+  hated in pirate space they have never visited, where Nova would still read
+  InitialRec. With AvailRecord fixed the stock record gates are small (0..50)
+  and mostly benign, but MinStatus landing checks feel this divergence.
 - **NPC gunnery fires one weapon.** `attackAi` picks the *first* primary in
   the hull's stock loadout and fires only that, on one ship-wide cooldown, and
   only when the nose is within 0.2 rad of the target — turrets included, which

@@ -764,8 +764,27 @@ function decodeMisn(res) {
     name: res.name,
     availStel: d.readInt16BE(0),
     availLoc: d.readInt16BE(4),
-    availRating: d.readInt16BE(6),
-    availRecord: d.readInt16BE(8),
+    /*
+     * AvailRecord @6, AvailRating @8 — the Bible's own order (AvailStel,
+     * AvailLoc, AvailRecord, AvailRating, AvailRandom). An earlier pass had
+     * these two swapped, which put a "legal record >= 5" gate on missions that
+     * actually ask for 5 combat-rating points, and hid the real record gates.
+     * The data identifies each field outright:
+     *  - @8 is -1 on 184 missions — the documented "ignored" for AvailRating,
+     *    absurd for AvailRecord (it would mean 184 criminals-only missions) —
+     *    and runs 0..12500 on Nova's kill-point scale (STR# 138: ... 6400
+     *    Dangerous, 12800 Deadly): the bounty missions want 5/100/200 as the
+     *    bounty grows, the Bounty Hunters intro 150, late Auroran war missions
+     *    12500. No record could reach 12500: all CompRewards for a single
+     *    govt sum to a few hundred.
+     *  - @6 is small (0..50), and the only two -1s ("record must be <= -1",
+     *    criminals only) sit on the two "Unregistered cutoff" missions.
+     *  - Wild Geese 7bI/7bII (646/647), offered in the bar on Harbor, read
+     *    @6=0 / @8=5: no record gate at all — which is why the original
+     *    offers them to a player the (xenophobic) pirates shoot on sight.
+     */
+    availRecord: d.readInt16BE(6),
+    availRating: d.readInt16BE(8),
     availRandom: d.readInt16BE(10),
     travelStel: d.readInt16BE(12),
     returnStel: d.readInt16BE(14),

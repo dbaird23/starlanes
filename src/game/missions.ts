@@ -14,7 +14,7 @@ import {
   SYSTEMS,
 } from "../data/universe";
 import { freeHoldSpace } from "./cargo";
-import { getRecord, ratingLevel } from "./reputation";
+import { getRecord } from "./reputation";
 import type {
   ActiveMission,
   MissionType,
@@ -187,8 +187,11 @@ export function availableMissions(
       continue;
     if (m.availRecord > 0 && record < m.availRecord) continue;
     if (m.availRecord < 0 && record > m.availRecord) continue;
-    if (m.availRating > 0 && ratingLevel(player.ratingPoints) < m.availRating)
-      continue;
+    // AvailRating is a threshold in combat-rating points (the STR# 138 scale:
+    // 100 "Not a Threat" ... 12800 "Deadly"), not a level index — the bounty
+    // chain asks for 5/100/200 points as the bounties grow and the late
+    // Auroran missions for 12500. -1 is the documented "ignored".
+    if (m.availRating > 0 && player.ratingPoints < m.availRating) continue;
     /*
      * Who fits aboard, and who won't be offered the job.
      *
