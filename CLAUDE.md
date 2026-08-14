@@ -1068,6 +1068,37 @@ happened to live there.
   mission whose destination is the planet overrides the clearance check in
   `tryLand`, and the pirates shooting at you regardless are gövt Flags 0x0001
   Xenophobic — hostility says nothing about the landing rules.
+- **The rating multiplier is 0.2, measured.** A crafted pilot at rating 6
+  killed one Valkyrie Class I (shïp Strength 200) in the original and came
+  out at 46, so Nova banks a fifth of a destroyed hull's Strength. We keep
+  the ledger in raw Strength, so `RATING_THRESHOLDS` is the Bible's Appendix
+  I list × 5 and `RATING_POINT_SCALE` (5) converts a mïsn AvailRating into
+  our units. The earlier 10× guess put every rating gate at twice its true
+  cost. Level names now come from **STR# 138**, which holds exactly the
+  eleven the Bible prints; raw 230 (Nova 46) reads "Little Ability", which
+  is what the original's own title screen showed for that pilot.
+- **Crime records spread from where the crime happened, and the spread was
+  measured.** Destroying that Valkyrie (govt 173 Pyrogenesis, DisabPenalty 3
+  + KillPenalty 7) moved the original's per-system ledger like this: **Sol
+  itself -10** — the disable *and* the kill, which confirms Nova charges both
+  when you destroy a ship, as we now do — then 65 systems in all, every one
+  within **6 jumps** of Sol and nothing beyond, with magnitudes falling off
+  (-5 and -3 among near neighbours, -1 across the rest, everything past 3
+  jumps at -1). **Nothing went up**: three systems belonging to
+  Pyrogenesis's enemies sat inside the radius (NGC-0946, NGC-3183 at 5 jumps,
+  Scheall at 6) and none improved, so the Bible's "doing evil deeds to one
+  government will improve your rating with its enemies" did *not* fire —
+  `applyGovtRecord` no longer credits enemies.
+
+  The exact per-system weighting is **not** settled by one sample, and three
+  plausible rules were each ruled out: not distance alone (Wolf 359 is one
+  jump from Sol and did not move, while Tichel at the same distance took -5),
+  not government alone (Federation systems took -10, -5, -3 and -1 alike),
+  and not the set of systems the pilot had explored. What is implemented is
+  the measured *shape* — full force at the crime site, halving next door,
+  tailing to a single point at the edge of a six-jump neighbourhood, victim's
+  own and allied space only. A second kill from a different system would
+  pin the rest; the raw before/after ledgers are worth keeping if so.
 - **Legal records are per-system now — Nova's own model.** `reputation.ts`
   keeps a sparse ledger keyed by sÿst id: an untouched system reads its owning
   govt's InitialRec (the original .plt seeds exactly so — Nil'kemorya -5,

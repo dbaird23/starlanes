@@ -1,54 +1,63 @@
 import {
   GOVTS,
+  STR_LISTS,
   MISSIONS,
   OUTFITS,
   SYSTEMS,
   getSystem,
   govtAllied,
-  govtEnemy,
   junkFromCargoKey,
 } from "../data/universe";
 import type { PlayerState, SystemDef } from "../types";
 
 /**
- * EV-style combat rating levels, thresholds in accumulated strength points.
+ * Combat-rating levels. The Bible (Appendix I) lists thresholds of 0, 1, 100,
+ * 200 … 25600 "times some internal multiplier for adjustment", and that
+ * multiplier is now **measured: 0.2**. A crafted pilot at rating 6 killed one
+ * Valkyrie Class I — shïp Strength 200 — in the original and came out at 46,
+ * so Nova banks a fifth of the destroyed hull's Strength. We keep the ledger
+ * in raw Strength points, so the thresholds here are the Bible's × 5, and
+ * `RATING_POINT_SCALE` converts a mïsn AvailRating (quoted on Nova's own
+ * scale) into ours. An earlier guess of 10× put every rating gate in the game
+ * at twice its true cost.
  *
- * The Bible (Appendix I) lists thresholds of 0, 1, 100, 200 … 25600, but notes
- * they are multiplied by "some internal multiplier for adjustment". Ship
- * strengths (Viper=30, Thunderhead=120, Kestrel=400) are the raw resource
- * values; without a multiplier even one kill jumps several levels. The 10×
- * scale applied here puts a new pilot ~30 Viper kills from "Not a Threat" and
- * ~270 kills from "Dangerous", which matches the feel of the original.
+ * The names come from STR# 138 "Combat Ratings", which holds exactly these
+ * eleven, so a plug-in that renames them works.
  */
-const RATING_LEVELS: [number, string][] = [
-  [0, "Harmless"],
-  [1, "Mostly Harmless"],
-  [1000, "Not a Threat"],
-  [2000, "Above Average"],
-  [4000, "Respected"],
-  [8000, "Dangerous"],
-  [16000, "Deadly"],
-  [32000, "Truly Fearsome"],
-  [64000, "Feared"],
-  [128000, "Ultimate Rating"],
+const RATING_THRESHOLDS = [
+  0, 5, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 128000,
+];
+const RATING_FALLBACK_NAMES = [
+  "No Ability",
+  "Little Ability",
+  "Fair Ability",
+  "Average Ability",
+  "Good Ability",
+  "Competent",
+  "Very Competent",
+  "Worthy of Note",
+  "Dangerous",
+  "Deadly",
+  "Frightening",
 ];
 
 /**
- * The same internal multiplier, for fields stated on the Bible's raw scale:
- * mïsn AvailRating asks for 150 where our points ledger holds 1500.
+ * Nova's internal multiplier, measured at 0.2 (see above): a mïsn AvailRating
+ * of 5 is 25 raw Strength points here.
  */
-export const RATING_POINT_SCALE = 10;
+export const RATING_POINT_SCALE = 5;
 
 export function ratingLevel(points: number): number {
   let level = 0;
-  for (let i = 0; i < RATING_LEVELS.length; i++) {
-    if (points >= RATING_LEVELS[i][0]) level = i;
+  for (let i = 0; i < RATING_THRESHOLDS.length; i++) {
+    if (points >= RATING_THRESHOLDS[i]) level = i;
   }
   return level;
 }
 
 export function ratingName(points: number): string {
-  return RATING_LEVELS[ratingLevel(points)][1];
+  const i = ratingLevel(points);
+  return STR_LISTS["138"]?.[i] ?? RATING_FALLBACK_NAMES[i];
 }
 
 /*
@@ -86,30 +95,76 @@ function bumpSystemRecord(
   player.systemRecords[systemId] = getSystemRecord(player, systemId) + delta;
 }
 
+/** Jump-distance from one system, memoised per origin. */
+const hopCache = new Map<string, Map<string, number>>();
+function hopsFrom(originId: string): Map<string, number> {
+  const cached = hopCache.get(originId);
+  if (cached) return cached;
+  const dist = new Map<string, number>([[originId, 0]]);
+  const queue = [originId];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    const sys = systemById(cur);
+    for (const n of sys?.links ?? []) {
+      if (!dist.has(n)) {
+        dist.set(n, (dist.get(cur) ?? 0) + 1);
+        queue.push(n);
+      }
+    }
+  }
+  hopCache.set(originId, dist);
+  return dist;
+}
+
+/** How far the news of a crime travels, in jumps. */
+const RECORD_REACH = 6;
+
 /**
- * Land an act for (positive) or against (negative) a government on every
- * system, by the system's own government's relation to it: that govt's
- * systems take it in full, its allies' at half, and its enemies' a quarter
- * and inverted — the Bible's "doing evil deeds to one government will improve
- * your rating with its enemies, and vice versa. Allied governments also
- * communicate your actions."
+ * Land an act for (positive) or against (negative) a government, spreading
+ * out from where it happened.
+ *
+ * **This is measured, not guessed.** One Valkyrie (govt 173 Pyrogenesis,
+ * DisabPenalty 3 + KillPenalty 7) was destroyed in Sol in the original, and
+ * the pilot file's per-system ledger moved like this:
+ *
+ *   - Sol itself: **-10** — the disable *and* the kill, both charged.
+ *   - 65 systems in all, every one within 6 jumps of Sol; nothing beyond.
+ *   - Magnitudes fall off with distance: -5 and -3 among the near neighbours,
+ *     -1 across the rest, and everything past 3 jumps was -1.
+ *   - **Nothing went up.** Three systems belonging to Pyrogenesis's enemies
+ *     were inside the affected radius (NGC-0946 and NGC-3183 at 5 jumps,
+ *     Scheall at 6) and none of them improved, so the Bible's "doing evil
+ *     deeds to one government will improve your rating with its enemies" did
+ *     not fire here. We no longer credit enemies.
+ *
+ * The exact per-system weighting is **not** settled by one sample: it is not
+ * distance alone (Wolf 359 is one jump from Sol and did not move, while
+ * Tichel at the same distance took -5), not government alone (Federation
+ * systems took -10, -5, -3 and -1 alike), and not simply the systems the
+ * pilot had explored. What is reproduced here is the shape — full force where
+ * it happened, halving next door, tailing to a single point at the edge of a
+ * six-jump neighbourhood, and no windfall for anyone's enemies.
  */
 export function applyGovtRecord(
   player: PlayerState,
   govtId: number,
   amount: number,
+  originSystemId?: string,
 ): void {
   if (govtId < 128 || amount === 0) return;
   const mag = Math.abs(amount);
   const sign = Math.sign(amount);
+  const origin = originSystemId ?? player.systemId;
+  const dist = hopsFrom(origin);
   for (const sys of SYSTEMS) {
     const g = sys.govtId;
     if (g < 128) continue;
-    let delta = 0;
-    if (g === govtId) delta = amount;
-    else if (govtAllied(g, govtId)) delta = sign * Math.ceil(mag / 2);
-    else if (govtEnemy(g, govtId)) delta = -sign * Math.ceil(mag / 4);
-    if (delta !== 0) bumpSystemRecord(player, String(sys.id), delta);
+    // only the victim's own space and its allies' care
+    if (g !== govtId && !govtAllied(g, govtId)) continue;
+    const hops = dist.get(String(sys.id));
+    if (hops === undefined || hops > RECORD_REACH) continue;
+    const delta = sign * Math.max(1, Math.round(mag / (hops + 1)));
+    bumpSystemRecord(player, String(sys.id), delta);
   }
 }
 
@@ -161,10 +216,10 @@ export function migrateGovtRecords(
 /**
  * Nova's crime model. Each government states what it costs you to disable,
  * board or destroy one of its ships — DisabPenalty, BoardPenalty and
- * KillPenalty, in "evilness" points. Its allies take the same offence at half
- * weight and its enemies quietly approve, which is how the Bible puts it:
- * "doing evil deeds to one government will improve your rating with its
- * enemies, and vice versa."
+ * KillPenalty, in "evilness" points, spread from where it happened by
+ * `applyGovtRecord` — see the measurements there. Destroying a ship charges
+ * **both** DisabPenalty and KillPenalty, because you cripple it on the way;
+ * the original's own ledger showed exactly their sum at the crime site.
  *
  * gövt **ShootPenalty is deliberately absent** from this union. The field is
  * real and is extracted, but the Bible annotates it "(currently ignored)" —
@@ -187,11 +242,16 @@ function penaltyFor(govtId: number, crime: Crime): number {
   return raw > 0 ? raw : 0;
 }
 
-export function applyCrime(player: PlayerState, victimGovt: number, crime: Crime): void {
+export function applyCrime(
+  player: PlayerState,
+  victimGovt: number,
+  crime: Crime,
+  originSystemId?: string,
+): void {
   if (victimGovt < 128) return; // independents hold no grudges
   const penalty = penaltyFor(victimGovt, crime);
   if (penalty <= 0) return;
-  applyGovtRecord(player, victimGovt, -penalty);
+  applyGovtRecord(player, victimGovt, -penalty, originSystemId);
 }
 
 /**
