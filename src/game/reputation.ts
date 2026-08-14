@@ -116,36 +116,43 @@ function hopsFrom(originId: string): Map<string, number> {
   return dist;
 }
 
-/** How far the news of a crime travels, in jumps. */
-const RECORD_REACH = 6;
-
 /**
  * Land an act for (positive) or against (negative) a government, spreading
- * out from where it happened.
+ * out from the system it happened in.
  *
- * **Partly measured, and the measurement is confounded — read this before
- * retuning.** One Valkyrie (govt 173 Pyrogenesis, DisabPenalty 3 +
- * KillPenalty 7) was destroyed **in Tichel** in the original, and the pilot
- * file's per-system ledger moved like this: 65 systems of 545 changed, all
- * within a few jumps; Tichel itself -5, neighbouring Sol -10, three other
- * neighbours -3, one neighbour (Kania) untouched, and a tail of -1. Nothing
- * anywhere went up, including three systems of the victim's enemies that sat
- * inside the affected area.
+ * **The falloff is measured.** A Fed Destroyer (govt 128, DisabPenalty 1 +
+ * KillPenalty 5) was destroyed in Fomalhaut in the original, and the pilot
+ * file's per-system ledger came out as an exact `penalty / (hops + 1)`,
+ * rounded down:
  *
- * Two things are safe, and are what this function implements: the spread is
- * **local** rather than galaxy-wide (a uniform rule would have moved all 164
- * allied systems), and **enemies are not credited** despite the Bible's
- * "doing evil deeds to one government will improve your rating with its
- * enemies". Everything else is unresolved: distance from the crime does not
- * explain it (Sol, one jump out, took double the crime site while Kania at
- * the same distance took nothing), nor does the system's government
- * (Federation systems took -10, -5, -3 and -1 alike), nor the explored set,
- * nor the count of inhabited stellars.
+ *     Fomalhaut  h0  -6      6/1 = 6
+ *     Tichel     h1  -3      6/2 = 3
+ *     Kon        h1  -3      6/2 = 3
+ *     Sol        h2  -2      6/3 = 2
+ *     Alphara    h3  -1      6/4 = 1.5 -> 1
+ *     Vega       h4  -1      6/5 = 1.2 -> 1
  *
- * The likely reason is that the sample covers a whole play session rather
- * than one event — only the kill count is pinned (the rating moved by exactly
- * one kill's worth). The decay below reproduces the measured shape and no
- * more; a clean single-event save would settle the real rule.
+ * Six of the seven systems that moved fit to the point; the seventh (Galvan,
+ * -3 where the formula wants -1) is almost certainly a second incident in the
+ * same session. An earlier kill of a Pyrogenesis ship gave the same signature
+ * at its own site — **DisabPenalty + KillPenalty**, 3 + 7 = -10 — which is
+ * why destroying a ship charges both here: you cripple it on the way through.
+ *
+ * What is **not** solved is which systems are in the recipient set. Nova
+ * moved only 7 systems of 545, and every structural explanation has been
+ * tested and failed: all systems, all allied systems, everything within
+ * range, the systems the pilot had explored, the systems holding worlds of
+ * the victim's government, and the count of inhabited stellars. The likeliest
+ * remaining candidate is the route the player actually flew that session,
+ * which the pilot file does not record. Until that is settled we apply the
+ * measured falloff across the victim's own and allied space, which reaches
+ * more systems than Nova does but is right about direction and magnitude.
+ *
+ * One thing is certain in both samples: **nothing ever went up.** Systems
+ * belonging to the victim's enemies sat well inside the affected radius and
+ * none improved, so the Bible's "doing evil deeds to one government will
+ * improve your rating with its enemies" does not fire, and we do not credit
+ * enemies.
  */
 export function applyGovtRecord(
   player: PlayerState,
@@ -156,17 +163,17 @@ export function applyGovtRecord(
   if (govtId < 128 || amount === 0) return;
   const mag = Math.abs(amount);
   const sign = Math.sign(amount);
-  const origin = originSystemId ?? player.systemId;
-  const dist = hopsFrom(origin);
+  const dist = hopsFrom(originSystemId ?? player.systemId);
   for (const sys of SYSTEMS) {
     const g = sys.govtId;
     if (g < 128) continue;
-    // only the victim's own space and its allies' care
+    // only the victim's own space and its allies' take note
     if (g !== govtId && !govtAllied(g, govtId)) continue;
     const hops = dist.get(String(sys.id));
-    if (hops === undefined || hops > RECORD_REACH) continue;
-    const delta = sign * Math.max(1, Math.round(mag / (hops + 1)));
-    bumpSystemRecord(player, String(sys.id), delta);
+    if (hops === undefined) continue;
+    const delta = Math.floor(mag / (hops + 1));
+    if (delta < 1) continue; // the news simply doesn't carry this far
+    bumpSystemRecord(player, String(sys.id), sign * delta);
   }
 }
 
