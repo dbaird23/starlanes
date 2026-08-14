@@ -90,8 +90,8 @@ export function applyCrime(player: PlayerState, victimGovt: number, crime: Crime
   bumpRecord(player, victimGovt, -penalty);
   for (const govtId of ALL_GOVT_IDS) {
     if (govtId === victimGovt) continue;
-    if (govtAllied(govtId, victimGovt)) bumpRecord(player, govtId, -Math.ceil(penalty / 2));
-    else if (govtEnemy(govtId, victimGovt)) bumpRecord(player, govtId, Math.ceil(penalty / 4));
+    if (govtAllied(victimGovt, govtId)) bumpRecord(player, govtId, -Math.ceil(penalty / 2));
+    else if (govtEnemy(victimGovt, govtId)) bumpRecord(player, govtId, Math.ceil(penalty / 4));
   }
 }
 

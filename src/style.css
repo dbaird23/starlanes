@@ -74,6 +74,24 @@ body {
   display: none !important;
 }
 
+#landed-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.82);
+  color: #c8b88a;
+  border: 1px solid #6a5a3a;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  pointer-events: none;
+  z-index: 200;
+  transition: opacity 0.4s;
+}
+#landed-toast.fading {
+  opacity: 0;
+}
+
 /* ===========================================================================
    Flight status sidebar — design 3a, "Classic", now backed by real plate art.
 

@@ -204,6 +204,22 @@ export class LandedUi {
   /** focused bar action button id */
   private selectedBar: string | null = null;
 
+  private toastEl = document.getElementById("landed-toast")!;
+  private toastTimer = 0;
+
+  private toast(msg: string): void {
+    this.toastEl.textContent = msg;
+    this.toastEl.classList.remove("hidden", "fading");
+    clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => {
+      this.toastEl.classList.add("fading");
+      this.toastTimer = window.setTimeout(
+        () => this.toastEl.classList.add("hidden"),
+        400,
+      );
+    }, 2600);
+  }
+
   constructor(game: Game) {
     this.game = game;
     this.root = document.getElementById("landed-ui")!;
@@ -901,6 +917,7 @@ export class LandedUi {
     this.spaceportOffers = planet.uninhabited
       ? []
       : availableMissions(planet, 3, this.game.player);
+    this.mapsBoughtThisLanding.clear();
     // AvailLoc 4/5/6 hang off the three storefronts rather than the concourse
     this.counterOffers.clear();
     if (planet.exchange)
@@ -1207,7 +1224,7 @@ export class LandedUi {
     this.root.querySelector("#btn-accept")!.addEventListener("click", () => {
       const result = this.game.acceptMission(m, active);
       if (!result.ok) {
-        if (result.reason) alert(result.reason);
+        if (result.reason) this.toast(result.reason);
         return;
       }
       this.bbsMissions = this.bbsMissions.filter((x) => x.id !== m.id);
@@ -1390,7 +1407,7 @@ export class LandedUi {
     const active = this.offerFor(m);
     const result = this.game.acceptMission(m, active);
     if (!result.ok) {
-      if (result.reason) alert(result.reason);
+      if (result.reason) this.toast(result.reason);
       return;
     }
     this.bbsMissions = this.bbsMissions.filter((x) => x.id !== m.id);
@@ -1567,7 +1584,7 @@ export class LandedUi {
     });
     this.root.querySelector("#btn-hire-sel")?.addEventListener("click", () => {
       const res = this.game.hireEscort(this.selectedHire!);
-      if (!res.ok && res.reason) alert(res.reason);
+      if (!res.ok && res.reason) this.toast(res.reason);
       this.render();
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
@@ -2187,6 +2204,8 @@ export class LandedUi {
   private selectedOutfit: string | null = null;
   /** keeps the shop list where the user left it across re-renders */
   private shopScroll = 0;
+  /** map outfits (mod type 16) bought during this landing; cleared on show(). */
+  private mapsBoughtThisLanding = new Set<string>();
 
   /** Rank standing with this world's government can move prices. */
   private shopPrice(base: number): number {
@@ -2361,7 +2380,7 @@ export class LandedUi {
     });
     this.root.querySelector("#btn-buy-ship")?.addEventListener("click", () => {
       const result = this.game.buyShip(this.selectedShip!);
-      if (!result.ok && result.reason) alert(result.reason);
+      if (!result.ok && result.reason) this.toast(result.reason);
       this.render();
     });
     this.root.querySelector("#btn-ship-info")?.addEventListener("click", () => {
@@ -2530,7 +2549,7 @@ export class LandedUi {
      * them; buy is still disabled because none of them are stocked.
      */
     const ownedIds = p.sellOnly
-      ? new Set(OUTFIT_ORDER.filter((id) => (g.player.outfits[id] ?? 0) > 0))
+      ? new Set(OUTFIT_ORDER.filter((id) => ownedCount(id) > 0))
       : new Set<string>();
     const shown = p.sellOnly
       ? OUTFIT_ORDER.filter((id) => available.includes(id) || ownedIds.has(id))
@@ -2539,10 +2558,23 @@ export class LandedUi {
       this.selectedOutfit = shown[0] ?? null;
     }
 
+    /** How many of an outfit the player owns (ammo reads from player.ammo; maps show 0). */
+    const ownedCount = (id: string): number => {
+      const o = OUTFITS[id];
+      const ammMod = o.mods.find((m) => m.type === 3);
+      if (ammMod) {
+        const weapId = String(ammMod.val >= 128 ? ammMod.val : 128 + ammMod.val);
+        return g.player.ammo[weapId] ?? 0;
+      }
+      // Maps (mod type 16) are consumed on purchase; don't show a quantity badge.
+      if (o.mods.some((m) => m.type === 16)) return 0;
+      return g.player.outfits[id] ?? 0;
+    };
+
     const cells = shown
       .map((id) => {
         const o = OUTFITS[id];
-        const owned = g.player.outfits[id] ?? 0;
+        const owned = ownedCount(id);
         const [name] = o.name.split(";");
         const pict = outfitPict(id);
         return `<div class="oi-cell${id === this.selectedOutfit ? " sel" : ""}" data-id="${id}">
@@ -2564,16 +2596,18 @@ export class LandedUi {
     if (this.selectedOutfit) {
       const id = this.selectedOutfit;
       const o = OUTFITS[id];
-      const owned = g.player.outfits[id] ?? 0;
+      const owned = ownedCount(id);
       const isAmmo = o.mods.some((m) => m.type === 3);
+      const isMap = o.mods.some((m) => m.type === 16);
       const price = this.shopPrice(o.cost);
       const free = g.freeMassLeft();
-      const atMax = o.max > 0 && owned >= o.max && !isAmmo;
+      const atMax = o.max > 0 && owned >= o.max && !isAmmo && !isMap;
       const tooHeavy = o.mass > 0 && free < o.mass;
       const tooPoor = g.player.credits < price;
       const noMount = g.mountBlock(id);
       const stocked = tradedHere(id);
-      const canBuy = stocked && !atMax && !tooHeavy && !tooPoor && !noMount;
+      const alreadyMapped = isMap && this.mapsBoughtThisLanding.has(id);
+      const canBuy = stocked && !atMax && !tooHeavy && !tooPoor && !noMount && !alreadyMapped;
       const sellsHere =
         p.sellOnly || stocked || (o.flags & OUTF_SELL_ANYWHERE) !== 0;
       const canSell =
@@ -2660,8 +2694,12 @@ export class LandedUi {
       .querySelector("#btn-buy-outfit")
       ?.addEventListener("click", () => {
         this.shopScroll = grid.scrollTop;
-        const result = this.game.buyOutfit(this.selectedOutfit!);
-        if (!result.ok && result.reason) alert(result.reason);
+        const outfId = this.selectedOutfit!;
+        const result = this.game.buyOutfit(outfId);
+        if (!result.ok && result.reason) this.toast(result.reason);
+        if (result.ok && OUTFITS[outfId]?.mods.some((m) => m.type === 16)) {
+          this.mapsBoughtThisLanding.add(outfId);
+        }
         this.render();
       });
     this.root

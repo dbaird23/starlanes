@@ -1145,7 +1145,7 @@ export class Game {
     }
     this.populateNpcs();
     this.spawnMissionShips();
-    playSnd(153, 0.5);
+    playSnd(130, 0.5);
     this.message(
       dest.isWormhole
         ? `The wormhole flings you into the ${this.system.name} system.`
@@ -6828,7 +6828,7 @@ export class Game {
       this.closeGate(prev.id);
     }
     if (!planet) return;
-    if (planet.isHypergate && this.gateIsWorking(planet)) {
+    if (planet.isHypergate && this.gateIsWorking(planet) && this.hasHypergateAccess) {
       this.beginOpenGate(planet);
     }
     const dist = Math.round(
@@ -6853,6 +6853,7 @@ export class Game {
     if (isGate)
       return (
         this.gateIsWorking(planet) &&
+        this.hasHypergateAccess &&
         this.clearedToLand(planet, this.system.govtId)
       );
     if (!planet.landable) return false;
@@ -6900,7 +6901,7 @@ export class Game {
     }
     if (isGate && !this.hasHypergateAccess) {
       this.message(
-        `${planet.name} requires a hypergate access code. Complete the Sigma Shipyards missions to obtain one.`,
+        `${planet.name}: hypergate access denied.`,
       );
       playSnd(SND.LANDING_DENIED, 0.55);
       return;
@@ -7861,7 +7862,8 @@ export class Game {
       return { ok: false, reason: "That is not for sale here." };
     }
     const owned = this.player.outfits[outfId] ?? 0;
-    if (outf.max > 0 && owned >= outf.max) {
+    const isMap = outf.mods.some((m) => m.type === 16);
+    if (outf.max > 0 && owned >= outf.max && !isMap) {
       return {
         ok: false,
         reason: "You already have the maximum number of these.",
@@ -7897,6 +7899,9 @@ export class Game {
           this.player.ammo[weapId] = (this.player.ammo[weapId] ?? 0) + 1;
         }
       }
+    } else if (isMap) {
+      // maps are consumed on purchase — chart the area, don't track in outfits
+      this.chartFromOutfit(outfId);
     } else {
       this.player.outfits[outfId] = owned + 1;
       this.chartFromOutfit(outfId);
@@ -7907,13 +7912,27 @@ export class Game {
 
   sellOutfit(outfId: string): { ok: boolean; reason?: string } {
     const outf = OUTFITS[outfId];
-    const owned = this.player.outfits[outfId] ?? 0;
-    if (!outf || owned <= 0)
-      return { ok: false, reason: "You do not own this outfit." };
+    if (!outf) return { ok: false, reason: "You do not own this outfit." };
     // oütf Flags 0x0008: some items can never be sold back
     if ((outf.flags & 0x0008) !== 0) {
       return { ok: false, reason: "This item cannot be sold." };
     }
+    const isAmmo = outf.mods.some((m) => m.type === 3);
+    if (isAmmo) {
+      // Ammo is stored in player.ammo, not player.outfits — sell one round back.
+      const ammMod = outf.mods.find((m) => m.type === 3)!;
+      const weapId = this.ammoWeaponId(ammMod.val);
+      const rounds = this.player.ammo[weapId] ?? 0;
+      if (rounds <= 0) return { ok: false, reason: "You do not own this outfit." };
+      this.player.ammo[weapId] = rounds - 1;
+      if (this.player.ammo[weapId] === 0) delete this.player.ammo[weapId];
+      this.player.credits += Math.floor(outf.cost * 0.75);
+      this.recomputeLoadout();
+      return { ok: true };
+    }
+    const owned = this.player.outfits[outfId] ?? 0;
+    if (owned <= 0)
+      return { ok: false, reason: "You do not own this outfit." };
     this.player.outfits[outfId] = owned - 1;
     if (this.player.outfits[outfId] === 0) delete this.player.outfits[outfId];
     this.player.credits += Math.floor(outf.cost * 0.75);
