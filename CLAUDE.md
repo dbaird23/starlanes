@@ -1077,35 +1077,36 @@ happened to live there.
   cost. Level names now come from **STR# 138**, which holds exactly the
   eleven the Bible prints; raw 230 (Nova 46) reads "Little Ability", which
   is what the original's own title screen showed for that pilot.
-- **The crime falloff is measured: `penalty / (hops + 1)`, rounded down.** A
-  Fed Destroyer (govt 128, DisabPenalty 1 + KillPenalty 5) was destroyed in
-  Fomalhaut in the original and the pilot file's ledger came out exact —
-  Fomalhaut -6, Tichel and Kon (1 jump) -3, Sol (2) -2, Alphara (3) -1, Vega
-  (4) -1. Six of the seven systems that moved fit to the point; the seventh
-  (Galvan, -3 where the formula wants -1) is almost certainly a second
-  incident in the same session. **The crime site takes DisabPenalty +
-  KillPenalty**, confirmed twice: 1 + 5 = 6 here, and 3 + 7 = 10 for a
-  Pyrogenesis kill in the earlier sample. That is why destroying a ship
-  charges both — you cripple it on the way through.
-- **Nothing ever goes up.** In both samples, systems belonging to the
-  victim's enemies sat well inside the affected radius and none improved. The
-  Bible's "doing evil deeds to one government will improve your rating with
-  its enemies" does not fire; `applyGovtRecord` does not credit enemies.
-- **Open: which systems are in the recipient set.** Nova moved only **7
-  systems of 545**. Every structural explanation has been tested and failed —
-  all systems, all allied systems, everything within range, the systems the
-  pilot had explored, the systems holding worlds of the victim's government,
-  and inhabited-stellar count. (Kania is two jumps from the kill, Federation,
-  explored, and holds Port Kane, and it did not move.) The likeliest
-  remaining candidate is **the route the player actually flew that session**,
-  which the pilot file does not appear to record. Until that is settled we
-  apply the measured falloff across the victim's own and allied space: right
-  about direction and magnitude, reaching more systems than Nova does.
+- **The crime model is measured and exact.** A Fed Destroyer (gövt 128,
+  DisabPenalty 1 + KillPenalty 5 = 6) was destroyed in **Altair** in the
+  original, from a crafted pilot whose ledger was zeroed first and who never
+  left the system. Every system that moved fits `floor(penalty/(hops+1))`:
+  Altair -6, Kania/Tenetria/Galvan (1 jump) -3, Tichel (2) -2, Sol and
+  Fomalhaut (3) -1. The recipient set is equally sharp — those seven are
+  **exactly the Federation systems within three jumps**. Independent,
+  Auroran, Rebellion and Pirate systems inside the same radius took nothing,
+  and the 50 Federation systems at four jumps or more took nothing, so the
+  reach is a flat **3 jumps**, not "as far as the arithmetic still rounds
+  to 1". Both facts are in `applyGovtRecord`.
+- **The crime site is charged DisabPenalty + KillPenalty together**, twice
+  confirmed: 1 + 5 = 6 in Altair, and 3 + 7 = 10 for a Pyrogenesis kill in
+  Tichel. You cripple a ship on the way to destroying it, so both land.
+- **Nothing ever goes up.** In both runs the victim's enemies sat well inside
+  the radius and were untouched, so the Bible's "doing evil deeds to one
+  government will improve your rating with its enemies" does not fire. Only
+  allies are unverified — no allied-government system happened to lie within
+  three jumps of Altair — and they are included on the Bible's word at the
+  same falloff.
+- **The .plt legal array is at byte 5150**, not 5148. An earlier off-by-one
+  read every system's record as its neighbour's, which is what made the first
+  experiment unreadable: the kill looked like it had happened in Sol when the
+  player had said Tichel, and five different hypotheses were tested and
+  discarded against data that was simply shifted by one. The base is settled
+  by scoring candidates against gövt InitialRec across all 398 systems —
+  5150 matches every one, 5148 misses 22. **Verify an offset that way before
+  building on it**: the seeded pattern is a free oracle, and a near-miss base
+  looks plausible enough to fool a spot check.
 
-  Both raw before/after pairs are in the session scratchpad. If you rerun
-  this: snapshot the `.plt` **before** loading it, note the exact system of
-  the kill, and write down the route flown — the route is the missing
-  variable.
 - **Legal records are per-system now — Nova's own model.**- **Legal records are per-system now — Nova's own model.** `reputation.ts`
   keeps a sparse ledger keyed by sÿst id: an untouched system reads its owning
   govt's InitialRec (the original .plt seeds exactly so — Nil'kemorya -5,

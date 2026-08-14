@@ -116,43 +116,44 @@ function hopsFrom(originId: string): Map<string, number> {
   return dist;
 }
 
+/** How far news of a crime carries, in jumps. Measured; see below. */
+const RECORD_REACH = 3;
+
 /**
  * Land an act for (positive) or against (negative) a government, spreading
  * out from the system it happened in.
  *
- * **The falloff is measured.** A Fed Destroyer (govt 128, DisabPenalty 1 +
- * KillPenalty 5) was destroyed in Fomalhaut in the original, and the pilot
- * file's per-system ledger came out as an exact `penalty / (hops + 1)`,
- * rounded down:
+ * **This is measured, and it fits exactly.** A Fed Destroyer (gövt 128,
+ * DisabPenalty 1 + KillPenalty 5 = 6) was destroyed in Altair in the
+ * original, from a crafted pilot whose ledger was zeroed first and who never
+ * left the system. Every one of the seven systems that moved fits
+ * `floor(penalty / (hops + 1))`:
  *
- *     Fomalhaut  h0  -6      6/1 = 6
- *     Tichel     h1  -3      6/2 = 3
- *     Kon        h1  -3      6/2 = 3
- *     Sol        h2  -2      6/3 = 2
- *     Alphara    h3  -1      6/4 = 1.5 -> 1
- *     Vega       h4  -1      6/5 = 1.2 -> 1
+ *     Altair              h0  -6      6/1
+ *     Kania, Tenetria,
+ *       Galvan            h1  -3      6/2
+ *     Tichel              h2  -2      6/3
+ *     Sol, Fomalhaut      h3  -1      6/4 -> 1
  *
- * Six of the seven systems that moved fit to the point; the seventh (Galvan,
- * -3 where the formula wants -1) is almost certainly a second incident in the
- * same session. An earlier kill of a Pyrogenesis ship gave the same signature
- * at its own site — **DisabPenalty + KillPenalty**, 3 + 7 = -10 — which is
- * why destroying a ship charges both here: you cripple it on the way through.
+ * and the recipient set is just as sharp: those seven are **exactly the
+ * Federation systems within three jumps**. Every independent, Auroran,
+ * Rebellion and Pirate system inside the same radius took nothing, and the
+ * 50 Federation systems at four jumps and beyond took nothing either — so
+ * the reach is a flat three jumps rather than "wherever the arithmetic still
+ * rounds to 1".
  *
- * What is **not** solved is which systems are in the recipient set. Nova
- * moved only 7 systems of 545, and every structural explanation has been
- * tested and failed: all systems, all allied systems, everything within
- * range, the systems the pilot had explored, the systems holding worlds of
- * the victim's government, and the count of inhabited stellars. The likeliest
- * remaining candidate is the route the player actually flew that session,
- * which the pilot file does not record. Until that is settled we apply the
- * measured falloff across the victim's own and allied space, which reaches
- * more systems than Nova does but is right about direction and magnitude.
+ * Two further things hold across both experiments run against the original:
+ * the crime site is charged **DisabPenalty + KillPenalty** together (1 + 5
+ * here; 3 + 7 for a Pyrogenesis kill in Tichel, which came out -10 on the
+ * nose), because you cripple a ship on the way to destroying it; and
+ * **nothing ever goes up** — the victim's enemies sat well inside the radius
+ * both times and were untouched, so the Bible's "doing evil deeds to one
+ * government will improve your rating with its enemies" does not fire.
  *
- * One thing is certain in both samples: **nothing ever went up.** Systems
- * belonging to the victim's enemies sat well inside the affected radius and
- * none improved, so the Bible's "doing evil deeds to one government will
- * improve your rating with its enemies" does not fire, and we do not credit
- * enemies.
+ * The one thing the clean run could not test is allies: no allied-government
+ * system happened to lie within three jumps of Altair. They are included here
+ * on the Bible's word ("Allied governments also communicate your actions")
+ * at the same falloff, and that part remains unverified.
  */
 export function applyGovtRecord(
   player: PlayerState,
@@ -167,12 +168,11 @@ export function applyGovtRecord(
   for (const sys of SYSTEMS) {
     const g = sys.govtId;
     if (g < 128) continue;
-    // only the victim's own space and its allies' take note
     if (g !== govtId && !govtAllied(g, govtId)) continue;
     const hops = dist.get(String(sys.id));
-    if (hops === undefined) continue;
+    if (hops === undefined || hops > RECORD_REACH) continue;
     const delta = Math.floor(mag / (hops + 1));
-    if (delta < 1) continue; // the news simply doesn't carry this far
+    if (delta < 1) continue;
     bumpSystemRecord(player, String(sys.id), sign * delta);
   }
 }
