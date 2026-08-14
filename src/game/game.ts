@@ -372,6 +372,7 @@ function defaultPlayer(): PlayerState {
     records: startingRecords(tmpl),
     ratingPoints: tmpl?.kills ?? 0,
     strict: false,
+    difficulty: "normal",
     personsKilled: [],
     dominated: [],
     tributeDay: 0,
@@ -726,7 +727,7 @@ export class Game {
     return true;
   }
 
-  startPilot(pilotId: string, strict?: boolean): void {
+  startPilot(pilotId: string, strict?: boolean, difficulty?: "normal" | "hard"): void {
     preloadCoreSnds();
     this.resumeMode = null;
     if (isPilotDead(pilotId)) {
@@ -742,6 +743,7 @@ export class Game {
     const saved = loadPilot(pilotId);
     this.player = { ...defaultPlayer(), ...(saved ?? {}) };
     if (strict !== undefined) this.player.strict = strict;
+    if (difficulty !== undefined) this.player.difficulty = difficulty;
     // Migration: Sigma4 onAccept fires k147 (rank 147 = hypergate access).
     // Pilots that completed the mission before rank granting was wired have b49
     // but no rank 147. Grant it retroactively so the hypergate unlocks.
@@ -2569,6 +2571,15 @@ export class Game {
       }
     }
 
+    // Boarding a disabled escort reactivates it rather than plundering it.
+    if (t.hired || t.ally) {
+      const limp = t.maxArmor * t.disableAt + t.maxArmor * 0.05;
+      t.armor = Math.min(t.maxArmor, limp);
+      t.disabled = false;
+      this.message(`${this.shipLabel(t)} reactivated.`);
+      return;
+    }
+
     if (t.boarded) {
       this.message(`${this.shipLabel(t)} has already been stripped.`);
       return;
@@ -3262,14 +3273,16 @@ export class Game {
             },
           });
         }
-        opts.push({
-          label: hire.pendingSell ? "Cancel Sell" : "Sell Escort",
-          action: () => {
-            hire.pendingSell = !hire.pendingSell;
-            if (hire.pendingSell) hire.pendingUpgrade = false;
-            return this.escortHailGreeting(t);
-          },
-        });
+        if (hire.captured) {
+          opts.push({
+            label: hire.pendingSell ? "Cancel Sell" : "Sell Escort",
+            action: () => {
+              hire.pendingSell = !hire.pendingSell;
+              if (hire.pendingSell) hire.pendingUpgrade = false;
+              return this.escortHailGreeting(t);
+            },
+          });
+        }
         opts.push({
           label: "Release",
           action: () => {
@@ -4698,12 +4711,16 @@ export class Game {
     });
     const firstWeap = firstPrimary ? WEAPONS[String(firstPrimary.id)] : null;
 
-    // Intercept point: for projectile weapons use leadPoint; beams are instant
-    // so aim at the current position.
-    const aimPos =
-      !fleeing && firstWeap && !isBeam(firstWeap) && firstWeap.speed > 0
-        ? leadPoint(npc, target, firstWeap.speed)
-        : target.pos;
+    // Intercept point: hard mode uses exact lead; normal mode aims at the
+    // current position so the player can dodge by changing direction.
+    const hard = this.player.difficulty === "hard";
+    const aimPos = (() => {
+      if (fleeing || !firstWeap || isBeam(firstWeap) || firstWeap.speed <= 0)
+        return target.pos;
+      const lead = leadPoint(npc, target, firstWeap.speed);
+      if (hard) return lead;
+      return { x: (target.pos.x + lead.x) / 2, y: (target.pos.y + lead.y) / 2 };
+    })();
     const desired = fleeing
       ? Math.atan2(-dy, -dx)
       : Math.atan2(aimPos.y - npc.pos.y, aimPos.x - npc.pos.x);
@@ -4733,8 +4750,12 @@ export class Game {
         const quadrant = isQuadrantGun(w);
         // Each weapon computes its own lead point so fast guns and slow guns
         // aim correctly even when mounted on the same hull.
-        const wAimPos =
-          !isBeam(w) && w.speed > 0 ? leadPoint(npc, target, w.speed) : target.pos;
+        const wAimPos = (() => {
+          if (isBeam(w) || w.speed <= 0) return target.pos;
+          const lead = leadPoint(npc, target, w.speed);
+          if (hard) return lead;
+          return { x: (target.pos.x + lead.x) / 2, y: (target.pos.y + lead.y) / 2 };
+        })();
         const wDesired = Math.atan2(
           wAimPos.y - npc.pos.y,
           wAimPos.x - npc.pos.x,

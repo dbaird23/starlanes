@@ -146,6 +146,8 @@ export interface PlayerState {
   ratingPoints: number;
   /** strict mode: death is permanent */
   strict: boolean;
+  /** normal: NPCs aim at current position; hard: NPCs lead the target */
+  difficulty: "normal" | "hard";
   /** përs ids already killed — they never come back */
   personsKilled: number[];
   /** spob ids the player has dominated, and the day tribute was last paid */

@@ -228,7 +228,7 @@ export interface MainMenuHandlers {
   /** Title "Enter ship" — resume paused session if any, else load. */
   enterShip: (pilotId: string, strict?: boolean) => void;
   /** Open Pilot / New Pilot — always load from the saved pilot file. */
-  loadPilot: (pilotId: string, strict?: boolean) => void;
+  loadPilot: (pilotId: string, strict?: boolean, difficulty?: "normal" | "hard") => void;
   /** Forget a paused session if that pilot file is deleted. */
   onDeletePilot?: (pilotId: string) => void;
 }
@@ -674,6 +674,13 @@ export class MainMenu {
       <label class="ttl-label">Pilot name
         <input id="np-name" type="text" value="Captain" maxlength="32">
       </label>
+      <fieldset class="ttl-fieldset">
+        <legend>Difficulty</legend>
+        <label class="ttl-check"><input type="radio" name="np-diff" value="normal" checked>
+          Normal — enemies aim at your position</label>
+        <label class="ttl-check"><input type="radio" name="np-diff" value="hard">
+          Hard — enemies predict your movement</label>
+      </fieldset>
       <label class="ttl-check"><input id="np-strict" type="checkbox"> Strict play —
         death is permanent and the pilot is deleted</label>
       <div class="btnrow">
@@ -684,6 +691,8 @@ export class MainMenu {
     nameEl.select();
     m.querySelector("#np-go")!.addEventListener("click", () => {
       const strict = m.querySelector<HTMLInputElement>("#np-strict")!.checked;
+      const diffEl = m.querySelector<HTMLInputElement>("input[name=np-diff]:checked");
+      const difficulty = (diffEl?.value ?? "normal") as "normal" | "hard";
       const name = nameEl.value.trim() || "Captain";
       const id = createPilot(strict ? `${name} †` : name);
       /*
@@ -695,7 +704,7 @@ export class MainMenu {
        * shows the IntroTextID dësc and follows a plug-in's own template.
        */
       this.hide();
-      this.handlers.loadPilot(id, strict);
+      this.handlers.loadPilot(id, strict, difficulty);
     });
   }
 
