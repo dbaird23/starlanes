@@ -1267,6 +1267,17 @@ for (const id of [
   // a plug-in that rewords the game works. Note 22/23 are a docking/landing
   // pair chosen by stellar type, and 24/25 sandwich the landing keybinding.
   2002,
+  // 3000 "Ship Comm Strings" (190), 3001 "More Ship Comm" (5) and 3002
+  // "Stellar Comm Strings" (50): everything a ship or a world says over the
+  // radio. Both big banks are laid out in **groups of five** — Nova picks one
+  // at random from the group that fits the situation, which is why the lists
+  // read as five ways of saying the same thing. 3002's tribute groups are
+  // short: entries 28-30 and 38-40 are the literal placeholders
+  // "<dominated = TRUE>" / "<dominated = FALSE>", so those two groups have
+  // only two real lines and must not be picked from blindly.
+  3000,
+  3001,
+  3002,
   1000,
   4000,
   4002,

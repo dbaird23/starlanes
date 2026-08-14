@@ -64,7 +64,15 @@ import {
   drawThrustFlame,
 } from "../engine/draw";
 import { IntroUi } from "../ui/intro";
-import { ui } from "../data/strings";
+import {
+  UI,
+  SHIP_COMM,
+  STELLAR_COMM,
+  shipComm,
+  stellarComm,
+  stellarCommByKind,
+  ui,
+} from "../data/strings";
 import {
   blinkIntensity,
   drawSheetFrame,
@@ -2370,7 +2378,14 @@ export class Game {
         (id) => id !== planet.id,
       );
       applySet(planet.onRelease, this.player.bits, this.bitHandlers());
-      this.message(`You release ${planet.name} from tribute.`);
+      // 3002 group 8, kind-paired the same way as the surrender group
+      this.message(
+        stellarCommByKind(
+          STELLAR_COMM.releasedFromTribute,
+          planet.kind === "station",
+          `You release ${planet.name} from tribute.`,
+        ),
+      );
       return;
     }
 
@@ -2447,8 +2462,18 @@ export class Game {
     this.domination.delete(planet.id);
     applySet(planet.onDominate, this.player.bits, this.bitHandlers());
     const daily = planet.tribute > 0 ? planet.tribute : planet.techLevel * 1000;
+    /*
+     * STR# 3002 group 6 is the world's own surrender line, and its two real
+     * entries are written for the two stellar kinds ("The planet agrees to
+     * pay you tribute" / "…the station…"); the other three slots in the group
+     * are the "<dominated = TRUE>" markers, which pickGroup drops.
+     */
     this.message(
-      `${planet.name} submits. Tribute: ${daily.toLocaleString()} cr per day.`,
+      `${planet.name}: ${stellarCommByKind(
+        STELLAR_COMM.tributeAccepted,
+        planet.kind === "station",
+        `${planet.name} submits.`,
+      )} Tribute: ${daily.toLocaleString()} ${UI.cr()} per day.`,
     );
     playSnd(152, 0.5);
   }
@@ -3043,13 +3068,13 @@ export class Game {
       t.govtId >= 128 &&
       ((GOVT_FLAGS[String(t.govtId)] ?? 0) & 0x0400) !== 0
     ) {
-      this.message("No response on any frequency.");
+      this.message(shipComm(SHIP_COMM.noResponse, "No response."));
       return;
     }
     playSnd(154, 0.4);
     const greeting = t.hired
       ? this.escortHailGreeting(t)
-      : "Communications channel open.";
+      : shipComm(SHIP_COMM.channelOpen, "Communications channel open.");
     this.hailUi.show(t, greeting);
   }
 
@@ -3117,9 +3142,7 @@ export class Game {
         action: () => {
           playSnd(151, 0.4);
           if (!held && ratingLevel(this.player.ratingPoints) < DEADLY_LEVEL) {
-            return tributeDismissals[
-              Math.floor(Math.random() * tributeDismissals.length)
-            ];
+            return `"${stellarComm(STELLAR_COMM.tributeRefused, tributeDismissals[Math.floor(Math.random() * tributeDismissals.length)])}"`;
           }
           // Demanding tribute from a previously friendly world turns them hostile.
           // Only the planet's own record is marked — the government at large
@@ -3195,7 +3218,7 @@ export class Game {
                   // Refuse — raise price, lock out further bargaining this hail.
                   playSnd(153, 0.4);
                   this.bribeState.set(p.id, { ...cur, rejected: true, nextAmount: higher });
-                  const msg = rejectionLines[Math.floor(Math.random() * rejectionLines.length)];
+                  const msg = `"${stellarComm(STELLAR_COMM.bribeRefused, rejectionLines[Math.floor(Math.random() * rejectionLines.length)])}"`;
                   this.hailUi.showPlanet(p, msg, opts);
                 }
                 return null;
@@ -3236,7 +3259,11 @@ export class Game {
         },
       });
     }
-    this.hailUi.showPlanet(p, "Communications channel open.", opts);
+    this.hailUi.showPlanet(
+      p,
+      `${stellarComm(STELLAR_COMM.channelOpenTo, "Communications channel open to ")}${p.name}.`,
+      opts,
+    );
   }
 
   private hailGreeting(t: NpcShip): string {
@@ -3258,8 +3285,8 @@ export class Game {
     const record = getGovtRecord(this.player, t.govtId, this.player.systemId);
     if (t.hostile) {
       return t.armor < t.maxArmor * 0.4
-        ? `"We're hit bad. What do you want?"`
-        : `"You're a long way from safe harbor. Move along before we take an interest in your cargo."`;
+        ? `"${shipComm(SHIP_COMM.hostileWhatDoYouWant, "What do you want?")}"`
+        : `"${shipComm(SHIP_COMM.hostileTaunt, "You're just prolonging the inevitable.")}"`;
     }
     if (record < -20) {
       return `"${govt} vessel here. We know who you are, and we've got nothing to say to you."`;
@@ -3323,13 +3350,14 @@ export class Game {
       const line = pick(STR_LISTS[String(7000 + t.govtId - 128)] ?? []);
       if (line) return `"${line}"`;
     }
-    return `"Nothing to report, Captain. Safe flying."`;
+    return `"${shipComm(SHIP_COMM.greeting, "Nothing to report, Captain. Safe flying.")}"`;
   }
 
   /** Build the reply text shown when an escort is hailed. */
   private escortHailGreeting(t: NpcShip): string {
     const hire = this.player.escorts.find((e) => e.shipId === t.typeId);
-    if (!hire) return "Communications channel open.";
+    if (!hire)
+      return shipComm(SHIP_COMM.channelOpen, "Communications channel open.");
     const type = SHIPS[hire.shipId];
     const sellValue = escortSellValue(hire.shipId);
     const upgradeId = type?.upgradeTo ?? -1;

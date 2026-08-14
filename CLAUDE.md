@@ -410,6 +410,30 @@ connective words (391-396: "of", "and", "a", "an", "in", "N/A") that Nova
 assembles sentences from. Adding one is a two-line change: find the entry
 number in the extracted list and wrap the literal in `ui()`.
 
+**The comm banks are extracted too, and they run in groups of five.** STR#
+**3000** "Ship Comm Strings" (190 = 38 groups), **3001** "More Ship Comm" (5)
+and **3002** "Stellar Comm Strings" (50 = 10 groups) hold everything a ship
+or a world says over the radio, and both big banks are laid out as five ways
+of saying the same thing — Nova picks one at random from the group that fits.
+`shipComm(group, fallback)` / `stellarComm(group, fallback)` do that, with
+`SHIP_COMM` and `STELLAR_COMM` naming every group so call sites read as
+intent rather than arithmetic. Wired: the channel-open lines (a world's names
+itself, since 3002 group 1 ends in "to "), a hostile ship's taunts, the
+escort greeting, the tribute demand and its refusal, the planet bribe
+refusal, and a ship with nothing to report.
+
+**Two of 3002's groups are not interchangeable, and reading them as such is a
+bug.** The surrender group (6) and the release group (8) hold two real lines
+each, written for the two stellar kinds — "The planet agrees to pay you
+tribute" against "…the station…" — and the group's other three slots are the
+literal placeholders `<dominated = TRUE>` / `<dominated = FALSE>`. Picking at
+random had Ryll, a planet, calling itself a station. `stellarCommByKind`
+indexes those by `PlanetDef.kind` instead, and `pickGroup` drops any entry
+starting with "<" so a marker can never be read out to the player. This is
+the same kind-pairing as STR# 2002's 22/23, 67/68, 71/72 and 87/88 — when a
+group looks short, check whether its entries are a pair rather than
+alternatives.
+
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
 if the ship happened to be the player's current target, and otherwise fed a
