@@ -811,6 +811,7 @@ function makePlanet(sp: RawSpob, descs: Record<string, string>): PlanetDef {
     onRelease: sp.onRelease ?? "",
     isHypergate: ((sp.flags2 ?? 0) & 0x1000) !== 0,
     isWormhole: ((sp.flags2 ?? 0) & 0x2000) !== 0,
+    sellOnly: ((sp.flags2 ?? 0) & 0x0400) !== 0,
     hyperLinks: (sp.hyperLinks ?? []).map(String),
     emergeAngle:
       typeof sp.emergeAngle === "number" &&

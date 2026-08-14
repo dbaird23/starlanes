@@ -22,7 +22,6 @@ import type { Game, GateDestination } from "../game/game";
 import {
   MAX_ESCORTS,
   escortHireFee,
-  escortSellValue,
   escortWage,
 } from "../game/game";
 import { escortCargoCap } from "../game/cargo";
@@ -1502,23 +1501,22 @@ export class LandedUi {
 
     const daily = g.player.escorts.reduce((sum, e) => sum + e.wage, 0);
     const hired = g.player.escorts
-      .map((e, i) => {
+      .map((e) => {
         const s = SHIPS[e.shipId];
-        // a prize is sold rather than dismissed, and draws no wage meanwhile
-        const value = e.captured ? escortSellValue(e.shipId) : 0;
         const hauls = escortCargoCap(e.shipId);
+        const status = e.captured
+          ? `Captured prize`
+          : `In your service · ${e.wage.toLocaleString()} cr/day`;
+        const pending = e.pendingSell
+          ? ` · <em>pending sale</em>`
+          : e.pendingUpgrade
+            ? ` · <em>pending upgrade</em>`
+            : "";
         return `<div class="ship-card">
           <div class="ship-info">
             <div class="ship-name">${escapeHtml(s?.name.split(";")[0] ?? "Ship")}</div>
-            <div class="ship-stats">${
-              e.captured
-                ? `Captured prize · worth ${value.toLocaleString()} cr`
-                : `In your service · ${e.wage.toLocaleString()} cr/day`
-            }${hauls ? ` · carries ${hauls} t` : ""}</div>
+            <div class="ship-stats">${status}${hauls ? ` · carries ${hauls} t` : ""}${pending}</div>
           </div>
-          <div class="ship-buy"><button class="evbtn" data-dismiss="${i}">${
-            e.captured ? "Sell" : "Dismiss"
-          }</button></div>
         </div>`;
       })
       .join("");
@@ -1574,14 +1572,6 @@ export class LandedUi {
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.setView("bar");
-    });
-    this.root.querySelectorAll("button[data-dismiss]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        this.game.dismissEscort(
-          parseInt((btn as HTMLButtonElement).dataset.dismiss!, 10),
-        );
-        this.render();
-      });
     });
   }
 
@@ -2533,11 +2523,23 @@ export class LandedUi {
       }
       return true;
     });
-    if (!this.selectedOutfit || !available.includes(this.selectedOutfit)) {
-      this.selectedOutfit = available[0] ?? null;
+    /*
+     * spöb Flags2 0x0400 (sellOnly): the outfitter will buy anything the
+     * player owns but stocks nothing itself. Sirrusa is the only shipped
+     * example. Owned items are added to the grid so you can select and sell
+     * them; buy is still disabled because none of them are stocked.
+     */
+    const ownedIds = p.sellOnly
+      ? new Set(OUTFIT_ORDER.filter((id) => (g.player.outfits[id] ?? 0) > 0))
+      : new Set<string>();
+    const shown = p.sellOnly
+      ? OUTFIT_ORDER.filter((id) => available.includes(id) || ownedIds.has(id))
+      : available;
+    if (!this.selectedOutfit || !shown.includes(this.selectedOutfit)) {
+      this.selectedOutfit = shown[0] ?? null;
     }
 
-    const cells = available
+    const cells = shown
       .map((id) => {
         const o = OUTFITS[id];
         const owned = g.player.outfits[id] ?? 0;
@@ -2572,7 +2574,8 @@ export class LandedUi {
       const noMount = g.mountBlock(id);
       const stocked = tradedHere(id);
       const canBuy = stocked && !atMax && !tooHeavy && !tooPoor && !noMount;
-      const sellsHere = stocked || (o.flags & OUTF_SELL_ANYWHERE) !== 0;
+      const sellsHere =
+        p.sellOnly || stocked || (o.flags & OUTF_SELL_ANYWHERE) !== 0;
       const canSell =
         owned > 0 && sellsHere && (o.flags & OUTF_CANT_SELL) === 0;
       const pict = outfitPict(id);

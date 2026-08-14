@@ -740,6 +740,15 @@ export class Game {
     const saved = loadPilot(pilotId);
     this.player = { ...defaultPlayer(), ...(saved ?? {}) };
     if (strict !== undefined) this.player.strict = strict;
+    // Migration: Sigma4 onAccept fires k147 (rank 147 = hypergate access).
+    // Pilots that completed the mission before rank granting was wired have b49
+    // but no rank 147. Grant it retroactively so the hypergate unlocks.
+    if (
+      this.player.bits["49"] &&
+      !this.player.ranks.includes(147)
+    ) {
+      this.player.ranks.push(147);
+    }
     if (!saved) {
       // chär OnStart: the control bits the scenario wants set the moment a
       // pilot exists. Without these the opening links of a story chain never
@@ -1662,6 +1671,16 @@ export class Game {
           this.infoUi.handleArrow(1);
         } else if (this.input.consume("ArrowUp")) {
           this.infoUi.handleArrow(-1);
+        } else {
+          for (const [code, letter] of [
+            ["KeyG", "g"], ["KeyC", "c"], ["KeyE", "e"],
+            ["KeyH", "h"], ["KeyK", "k"],
+          ] as const) {
+            if (this.input.consume(code)) {
+              this.infoUi.handleTabKey(letter);
+              break;
+            }
+          }
         }
       } else if (actionConsume(this.input, "missionInfo")) {
         this.openMissionInfo();
@@ -1728,6 +1747,16 @@ export class Game {
           this.infoUi.handleArrow(1);
         } else if (this.input.consume("ArrowUp")) {
           this.infoUi.handleArrow(-1);
+        } else {
+          for (const [code, letter] of [
+            ["KeyG", "g"], ["KeyC", "c"], ["KeyE", "e"],
+            ["KeyH", "h"], ["KeyK", "k"],
+          ] as const) {
+            if (this.input.consume(code)) {
+              this.infoUi.handleTabKey(letter);
+              break;
+            }
+          }
         }
       } else if (this.hailUi.open) {
         for (const code of ["KeyG", "KeyO", "KeyA", "KeyL", "KeyD"] as const) {
@@ -2048,6 +2077,12 @@ export class Game {
     }
     for (const npc of this.npcs) {
       npc.rechargeShields(dt);
+      // stray-fire memory fades — a burst of crossfire is forgiven over ~10s
+      if (npc.strayDamage > 0)
+        npc.strayDamage = Math.max(
+          0,
+          npc.strayDamage - (npc.maxShield + npc.maxArmor) * 0.1 * dt,
+        );
       if (npc.escorting && !npc.disabled && !npc.hostile) {
         // the ship you're escorting flies with you
         this.updateEscorteeAi(npc, dt);
@@ -2906,7 +2941,10 @@ export class Game {
       return;
     }
     playSnd(154, 0.4);
-    this.hailUi.show(t, "Communications channel open.");
+    const greeting = t.hired
+      ? this.escortHailGreeting(t)
+      : "Communications channel open.";
+    this.hailUi.show(t, greeting);
   }
 
   /** Call a world's traffic control. */
@@ -3101,7 +3139,7 @@ export class Game {
     if (record > 20) {
       return `"Good to see a friendly ship out here. ${govt} salutes you, Captain."`;
     }
-    return `"This is the ${govt} vessel ${SHIPS[t.typeId ?? ""]?.name.split(";")[0] ?? "underway"}. Go ahead."`;
+    return this.greetingInfo(t);
   }
 
   /** STR# 150 holds Nova's own button labels; 20-24 are the comms panel's. */
@@ -3160,6 +3198,29 @@ export class Game {
     return `"Nothing to report, Captain. Safe flying."`;
   }
 
+  /** Build the reply text shown when an escort is hailed. */
+  private escortHailGreeting(t: NpcShip): string {
+    const hire = this.player.escorts.find((e) => e.shipId === t.typeId);
+    if (!hire) return "Communications channel open.";
+    const type = SHIPS[hire.shipId];
+    const sellValue = escortSellValue(hire.shipId);
+    const upgradeId = type?.upgradeTo ?? -1;
+    const upgradeType = upgradeId !== -1 ? SHIPS[String(upgradeId)] : null;
+    const upgradeCost = type?.escUpgrdCost ?? 0;
+    let msg = `"On your wing, Captain. Sell value: ${sellValue.toLocaleString()} cr.`;
+    if (upgradeType) {
+      msg += ` Upgrade to ${upgradeType.name.split(";")[0]}: ${upgradeCost.toLocaleString()} cr.`;
+    }
+    if (hire.pendingSell) {
+      msg += ` Pending sale at next shipyard."`;
+    } else if (hire.pendingUpgrade) {
+      msg += ` Upgrade pending at next shipyard."`;
+    } else {
+      msg += `"`;
+    }
+    return msg;
+  }
+
   /**
    * The comms panel's options, as Nova defines them: Greetings, Request
    * Assistance, Offer Bribe and Beg For Mercy, with Close Channel added by the
@@ -3169,6 +3230,43 @@ export class Game {
    * and the Krypt, which is why neither ever replies.
    */
   hailOptions(t: NpcShip): { label: string; action: () => string | null | void }[] {
+    // Hired escorts get dedicated management options, not the standard comms menu.
+    if (t.hired) {
+      const opts: { label: string; action: () => string | null | void }[] = [];
+      const hire = this.player.escorts.find((e) => e.shipId === t.typeId);
+      if (hire) {
+        const type = SHIPS[hire.shipId];
+        const upgradeId = type?.upgradeTo ?? -1;
+        const upgradeType = upgradeId !== -1 ? SHIPS[String(upgradeId)] : null;
+        if (upgradeType) {
+          opts.push({
+            label: hire.pendingUpgrade ? "Cancel Upgrade" : "Upgrade Escort",
+            action: () => {
+              hire.pendingUpgrade = !hire.pendingUpgrade;
+              if (hire.pendingUpgrade) hire.pendingSell = false;
+              return this.escortHailGreeting(t);
+            },
+          });
+        }
+        opts.push({
+          label: hire.pendingSell ? "Cancel Sell" : "Sell Escort",
+          action: () => {
+            hire.pendingSell = !hire.pendingSell;
+            if (hire.pendingSell) hire.pendingUpgrade = false;
+            return this.escortHailGreeting(t);
+          },
+        });
+        opts.push({
+          label: "Release",
+          action: () => {
+            const idx = this.player.escorts.indexOf(hire);
+            if (idx >= 0) this.releaseEscort(idx);
+          },
+        });
+      }
+      return opts;
+    }
+
     const opts: { label: string; action: () => string | null | void }[] = [];
     const record = getRecord(this.player, t.govtId);
     const flags2 = t.govtId >= 128 ? (GOVT_FLAGS2[String(t.govtId)] ?? 0) : 0;
@@ -3913,21 +4011,79 @@ export class Game {
     return { ok: true };
   }
 
-  /** Release an escort from service. */
+  /**
+   * Process pending sell/upgrade actions for escorts when landing at a shipyard.
+   * Results are queued as a landed event so the player sees a summary popup.
+   */
+  private processEscortPending(): void {
+    const lines: string[] = [];
+    for (let i = this.player.escorts.length - 1; i >= 0; i--) {
+      const hire = this.player.escorts[i];
+      if (hire.pendingSell) {
+        hire.pendingSell = false;
+        const paid = escortSellValue(hire.shipId);
+        const name = this.hullName(hire.shipId);
+        this.player.credits += paid;
+        this.player.escorts.splice(i, 1);
+        this.settleFleetCargo();
+        lines.push(`Your ${name} was sold for ${paid.toLocaleString()} cr.`);
+      } else if (hire.pendingUpgrade) {
+        hire.pendingUpgrade = false;
+        const type = SHIPS[hire.shipId];
+        const upgradeId = type?.upgradeTo ?? -1;
+        const upgradeType = upgradeId !== -1 ? SHIPS[String(upgradeId)] : null;
+        if (upgradeType) {
+          const cost = type!.escUpgrdCost;
+          if (this.player.credits >= cost) {
+            this.player.credits -= cost;
+            const oldName = type!.name.split(";")[0];
+            hire.shipId = upgradeType.id;
+            lines.push(
+              `Your ${oldName} was upgraded to a ${upgradeType.name.split(";")[0]} for ${cost.toLocaleString()} cr.`,
+            );
+          } else {
+            lines.push(
+              `Could not afford to upgrade your ${type!.name.split(";")[0]} — ${type!.escUpgrdCost.toLocaleString()} cr needed.`,
+            );
+          }
+        }
+      }
+    }
+    if (lines.length > 0) {
+      this.pendingMissionEvents.push({
+        title: "Escort Update",
+        text: lines.join("\n\n"),
+      });
+    }
+  }
+
+  /** Release an escort: they stay in the system as a neutral independent ship. */
+  releaseEscort(index: number): void {
+    const hire = this.player.escorts[index];
+    if (!hire) return;
+    const name = this.hullName(hire.shipId);
+    this.player.escorts.splice(index, 1);
+    const npc = this.npcs.find((n) => n.hired && n.typeId === hire.shipId);
+    if (npc) {
+      npc.ally = false;
+      npc.hired = false;
+      // govtId stays -1 (Independent)
+      // Use the hull's own inherent AI so it reacts to combat the same way
+      // any normally-spawned ship of this type would: aiType 1 flees,
+      // aiType 2+ turns hostile when provoked.
+      npc.aiType = SHIPS[hire.shipId]?.inherentAi ?? 2;
+    }
+    this.settleFleetCargo();
+    this.message(`${name} released from your service.`);
+  }
+
+  /** Dismiss an escort silently (payroll default). */
   dismissEscort(index: number): void {
     const hire = this.player.escorts[index];
     if (!hire) return;
     this.player.escorts.splice(index, 1);
     const npc = this.npcs.find((n) => n.hired && n.typeId === hire.shipId);
     if (npc) npc.done = true;
-    // a prize is property, not a contract: paying her off puts cash in hand
-    if (hire.captured) {
-      const paid = escortSellValue(hire.shipId);
-      this.player.credits += paid;
-      this.message(
-        `You sell the ${this.hullName(hire.shipId)} for ${paid.toLocaleString()} cr.`,
-      );
-    }
     this.settleFleetCargo();
   }
 
@@ -4739,7 +4895,7 @@ export class Game {
     }
     const record = getRecord(this.player, npc.govtId);
     const maxHp = npc.maxShield + npc.maxArmor;
-    const fraction = Math.max(0.01, Math.min(0.75, 0.06 + record * 0.003));
+    const fraction = Math.max(0.05, Math.min(0.75, 0.15 + record * 0.003));
     npc.strayDamage += damage;
     if (npc.strayDamage >= maxHp * fraction) {
       this.provoke(npc);
@@ -5935,119 +6091,218 @@ export class Game {
       return c.code ? formatChord(c) : "—";
     };
 
+    // Cargo manifest: commodities in the hold
+    const cargoRows: { label: string; value: string }[] = Object.entries(
+      this.player.cargo,
+    )
+      .filter(([, qty]) => qty > 0)
+      .map(([id, qty]) => ({
+        label: COMMODITIES.find((c) => c.id === id)?.name ?? id,
+        value: `${qty}t`,
+      }));
+
+    // Honors: active ranks with their government name
+    const honorRows: { label: string; value: string }[] =
+      this.player.ranks.map((id) => {
+        const rank = RANKS[String(id)];
+        const govtName = GOVTS[String(rank?.govt)]?.name ?? "";
+        return {
+          label: rank?.name ?? `Rank ${id}`,
+          value: govtName,
+        };
+      });
+
     this.infoUi.show({
       title: this.pilotName,
-      sections: [
+      sections: [],
+      tabs: [
         {
-          title: "Ship",
-          rows: [
-            { label: "Class", value: type?.name.split(";")[0] ?? "Unknown" },
+          id: "general",
+          label: "General",
+          sections: [
             {
-              label: "Shields",
-              value: `${Math.round(this.ship.shield)} / ${Math.round(this.ship.maxShield)}`,
+              title: "Ship",
+              rows: [
+                {
+                  label: "Class",
+                  value: type?.name.split(";")[0] ?? "Unknown",
+                },
+                {
+                  label: "Shields",
+                  value: `${Math.round(this.ship.shield)} / ${Math.round(this.ship.maxShield)}`,
+                },
+                {
+                  label: "Armor",
+                  value: `${Math.round(this.ship.armor)} / ${Math.round(this.ship.maxArmor)}`,
+                },
+                {
+                  label: "Fuel",
+                  value: `${Math.floor(this.player.fuelJumps)} / ${this.player.maxFuelJumps} jumps`,
+                },
+                { label: "Free mass", value: `${this.freeMassLeft()} tons` },
+                {
+                  label: "Mounts",
+                  value:
+                    mounts.maxGuns > 0 || mounts.maxTurrets > 0
+                      ? `${Math.min(mounts.guns, mounts.maxGuns)}/${mounts.maxGuns} guns · ${Math.min(mounts.turrets, mounts.maxTurrets)}/${mounts.maxTurrets} turrets`
+                      : "None",
+                },
+              ],
             },
             {
-              label: "Armor",
-              value: `${Math.round(this.ship.armor)} / ${Math.round(this.ship.maxArmor)}`,
-            },
-            {
-              label: "Fuel",
-              value: `${Math.floor(this.player.fuelJumps)} / ${this.player.maxFuelJumps} jumps`,
-            },
-            {
-              label: "Cargo",
-              value: `${this.cargoUsed()} / ${this.cargoCapacity()} tons${
-                this.fleetCapacity()
-                  ? ` (${this.fleetCapacity()} in escorts)`
-                  : ""
-              }`,
-            },
-            { label: "Free mass", value: `${this.freeMassLeft()} tons` },
-            {
-              label: "Mounts",
-              value:
-                mounts.maxGuns > 0 || mounts.maxTurrets > 0
-                  ? `${Math.min(mounts.guns, mounts.maxGuns)}/${mounts.maxGuns} guns · ${Math.min(mounts.turrets, mounts.maxTurrets)}/${mounts.maxTurrets} turrets`
-                  : "None",
+              title: "Record",
+              rows: [
+                {
+                  label: "Credits",
+                  value: `${this.player.credits.toLocaleString()} cr`,
+                },
+                { label: "Combat rating", value: rating },
+                { label: "Date", value: formatDate(this.player.date) },
+                {
+                  label: "Systems charted",
+                  value: String(this.player.explored.length),
+                },
+              ],
             },
           ],
         },
         {
-          title: "Record",
-          rows: [
+          id: "cargo",
+          label: "Cargo",
+          sections: [
             {
-              label: "Credits",
-              value: `${this.player.credits.toLocaleString()} cr`,
+              title: "Hold",
+              rows: [
+                {
+                  label: "Ship capacity",
+                  value: `${this.player.cargoCap} tons`,
+                },
+                ...(this.fleetCapacity()
+                  ? [
+                      {
+                        label: "Escort capacity",
+                        value: `${this.fleetCapacity()} tons`,
+                      },
+                    ]
+                  : []),
+                {
+                  label: "Used",
+                  value: `${this.cargoUsed()} / ${this.cargoCapacity()} tons`,
+                },
+              ],
             },
-            { label: "Combat rating", value: rating },
-            { label: "Date", value: formatDate(this.player.date) },
+            ...(cargoRows.length
+              ? [{ title: "Manifest", rows: cargoRows }]
+              : [{ title: "Manifest", rows: [], note: "Hold is empty." }]),
+          ],
+        },
+        {
+          id: "extras",
+          label: "Extras",
+          sections: [
             {
-              label: "Systems charted",
-              value: String(this.player.explored.length),
+              title: "Outfits",
+              rows: [],
+              note: outfits.length ? outfits.join(", ") : "Nothing fitted.",
+            },
+            {
+              title: "Escorts",
+              rows: [],
+              note: wing.length ? wing.join(", ") : "Flying solo.",
             },
           ],
         },
         {
-          title: "Outfits",
-          rows: [],
-          note: outfits.length ? outfits.join(", ") : "Nothing fitted.",
-        },
-        ...(wing.length
-          ? [{ title: "Escorts", rows: [], note: wing.join(", ") }]
-          : []),
-        {
-          title: "Flight",
-          rows: [
-            { label: "Turn left / right", value: `${kb("turnLeft")} / ${kb("turnRight")}` },
-            { label: "Accelerate / reverse", value: `${kb("accelerate")} / ${kb("reverse")}` },
-            { label: "Afterburner", value: kb("afterburner") },
-            { label: "Aim toward target", value: kb("aimAssist") },
-            { label: "Aim toward cursor", value: kb("aimCursor") },
-            { label: "Autopilot", value: kb("autopilot") },
+          id: "honors",
+          label: "Honors",
+          sections: [
+            {
+              title: "Ranks & titles",
+              rows: honorRows,
+              note: honorRows.length ? undefined : "No ranks or titles held.",
+            },
           ],
         },
         {
-          title: "Combat",
-          rows: [
-            { label: "Fire primary", value: kb("firePrimary") },
-            { label: "Fire secondary", value: kb("fireSecondary") },
-            { label: "Select secondary", value: kb("selectSecondary") },
-            { label: "Cycle targets", value: kb("cycleTargets") },
-            { label: "Target nearest hostile", value: kb("targetClosest") },
-            { label: "Select under cursor", value: kb("selectUnderCursor") },
-            { label: "Board disabled ship", value: kb("board") },
-            { label: "Eject (escape pod)", value: kb("eject") },
-          ],
-        },
-        {
-          title: "Navigation",
-          rows: [
-            { label: "Land / dock", value: kb("land") },
-            { label: "Cycle planets / stations", value: kb("cycleStellars") },
-            { label: "Hyperspace jump", value: kb("jump") },
-            { label: "Select jump destination", value: kb("cycleJumpDest") },
-            { label: "Star map", value: kb("map") },
-            { label: "Mini map", value: kb("hyperSelect") },
-          ],
-        },
-        {
-          title: "Escorts & comms",
-          rows: [
-            { label: "Hail", value: kb("hail") },
-            { label: "Escorts: attack target", value: kb("escortAttack") },
-            { label: "Escorts: form up", value: kb("escortForm") },
-            { label: "Escorts: hold position", value: kb("escortHold") },
-            { label: "Recall fighters", value: kb("recallFighters") },
-          ],
-        },
-        {
-          title: "Info",
-          rows: [
-            { label: "Player info (this panel)", value: kb("playerInfo") },
-            { label: "Mission log", value: kb("missionInfo") },
-            { label: "Jettison cargo", value: kb("jettison") },
-            { label: "Engage cloak", value: kb("cloak") },
-            { label: "Nav system off", value: kb("navOff") },
+          id: "keybindings",
+          label: "Keybindings",
+          sections: [
+            {
+              title: "Flight",
+              rows: [
+                {
+                  label: "Turn left / right",
+                  value: `${kb("turnLeft")} / ${kb("turnRight")}`,
+                },
+                {
+                  label: "Accelerate / reverse",
+                  value: `${kb("accelerate")} / ${kb("reverse")}`,
+                },
+                { label: "Afterburner", value: kb("afterburner") },
+                { label: "Aim toward target", value: kb("aimAssist") },
+                { label: "Aim toward cursor", value: kb("aimCursor") },
+                { label: "Autopilot", value: kb("autopilot") },
+              ],
+            },
+            {
+              title: "Combat",
+              rows: [
+                { label: "Fire primary", value: kb("firePrimary") },
+                { label: "Fire secondary", value: kb("fireSecondary") },
+                { label: "Select secondary", value: kb("selectSecondary") },
+                { label: "Cycle targets", value: kb("cycleTargets") },
+                {
+                  label: "Target nearest hostile",
+                  value: kb("targetClosest"),
+                },
+                {
+                  label: "Select under cursor",
+                  value: kb("selectUnderCursor"),
+                },
+                { label: "Board disabled ship", value: kb("board") },
+                { label: "Eject (escape pod)", value: kb("eject") },
+              ],
+            },
+            {
+              title: "Navigation",
+              rows: [
+                { label: "Land / dock", value: kb("land") },
+                {
+                  label: "Cycle planets / stations",
+                  value: kb("cycleStellars"),
+                },
+                { label: "Hyperspace jump", value: kb("jump") },
+                {
+                  label: "Select jump destination",
+                  value: kb("cycleJumpDest"),
+                },
+                { label: "Star map", value: kb("map") },
+                { label: "Mini map", value: kb("hyperSelect") },
+              ],
+            },
+            {
+              title: "Escorts & comms",
+              rows: [
+                { label: "Hail", value: kb("hail") },
+                { label: "Escorts: attack target", value: kb("escortAttack") },
+                { label: "Escorts: form up", value: kb("escortForm") },
+                { label: "Escorts: hold position", value: kb("escortHold") },
+                { label: "Recall fighters", value: kb("recallFighters") },
+              ],
+            },
+            {
+              title: "Info",
+              rows: [
+                {
+                  label: "Player info (this panel)",
+                  value: kb("playerInfo"),
+                },
+                { label: "Mission log", value: kb("missionInfo") },
+                { label: "Jettison cargo", value: kb("jettison") },
+                { label: "Engage cloak", value: kb("cloak") },
+                { label: "Nav system off", value: kb("navOff") },
+              ],
+            },
           ],
         },
       ],
@@ -6347,7 +6602,11 @@ export class Game {
    */
   private canLandOn(planet: PlanetDef): boolean {
     const isGate = planet.isHypergate || planet.isWormhole;
-    if (isGate) return this.gateIsWorking(planet);
+    if (isGate)
+      return (
+        this.gateIsWorking(planet) &&
+        this.clearedToLand(planet, this.system.govtId)
+      );
     if (!planet.landable) return false;
     if (this.hasActiveMissionToPlanet(planet.id)) return true;
     return this.clearedToLand(planet, this.system.govtId);
@@ -6472,6 +6731,7 @@ export class Game {
      * up on uninhabited rocks or other pads with no services.
      */
     if (this.gear.autoRefuel) this.refuel();
+    if (planet.shipyard) this.processEscortPending();
     // No disk write — shopping and mission acceptances stay RAM until takeoff.
     this.landedUi.show(planet, this.system);
   }

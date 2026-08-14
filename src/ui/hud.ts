@@ -547,8 +547,9 @@ export class HudUi {
     // drifting derelicts; a normally-disabled ship keeps its faction label.
     const isDerelictGovt =
       t.govtId >= 128 && ((GOVT_FLAGS[String(t.govtId)] ?? 0) & 0x0800) !== 0;
-    const govtLabel =
-      t.govtId >= 128
+    const govtLabel = t.hired
+      ? "Escort"
+      : t.govtId >= 128
         ? (GOVT_COMM_NAMES[String(t.govtId)] || g.govtLabel(t.govtId))
         : "Independent";
     const affil =

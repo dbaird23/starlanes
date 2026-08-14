@@ -45,8 +45,19 @@ export interface JettisonEntry {
   tons: number;
 }
 
+export interface InfoTab {
+  id: string;
+  label: string;
+  sections: InfoSection[];
+}
+
 export interface InfoContext {
   title: string;
+  /**
+   * When present, the panel renders a tab bar and shows only the active tab's
+   * sections. Mutually exclusive with pickList and jettison.
+   */
+  tabs?: InfoTab[];
   /**
    * Pass a function when the panel's own buttons change what it reports — the
    * jettison dialog's tonnage, for instance — so a re-render re-reads it
@@ -75,6 +86,8 @@ export interface InfoContext {
 export class InfoUi {
   private root: HTMLElement;
   private ctx: InfoContext | null = null;
+  /** Active tab id when the panel is in tabbed mode. */
+  private activeTab: string | null = null;
   /**
    * Expanded mission id, or null when the list is collapsed. Reset on show;
    * a single-mission log opens already expanded.
@@ -97,6 +110,7 @@ export class InfoUi {
   show(ctx: InfoContext): void {
     const wasOpen = this.ctx !== null;
     this.ctx = ctx;
+    this.activeTab = ctx.tabs?.[0]?.id ?? null;
     this.pickId = null;
     this.abortConfirmId = null;
     const picks = this.resolvePicks();
@@ -137,6 +151,21 @@ export class InfoUi {
   handleEnter(): boolean {
     if (this.abortConfirmId === null) return false;
     this.root.querySelector<HTMLButtonElement>("#if-abort-ok")?.click();
+    return true;
+  }
+
+  /**
+   * Tab key shortcuts: first letter of each tab id (e.g. "g" → "general").
+   * Returns true when the key switched a tab.
+   */
+  handleTabKey(letter: string): boolean {
+    const tabs = this.ctx?.tabs;
+    if (!tabs) return false;
+    const lower = letter.toLowerCase();
+    const tab = tabs.find((t) => t.id[0] === lower);
+    if (!tab || tab.id === this.activeTab) return false;
+    this.activeTab = tab.id;
+    this.render();
     return true;
   }
 
@@ -214,7 +243,33 @@ export class InfoUi {
     let sectionsHtml = "";
     let pickHtml = "";
 
-    if (picks && picks.length > 0) {
+    if (c.tabs?.length) {
+      const activeId = this.activeTab ?? c.tabs[0]!.id;
+      const activeTab = c.tabs.find((t) => t.id === activeId) ?? c.tabs[0]!;
+      const tabBar = `<div class="if-tabs">${c.tabs
+        .map((t) => {
+          const label = esc(t.label);
+          const hint = `<u>${label[0]}</u>${label.slice(1)}`;
+          return `<button class="if-tab-btn${t.id === activeId ? " active" : ""}" data-tab="${esc(t.id)}">${hint}</button>`;
+        })
+        .join("")}</div>`;
+      const tabSections = activeTab.sections
+        .map(
+          (s) => `
+        <div class="if-section">
+          <div class="if-title">${esc(s.title)}</div>
+          ${s.rows
+            .map(
+              (r) =>
+                `<div class="if-row"><span>${esc(r.label)}</span><b>${esc(r.value)}</b></div>`,
+            )
+            .join("")}
+          ${s.note ? `<div class="if-note">${esc(s.note)}</div>` : ""}
+        </div>`,
+        )
+        .join("");
+      sectionsHtml = tabBar + tabSections;
+    } else if (picks && picks.length > 0) {
       pickHtml = `
         <div class="if-pick-list" role="listbox" aria-label="Missions">
           ${picks
@@ -319,6 +374,12 @@ export class InfoUi {
         ${abortConfirm}
       </div>`;
 
+    this.root.querySelectorAll<HTMLButtonElement>(".if-tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this.activeTab = btn.dataset.tab ?? null;
+        this.render();
+      });
+    });
     this.root.querySelectorAll<HTMLElement>(".if-pick-item").forEach((item) => {
       const id = item.dataset.pick ?? null;
       item

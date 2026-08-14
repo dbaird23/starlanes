@@ -58,6 +58,13 @@ export interface PlanetDef {
   /** spöb Flags2 0x1000 / 0x2000 */
   isHypergate: boolean;
   isWormhole: boolean;
+  /**
+   * spöb Flags2 0x0400: outfitter will buy anything from the player but
+   * stocks nothing itself. Sirrusa (id 156) is the only shipped example;
+   * desc 156 confirms: "they will take anything off your hands ... they do
+   * not actually have anything to sell."
+   */
+  sellOnly: boolean;
   /** spob ids this gate connects to (empty wormhole list = random) */
   hyperLinks: string[];
   /**
@@ -181,6 +188,10 @@ export interface HiredEscort {
    * the player gets for selling off a captured escort of this type".
    */
   captured?: boolean;
+  /** Sell this escort at the next shipyard landing. */
+  pendingSell?: boolean;
+  /** Upgrade this escort's hull at the next shipyard landing. */
+  pendingUpgrade?: boolean;
 }
 
 /** A mission decoded from a mïsn resource. */

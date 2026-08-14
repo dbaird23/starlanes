@@ -2122,16 +2122,16 @@ td.actions button:disabled {
 #info-ui {
   position: fixed;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: 10vh;
+  transform: translateX(-50%);
   color: #cfd8e3;
   /* Above #landed-ui (full-screen) so I works on the pad as well as in flight. */
   z-index: 20;
 }
 .infopanel {
   position: relative;
-  width: 380px;
-  max-height: 78vh;
+  width: 520px;
+  max-height: 80vh;
   overflow-y: auto;
   padding: 12px;
   background: linear-gradient(
@@ -2145,7 +2145,7 @@ td.actions button:disabled {
 }
 /* Mission log needs room for a list + briefing */
 .infopanel.if-has-picks {
-  width: min(440px, 92vw);
+  width: min(560px, 92vw);
 }
 .if-head {
   font-size: 15px;
@@ -2153,6 +2153,34 @@ td.actions button:disabled {
   color: #e8eef6;
   margin-bottom: 10px;
   letter-spacing: 0.4px;
+}
+.if-tabs {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #2a3a52;
+  padding-bottom: 6px;
+}
+.if-tab-btn {
+  background: none;
+  border: 1px solid #2a3a52;
+  border-radius: 3px;
+  color: #7d90aa;
+  font-size: 11px;
+  font-family: inherit;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.if-tab-btn:hover {
+  color: #b0bfcc;
+  border-color: #3b5070;
+}
+.if-tab-btn.active {
+  background: #1a2230;
+  border-color: #4a7090;
+  color: #d6dfea;
 }
 .if-section {
   padding: 7px 10px;
