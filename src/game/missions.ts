@@ -14,6 +14,7 @@ import {
   SYSTEMS,
 } from "../data/universe";
 import { freeHoldSpace } from "./cargo";
+import { playerContribute, requireMet } from "./contribute";
 import { RATING_POINT_SCALE, getSystemRecord } from "./reputation";
 import type {
   ActiveMission,
@@ -160,6 +161,9 @@ export function availableMissions(
   player: PlayerState,
 ): MissionType[] {
   const activeIds = new Set(player.activeMissions.map((a) => a.misnId));
+  // mïsn Require vs the ship/outfit/rank/crön Contribute pool — the Sigma
+  // Bulk Delivery chain wants the bits only Sigma-built freighters carry.
+  const contribPool = playerContribute(player);
   const out: MissionType[] = [];
   for (const m of Object.values(MISSIONS)) {
     if (m.availLoc !== loc) continue;
@@ -173,6 +177,7 @@ export function availableMissions(
     if (m.shipCount > 0 && m.shipGoal > 5) continue;
     // pay < 0 encodes an outfit grant: -(count * 10000 + outfitNovaId); handled at completion
     if (m.flags & 0x0400) continue; // invisible missions
+    if (!requireMet(m.require, contribPool)) continue;
     // Bible: "your legal record in this system" — literally the per-system
     // ledger now, which is what the original pilot file stores.
     const systemId = SPOB_INDEX.get(spob.id)?.systemId;

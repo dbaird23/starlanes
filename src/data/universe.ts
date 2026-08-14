@@ -186,6 +186,8 @@ interface RawSpob {
 }
 
 interface RawShip {
+  contribute?: [number, number];
+  require?: [number, number];
   id: number;
   name: string;
   buyRandom: number;
@@ -273,6 +275,9 @@ interface RawOutfit {
   buyRandom: number;
   scanMask: number;
   itemClass: number;
+  contribute?: [number, number];
+  require?: [number, number];
+  requireGovt?: number;
   id: number;
   name: string;
   displayWeight: number;
@@ -295,6 +300,11 @@ export interface RawGovt {
   flags: number;
   flags2: number;
   commName: string;
+  /** Require: the Bible's travel-permit gate; zero on all 68 stock govts */
+  require?: [number, number];
+  /** InhJam1-4: inherent jamming percentage per missile guidance type */
+  inhJam?: number[];
+  mediumName?: string;
   newsPic: number;
   /** the ïntf this government's own ships fly behind */
   interfaceId: number;
@@ -971,6 +981,8 @@ export async function loadUniverse(): Promise<void> {
       escUpgrdCost: s.escUpgrdCost ?? 0,
       escSellValue: s.escSellValue ?? 0,
       escortType: s.escortType ?? -1,
+      contribute: (s.contribute ?? [0, 0]) as [number, number],
+      require: (s.require ?? [0, 0]) as [number, number],
       ...convertShipStats(s),
     };
   }
@@ -1053,6 +1065,9 @@ export async function loadUniverse(): Promise<void> {
       buyRandom: o.buyRandom ?? 0,
       scanMask: o.scanMask ?? 0,
       itemClass: o.itemClass ?? 0,
+      contribute: (o.contribute ?? [0, 0]) as [number, number],
+      require: (o.require ?? [0, 0]) as [number, number],
+      requireGovt: o.requireGovt ?? -1,
       id: String(o.id),
       name: o.name,
       desc: cleanNovaText(o.desc),
@@ -1263,6 +1278,23 @@ export function govtHaze(govtId: number, alpha: number): string {
   const raw = govtRgb(govtId);
   if (raw === 0) return `rgba(138,151,168,${alpha})`;
   return `rgba(${(raw >> 16) & 0xff},${(raw >> 8) & 0xff},${raw & 0xff},${alpha})`;
+}
+
+/**
+ * shïp EscortType — "which of the four categories of escorts to put this ship
+ * type into when organizing the escort control menu". The stock 288 hulls
+ * partition cleanly (25 Fighters / 106 Medium / 106 Warships / 51
+ * Freighters); -1 is the Bible's "have the game try to figure it out at
+ * runtime", which no stock hull needs, so the fallback guesses off
+ * InherentAI: traders read Freighter, interceptors Fighter, warships Warship.
+ */
+export function escortClassName(shipId: string): string {
+  const s = SHIPS[shipId];
+  if (!s) return "Escort";
+  const names = ["Fighter", "Medium Ship", "Warship", "Freighter"];
+  if (s.escortType >= 0 && s.escortType <= 3) return names[s.escortType];
+  const ai = s.inherentAi;
+  return ai === 1 || ai === 2 ? "Freighter" : ai === 4 ? "Fighter" : "Warship";
 }
 
 export function getSystem(id: string): SystemDef {

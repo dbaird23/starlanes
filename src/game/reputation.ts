@@ -1,5 +1,6 @@
 import {
   GOVTS,
+  MISSIONS,
   OUTFITS,
   SYSTEMS,
   getSystem,
@@ -217,6 +218,17 @@ export function contraband(
     if (qty <= 0) continue;
     const junk = junkFromCargoKey(key);
     if (junk && junk.scanMask & mask) found.cargo.push(junk.name);
+  }
+  /*
+   * mïsn ScanMask @1630: a government whose own mask overlaps treats the
+   * mission's cargo as contraband while it is aboard. Five stock missions
+   * carry one — "Steal Hypergate Codes" reads 0xFFFF, illegal to everyone.
+   */
+  for (const am of player.activeMissions) {
+    if (!am.cargoLoaded) continue;
+    const m = MISSIONS[String(am.misnId)];
+    if (m?.scanMask && (m.scanMask & mask) !== 0)
+      found.cargo.push(am.cargoName ?? "Mission cargo");
   }
   return found;
 }

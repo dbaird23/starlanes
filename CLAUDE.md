@@ -108,9 +108,12 @@ under your own power.
 money (amount depends on the ship's purchase price)" and the Bible never says
 how much — no field holds an amount. The rate is ours; the ±25% spread is the
 one figure the doc does give for carried money (përs `Credits`). A 12M
-Manticore hands over 360-600k. Two paths still board empty and are a real gap:
-`spawnFleetOf` and `spawnMissionShips` never set `dudeId`/`bootyFlags`, and
-`maybeMakePerson` overwrites a düde roll with the captain's own Credits.
+Manticore hands over 360-600k. All spawn paths carry booty now:
+`spawnMissionShips` reads its düde's Booty flags, and `spawnFleetOf` — flëts
+name no düde, so there is nothing to read — gives every fleet ship the money
+flag on the same 4% rule (a warship carries the payroll). `applyPerson`
+overwriting a düde money roll with the captain's own Credits is correct:
+përs Credits ±25% is the documented figure for a named captain.
 
 **A përs bound to one system is placed there, not rolled for.** The Bible's
 "when ships are created, there is a 5% chance that a specific AI-person will
@@ -277,6 +280,41 @@ points threshold, not a level index. Two real divergences from Nova remain —
 see Known gaps: landing bribes (gövt Flags 0x4000/0x8000), and the record
 model itself (ours is per-govt with global kill propagation; Nova's is
 per-system).
+
+**Contribute / Require is live — and it is Nova's whole license economy.**
+The 64-bit Contribute pool (ship + owned outfits + held ränks + active cröns)
+is matched against Require bits on five resources, and the stock game runs
+real machinery on it: the Heavy Weapons / Missile / Fighter Bay / Protective
+Technologies / Capital Ships / Capital Warships licenses contribute the bits
+the licensed weapons, armor and capital hulls require (the Fed Carrier wants
+0xCF — five licenses), the Federation Naval Rank of Commander contributes
+0x7B and the Ambassador 0x1FF (licenses waived), the Sigma Bulk Delivery
+missions require bits only Sigma-built hulls contribute, and the "Illegal"
+blaster line contributes 0x200 instead of requiring anything. oütf
+RequireGovt 128 on the licensed weapons means only Federation-allied shops
+check papers — a pirate outfitter sells to anybody. Offsets, all verified
+against the values in the resources themselves: oütf Contribute @30 /
+Require @38 (an earlier pass read @1012-1027, which is 16 bytes of zero),
+shïp @100 / @896, mïsn Require @1622, ränk Contribute @14, gövt Require @84
+(zero across stock; the travel-permit gate in `clearedToLand`), crön
+Contribute @790 / Require @798. Enforcement lives in `contribute.ts`
+(playerContribute / requireMet / outfitRequireApplies) and gates the
+outfitter (buy + the 0x0100 hide flag), the shipyard (buy + shïp Flags3
+0x0200 hide), mission availability, crön activation and landing. Verified in
+the browser at Earth: the Medium Blaster refuses with "You don't have the
+required license!", buying the Heavy Weapons License unlocks it but not the
+missile launcher, and holding rank 128 unlocks everything with no license
+owned.
+
+The same offset hunt found two more mïsn fields past Require: **ScanMask
+@1630** (five missions; "Steal Hypergate Codes" reads 0xFFFF — contraband to
+every government; wired into `contraband()` while the mission cargo is
+aboard) and the real **OnShipDone @1632** — the old read at @1622 was the
+Require field, so the 76 missions that carry a set string there never fired
+it. Bounty Hunter1's OnShipDone is "b96", the bit its own AvailBits needs to
+stop re-offering the Guild intro forever. The gövt pass also picked up
+**InhJam1-4 @92** (the Federation reads 7/5/0/0) and **MediumName @100**,
+extracted for later use.
 
 **Hypergates / wormholes (Bible-aligned transit).** Selecting a working
 hypergate (L cycle or click) starts the ring open animation; landing on it
@@ -929,16 +967,12 @@ Most of the earlier queue (pers loadout/HailPict, roid fragments, spob Fee /
 misn DatePostInc / junk BuyOn+SellOn, colr, ScanMask) is done — see above.
 Still open or only half-landed:
 
-1. **Per-system legal records** — move `reputation.ts` off one-number-per-govt
-   to Nova's per-system model (see Known gaps).
-2. **shän WeapImageID / WeapDecay** — weapon-glow render once units are pinned
+1. **shän WeapImageID / WeapDecay** — weapon-glow render once units are pinned
    against a reference build.
-3. **Contribute / Require** — still cross-cutting and incomplete vs the Bible
-   (ScanMask is live; the rest of the bit-mask gates are not fully wired).
-4. **sÿst @110-140** — still unidentified (~32 bytes); does not block play.
-5. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
-   (and density-scanner blip size); we still advance a flat
-   `max(1, 1 + hyperSpeed)` and ignore Mass for travel time.
+2. **Mass → days/jump is done** — shïp Mass bands set 1/2/3 days per jump and
+   the two density-scanner blip sizes; ModType 22 still shifts the total with
+   a floor of 1.
+3. **sÿst @110-140** — still unidentified (~32 bytes); does not block play.
 7. **Status-bar plate revisions.** All seven governments are covered — six
    JPEGs and the drawn Vell-os skin — so this is only open if the artwork is
    revised. Two cut-outs would be worth resizing across all seven: the

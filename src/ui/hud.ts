@@ -350,12 +350,12 @@ export class HudUi {
       if (npc.disabled) blipColor = INTERFACE.dimRadar;
       if (npc === g.targetNpc) blipColor = "#ffffff";
       ctx.fillStyle = blipColor;
-      // Gravimetric sensors scale blip size by ship mass (approximated by
-      // sprite radius): fighters match the player dot (0.8px), capital ships
-      // up to ~2.5px. Without the scanner every contact is fighter-sized.
-      const blipR = g.hasDensityScanner
-        ? Math.min(1.5, Math.max(0.8, npc.radius / 25))
-        : 0.8;
+      // Gravimetric sensors show ship mass. The Bible gives two blip sizes —
+      // "small blip" under 100 tons, "large blip" at 100 and up — the same
+      // bands that set days per jump. Without the scanner every contact is
+      // fighter-sized.
+      const blipMass = npc.typeId ? (SHIPS[npc.typeId]?.mass ?? 0) : 0;
+      const blipR = g.hasDensityScanner && blipMass >= 100 ? 1.6 : 0.8;
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, blipR, 0, Math.PI * 2);
       ctx.fill();

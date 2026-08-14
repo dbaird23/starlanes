@@ -365,6 +365,19 @@ function decodeShip(res) {
     mass: d.readInt16BE(62),
     length: d.readInt16BE(64), // metres; shown in the detailed ship info
     /*
+     * Contribute @100 / Require @896. Contribute's histogram is the tell:
+     * 256 hulls read 0x1 in the second word (the "this is a ship" bit every
+     * outfit requires), the Sigma freighters add 0x10/0x20/0x40 (which the
+     * Sigma Bulk Delivery missions require), and the Valkyrie and Starbridge
+     * families carry 0x40000001/0x80000001 — the bits their hull-specific
+     * upgrade outfits require. Require @896 names itself in licenses: the
+     * Leviathan wants 0x40 (Capital Ships License), the Fed Destroyer 0xCB
+     * and the Fed Carrier 0xCF — Capital Warships + Capital Ships (+ Fighter
+     * Bay for the carrier) + Missile + Heavy Weapons.
+     */
+    contribute: [d.readUInt32BE(100), d.readUInt32BE(104)],
+    require: [d.readUInt32BE(896), d.readUInt32BE(900)],
+    /*
      * InherentAI @66, in the gap the Bible's order leaves between Length @64
      * and Crew @68. It reads 1-4 on all 288 hulls — never 0, never anything
      * else — and the four AI types name themselves: 1 "wimpy trader" is the
@@ -705,6 +718,14 @@ function decodeRank(res) {
     govt: d.readInt16BE(2),
     priceMod: d.readInt16BE(4),
     salary: d.readInt16BE(8),
+    /*
+     * Contribute @14, right before the verified Flags @22. The Federation
+     * Naval Rank of Commander reads 0x7B — the Heavy Weapons, Missile,
+     * Protective Technologies, Capital Ships and Capital Warships licenses
+     * granted in one stroke — and the Ambassador and the Bureau Director
+     * read 0x1FF, everything including the Exotics.
+     */
+    contribute: [d.readUInt32BE(14), d.readUInt32BE(18)],
     flags: d.readUInt16BE(22),
     convName: cstr(d, 24, 63),
     shortName: cstr(d, 88, 63),
@@ -761,6 +782,10 @@ function decodeCron(res) {
     // NewsGovt1-4 @806 with their GovtNewsStr1-4 @814: while the event runs,
     // worlds allied to one of those governments report that government's line
     // instead of the independent one.
+    // Contribute @790 / Require @798: the 16 bytes between OnEnd's field end
+    // and the verified NewsGovt block @806. Zero on all 125 stock cröns.
+    contribute: [d.readUInt32BE(790), d.readUInt32BE(794)],
+    require: [d.readUInt32BE(798), d.readUInt32BE(802)],
     newsGovts: [806, 808, 810, 812].map((o) => d.readInt16BE(o)),
     govtNewsStrs: [814, 816, 818, 820].map((o) => d.readInt16BE(o)),
   };
@@ -870,7 +895,20 @@ function decodeMisn(res) {
     onSuccess: s(857),
     onFailure: s(1112),
     onAbort: s(1367),
-    onShipDone: s(1622),
+    /*
+     * The tail, empirically: Require @1622 (2 x u32), ScanMask @1630, and the
+     * real OnShipDone string @1632 — an earlier pass read OnShipDone at 1622,
+     * which is the Require field, so the 76 missions that carry a set string
+     * there never fired it (Bounty Hunter1's OnShipDone is "b96", the very
+     * bit its own AvailBits needs to stop re-offering the intro). Require
+     * identifies itself on the Sigma freight chain: Bulk Delivery reads
+     * 0x10/0x20/0x40 in the second word, matching the Contribute bits of
+     * exactly the Sigma-built hulls; ScanMask @1630 reads 0xFFFF on "Steal
+     * Hypergate Codes" — cargo every government scans for.
+     */
+    require: [d.readUInt32BE(1622), d.readUInt32BE(1626)],
+    scanMask: d.readUInt16BE(1630),
+    onShipDone: s(1632),
   };
 }
 
@@ -920,8 +958,18 @@ function decodeOutf(res) {
     scanMask: d.readUInt16BE(1006),
     buyRandom: d.readInt16BE(1008),
     requireGovt: d.readInt16BE(1010),
-    contribute: [d.readUInt32BE(1012), d.readUInt32BE(1016)],
-    require: [d.readUInt32BE(1020), d.readUInt32BE(1024)],
+    /*
+     * Contribute @30 / Require @38, up in the header — not in the tail an
+     * earlier pass guessed at (which is 16 bytes of zero). The license system
+     * proves the offsets: "Heavy Weapons License" contributes 0x1 in the
+     * first word and the Medium Blaster requires exactly that (plus the
+     * second-word bit 0x1 every hull contributes), the missile launchers
+     * require 0x2 = the Missile Weapons License, the bays 0x4, the armor
+     * 0x8, and the "Illegal" blaster line contributes 0x200 instead of
+     * requiring anything.
+     */
+    contribute: [d.readUInt32BE(30), d.readUInt32BE(34)],
+    require: [d.readUInt32BE(38), d.readUInt32BE(42)],
     mods,
   };
 }
@@ -1010,7 +1058,13 @@ const govts = all
     maxOdds: r.data.readInt16BE(22),
     // CommName @68: the short name Nova shows for this govt's ships in the
     // comms panel — "Fed." for the Federation, "Trader" for the Civvies.
-    commName: cstr(r.data, 68, 64).trim(),
+    // It is a 16-byte field: Require @84 (2 x u32, zero on all 68 in stock —
+    // the Bible's travel-permit gate), then InhJam1-4 @92 (the Federation
+    // reads 7/5/0/0) and MediumName @100, all in the Bible's own order.
+    commName: cstr(r.data, 68, 16).trim(),
+    require: [r.data.readUInt32BE(84), r.data.readUInt32BE(88)],
+    inhJam: [92, 94, 96, 98].map((o) => r.data.readInt16BE(o)),
+    mediumName: cstr(r.data, 100, 16).trim(),
     classes: readGovtGroup(r.data, 24),
     allies: readGovtGroup(r.data, 32),
     enemies: readGovtGroup(r.data, 40),

@@ -209,6 +209,10 @@ export interface HiredEscort {
 export interface MissionType {
   /** days the calendar jumps once the mission completes */
   datePostInc: number;
+  /** Require: two u32 halves and'ed against the player's Contribute pool */
+  require: [number, number];
+  /** governments whose ScanMask overlaps treat the mission cargo as illegal */
+  scanMask: number;
   id: number;
   name: string;
   availStel: number;
@@ -382,6 +386,11 @@ export interface OutfitType {
   scanMask: number;
   /** the përs GrantClass this outfit can be handed over as */
   itemClass: number;
+  /** Contribute / Require, each two u32 halves of a 64-bit mask */
+  contribute: [number, number];
+  require: [number, number];
+  /** which shops enforce the Require bits (oütf RequireGovt; <128 = all) */
+  requireGovt: number;
   id: string;
   name: string;
   desc: string;
@@ -466,6 +475,9 @@ export interface ShipType {
   subtitle: string;
   /** shïp Flags3 */
   flags3: number;
+  /** Contribute / Require, each two u32 halves of a 64-bit mask */
+  contribute: [number, number];
+  require: [number, number];
   /** the hull an escort of this type upgrades into, or -1 */
   upgradeTo: number;
   escUpgrdCost: number;
@@ -506,6 +518,8 @@ export interface RankType {
   priceMod: number;
   /** credits per day */
   salary: number;
+  /** Contribute bits granted while the rank is held */
+  contribute: [number, number];
   flags: number;
   convName: string;
   shortName: string;
@@ -543,6 +557,8 @@ export interface CronType {
   /** IndNewsStr: STR# of the line this event puts on the general news wire */
   indNewsStr: number;
   /** NewsGovt1-4 and their GovtNewsStr1-4: local news for those governments */
+  contribute: [number, number];
+  require: [number, number];
   newsGovts: number[];
   govtNewsStrs: number[];
 }

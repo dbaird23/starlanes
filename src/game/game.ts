@@ -1,60 +1,61 @@
 import {
   BOOM_SPRITES,
+  BOOMS,
+  COLR,
+  COMMODITIES,
+  convertShipStats,
+  CRONS,
   DESCS,
   DUDES,
-  convertShipStats,
+  escortClassName,
   findRoute,
   FLEETS,
-  pickStartSystemId,
-  START_TEMPLATE,
   getSystem,
   GLOW_SPRITES,
-  LIGHT_SPRITES,
   WEAP_GLOW_SPRITES,
-  MISSIONS,
-  OUTFITS,
-  PERSONS,
-  RANKS,
-  BOOMS,
-  NEBULAE,
-  nebulaPict,
-  ROID_SPRITES,
-  ROIDS,
-  STR_LISTS,
-  SHIP_SPRITES,
-  SHIPS,
-  SPOB_INDEX,
-  START_SYSTEM_ID,
-  SYSTEMS,
-  systemGovtColor,
-  govtHaze,
-  landingAllowed,
-  landingGovtId,
-  MIN_STATUS_NEVER,
-  COMMODITIES,
-  INTERFACE,
-  setInterfaceForGovt,
-  UI_PICTS,
-  type PictInfo,
+  GOVT_FLAGS,
+  GOVT_FLAGS2,
+  GOVT_NAMES,
+  GOVT_VOICES,
   govtAllied,
   govtClassmate,
   govtEnemy,
-  COLR,
+  govtHaze,
   GOVTS,
-  GOVT_NAMES,
-  GOVT_FLAGS,
-  GOVT_FLAGS2,
-  CRONS,
-  OOPSES,
-  GOVT_VOICES,
-  SPOB_GOVT,
-  SPOB_INDEX as SPOBS,
-  WEAPON_SPRITES,
-  WEAPONS,
-  JUNKS,
+  INTERFACE,
   junkCargoKey,
   junkFromCargoKey,
+  JUNKS,
+  landingAllowed,
+  landingGovtId,
+  LIGHT_SPRITES,
+  MIN_STATUS_NEVER,
+  MISSIONS,
+  NEBULAE,
+  nebulaPict,
+  OOPSES,
+  OUTFITS,
+  PERSONS,
+  pickStartSystemId,
+  RANKS,
+  ROID_SPRITES,
+  ROIDS,
   roidYield,
+  setInterfaceForGovt,
+  SHIP_SPRITES,
+  SHIPS,
+  SPOB_GOVT,
+  SPOB_INDEX,
+  SPOB_INDEX as SPOBS,
+  START_SYSTEM_ID,
+  START_TEMPLATE,
+  STR_LISTS,
+  systemGovtColor,
+  SYSTEMS,
+  type PictInfo,
+  UI_PICTS,
+  WEAPON_SPRITES,
+  WEAPONS,
 } from "../data/universe";
 import {
   drawNpcShip,
@@ -106,6 +107,7 @@ import {
   markPilotDead,
   savePilot,
 } from "./pilots";
+import { playerContribute, requireMet } from "./contribute";
 import {
   applyCompReward,
   applyCrime,
@@ -2433,6 +2435,12 @@ export class Game {
     const systemGovtId = getSystem(systemId).govtId;
     const govtId = landingGovtId(planet, systemGovtId);
     if (govtId >= 128 && this.rankFlag(govtId, 0x0200)) return true;
+    // gövt Require — the Bible's travel permit: without the Contribute bits
+    // this government asks for, its worlds refuse you outright. Zero on all
+    // 68 stock governments; plug-ins use it.
+    const permit = GOVTS[String(govtId)]?.require;
+    if (permit && !requireMet(permit, playerContribute(this.player)))
+      return false;
     // Block landing while a tribute siege is active (fleet not yet defeated, or
     // fleet defeated but planet not yet formally submitted on a second demand).
     if (this.domination.has(planet.id)) return false;
@@ -3270,7 +3278,7 @@ export class Game {
     const upgradeId = type?.upgradeTo ?? -1;
     const upgradeType = upgradeId !== -1 ? SHIPS[String(upgradeId)] : null;
     const upgradeCost = type?.escUpgrdCost ?? 0;
-    let msg = `"On your wing, Captain. Sell value: ${sellValue.toLocaleString()} cr.`;
+    let msg = `"${escortClassName(hire.shipId)} escort on your wing, Captain. Sell value: ${sellValue.toLocaleString()} cr.`;
     if (upgradeType) {
       msg += ` Upgrade to ${upgradeType.name.split(";")[0]}: ${upgradeCost.toLocaleString()} cr.`;
     }
@@ -5383,6 +5391,10 @@ export class Game {
         npc.typeId = typeId;
         npc.govtId =
           (dude?.govt ?? -1) >= 128 ? dude!.govt : inherentCombatGovt(typeId);
+        // The mission's düde also says what's in her hold — without this,
+        // every special ship boarded empty.
+        npc.dudeId = dude?.id ?? null;
+        if (dude) this.assignBooty(npc, dude.booty, type);
         // you only shoot the ones you were sent to kill or cripple
         const wantHostile = goal === 0 || goal === 1;
         /*
@@ -5827,6 +5839,9 @@ export class Game {
       npc.typeId = typeId;
       npc.govtId = fleet.govt;
       npc.aiType = 3; // fleets fly as warships
+      // flëts name no düde, so there is no Booty field to read; a warship
+      // carries the payroll (money only, no cargo), on the same 4% rule.
+      this.assignBooty(npc, 0x40, type);
       npc.initDefense(
         type.shield,
         type.armor,
@@ -7376,10 +7391,14 @@ export class Game {
     const nextId = this.route.shift()!;
     const next = getSystem(nextId);
     this.player.fuelJumps -= 1;
-    // One day per jump is Nova's baseline. A hyperspace speed mod (outfit
-    // ModType 22) shifts it either way but, as the Bible puts it, "still can't
-    // go below 1 day/jump" — so the floor is 1, not 0.
-    this.advanceDays(Math.max(1, 1 + this.gear.hyperSpeed));
+    // shïp Mass sets the baseline days per jump — "1-99: 1 day per jump,
+    // 100-199: 2 days, 200 and up: 3 days" — and a hyperspace speed mod
+    // (outfit ModType 22) shifts it either way but, as the Bible puts it,
+    // "still can't go below 1 day/jump", so the floor stays 1. A Shuttle
+    // (35t) crosses in a day; a Leviathan (1200t) takes three.
+    const mass = SHIPS[this.player.shipId]?.mass ?? 0;
+    const baseDays = mass < 100 ? 1 : mass < 200 ? 2 : 3;
+    this.advanceDays(Math.max(1, baseDays + this.gear.hyperSpeed));
     // anyone you're escorting makes the jump with you
     for (const active of this.player.activeMissions) {
       const m = MISSIONS[String(active.misnId)];
@@ -8115,6 +8134,24 @@ export class Game {
     );
   }
 
+  /**
+   * düde Booty flags decide what a boarding party finds. 0x40 is money —
+   * "amount depends on the ship's purchase price", and the Bible never says
+   * how much, so the rate is ours: 4% of the hull's cost, which is what
+   * boarding a big warship pays in the original as far as anyone remembers
+   * it. The spread is the one number the doc does give for carried money —
+   * përs Credits' "+/- 25%" — so a 12M Manticore hands over 360k-600k.
+   */
+  private assignBooty(
+    npc: NpcShip,
+    bootyFlags: number,
+    type: { cost: number } | null,
+  ): void {
+    npc.bootyFlags = bootyFlags;
+    if ((bootyFlags & 0x40) !== 0 && type)
+      npc.booty = Math.round(type.cost * 0.04 * (0.75 + Math.random() * 0.5));
+  }
+
   private spawnNpc(anywhere = false): void {
     const sys = this.system;
     // real traffic: the system's düde table decides who flies here
@@ -8172,20 +8209,7 @@ export class Game {
       preloadSnds(voiceBank(GOVT_VOICES[String(govtId)] ?? 0));
     // ships whose class has AI cloak flags will vanish when they run
     if (type && (type.flags2 & 0x0f00) !== 0) npc.canCloak = true;
-    if (dude) {
-      npc.bootyFlags = dude.booty;
-      if ((dude.booty & 0x40) !== 0 && type) {
-        /*
-         * düde Flags 0x0040 is "carries money (amount depends on the ship's
-         * purchase price)" and the Bible never says how much, so the rate is
-         * ours: 4% of the hull's cost, which is what boarding a big warship
-         * pays in the original as far as anyone remembers it. The spread is
-         * the one number the doc does give for carried money — përs Credits'
-         * "+/- 25%" — so a 12M Manticore hands over 360k-600k.
-         */
-        npc.booty = Math.round(type.cost * 0.04 * (0.75 + Math.random() * 0.5));
-      }
-    }
+    if (dude) this.assignBooty(npc, dude.booty, type);
     // EV gives every new ship a small chance of being somebody in particular
     // (before hostility — a person may reassign govt / hold fire for a job)
     const bornHostile = !!type && this.hostileToPlayer(npc.govtId);

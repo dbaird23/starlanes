@@ -1,3 +1,4 @@
+import { playerContribute, requireMet } from "./contribute";
 import { CRONS } from "../data/universe";
 import type { CronState, CronType, PlayerState } from "../types";
 import { applySet, evalTest, type SetOpHandlers } from "./bits";
@@ -75,6 +76,8 @@ export function runCrons(
       continue;
     }
     if (!evalTest(cron.enableOn, player.bits, ctx)) continue;
+    // crön Require vs the player's Contribute pool (zero in stock data)
+    if (!requireMet(cron.require, playerContribute(player))) continue;
     if (cron.random <= 0) continue;
     if (cron.random < 100 && Math.random() * 100 > cron.random) continue;
 

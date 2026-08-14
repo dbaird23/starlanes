@@ -1,21 +1,27 @@
 import { asset } from "../asset";
 import {
-  resolveNovaText,
+  outfitRequireApplies,
+  playerContribute,
+  requireMet,
+} from "../game/contribute";
+import {
   COMMODITIES,
-  OUTFIT_ORDER,
-  SPOB_GOVT,
   DESCS,
-  STR_LISTS,
-  UI_PICTS,
+  escortClassName,
   GOVT_NEWS_PICS,
-  OUTFITS,
+  OUTFIT_ORDER,
   outfitPict,
+  OUTFITS,
   priceAt,
+  resolveNovaText,
   SHIP_ORDER,
   SHIP_SPRITES,
+  shipInfoPict,
   SHIPS,
   shipyardPict,
-  shipInfoPict,
+  SPOB_GOVT,
+  STR_LISTS,
+  UI_PICTS,
   WEAPONS,
 } from "../data/universe";
 import type { Game, GateDestination } from "../game/game";
@@ -1507,6 +1513,7 @@ export class LandedUi {
           : '<div class="oi-hero placeholder"></div>'
       }
         <div class="oi-info">
+          <div><span>Class:</span><b>${escortClassName(this.selectedHire)}</b></div>
           <div><span>Hiring Price:</span><b>${fee.toLocaleString()} cr</b></div>
           <div><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
           <div class="gap"><span>Daily Wage:</span><b>${wage.toLocaleString()} cr</b></div>
@@ -2254,6 +2261,7 @@ export class LandedUi {
     // the day and the world so the lot holds still while you're docked but
     // turns over as time passes.
     const day = Math.floor(g.player.date);
+    const shipPool = playerContribute(g.player);
     const available = SHIP_ORDER.filter((id) => {
       const s = SHIPS[id];
       const techOk =
@@ -2261,6 +2269,10 @@ export class LandedUi {
         (s.techLevel <= p.techLevel || p.specialTechs.includes(s.techLevel));
       if (!techOk || s.cost <= 0 || s.buyRandom <= 0) return false;
       if (!evalTest(s.avail, g.player.bits, testContext(g.player)))
+        return false;
+      // shïp Flags3 0x0200: don't show the hull at all until the player holds
+      // the licenses its Require bits name.
+      if ((s.flags3 & 0x0200) !== 0 && !requireMet(s.require, shipPool))
         return false;
       if (id === g.player.shipId) return true; // your own hull is always listed
       return dailyRoll(`${p.id}|${id}|${day}`) * 100 < s.buyRandom;
@@ -2302,7 +2314,10 @@ export class LandedUi {
       const listPrice = this.shopPrice(s.cost);
       const price = listPrice - tradeIn;
       const isCurrent = this.selectedShip === g.player.shipId;
-      const canBuy = !isCurrent && g.player.credits >= price;
+      // shïp Require: the Fed Carrier wants five licenses (0xCF), the
+      // Leviathan just the Capital Ships License (0x40).
+      const shipUnlicensed = !requireMet(s.require, shipPool);
+      const canBuy = !isCurrent && g.player.credits >= price && !shipUnlicensed;
       const [name] = s.name.split(";");
       const fullName = s.longName || name;
 
@@ -2330,6 +2345,7 @@ export class LandedUi {
             isCurrent ? "&mdash;" : netLabel(price)
           }</b></div>
           <div class="gap"><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
+          ${shipUnlicensed ? '<div class="oi-status">You don&#39;t have the required licenses!</div>' : ""}
         </div>`;
       desc = `<div class="oi-desc">${resolveNovaText(s.desc, g.player.bits)}</div>`;
       buy = `<button class="evbtn" id="btn-buy-ship" ${canBuy ? "" : "disabled"}>${
@@ -2495,6 +2511,7 @@ export class LandedUi {
      */
     const outfitDay = Math.floor(g.player.date);
     /** Is this world actually trading in the item today? */
+    const contribPool = playerContribute(g.player);
     const tradedHere = (id: string): boolean => {
       const o = OUTFITS[id];
       const techOk =
@@ -2505,9 +2522,14 @@ export class LandedUi {
       // 0x4000 hides an item until its Availability comes true; without that
       // flag Nova still lists it, just refuses to sell it (handled at buy time).
       if ((o.flags & OUTF_HIDE_UNLESS_AVAIL) !== 0 && !availOk) return false;
-      // 0x0100 does the same against the Require bits, which we don't model —
-      // so those items stay hidden unless already owned.
-      if ((o.flags & OUTF_HIDE_UNLESS_REQUIRE) !== 0) return false;
+      // 0x0100 does the same against the Require bits: hidden until the
+      // player holds the licenses, and only where this shop checks papers.
+      if (
+        (o.flags & OUTF_HIDE_UNLESS_REQUIRE) !== 0 &&
+        outfitRequireApplies(o.requireGovt, p.govtId) &&
+        !requireMet(o.require, contribPool)
+      )
+        return false;
       /*
        * BuyRandom is the percent chance the item is on the shelf on a given
        * day, exactly as for hulls. Zero means never, which is what keeps the
@@ -2610,7 +2632,13 @@ export class LandedUi {
       const noMount = g.mountBlock(id);
       const stocked = tradedHere(id);
       const alreadyMapped = isMap && this.mapsBoughtThisLanding.has(id);
-      const canBuy = stocked && !atMax && !tooHeavy && !tooPoor && !noMount && !alreadyMapped;
+      // oütf Require: the licensing system. RequireGovt 128 on the licensed
+      // weapons means only Federation-allied shops check papers — a pirate
+      // outfitter sells the same gun to anybody.
+      const unlicensed =
+        outfitRequireApplies(o.requireGovt, p.govtId) &&
+        !requireMet(o.require, contribPool);
+      const canBuy = stocked && !atMax && !tooHeavy && !tooPoor && !noMount && !alreadyMapped && !unlicensed;
       const sellsHere =
         p.sellOnly || stocked || (o.flags & OUTF_SELL_ANYWHERE) !== 0;
       const canSell =
@@ -2634,7 +2662,9 @@ export class LandedUi {
             ? "No free gun mounts!"
             : noMount === "turret"
               ? "No free turret mounts!"
-              : tooHeavy
+              : unlicensed
+                ? "You don't have the required license!"
+                : tooHeavy
                 ? "Not enough free space!"
                 : tooPoor
                   ? "You can't afford this!"
