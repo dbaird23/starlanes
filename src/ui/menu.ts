@@ -1,4 +1,5 @@
 import { asset } from "../asset";
+import { ui } from "../data/strings";
 import {
   isTitleMusicEnabled,
   playMenuClose,
@@ -518,8 +519,8 @@ export class MainMenu {
       `<div class="ttl-field"><span>${label}</span><b>${value}</b></div>`;
 
     if (!state || !summary) {
-      return `<div class="ttl-info left">${field("Pilot Name:", "—")}</div>
-        <div class="ttl-info right">${field("", "No pilot loaded")}</div>`;
+      return `<div class="ttl-info left">${field(ui(251, "Pilot Name:"), "—")}</div>
+        <div class="ttl-info right">${field("", ui(276, "No Pilot File Loaded"))}</div>`;
     }
     let place = "deep space";
     try {
@@ -539,16 +540,16 @@ export class MainMenu {
       : "";
     return `
       <div class="ttl-info left">
-        ${field("Pilot Name:", summary.name)}
-        ${field("Ship Name:", state.shipName || "—")}
-        ${field("Ship Class:", ship?.name.split(";")[0] ?? "—")}
+        ${field(ui(251, "Pilot Name:"), summary.name)}
+        ${field(ui(255, "Ship Name:"), state.shipName || "—")}
+        ${field(ui(256, "Ship Class:"), ship?.name.split(";")[0] ?? "—")}
         ${field("Credits:", state.credits.toLocaleString() + " cr")}
       </div>
       ${silhouette}
       <div class="ttl-info right">
         ${field("Current system:", place)}
-        ${field("Combat Rating:", ratingName(state.ratingPoints ?? 0))}
-        ${field("Current Date:", formatDate(state.date ?? 0))}
+        ${field(ui(254, "Combat Rating:"), ratingName(state.ratingPoints ?? 0))}
+        ${field(ui(252, "Current Date:"), formatDate(state.date ?? 0))}
       </div>`;
   }
 

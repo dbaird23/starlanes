@@ -1,4 +1,5 @@
 import { asset } from "../asset";
+import { ui } from "../data/strings";
 import {
   outfitRequireApplies,
   playerContribute,
@@ -1523,8 +1524,8 @@ export class LandedUi {
       }
         <div class="oi-info">
           <div><span>Class:</span><b>${escortClassName(this.selectedHire)}</b></div>
-          <div><span>Hiring Price:</span><b>${fee.toLocaleString()} cr</b></div>
-          <div><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
+          <div><span>${ui(228, "Hiring Price:")}</span><b>${fee.toLocaleString()} cr</b></div>
+          <div><span>${ui(217, "You Have:")}</span><b>${g.player.credits.toLocaleString()} cr</b></div>
           <div class="gap"><span>Daily Wage:</span><b>${wage.toLocaleString()} cr</b></div>
           <div><span>Carries For You:</span><b>${
             hauls
@@ -2348,12 +2349,12 @@ export class LandedUi {
         ${hero}
         <div class="sy-fullname">${escapeHtml(fullName)}</div>
         <div class="sy-prices">
-          <div><span>Ship Price:</span><b>${listPrice.toLocaleString()} cr</b></div>
-          <div><span>Trade-In:</span><b>${tradeIn.toLocaleString()} cr</b></div>
-          <div class="gap"><span>Final Price:</span><b>${
+          <div><span>${ui(225, "Ship Price:")}</span><b>${listPrice.toLocaleString()} cr</b></div>
+          <div><span>${ui(226, "Trade-In:")}</span><b>${tradeIn.toLocaleString()} cr</b></div>
+          <div class="gap"><span>${ui(227, "Final Price:")}</span><b>${
             isCurrent ? "&mdash;" : netLabel(price)
           }</b></div>
-          <div class="gap"><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
+          <div class="gap"><span>${ui(217, "You Have:")}</span><b>${g.player.credits.toLocaleString()} cr</b></div>
           ${shipUnlicensed ? '<div class="oi-status">You don&#39;t have the required licenses!</div>' : ""}
         </div>`;
       desc = `<div class="oi-desc">${resolveNovaText(s.desc, g.player.bits)}</div>`;
@@ -2666,7 +2667,7 @@ export class LandedUi {
           ? "Not sold here."
           : "Not traded here."
         : atMax
-          ? "Can't have any more!"
+          ? ui(219, "Can't have any more!")
           : noMount === "gun"
             ? "No free gun mounts!"
             : noMount === "turret"
@@ -2683,10 +2684,10 @@ export class LandedUi {
 
       info = `
         <div class="oi-info">
-          <div><span>Item Price:</span><b>${price.toLocaleString()} cr</b></div>
-          <div><span>You Have:</span><b>${g.player.credits.toLocaleString()} cr</b></div>
-          <div class="gap"><span>Item Mass:</span><b>${o.mass} tons</b></div>
-          <div><span>Available:</span><b>${free} tons</b></div>
+          <div><span>${ui(215, "Item Price:")}</span><b>${price.toLocaleString()} cr</b></div>
+          <div><span>${ui(217, "You Have:")}</span><b>${g.player.credits.toLocaleString()} cr</b></div>
+          <div class="gap"><span>${ui(216, "Item Mass:")}</span><b>${o.mass} tons</b></div>
+          <div><span>${ui(218, "Available:")}</span><b>${free} tons</b></div>
           ${mountRow(g)}
           <div class="oi-status">${status}</div>
         </div>`;

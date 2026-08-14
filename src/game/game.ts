@@ -64,6 +64,7 @@ import {
   drawThrustFlame,
 } from "../engine/draw";
 import { IntroUi } from "../ui/intro";
+import { ui } from "../data/strings";
 import {
   blinkIntensity,
   drawSheetFrame,
@@ -851,9 +852,25 @@ export class Game {
       this.landedUi.show(home, sys);
     } else {
       this.mode = "flight";
-      this.message(
-        `Welcome to the ${sys.name} system. Press M for the map, L to land.`,
-      );
+      /*
+       * A brand-new pilot gets Nova's own opening hint, STR# 2002 22-25: the
+       * 22/23 pair is chosen by stellar type ("docking at" a station vs
+       * "landing on" a planet) and 24/25 sandwich the landing keybinding, so
+       * it names whatever key is actually bound. Returning pilots keep the
+       * plain arrival line.
+       */
+      const first = !saved;
+      const nearest = sys.planets.find((p) => p.landable && !p.uninhabited);
+      if (first && nearest) {
+        const key = formatChord(getBinding("land"));
+        this.message(
+          `${ui(nearest.kind === "station" ? 22 : 23, "Welcome to Nova - it would be a good idea to start by visiting")} ${nearest.name} ${ui(24, "and having a look around. Hit '")}${key}${ui(25, "' to request landing clearance, then hit it again to land.")}`,
+        );
+      } else {
+        this.message(
+          `Welcome to the ${sys.name} system. Press M for the map, L to land.`,
+        );
+      }
     }
     // No disk write — progress is RAM until the next leave-planet commit.
   }
@@ -7011,12 +7028,19 @@ export class Game {
       return;
     }
     const { planet, dist } = near;
+    const isGate = planet.isHypergate || planet.isWormhole;
     if (dist > planet.radius * LAND_DIST + 60) {
-      this.message(`Too far from ${planet.name} to land.`);
+      this.message(
+        isGate
+          ? ui(planet.isWormhole ? 66 : 65, `Too far from ${planet.name}.`)
+          : ui(
+              planet.kind === "station" ? 67 : 68,
+              `Too far from ${planet.name} to land.`,
+            ),
+      );
       playSnd(SND.LANDING_DENIED, 0.55);
       return;
     }
-    const isGate = planet.isHypergate || planet.isWormhole;
     if (isGate && !this.gateIsWorking(planet)) {
       // a dead gate: its ring stays dark however long you sit in front of it
       this.message(
@@ -7026,17 +7050,27 @@ export class Game {
     }
     if (isGate && !this.hasHypergateAccess) {
       this.message(
-        `${planet.name}: hypergate access denied.`,
+        `${planet.name}: ${ui(81, "hypergate usage denied.")}`,
       );
       playSnd(SND.LANDING_DENIED, 0.55);
       return;
     }
     if (!planet.landable && !isGate) {
-      this.message(`You cannot land on ${planet.name}.`);
+      // 84 + the 87/88 station/planet pair: "Your ship is unable to land on X"
+      this.message(
+        `${ui(84, "Your ship is unable to")} ${ui(planet.kind === "station" ? 87 : 88, "land on ")}${planet.name}.`,
+      );
       return;
     }
     if (this.ship.speed > LAND_SPEED) {
-      this.message("You are moving too fast to land.");
+      this.message(
+        isGate
+          ? ui(planet.isWormhole ? 70 : 69, "You are moving too fast.")
+          : ui(
+              planet.kind === "station" ? 71 : 72,
+              "You are moving too fast to land.",
+            ),
+      );
       playSnd(SND.LANDING_DENIED, 0.55);
       return;
     }
@@ -9755,13 +9789,13 @@ export class Game {
       value("Tab cycle links", "#9fb0c6");
       value("Enter travel · Esc leave", "#9fb0c6");
     } else {
-      label("Destination System:");
+      label(ui(339, "Destination System:"));
       value(sel.name, "#e8eef6");
       ty += 6;
-      label("Government:");
-      value(sel.govtName ?? "Independent");
+      label(ui(325, "Government:"));
+      value(sel.govtName ?? ui(333, "Independent"));
       ty += 6;
-      label("Legal Status:");
+      label(ui(326, "Legal Status:"));
       const rec = getSystemRecord(this.player, String(sel.id));
       value(
         rec === 0
@@ -9782,17 +9816,17 @@ export class Game {
       for (const p of ports) {
         for (const c of COMMODITIES)
           if (p.prices[c.id] !== undefined) goods.add(c.name);
-        if (p.exchange) services.add("Trading");
-        if (p.outfitter) services.add("Outfitting");
-        if (p.shipyard) services.add("Shipyard");
+        if (p.exchange) services.add(ui(329, "Trading"));
+        if (p.outfitter) services.add(ui(330, "Outfitting"));
+        if (p.shipyard) services.add(ui(331, "Shipyard"));
         if (p.bar) services.add("Bar");
       }
-      label("Goods Traded:");
-      if (goods.size === 0) value("None", "#62748c");
+      label(ui(327, "Goods Traded:"));
+      if (goods.size === 0) value(ui(335, "None"), "#62748c");
       for (const g of goods) value(g);
       ty += 6;
-      label("Services:");
-      if (services.size === 0) value("None", "#62748c");
+      label(ui(328, "Services:"));
+      if (services.size === 0) value(ui(335, "None"), "#62748c");
       for (const sv of services) value(sv);
     } else if (!this.gateChooser && !explored) {
       label("Status:");

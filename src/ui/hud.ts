@@ -10,6 +10,7 @@ import {
   targetPict,
 } from "../data/universe";
 import { asset } from "../asset";
+import { ui } from "../data/strings";
 import { isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
@@ -466,11 +467,11 @@ export class HudUi {
     const nextId = g.route[0] ?? g.routeDest;
     const dest = nextId ? getSystem(nextId).name : null;
     const kind = dest
-      ? "Hyperspace"
+      ? ui(345, "Hyperspace")
       : g.targetPlanet
-        ? "Stellar Navigation"
-        : "Navigation";
-    const value = dest ?? g.targetPlanet?.name ?? "Offline";
+        ? ui(343, "Stellar Navigation")
+        : ui(342, "Nav System Off");
+    const value = dest ?? g.targetPlanet?.name ?? ui(344, "No Destination");
     this.navBox.classList.toggle("off", !dest && !g.targetPlanet);
     // Course set but the no-jump well is still holding you — dim the address
     // so the HUD shows why J is not engaging.
@@ -511,7 +512,9 @@ export class HudUi {
     );
     weapLine(
       this.weapSec,
-      sec.length ? label(sec[0], sec.length - 1, true) : "No Secondary Weapon",
+      sec.length
+        ? label(sec[0], sec.length - 1, true)
+        : ui(350, "No Secondary Weapon"),
       !sec.length,
       sec.some((s) => s.cooldown > 0),
     );
@@ -523,7 +526,10 @@ export class HudUi {
     const t = g.targetNpc;
     if (!t) {
       this.target.classList.add("empty");
-      setHtml(this.target, `<span class="hud-targ-none">No Target</span>`);
+      setHtml(
+        this.target,
+        `<span class="hud-targ-none">${ui(349, "No Target")}</span>`,
+      );
       return;
     }
     this.target.classList.remove("empty");
@@ -539,7 +545,7 @@ export class HudUi {
       : hullVariant;
     const tone = t.hostile ? "hostile" : isNamed ? "named" : "";
     const status = t.disabled
-      ? "Disabled"
+      ? ui(347, "Disabled")
       : t.shield >= t.maxShield * 0.01 || !t.maxShield
         ? `Shield ${Math.round(100 * (t.maxShield ? t.shield / t.maxShield : 0))}%`
         : `Armor ${Math.round(100 * (t.maxArmor ? t.armor / t.maxArmor : 0))}%`;

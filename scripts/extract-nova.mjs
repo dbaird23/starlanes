@@ -1260,6 +1260,13 @@ for (const id of [
   134,
   138,
   150,
+  // 2002 "misc strings": 396 entries, every stock label and message the engine
+  // prints — the opening docking hint, the landing-clearance exchange, the
+  // plunder and escort-command panels, the trade/outfit/shipyard labels, the
+  // map readout, down to "N/A". Reading it makes those strings data-driven, so
+  // a plug-in that rewords the game works. Note 22/23 are a docking/landing
+  // pair chosen by stellar type, and 24/25 sandwich the landing keybinding.
+  2002,
   1000,
   4000,
   4002,

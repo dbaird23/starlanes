@@ -381,14 +381,34 @@ substitution, which used to always take the male string. Those read through
 in the same shape as `setInterfaceForGovt`, rather than threading an extra
 argument through all eighteen `substituteTags` call sites.
 
-**STR# 2002 "misc strings" is 396 unextracted UI strings** — every stock
-label and message the engine prints, from "Welcome to Nova - it would be a
-good idea to start by docking at" through the plunder, escort-command,
-trade and map panels, down to "N/A". We hardcode English equivalents of
-most of it. Reading the bank would make those strings data-driven (and a
-plug-in's own wording work); nothing depends on it yet. Note entries 22/23
-are a docking/landing pair chosen by stellar type, and 24/25 embed the
-keybinding, which is why the original's opening hint names the 'L' key.
+**STR# 2002 "misc strings" is extracted — 396 engine strings, and the
+wording is the original's now.** `src/data/strings.ts` exposes `ui(n,
+fallback)`, **1-based** like every other STR# reference here (sÿst Message,
+përs CommQuote…), and every call passes the English string it replaces so a
+short or missing bank degrades to what we shipped rather than to blanks.
+Wired so far: the new pilot's opening hint, the too-far / too-fast /
+unable-to-land / clearance-denied messages, the HUD's nav and target wells,
+the map's destination panel, the trade, outfit, shipyard and hire labels,
+and the title screen's readout.
+
+Three things about the bank worth knowing. Entries **22/23 are a pair chosen
+by stellar type** — "docking at" a station against "landing on" a planet —
+and **24/25 sandwich the landing keybinding**, which is why the original's
+opening line names the 'L' key; ours passes `formatChord(getBinding("land"))`
+so a rebound key reads correctly. The same station/planet split runs through
+**67/68** (too far), **71/72** (too fast) and **87/88** (unable to dock/land),
+and it keys off `PlanetDef.kind`, which comes from spöb Flags 0x0010. Verified
+in play: Spacedock II gives "You're too far away to dock at this station"
+where Ryll gives "…to land on this planet", and a fresh pilot's first message
+reads "Welcome to Nova - it would be a good idea to start by landing on Ryll
+and having a look around. Hit 'L' to request landing clearance, then hit it
+again to land."
+
+Most of the bank is still unwired — the plunder panel, escort commands, the
+smuggling and self-destruct messages, the gambling screen, and the small
+connective words (391-396: "of", "and", "a", "an", "in", "N/A") that Nova
+assembles sentences from. Adding one is a two-line change: find the entry
+number in the extracted list and wrap the literal in `ui()`.
 
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
