@@ -877,11 +877,16 @@ happened to live there.
   "hard" uses the exact lead point, "normal" averages the lead with the
   target's current position so the player can dodge by turning. NPC-on-NPC
   boarding also got a real three-phase dock (approach → brake → drift in).
-- **shän `WeapImageID`/`WeapDecay`** (81 hulls have a weapon glow): extracted
-  into the manifest but not rendered. `WeapDecay`'s units are unpinned — the
-  Bible says only that "50 is a good median number", and the shipped values
-  (3…100) give lifetimes from ~1s to ~35s depending on the reading. Needs a
-  reference build to settle before it is worth drawing.
+- **shän `WeapImageID` weapon glow renders now, but `WeapDecay`'s unit is a
+  chosen reading, not a pinned one.** The overlay draws additively over the
+  hull, frame-matched, whenever a weapon with wëap flag 0x0200 fires
+  (player and NPC paths both set `weapGlowAlpha = 1`), and fades at
+  `WeapDecay/255` alpha per 30Hz tick — so the Bible's "good median" 50
+  reads as a 0.17s muzzle-flash pulse and the shipped 3…100 span
+  2.8s…0.085s. Other readings put the same values at ~1s–35s. The original
+  runs on this machine: time a Manticore IPC ring or a Polaris hull glow
+  in the Wine build and retune the divisor in the decay step in `game.ts`
+  if it disagrees — the structure is right either way.
 - **shän `ShieldImageID`** is `-1` on all 288 hulls and **`AltImageID`** is set
   on exactly one, so both are recorded but nothing renders them.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
@@ -967,8 +972,8 @@ Most of the earlier queue (pers loadout/HailPict, roid fragments, spob Fee /
 misn DatePostInc / junk BuyOn+SellOn, colr, ScanMask) is done — see above.
 Still open or only half-landed:
 
-1. **shän WeapImageID / WeapDecay** — weapon-glow render once units are pinned
-   against a reference build.
+1. **WeapDecay feel-check** — the glow renders; time a fade against the
+   original and retune the /255-per-tick reading if it disagrees.
 2. **Mass → days/jump is done** — shïp Mass bands set 1/2/3 days per jump and
    the two density-scanner blip sizes; ModType 22 still shifts the total with
    a floor of 1.
