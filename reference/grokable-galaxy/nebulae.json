@@ -1,0 +1,38 @@
+[
+  {
+    "id": 128,
+    "name": "Holpa Nebula",
+    "x": 430,
+    "y": 45,
+    "w": 251,
+    "h": 298,
+    "activeOn": ""
+  },
+  {
+    "id": 129,
+    "name": "Obatta Nebula",
+    "x": 60,
+    "y": 40,
+    "w": 65,
+    "h": 90,
+    "activeOn": ""
+  },
+  {
+    "id": 130,
+    "name": "Rochak Dust Field",
+    "x": 263,
+    "y": 145,
+    "w": 109,
+    "h": 95,
+    "activeOn": ""
+  },
+  {
+    "id": 131,
+    "name": "L-1551",
+    "x": -138,
+    "y": -226,
+    "w": 146,
+    "h": 71,
+    "activeOn": ""
+  }
+]

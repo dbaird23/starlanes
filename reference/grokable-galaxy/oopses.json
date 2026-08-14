@@ -1,0 +1,192 @@
+[
+  {
+    "id": 128,
+    "name": "An enormous food surplus",
+    "stellar": 137,
+    "commodity": 0,
+    "priceDelta": -15,
+    "duration": 30,
+    "freq": 35,
+    "activateOn": ""
+  },
+  {
+    "id": 129,
+    "name": "A glut on the market",
+    "stellar": 175,
+    "commodity": 1,
+    "priceDelta": -70,
+    "duration": 15,
+    "freq": 40,
+    "activateOn": ""
+  },
+  {
+    "id": 130,
+    "name": "A minor drought",
+    "stellar": 163,
+    "commodity": 0,
+    "priceDelta": 15,
+    "duration": 25,
+    "freq": 50,
+    "activateOn": ""
+  },
+  {
+    "id": 131,
+    "name": "A seasonal lull",
+    "stellar": 213,
+    "commodity": 4,
+    "priceDelta": -40,
+    "duration": 40,
+    "freq": 50,
+    "activateOn": ""
+  },
+  {
+    "id": 132,
+    "name": "An excess of trade",
+    "stellar": 139,
+    "commodity": 3,
+    "priceDelta": -180,
+    "duration": 40,
+    "freq": 50,
+    "activateOn": ""
+  },
+  {
+    "id": 133,
+    "name": "A recent increase in trade",
+    "stellar": 182,
+    "commodity": 1,
+    "priceDelta": -70,
+    "duration": 30,
+    "freq": 30,
+    "activateOn": ""
+  },
+  {
+    "id": 134,
+    "name": "A spate of break-downs",
+    "stellar": 185,
+    "commodity": 5,
+    "priceDelta": 115,
+    "duration": 40,
+    "freq": 25,
+    "activateOn": ""
+  },
+  {
+    "id": 135,
+    "name": "A good harvest of bio-agents",
+    "stellar": 143,
+    "commodity": 2,
+    "priceDelta": -150,
+    "duration": 15,
+    "freq": 25,
+    "activateOn": ""
+  },
+  {
+    "id": 136,
+    "name": "An excellent harvest",
+    "stellar": 245,
+    "commodity": 0,
+    "priceDelta": -15,
+    "duration": 60,
+    "freq": 75,
+    "activateOn": ""
+  },
+  {
+    "id": 137,
+    "name": "An enormous surplus",
+    "stellar": 248,
+    "commodity": 2,
+    "priceDelta": -110,
+    "duration": 100,
+    "freq": 75,
+    "activateOn": ""
+  },
+  {
+    "id": 138,
+    "name": "Damage due to student pranks",
+    "stellar": 305,
+    "commodity": 5,
+    "priceDelta": 110,
+    "duration": 30,
+    "freq": 30,
+    "activateOn": ""
+  },
+  {
+    "id": 139,
+    "name": "An excellent harvest",
+    "stellar": 334,
+    "commodity": 0,
+    "priceDelta": -15,
+    "duration": 50,
+    "freq": 30,
+    "activateOn": ""
+  },
+  {
+    "id": 140,
+    "name": "A large number of prisoner deaths",
+    "stellar": 316,
+    "commodity": 4,
+    "priceDelta": 40,
+    "duration": 30,
+    "freq": 50,
+    "activateOn": ""
+  },
+  {
+    "id": 141,
+    "name": "A series of good raids",
+    "stellar": 318,
+    "commodity": 3,
+    "priceDelta": -180,
+    "duration": 20,
+    "freq": 30,
+    "activateOn": ""
+  },
+  {
+    "id": 142,
+    "name": "Damage due to student pranks",
+    "stellar": 328,
+    "commodity": 5,
+    "priceDelta": 40,
+    "duration": 50,
+    "freq": 30,
+    "activateOn": ""
+  },
+  {
+    "id": 143,
+    "name": "The discovery of a new ore deposit",
+    "stellar": 331,
+    "commodity": 4,
+    "priceDelta": -110,
+    "duration": 50,
+    "freq": 25,
+    "activateOn": ""
+  },
+  {
+    "id": 144,
+    "name": "The discovery of a new drug",
+    "stellar": 354,
+    "commodity": 2,
+    "priceDelta": -150,
+    "duration": 50,
+    "freq": 30,
+    "activateOn": ""
+  },
+  {
+    "id": 145,
+    "name": "A shortage in supply",
+    "stellar": 360,
+    "commodity": 1,
+    "priceDelta": 70,
+    "duration": 15,
+    "freq": 70,
+    "activateOn": "!b80"
+  },
+  {
+    "id": 146,
+    "name": "Another good harvest",
+    "stellar": 378,
+    "commodity": 0,
+    "priceDelta": -30,
+    "duration": 60,
+    "freq": 65,
+    "activateOn": ""
+  }
+]

@@ -1,0 +1,6952 @@
+[
+  {
+    "id": 128,
+    "name": "Lone Federation Ship",
+    "aiType": 4,
+    "govt": 128,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 11
+      },
+      {
+        "id": 172,
+        "prob": 20
+      },
+      {
+        "id": 144,
+        "prob": 11
+      },
+      {
+        "id": 145,
+        "prob": 11
+      },
+      {
+        "id": 187,
+        "prob": 10
+      },
+      {
+        "id": 215,
+        "prob": 3
+      },
+      {
+        "id": 216,
+        "prob": 3
+      },
+      {
+        "id": 217,
+        "prob": 3
+      },
+      {
+        "id": 223,
+        "prob": 5
+      },
+      {
+        "id": 224,
+        "prob": 4
+      },
+      {
+        "id": 225,
+        "prob": 5
+      },
+      {
+        "id": 226,
+        "prob": 4
+      },
+      {
+        "id": 351,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 129,
+    "name": "Trader",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 127,
+    "infoTypes": 4096,
+    "ships": [
+      {
+        "id": 128,
+        "prob": 9
+      },
+      {
+        "id": 129,
+        "prob": 9
+      },
+      {
+        "id": 136,
+        "prob": 9
+      },
+      {
+        "id": 135,
+        "prob": 9
+      },
+      {
+        "id": 188,
+        "prob": 9
+      },
+      {
+        "id": 189,
+        "prob": 8
+      },
+      {
+        "id": 202,
+        "prob": 8
+      },
+      {
+        "id": 203,
+        "prob": 8
+      },
+      {
+        "id": 277,
+        "prob": 3
+      },
+      {
+        "id": 278,
+        "prob": 3
+      },
+      {
+        "id": 157,
+        "prob": 5
+      },
+      {
+        "id": 307,
+        "prob": 3
+      },
+      {
+        "id": 308,
+        "prob": 2
+      },
+      {
+        "id": 309,
+        "prob": 2
+      },
+      {
+        "id": 379,
+        "prob": 8
+      },
+      {
+        "id": 130,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 130,
+    "name": "Lone Big Federation Ship",
+    "aiType": 3,
+    "govt": 128,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 141,
+        "prob": 30
+      },
+      {
+        "id": 211,
+        "prob": 14
+      },
+      {
+        "id": 212,
+        "prob": 14
+      },
+      {
+        "id": 213,
+        "prob": 14
+      },
+      {
+        "id": 214,
+        "prob": 14
+      },
+      {
+        "id": 143,
+        "prob": 5
+      },
+      {
+        "id": 218,
+        "prob": 2
+      },
+      {
+        "id": 219,
+        "prob": 2
+      },
+      {
+        "id": 220,
+        "prob": 2
+      },
+      {
+        "id": 221,
+        "prob": 1
+      },
+      {
+        "id": 222,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 131,
+    "name": "Auroran",
+    "aiType": 4,
+    "govt": 187,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 3
+      },
+      {
+        "id": 154,
+        "prob": 8
+      },
+      {
+        "id": 152,
+        "prob": 20
+      },
+      {
+        "id": 155,
+        "prob": 15
+      },
+      {
+        "id": 239,
+        "prob": 10
+      },
+      {
+        "id": 240,
+        "prob": 10
+      },
+      {
+        "id": 241,
+        "prob": 10
+      },
+      {
+        "id": 247,
+        "prob": 3
+      },
+      {
+        "id": 248,
+        "prob": 3
+      },
+      {
+        "id": 249,
+        "prob": 3
+      },
+      {
+        "id": 250,
+        "prob": 3
+      },
+      {
+        "id": 295,
+        "prob": 1
+      },
+      {
+        "id": 296,
+        "prob": 1
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 132,
+    "name": "Lone idiot in terrapin",
+    "aiType": 2,
+    "govt": 157,
+    "booty": 127,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 136,
+        "prob": 17
+      },
+      {
+        "id": 202,
+        "prob": 10
+      },
+      {
+        "id": 203,
+        "prob": 17
+      },
+      {
+        "id": 136,
+        "prob": 9
+      },
+      {
+        "id": 379,
+        "prob": 17
+      },
+      {
+        "id": 128,
+        "prob": 10
+      },
+      {
+        "id": 129,
+        "prob": 10
+      },
+      {
+        "id": 130,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 133,
+    "name": "Pirate",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 6
+      },
+      {
+        "id": 166,
+        "prob": 13
+      },
+      {
+        "id": 149,
+        "prob": 18
+      },
+      {
+        "id": 148,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 231,
+        "prob": 3
+      },
+      {
+        "id": 232,
+        "prob": 3
+      },
+      {
+        "id": 233,
+        "prob": 3
+      },
+      {
+        "id": 234,
+        "prob": 3
+      },
+      {
+        "id": 235,
+        "prob": 3
+      },
+      {
+        "id": 275,
+        "prob": 15
+      },
+      {
+        "id": 288,
+        "prob": 4
+      },
+      {
+        "id": 289,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 134,
+    "name": "Tough Trader",
+    "aiType": 2,
+    "govt": 157,
+    "booty": 127,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 132,
+        "prob": 5
+      },
+      {
+        "id": 133,
+        "prob": 5
+      },
+      {
+        "id": 137,
+        "prob": 11
+      },
+      {
+        "id": 140,
+        "prob": 11
+      },
+      {
+        "id": 187,
+        "prob": 8
+      },
+      {
+        "id": 193,
+        "prob": 5
+      },
+      {
+        "id": 194,
+        "prob": 5
+      },
+      {
+        "id": 195,
+        "prob": 5
+      },
+      {
+        "id": 196,
+        "prob": 5
+      },
+      {
+        "id": 197,
+        "prob": 5
+      },
+      {
+        "id": 198,
+        "prob": 5
+      },
+      {
+        "id": 199,
+        "prob": 5
+      },
+      {
+        "id": 279,
+        "prob": 5
+      },
+      {
+        "id": 280,
+        "prob": 5
+      },
+      {
+        "id": 281,
+        "prob": 5
+      },
+      {
+        "id": 157,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 135,
+    "name": "Lone Polaris Freighter",
+    "aiType": 1,
+    "govt": 130,
+    "booty": 127,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 160,
+        "prob": 26
+      },
+      {
+        "id": 182,
+        "prob": 21
+      },
+      {
+        "id": 182,
+        "prob": 21
+      },
+      {
+        "id": 186,
+        "prob": 16
+      },
+      {
+        "id": 257,
+        "prob": 16
+      }
+    ]
+  },
+  {
+    "id": 136,
+    "name": "Lone Polaris",
+    "aiType": 3,
+    "govt": 147,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 161,
+        "prob": 11
+      },
+      {
+        "id": 186,
+        "prob": 23
+      },
+      {
+        "id": 159,
+        "prob": 1
+      },
+      {
+        "id": 163,
+        "prob": 14
+      },
+      {
+        "id": 257,
+        "prob": 23
+      },
+      {
+        "id": 262,
+        "prob": 18
+      },
+      {
+        "id": 314,
+        "prob": 1
+      },
+      {
+        "id": 315,
+        "prob": 1
+      },
+      {
+        "id": 317,
+        "prob": 1
+      },
+      {
+        "id": 318,
+        "prob": 1
+      },
+      {
+        "id": 322,
+        "prob": 1
+      },
+      {
+        "id": 329,
+        "prob": 1
+      },
+      {
+        "id": 312,
+        "prob": 1
+      },
+      {
+        "id": 313,
+        "prob": 1
+      },
+      {
+        "id": 320,
+        "prob": 1
+      },
+      {
+        "id": 327,
+        "prob": 1
+      }
+    ]
+  },
+  {
+    "id": 137,
+    "name": "Small Polaris",
+    "aiType": 4,
+    "govt": 147,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 161,
+        "prob": 20
+      },
+      {
+        "id": 327,
+        "prob": 3
+      },
+      {
+        "id": 163,
+        "prob": 17
+      },
+      {
+        "id": 258,
+        "prob": 10
+      },
+      {
+        "id": 257,
+        "prob": 10
+      },
+      {
+        "id": 262,
+        "prob": 17
+      },
+      {
+        "id": 314,
+        "prob": 2
+      },
+      {
+        "id": 315,
+        "prob": 3
+      },
+      {
+        "id": 317,
+        "prob": 2
+      },
+      {
+        "id": 318,
+        "prob": 2
+      },
+      {
+        "id": 322,
+        "prob": 3
+      },
+      {
+        "id": 329,
+        "prob": 2
+      },
+      {
+        "id": 159,
+        "prob": 2
+      },
+      {
+        "id": 312,
+        "prob": 3
+      },
+      {
+        "id": 313,
+        "prob": 2
+      },
+      {
+        "id": 320,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 138,
+    "name": "Large Polaris",
+    "aiType": 3,
+    "govt": 147,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 158,
+        "prob": 13
+      },
+      {
+        "id": 158,
+        "prob": 13
+      },
+      {
+        "id": 162,
+        "prob": 14
+      },
+      {
+        "id": 326,
+        "prob": 2
+      },
+      {
+        "id": 259,
+        "prob": 13
+      },
+      {
+        "id": 259,
+        "prob": 13
+      },
+      {
+        "id": 261,
+        "prob": 14
+      },
+      {
+        "id": 263,
+        "prob": 2
+      },
+      {
+        "id": 327,
+        "prob": 2
+      },
+      {
+        "id": 311,
+        "prob": 2
+      },
+      {
+        "id": 316,
+        "prob": 2
+      },
+      {
+        "id": 319,
+        "prob": 2
+      },
+      {
+        "id": 321,
+        "prob": 2
+      },
+      {
+        "id": 326,
+        "prob": 2
+      },
+      {
+        "id": 328,
+        "prob": 2
+      },
+      {
+        "id": 313,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 139,
+    "name": "Auroran (Fed chapter 1)",
+    "aiType": 3,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 155,
+        "prob": 25
+      },
+      {
+        "id": 156,
+        "prob": 25
+      },
+      {
+        "id": 152,
+        "prob": 4
+      },
+      {
+        "id": 239,
+        "prob": 2
+      },
+      {
+        "id": 240,
+        "prob": 2
+      },
+      {
+        "id": 241,
+        "prob": 2
+      },
+      {
+        "id": 303,
+        "prob": 10
+      },
+      {
+        "id": 304,
+        "prob": 10
+      },
+      {
+        "id": 305,
+        "prob": 10
+      },
+      {
+        "id": 306,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 140,
+    "name": "Auroran (Fed end chap 1)",
+    "aiType": 3,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 8
+      },
+      {
+        "id": 154,
+        "prob": 5
+      },
+      {
+        "id": 155,
+        "prob": 21
+      },
+      {
+        "id": 156,
+        "prob": 21
+      },
+      {
+        "id": 239,
+        "prob": 3
+      },
+      {
+        "id": 240,
+        "prob": 3
+      },
+      {
+        "id": 241,
+        "prob": 3
+      },
+      {
+        "id": 247,
+        "prob": 2
+      },
+      {
+        "id": 248,
+        "prob": 2
+      },
+      {
+        "id": 249,
+        "prob": 2
+      },
+      {
+        "id": 250,
+        "prob": 2
+      },
+      {
+        "id": 303,
+        "prob": 7
+      },
+      {
+        "id": 304,
+        "prob": 7
+      },
+      {
+        "id": 305,
+        "prob": 7
+      },
+      {
+        "id": 306,
+        "prob": 7
+      }
+    ]
+  },
+  {
+    "id": 141,
+    "name": "Rebel (Fed chap2)",
+    "aiType": 3,
+    "govt": 141,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 177,
+        "prob": 25
+      },
+      {
+        "id": 337,
+        "prob": 5
+      },
+      {
+        "id": 179,
+        "prob": 6
+      },
+      {
+        "id": 178,
+        "prob": 2
+      },
+      {
+        "id": 274,
+        "prob": 8
+      },
+      {
+        "id": 276,
+        "prob": 15
+      },
+      {
+        "id": 338,
+        "prob": 5
+      },
+      {
+        "id": 339,
+        "prob": 5
+      },
+      {
+        "id": 340,
+        "prob": 2
+      },
+      {
+        "id": 341,
+        "prob": 2
+      },
+      {
+        "id": 342,
+        "prob": 2
+      },
+      {
+        "id": 343,
+        "prob": 2
+      },
+      {
+        "id": 344,
+        "prob": 6
+      },
+      {
+        "id": 345,
+        "prob": 5
+      },
+      {
+        "id": 346,
+        "prob": 3
+      },
+      {
+        "id": 353,
+        "prob": 7
+      }
+    ]
+  },
+  {
+    "id": 142,
+    "name": "Auroran Trader (small)",
+    "aiType": 2,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 138,
+        "prob": 8
+      },
+      {
+        "id": 204,
+        "prob": 8
+      },
+      {
+        "id": 205,
+        "prob": 8
+      },
+      {
+        "id": 206,
+        "prob": 8
+      },
+      {
+        "id": 207,
+        "prob": 8
+      },
+      {
+        "id": 139,
+        "prob": 8
+      },
+      {
+        "id": 208,
+        "prob": 8
+      },
+      {
+        "id": 209,
+        "prob": 8
+      },
+      {
+        "id": 210,
+        "prob": 8
+      },
+      {
+        "id": 157,
+        "prob": 5
+      },
+      {
+        "id": 307,
+        "prob": 2
+      },
+      {
+        "id": 308,
+        "prob": 2
+      },
+      {
+        "id": 309,
+        "prob": 1
+      },
+      {
+        "id": 190,
+        "prob": 6
+      },
+      {
+        "id": 193,
+        "prob": 6
+      },
+      {
+        "id": 194,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 143,
+    "name": "Wraith (nice)",
+    "aiType": 2,
+    "govt": 139,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 168,
+        "prob": 30
+      },
+      {
+        "id": 169,
+        "prob": 25
+      },
+      {
+        "id": 170,
+        "prob": 25
+      },
+      {
+        "id": 169,
+        "prob": 20
+      }
+    ]
+  },
+  {
+    "id": 144,
+    "name": "Wraith (nasty)",
+    "aiType": 4,
+    "govt": 138,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 168,
+        "prob": 40
+      },
+      {
+        "id": 169,
+        "prob": 40
+      },
+      {
+        "id": 170,
+        "prob": 10
+      },
+      {
+        "id": 169,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 145,
+    "name": "Vell-os",
+    "aiType": 4,
+    "govt": 136,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 173,
+        "prob": 40
+      },
+      {
+        "id": 173,
+        "prob": 30
+      },
+      {
+        "id": 174,
+        "prob": 20
+      },
+      {
+        "id": 175,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 146,
+    "name": "Krypt",
+    "aiType": 4,
+    "govt": 140,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 176,
+        "prob": 25
+      },
+      {
+        "id": 176,
+        "prob": 25
+      },
+      {
+        "id": 176,
+        "prob": 25
+      },
+      {
+        "id": 176,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 147,
+    "name": "Hyperioid",
+    "aiType": 2,
+    "govt": 148,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 171,
+        "prob": 25
+      },
+      {
+        "id": 171,
+        "prob": 25
+      },
+      {
+        "id": 171,
+        "prob": 25
+      },
+      {
+        "id": 171,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 148,
+    "name": "Big traders",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 63,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 131,
+        "prob": 20
+      },
+      {
+        "id": 190,
+        "prob": 10
+      },
+      {
+        "id": 192,
+        "prob": 10
+      },
+      {
+        "id": 132,
+        "prob": 25
+      },
+      {
+        "id": 193,
+        "prob": 10
+      },
+      {
+        "id": 194,
+        "prob": 10
+      },
+      {
+        "id": 165,
+        "prob": 7
+      },
+      {
+        "id": 331,
+        "prob": 2
+      },
+      {
+        "id": 332,
+        "prob": 1
+      },
+      {
+        "id": 379,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 149,
+    "name": "Rimertans",
+    "aiType": 2,
+    "govt": 142,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 155,
+        "prob": 25
+      },
+      {
+        "id": 156,
+        "prob": 25
+      },
+      {
+        "id": 252,
+        "prob": 25
+      },
+      {
+        "id": 239,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 150,
+    "name": "Slyvilian Defence Scum",
+    "aiType": 4,
+    "govt": -1,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 140,
+        "prob": 5
+      },
+      {
+        "id": 133,
+        "prob": 5
+      },
+      {
+        "id": 137,
+        "prob": 28
+      },
+      {
+        "id": 279,
+        "prob": 7
+      },
+      {
+        "id": 195,
+        "prob": 4
+      },
+      {
+        "id": 196,
+        "prob": 4
+      },
+      {
+        "id": 197,
+        "prob": 4
+      },
+      {
+        "id": 198,
+        "prob": 4
+      },
+      {
+        "id": 199,
+        "prob": 4
+      },
+      {
+        "id": 135,
+        "prob": 9
+      },
+      {
+        "id": 177,
+        "prob": 4
+      },
+      {
+        "id": 178,
+        "prob": 4
+      },
+      {
+        "id": 280,
+        "prob": 7
+      },
+      {
+        "id": 281,
+        "prob": 7
+      },
+      {
+        "id": 282,
+        "prob": 2
+      },
+      {
+        "id": 283,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 151,
+    "name": "Wild Geese",
+    "aiType": 3,
+    "govt": 144,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 140,
+        "prob": 8
+      },
+      {
+        "id": 142,
+        "prob": 3
+      },
+      {
+        "id": 215,
+        "prob": 3
+      },
+      {
+        "id": 216,
+        "prob": 3
+      },
+      {
+        "id": 217,
+        "prob": 3
+      },
+      {
+        "id": 144,
+        "prob": 7
+      },
+      {
+        "id": 145,
+        "prob": 8
+      },
+      {
+        "id": 224,
+        "prob": 7
+      },
+      {
+        "id": 165,
+        "prob": 13
+      },
+      {
+        "id": 331,
+        "prob": 4
+      },
+      {
+        "id": 332,
+        "prob": 4
+      },
+      {
+        "id": 157,
+        "prob": 10
+      },
+      {
+        "id": 191,
+        "prob": 10
+      },
+      {
+        "id": 282,
+        "prob": 7
+      },
+      {
+        "id": 283,
+        "prob": 5
+      },
+      {
+        "id": 284,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 152,
+    "name": "Roughnecks",
+    "aiType": 3,
+    "govt": 145,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 141,
+        "prob": 9
+      },
+      {
+        "id": 211,
+        "prob": 1
+      },
+      {
+        "id": 212,
+        "prob": 1
+      },
+      {
+        "id": 213,
+        "prob": 1
+      },
+      {
+        "id": 214,
+        "prob": 1
+      },
+      {
+        "id": 143,
+        "prob": 2
+      },
+      {
+        "id": 218,
+        "prob": 1
+      },
+      {
+        "id": 219,
+        "prob": 1
+      },
+      {
+        "id": 220,
+        "prob": 1
+      },
+      {
+        "id": 221,
+        "prob": 1
+      },
+      {
+        "id": 222,
+        "prob": 1
+      },
+      {
+        "id": 142,
+        "prob": 19
+      },
+      {
+        "id": 215,
+        "prob": 7
+      },
+      {
+        "id": 216,
+        "prob": 7
+      },
+      {
+        "id": 217,
+        "prob": 7
+      },
+      {
+        "id": 145,
+        "prob": 40
+      }
+    ]
+  },
+  {
+    "id": 153,
+    "name": "Federation",
+    "aiType": 3,
+    "govt": 146,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 14
+      },
+      {
+        "id": 215,
+        "prob": 4
+      },
+      {
+        "id": 216,
+        "prob": 4
+      },
+      {
+        "id": 217,
+        "prob": 4
+      },
+      {
+        "id": 187,
+        "prob": 20
+      },
+      {
+        "id": 143,
+        "prob": 2
+      },
+      {
+        "id": 218,
+        "prob": 1
+      },
+      {
+        "id": 219,
+        "prob": 1
+      },
+      {
+        "id": 220,
+        "prob": 1
+      },
+      {
+        "id": 221,
+        "prob": 1
+      },
+      {
+        "id": 222,
+        "prob": 1
+      },
+      {
+        "id": 144,
+        "prob": 14
+      },
+      {
+        "id": 223,
+        "prob": 5
+      },
+      {
+        "id": 145,
+        "prob": 14
+      },
+      {
+        "id": 225,
+        "prob": 7
+      },
+      {
+        "id": 226,
+        "prob": 7
+      }
+    ]
+  },
+  {
+    "id": 154,
+    "name": "Small Auroran Interceptor",
+    "aiType": 4,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 25
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 10
+      },
+      {
+        "id": 239,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 155,
+    "name": "Large Auroran War Ships",
+    "aiType": 3,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 154,
+        "prob": 20
+      },
+      {
+        "id": 247,
+        "prob": 6
+      },
+      {
+        "id": 152,
+        "prob": 21
+      },
+      {
+        "id": 239,
+        "prob": 7
+      },
+      {
+        "id": 240,
+        "prob": 7
+      },
+      {
+        "id": 241,
+        "prob": 7
+      },
+      {
+        "id": 248,
+        "prob": 6
+      },
+      {
+        "id": 249,
+        "prob": 6
+      },
+      {
+        "id": 250,
+        "prob": 6
+      },
+      {
+        "id": 295,
+        "prob": 3
+      },
+      {
+        "id": 296,
+        "prob": 3
+      },
+      {
+        "id": 297,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 156,
+    "name": "Small Moash Interceptor",
+    "aiType": 4,
+    "govt": 131,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 242,
+        "prob": 40
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 2
+      },
+      {
+        "id": 298,
+        "prob": 8
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 157,
+    "name": "Small Tekel Interceptor",
+    "aiType": 4,
+    "govt": 132,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 245,
+        "prob": 40
+      },
+      {
+        "id": 155,
+        "prob": 10
+      },
+      {
+        "id": 156,
+        "prob": 7
+      },
+      {
+        "id": 153,
+        "prob": 2
+      },
+      {
+        "id": 301,
+        "prob": 8
+      },
+      {
+        "id": 303,
+        "prob": 10
+      },
+      {
+        "id": 304,
+        "prob": 10
+      },
+      {
+        "id": 305,
+        "prob": 7
+      },
+      {
+        "id": 306,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 158,
+    "name": "Small Vella Interceptor",
+    "aiType": 4,
+    "govt": 133,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 244,
+        "prob": 40
+      },
+      {
+        "id": 155,
+        "prob": 15
+      },
+      {
+        "id": 156,
+        "prob": 10
+      },
+      {
+        "id": 153,
+        "prob": 2
+      },
+      {
+        "id": 300,
+        "prob": 8
+      },
+      {
+        "id": 303,
+        "prob": 8
+      },
+      {
+        "id": 304,
+        "prob": 7
+      },
+      {
+        "id": 306,
+        "prob": 5
+      },
+      {
+        "id": 307,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 159,
+    "name": "Small Dani Interceptor",
+    "aiType": 4,
+    "govt": 134,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 243,
+        "prob": 40
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 2
+      },
+      {
+        "id": 299,
+        "prob": 8
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 160,
+    "name": "Small Heraan Interceptor",
+    "aiType": 4,
+    "govt": 135,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 246,
+        "prob": 40
+      },
+      {
+        "id": 155,
+        "prob": 5
+      },
+      {
+        "id": 156,
+        "prob": 3
+      },
+      {
+        "id": 153,
+        "prob": 1
+      },
+      {
+        "id": 302,
+        "prob": 5
+      },
+      {
+        "id": 303,
+        "prob": 13
+      },
+      {
+        "id": 304,
+        "prob": 12
+      },
+      {
+        "id": 305,
+        "prob": 9
+      },
+      {
+        "id": 306,
+        "prob": 8
+      },
+      {
+        "id": 295,
+        "prob": 1
+      },
+      {
+        "id": 296,
+        "prob": 1
+      },
+      {
+        "id": 297,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 161,
+    "name": "Large Moash War Ships",
+    "aiType": 3,
+    "govt": 131,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 251,
+        "prob": 20
+      },
+      {
+        "id": 251,
+        "prob": 15
+      },
+      {
+        "id": 242,
+        "prob": 45
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 298,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 162,
+    "name": "Large Tekel War Ships",
+    "aiType": 3,
+    "govt": 132,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 254,
+        "prob": 20
+      },
+      {
+        "id": 254,
+        "prob": 15
+      },
+      {
+        "id": 245,
+        "prob": 45
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 301,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 163,
+    "name": "Large Vella War Ships",
+    "aiType": 3,
+    "govt": 133,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 253,
+        "prob": 20
+      },
+      {
+        "id": 253,
+        "prob": 20
+      },
+      {
+        "id": 244,
+        "prob": 45
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 300,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 164,
+    "name": "Large Dani War Ships",
+    "aiType": 3,
+    "govt": 134,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 252,
+        "prob": 20
+      },
+      {
+        "id": 252,
+        "prob": 20
+      },
+      {
+        "id": 243,
+        "prob": 45
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 299,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 165,
+    "name": "Large Heraan War Ships",
+    "aiType": 3,
+    "govt": 135,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 2
+      },
+      {
+        "id": 255,
+        "prob": 25
+      },
+      {
+        "id": 255,
+        "prob": 20
+      },
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 295,
+        "prob": 4
+      },
+      {
+        "id": 296,
+        "prob": 4
+      },
+      {
+        "id": 297,
+        "prob": 5
+      },
+      {
+        "id": 302,
+        "prob": 10
+      },
+      {
+        "id": 380,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 166,
+    "name": "Small Rimertan Interceptor",
+    "aiType": 4,
+    "govt": 142,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 239,
+        "prob": 20
+      },
+      {
+        "id": 155,
+        "prob": 11
+      },
+      {
+        "id": 156,
+        "prob": 11
+      },
+      {
+        "id": 153,
+        "prob": 11
+      },
+      {
+        "id": 305,
+        "prob": 11
+      },
+      {
+        "id": 306,
+        "prob": 13
+      },
+      {
+        "id": 303,
+        "prob": 12
+      },
+      {
+        "id": 304,
+        "prob": 11
+      }
+    ]
+  },
+  {
+    "id": 167,
+    "name": "Large Rimertan War Ships",
+    "aiType": 3,
+    "govt": 142,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 6
+      },
+      {
+        "id": 249,
+        "prob": 20
+      },
+      {
+        "id": 249,
+        "prob": 16
+      },
+      {
+        "id": 239,
+        "prob": 40
+      },
+      {
+        "id": 295,
+        "prob": 6
+      },
+      {
+        "id": 296,
+        "prob": 6
+      },
+      {
+        "id": 297,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 168,
+    "name": "Mad Auroran Interceptor",
+    "aiType": 4,
+    "govt": 143,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 25
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 239,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 169,
+    "name": "Mad Auroran War Ships",
+    "aiType": 3,
+    "govt": 143,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 154,
+        "prob": 20
+      },
+      {
+        "id": 247,
+        "prob": 5
+      },
+      {
+        "id": 152,
+        "prob": 25
+      },
+      {
+        "id": 239,
+        "prob": 3
+      },
+      {
+        "id": 240,
+        "prob": 3
+      },
+      {
+        "id": 241,
+        "prob": 3
+      },
+      {
+        "id": 248,
+        "prob": 5
+      },
+      {
+        "id": 249,
+        "prob": 5
+      },
+      {
+        "id": 250,
+        "prob": 5
+      },
+      {
+        "id": 295,
+        "prob": 9
+      },
+      {
+        "id": 296,
+        "prob": 6
+      },
+      {
+        "id": 297,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 170,
+    "name": "Rebels",
+    "aiType": 3,
+    "govt": 141,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 179,
+        "prob": 6
+      },
+      {
+        "id": 344,
+        "prob": 6
+      },
+      {
+        "id": 178,
+        "prob": 5
+      },
+      {
+        "id": 177,
+        "prob": 13
+      },
+      {
+        "id": 274,
+        "prob": 10
+      },
+      {
+        "id": 276,
+        "prob": 10
+      },
+      {
+        "id": 337,
+        "prob": 4
+      },
+      {
+        "id": 338,
+        "prob": 4
+      },
+      {
+        "id": 339,
+        "prob": 4
+      },
+      {
+        "id": 340,
+        "prob": 5
+      },
+      {
+        "id": 341,
+        "prob": 5
+      },
+      {
+        "id": 342,
+        "prob": 5
+      },
+      {
+        "id": 343,
+        "prob": 5
+      },
+      {
+        "id": 345,
+        "prob": 5
+      },
+      {
+        "id": 346,
+        "prob": 3
+      },
+      {
+        "id": 352,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 171,
+    "name": "Big Rebels",
+    "aiType": 3,
+    "govt": 141,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 181,
+        "prob": 7
+      },
+      {
+        "id": 180,
+        "prob": 7
+      },
+      {
+        "id": 347,
+        "prob": 2
+      },
+      {
+        "id": 348,
+        "prob": 3
+      },
+      {
+        "id": 165,
+        "prob": 9
+      },
+      {
+        "id": 412,
+        "prob": 20
+      },
+      {
+        "id": 332,
+        "prob": 7
+      },
+      {
+        "id": 349,
+        "prob": 3
+      },
+      {
+        "id": 350,
+        "prob": 3
+      },
+      {
+        "id": 354,
+        "prob": 9
+      },
+      {
+        "id": 356,
+        "prob": 7
+      },
+      {
+        "id": 355,
+        "prob": 9
+      },
+      {
+        "id": 357,
+        "prob": 2
+      },
+      {
+        "id": 358,
+        "prob": 4
+      },
+      {
+        "id": 359,
+        "prob": 4
+      },
+      {
+        "id": 360,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 172,
+    "name": "Pirates",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 68,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 9
+      },
+      {
+        "id": 147,
+        "prob": 5
+      },
+      {
+        "id": 150,
+        "prob": 17
+      },
+      {
+        "id": 151,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 236,
+        "prob": 5
+      },
+      {
+        "id": 237,
+        "prob": 5
+      },
+      {
+        "id": 238,
+        "prob": 5
+      },
+      {
+        "id": 275,
+        "prob": 17
+      },
+      {
+        "id": 285,
+        "prob": 2
+      },
+      {
+        "id": 286,
+        "prob": 2
+      },
+      {
+        "id": 287,
+        "prob": 2
+      },
+      {
+        "id": 291,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 173,
+    "name": "Lone Small Federation Ship",
+    "aiType": 4,
+    "govt": 128,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 13
+      },
+      {
+        "id": 215,
+        "prob": 4
+      },
+      {
+        "id": 216,
+        "prob": 4
+      },
+      {
+        "id": 217,
+        "prob": 4
+      },
+      {
+        "id": 144,
+        "prob": 15
+      },
+      {
+        "id": 223,
+        "prob": 5
+      },
+      {
+        "id": 224,
+        "prob": 5
+      },
+      {
+        "id": 145,
+        "prob": 15
+      },
+      {
+        "id": 225,
+        "prob": 5
+      },
+      {
+        "id": 226,
+        "prob": 5
+      },
+      {
+        "id": 187,
+        "prob": 15
+      },
+      {
+        "id": 351,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 174,
+    "name": "Civilian",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 131,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 5
+      },
+      {
+        "id": 134,
+        "prob": 8
+      },
+      {
+        "id": 190,
+        "prob": 8
+      },
+      {
+        "id": 192,
+        "prob": 8
+      },
+      {
+        "id": 193,
+        "prob": 8
+      },
+      {
+        "id": 194,
+        "prob": 8
+      },
+      {
+        "id": 195,
+        "prob": 4
+      },
+      {
+        "id": 196,
+        "prob": 4
+      },
+      {
+        "id": 197,
+        "prob": 4
+      },
+      {
+        "id": 198,
+        "prob": 4
+      },
+      {
+        "id": 199,
+        "prob": 4
+      },
+      {
+        "id": 200,
+        "prob": 7
+      },
+      {
+        "id": 201,
+        "prob": 7
+      },
+      {
+        "id": 157,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 175,
+    "name": "Civilian",
+    "aiType": 1,
+    "govt": 158,
+    "booty": 0,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 131,
+        "prob": 9
+      },
+      {
+        "id": 132,
+        "prob": 9
+      },
+      {
+        "id": 135,
+        "prob": 9
+      },
+      {
+        "id": 135,
+        "prob": 9
+      },
+      {
+        "id": 277,
+        "prob": 6
+      },
+      {
+        "id": 278,
+        "prob": 6
+      },
+      {
+        "id": 157,
+        "prob": 4
+      },
+      {
+        "id": 307,
+        "prob": 4
+      },
+      {
+        "id": 308,
+        "prob": 5
+      },
+      {
+        "id": 309,
+        "prob": 5
+      },
+      {
+        "id": 190,
+        "prob": 6
+      },
+      {
+        "id": 192,
+        "prob": 6
+      },
+      {
+        "id": 193,
+        "prob": 6
+      },
+      {
+        "id": 194,
+        "prob": 6
+      },
+      {
+        "id": 379,
+        "prob": 5
+      },
+      {
+        "id": 130,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 176,
+    "name": "Big Rebels",
+    "aiType": 3,
+    "govt": 141,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 347,
+        "prob": 12
+      },
+      {
+        "id": 347,
+        "prob": 12
+      },
+      {
+        "id": 347,
+        "prob": 12
+      },
+      {
+        "id": 347,
+        "prob": 12
+      },
+      {
+        "id": 357,
+        "prob": 13
+      },
+      {
+        "id": 357,
+        "prob": 13
+      },
+      {
+        "id": 357,
+        "prob": 13
+      },
+      {
+        "id": 357,
+        "prob": 13
+      }
+    ]
+  },
+  {
+    "id": 177,
+    "name": "Roughnecks",
+    "aiType": 3,
+    "govt": 152,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 141,
+        "prob": 3
+      },
+      {
+        "id": 211,
+        "prob": 2
+      },
+      {
+        "id": 212,
+        "prob": 2
+      },
+      {
+        "id": 213,
+        "prob": 2
+      },
+      {
+        "id": 214,
+        "prob": 1
+      },
+      {
+        "id": 143,
+        "prob": 5
+      },
+      {
+        "id": 218,
+        "prob": 1
+      },
+      {
+        "id": 219,
+        "prob": 1
+      },
+      {
+        "id": 220,
+        "prob": 1
+      },
+      {
+        "id": 221,
+        "prob": 1
+      },
+      {
+        "id": 222,
+        "prob": 1
+      },
+      {
+        "id": 142,
+        "prob": 10
+      },
+      {
+        "id": 215,
+        "prob": 10
+      },
+      {
+        "id": 216,
+        "prob": 10
+      },
+      {
+        "id": 217,
+        "prob": 10
+      },
+      {
+        "id": 145,
+        "prob": 40
+      }
+    ]
+  },
+  {
+    "id": 178,
+    "name": "RAGE Gunboat",
+    "aiType": 4,
+    "govt": 128,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 179,
+    "name": "Federation Carrier",
+    "aiType": 3,
+    "govt": 150,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 143,
+        "prob": 50
+      },
+      {
+        "id": 218,
+        "prob": 10
+      },
+      {
+        "id": 219,
+        "prob": 10
+      },
+      {
+        "id": 220,
+        "prob": 10
+      },
+      {
+        "id": 221,
+        "prob": 10
+      },
+      {
+        "id": 222,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 180,
+    "name": "Lone Federation Ship",
+    "aiType": 4,
+    "govt": 128,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 13
+      },
+      {
+        "id": 215,
+        "prob": 4
+      },
+      {
+        "id": 216,
+        "prob": 4
+      },
+      {
+        "id": 217,
+        "prob": 4
+      },
+      {
+        "id": 187,
+        "prob": 15
+      },
+      {
+        "id": 144,
+        "prob": 15
+      },
+      {
+        "id": 223,
+        "prob": 5
+      },
+      {
+        "id": 224,
+        "prob": 5
+      },
+      {
+        "id": 145,
+        "prob": 15
+      },
+      {
+        "id": 225,
+        "prob": 5
+      },
+      {
+        "id": 226,
+        "prob": 5
+      },
+      {
+        "id": 351,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 181,
+    "name": "Large Auroran War Ships",
+    "aiType": 3,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 154,
+        "prob": 10
+      },
+      {
+        "id": 247,
+        "prob": 10
+      },
+      {
+        "id": 248,
+        "prob": 10
+      },
+      {
+        "id": 249,
+        "prob": 10
+      },
+      {
+        "id": 250,
+        "prob": 10
+      },
+      {
+        "id": 251,
+        "prob": 10
+      },
+      {
+        "id": 252,
+        "prob": 10
+      },
+      {
+        "id": 253,
+        "prob": 10
+      },
+      {
+        "id": 254,
+        "prob": 10
+      },
+      {
+        "id": 255,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 182,
+    "name": "Polaris cruiser",
+    "aiType": 3,
+    "govt": 155,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 406,
+        "prob": 25
+      },
+      {
+        "id": 406,
+        "prob": 25
+      },
+      {
+        "id": 406,
+        "prob": 25
+      },
+      {
+        "id": 406,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 183,
+    "name": "RAGE Gunboat",
+    "aiType": 4,
+    "govt": 154,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 184,
+    "name": "Large Auroran War Ships",
+    "aiType": 3,
+    "govt": 156,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 20
+      },
+      {
+        "id": 154,
+        "prob": 30
+      },
+      {
+        "id": 247,
+        "prob": 5
+      },
+      {
+        "id": 152,
+        "prob": 4
+      },
+      {
+        "id": 239,
+        "prob": 2
+      },
+      {
+        "id": 240,
+        "prob": 2
+      },
+      {
+        "id": 241,
+        "prob": 2
+      },
+      {
+        "id": 248,
+        "prob": 5
+      },
+      {
+        "id": 249,
+        "prob": 5
+      },
+      {
+        "id": 250,
+        "prob": 5
+      },
+      {
+        "id": 295,
+        "prob": 8
+      },
+      {
+        "id": 296,
+        "prob": 6
+      },
+      {
+        "id": 297,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 185,
+    "name": "Auroran",
+    "aiType": 3,
+    "govt": 156,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 2
+      },
+      {
+        "id": 154,
+        "prob": 8
+      },
+      {
+        "id": 152,
+        "prob": 20
+      },
+      {
+        "id": 155,
+        "prob": 15
+      },
+      {
+        "id": 239,
+        "prob": 10
+      },
+      {
+        "id": 240,
+        "prob": 10
+      },
+      {
+        "id": 241,
+        "prob": 10
+      },
+      {
+        "id": 247,
+        "prob": 3
+      },
+      {
+        "id": 248,
+        "prob": 3
+      },
+      {
+        "id": 249,
+        "prob": 3
+      },
+      {
+        "id": 250,
+        "prob": 3
+      },
+      {
+        "id": 295,
+        "prob": 1
+      },
+      {
+        "id": 296,
+        "prob": 1
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 186,
+    "name": "Wraith (nasty)",
+    "aiType": 2,
+    "govt": 159,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 185,
+        "prob": 40
+      },
+      {
+        "id": 185,
+        "prob": 40
+      },
+      {
+        "id": 185,
+        "prob": 10
+      },
+      {
+        "id": 185,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 187,
+    "name": "Wraith (nice)",
+    "aiType": 2,
+    "govt": 139,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 168,
+        "prob": 30
+      },
+      {
+        "id": 168,
+        "prob": 25
+      },
+      {
+        "id": 168,
+        "prob": 25
+      },
+      {
+        "id": 168,
+        "prob": 20
+      }
+    ]
+  },
+  {
+    "id": 188,
+    "name": "RAGE Gunboat",
+    "aiType": 4,
+    "govt": 153,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      },
+      {
+        "id": 172,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 189,
+    "name": "Roughnecks",
+    "aiType": 3,
+    "govt": 162,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 141,
+        "prob": 3
+      },
+      {
+        "id": 211,
+        "prob": 2
+      },
+      {
+        "id": 212,
+        "prob": 2
+      },
+      {
+        "id": 213,
+        "prob": 2
+      },
+      {
+        "id": 214,
+        "prob": 1
+      },
+      {
+        "id": 143,
+        "prob": 5
+      },
+      {
+        "id": 218,
+        "prob": 1
+      },
+      {
+        "id": 219,
+        "prob": 1
+      },
+      {
+        "id": 220,
+        "prob": 1
+      },
+      {
+        "id": 221,
+        "prob": 1
+      },
+      {
+        "id": 222,
+        "prob": 1
+      },
+      {
+        "id": 142,
+        "prob": 10
+      },
+      {
+        "id": 215,
+        "prob": 10
+      },
+      {
+        "id": 216,
+        "prob": 10
+      },
+      {
+        "id": 217,
+        "prob": 10
+      },
+      {
+        "id": 145,
+        "prob": 40
+      }
+    ]
+  },
+  {
+    "id": 190,
+    "name": "Krypt",
+    "aiType": 4,
+    "govt": 163,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 176,
+        "prob": 25
+      },
+      {
+        "id": 176,
+        "prob": 25
+      },
+      {
+        "id": 176,
+        "prob": 25
+      },
+      {
+        "id": 176,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 191,
+    "name": "Large Auroran War Ships",
+    "aiType": 3,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 10
+      },
+      {
+        "id": 154,
+        "prob": 15
+      },
+      {
+        "id": 247,
+        "prob": 5
+      },
+      {
+        "id": 152,
+        "prob": 35
+      },
+      {
+        "id": 239,
+        "prob": 2
+      },
+      {
+        "id": 240,
+        "prob": 2
+      },
+      {
+        "id": 241,
+        "prob": 2
+      },
+      {
+        "id": 248,
+        "prob": 5
+      },
+      {
+        "id": 249,
+        "prob": 5
+      },
+      {
+        "id": 250,
+        "prob": 5
+      },
+      {
+        "id": 295,
+        "prob": 5
+      },
+      {
+        "id": 296,
+        "prob": 5
+      },
+      {
+        "id": 297,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 192,
+    "name": "Small Auroran Interceptor",
+    "aiType": 4,
+    "govt": 156,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 25
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 239,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 193,
+    "name": "Large Polaris",
+    "aiType": 3,
+    "govt": 147,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 158,
+        "prob": 15
+      },
+      {
+        "id": 158,
+        "prob": 15
+      },
+      {
+        "id": 162,
+        "prob": 17
+      },
+      {
+        "id": 162,
+        "prob": 2
+      },
+      {
+        "id": 259,
+        "prob": 15
+      },
+      {
+        "id": 259,
+        "prob": 15
+      },
+      {
+        "id": 261,
+        "prob": 18
+      },
+      {
+        "id": 261,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 194,
+    "name": "Lone Big Federation Ship",
+    "aiType": 3,
+    "govt": 128,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 141,
+        "prob": 20
+      },
+      {
+        "id": 211,
+        "prob": 10
+      },
+      {
+        "id": 212,
+        "prob": 10
+      },
+      {
+        "id": 213,
+        "prob": 10
+      },
+      {
+        "id": 214,
+        "prob": 10
+      },
+      {
+        "id": 143,
+        "prob": 15
+      },
+      {
+        "id": 218,
+        "prob": 5
+      },
+      {
+        "id": 219,
+        "prob": 5
+      },
+      {
+        "id": 220,
+        "prob": 5
+      },
+      {
+        "id": 221,
+        "prob": 5
+      },
+      {
+        "id": 222,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 195,
+    "name": "Lone Federation Ship",
+    "aiType": 4,
+    "govt": 128,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 13
+      },
+      {
+        "id": 215,
+        "prob": 4
+      },
+      {
+        "id": 216,
+        "prob": 4
+      },
+      {
+        "id": 217,
+        "prob": 4
+      },
+      {
+        "id": 187,
+        "prob": 15
+      },
+      {
+        "id": 144,
+        "prob": 15
+      },
+      {
+        "id": 223,
+        "prob": 5
+      },
+      {
+        "id": 224,
+        "prob": 5
+      },
+      {
+        "id": 145,
+        "prob": 15
+      },
+      {
+        "id": 225,
+        "prob": 5
+      },
+      {
+        "id": 226,
+        "prob": 5
+      },
+      {
+        "id": 351,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 196,
+    "name": "Llyrell",
+    "aiType": 4,
+    "govt": 165,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 175,
+        "prob": 40
+      },
+      {
+        "id": 175,
+        "prob": 30
+      },
+      {
+        "id": 175,
+        "prob": 20
+      },
+      {
+        "id": 175,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 197,
+    "name": "RAGE Gunboat",
+    "aiType": 4,
+    "govt": 164,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 198,
+    "name": "Small Pirates",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 166,
+        "prob": 12
+      },
+      {
+        "id": 333,
+        "prob": 5
+      },
+      {
+        "id": 149,
+        "prob": 14
+      },
+      {
+        "id": 148,
+        "prob": 13
+      },
+      {
+        "id": 231,
+        "prob": 2
+      },
+      {
+        "id": 334,
+        "prob": 5
+      },
+      {
+        "id": 233,
+        "prob": 2
+      },
+      {
+        "id": 234,
+        "prob": 2
+      },
+      {
+        "id": 235,
+        "prob": 2
+      },
+      {
+        "id": 275,
+        "prob": 15
+      },
+      {
+        "id": 289,
+        "prob": 2
+      },
+      {
+        "id": 290,
+        "prob": 2
+      },
+      {
+        "id": 150,
+        "prob": 12
+      },
+      {
+        "id": 292,
+        "prob": 4
+      },
+      {
+        "id": 293,
+        "prob": 4
+      },
+      {
+        "id": 294,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 199,
+    "name": "United Shipping",
+    "aiType": 2,
+    "govt": 166,
+    "booty": 127,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 132,
+        "prob": 3
+      },
+      {
+        "id": 133,
+        "prob": 4
+      },
+      {
+        "id": 137,
+        "prob": 7
+      },
+      {
+        "id": 283,
+        "prob": 24
+      },
+      {
+        "id": 187,
+        "prob": 17
+      },
+      {
+        "id": 193,
+        "prob": 3
+      },
+      {
+        "id": 194,
+        "prob": 3
+      },
+      {
+        "id": 195,
+        "prob": 4
+      },
+      {
+        "id": 196,
+        "prob": 4
+      },
+      {
+        "id": 197,
+        "prob": 4
+      },
+      {
+        "id": 198,
+        "prob": 3
+      },
+      {
+        "id": 199,
+        "prob": 3
+      },
+      {
+        "id": 135,
+        "prob": 12
+      },
+      {
+        "id": 277,
+        "prob": 3
+      },
+      {
+        "id": 278,
+        "prob": 3
+      },
+      {
+        "id": 281,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 200,
+    "name": "Zephyr",
+    "aiType": 4,
+    "govt": 168,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 375,
+        "prob": 25
+      },
+      {
+        "id": 375,
+        "prob": 25
+      },
+      {
+        "id": 375,
+        "prob": 25
+      },
+      {
+        "id": 375,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 201,
+    "name": "Zephyr",
+    "aiType": 4,
+    "govt": 168,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 376,
+        "prob": 25
+      },
+      {
+        "id": 376,
+        "prob": 25
+      },
+      {
+        "id": 376,
+        "prob": 25
+      },
+      {
+        "id": 376,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 202,
+    "name": "Pirate",
+    "aiType": 3,
+    "govt": 169,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 6
+      },
+      {
+        "id": 166,
+        "prob": 13
+      },
+      {
+        "id": 149,
+        "prob": 18
+      },
+      {
+        "id": 148,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 231,
+        "prob": 3
+      },
+      {
+        "id": 232,
+        "prob": 3
+      },
+      {
+        "id": 233,
+        "prob": 3
+      },
+      {
+        "id": 234,
+        "prob": 3
+      },
+      {
+        "id": 235,
+        "prob": 3
+      },
+      {
+        "id": 275,
+        "prob": 15
+      },
+      {
+        "id": 288,
+        "prob": 4
+      },
+      {
+        "id": 289,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 203,
+    "name": "Pirates",
+    "aiType": 3,
+    "govt": 169,
+    "booty": 68,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 9
+      },
+      {
+        "id": 147,
+        "prob": 5
+      },
+      {
+        "id": 150,
+        "prob": 17
+      },
+      {
+        "id": 151,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 236,
+        "prob": 5
+      },
+      {
+        "id": 237,
+        "prob": 5
+      },
+      {
+        "id": 238,
+        "prob": 5
+      },
+      {
+        "id": 275,
+        "prob": 17
+      },
+      {
+        "id": 285,
+        "prob": 2
+      },
+      {
+        "id": 286,
+        "prob": 2
+      },
+      {
+        "id": 287,
+        "prob": 2
+      },
+      {
+        "id": 291,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 204,
+    "name": "Small Pirates",
+    "aiType": 3,
+    "govt": 169,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 166,
+        "prob": 12
+      },
+      {
+        "id": 333,
+        "prob": 5
+      },
+      {
+        "id": 149,
+        "prob": 14
+      },
+      {
+        "id": 148,
+        "prob": 13
+      },
+      {
+        "id": 231,
+        "prob": 2
+      },
+      {
+        "id": 334,
+        "prob": 5
+      },
+      {
+        "id": 233,
+        "prob": 2
+      },
+      {
+        "id": 234,
+        "prob": 2
+      },
+      {
+        "id": 235,
+        "prob": 2
+      },
+      {
+        "id": 275,
+        "prob": 15
+      },
+      {
+        "id": 289,
+        "prob": 2
+      },
+      {
+        "id": 290,
+        "prob": 2
+      },
+      {
+        "id": 150,
+        "prob": 12
+      },
+      {
+        "id": 292,
+        "prob": 4
+      },
+      {
+        "id": 293,
+        "prob": 4
+      },
+      {
+        "id": 294,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 205,
+    "name": "Houseless",
+    "aiType": 3,
+    "govt": 170,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 155,
+        "prob": 10
+      },
+      {
+        "id": 303,
+        "prob": 8
+      },
+      {
+        "id": 304,
+        "prob": 7
+      },
+      {
+        "id": 138,
+        "prob": 10
+      },
+      {
+        "id": 156,
+        "prob": 10
+      },
+      {
+        "id": 305,
+        "prob": 8
+      },
+      {
+        "id": 306,
+        "prob": 7
+      },
+      {
+        "id": 139,
+        "prob": 10
+      },
+      {
+        "id": 152,
+        "prob": 8
+      },
+      {
+        "id": 239,
+        "prob": 4
+      },
+      {
+        "id": 240,
+        "prob": 4
+      },
+      {
+        "id": 241,
+        "prob": 4
+      },
+      {
+        "id": 154,
+        "prob": 4
+      },
+      {
+        "id": 247,
+        "prob": 2
+      },
+      {
+        "id": 248,
+        "prob": 2
+      },
+      {
+        "id": 249,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 206,
+    "name": "Houseless",
+    "aiType": 3,
+    "govt": 170,
+    "booty": 68,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 138,
+        "prob": 10
+      },
+      {
+        "id": 204,
+        "prob": 5
+      },
+      {
+        "id": 205,
+        "prob": 5
+      },
+      {
+        "id": 206,
+        "prob": 5
+      },
+      {
+        "id": 156,
+        "prob": 10
+      },
+      {
+        "id": 305,
+        "prob": 5
+      },
+      {
+        "id": 306,
+        "prob": 5
+      },
+      {
+        "id": 207,
+        "prob": 5
+      },
+      {
+        "id": 152,
+        "prob": 10
+      },
+      {
+        "id": 239,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 139,
+        "prob": 10
+      },
+      {
+        "id": 208,
+        "prob": 5
+      },
+      {
+        "id": 209,
+        "prob": 5
+      },
+      {
+        "id": 210,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 207,
+    "name": "Small Houseless",
+    "aiType": 3,
+    "govt": 170,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 155,
+        "prob": 10
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 246,
+        "prob": 5
+      },
+      {
+        "id": 156,
+        "prob": 10
+      },
+      {
+        "id": 305,
+        "prob": 5
+      },
+      {
+        "id": 306,
+        "prob": 5
+      },
+      {
+        "id": 207,
+        "prob": 5
+      },
+      {
+        "id": 152,
+        "prob": 10
+      },
+      {
+        "id": 329,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 138,
+        "prob": 10
+      },
+      {
+        "id": 204,
+        "prob": 5
+      },
+      {
+        "id": 205,
+        "prob": 5
+      },
+      {
+        "id": 206,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 208,
+    "name": "Michaleen's Honourguard",
+    "aiType": 1,
+    "govt": 144,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 309,
+        "prob": 7
+      },
+      {
+        "id": 309,
+        "prob": 7
+      },
+      {
+        "id": 309,
+        "prob": 7
+      },
+      {
+        "id": 309,
+        "prob": 7
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      },
+      {
+        "id": 309,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 209,
+    "name": "Desperation...",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 230,
+        "prob": 25
+      },
+      {
+        "id": 230,
+        "prob": 25
+      },
+      {
+        "id": 230,
+        "prob": 25
+      },
+      {
+        "id": 230,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 210,
+    "name": "Pyrogenesis Skymining",
+    "aiType": 2,
+    "govt": 173,
+    "booty": 127,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 132,
+        "prob": 5
+      },
+      {
+        "id": 133,
+        "prob": 5
+      },
+      {
+        "id": 137,
+        "prob": 10
+      },
+      {
+        "id": 140,
+        "prob": 10
+      },
+      {
+        "id": 187,
+        "prob": 8
+      },
+      {
+        "id": 193,
+        "prob": 5
+      },
+      {
+        "id": 194,
+        "prob": 5
+      },
+      {
+        "id": 130,
+        "prob": 8
+      },
+      {
+        "id": 196,
+        "prob": 5
+      },
+      {
+        "id": 197,
+        "prob": 5
+      },
+      {
+        "id": 198,
+        "prob": 5
+      },
+      {
+        "id": 199,
+        "prob": 5
+      },
+      {
+        "id": 279,
+        "prob": 5
+      },
+      {
+        "id": 280,
+        "prob": 5
+      },
+      {
+        "id": 281,
+        "prob": 5
+      },
+      {
+        "id": 157,
+        "prob": 9
+      }
+    ]
+  },
+  {
+    "id": 211,
+    "name": "Sigma Shipyards",
+    "aiType": 1,
+    "govt": 172,
+    "booty": 63,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 131,
+        "prob": 19
+      },
+      {
+        "id": 190,
+        "prob": 10
+      },
+      {
+        "id": 192,
+        "prob": 10
+      },
+      {
+        "id": 132,
+        "prob": 23
+      },
+      {
+        "id": 193,
+        "prob": 13
+      },
+      {
+        "id": 194,
+        "prob": 12
+      },
+      {
+        "id": 165,
+        "prob": 7
+      },
+      {
+        "id": 331,
+        "prob": 2
+      },
+      {
+        "id": 332,
+        "prob": 1
+      },
+      {
+        "id": 130,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 212,
+    "name": "Valkyrie",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 5
+      },
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 8
+      },
+      {
+        "id": 137,
+        "prob": 4
+      },
+      {
+        "id": 137,
+        "prob": 4
+      },
+      {
+        "id": 137,
+        "prob": 4
+      },
+      {
+        "id": 137,
+        "prob": 4
+      },
+      {
+        "id": 137,
+        "prob": 4
+      },
+      {
+        "id": 137,
+        "prob": 7
+      },
+      {
+        "id": 137,
+        "prob": 7
+      },
+      {
+        "id": 137,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 213,
+    "name": "Starbridge",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 5
+      },
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 8
+      },
+      {
+        "id": 133,
+        "prob": 4
+      },
+      {
+        "id": 133,
+        "prob": 4
+      },
+      {
+        "id": 133,
+        "prob": 4
+      },
+      {
+        "id": 133,
+        "prob": 4
+      },
+      {
+        "id": 133,
+        "prob": 4
+      },
+      {
+        "id": 133,
+        "prob": 7
+      },
+      {
+        "id": 133,
+        "prob": 7
+      },
+      {
+        "id": 133,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 214,
+    "name": "Terrapin",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 5
+      },
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 8
+      },
+      {
+        "id": 136,
+        "prob": 4
+      },
+      {
+        "id": 136,
+        "prob": 4
+      },
+      {
+        "id": 136,
+        "prob": 4
+      },
+      {
+        "id": 136,
+        "prob": 4
+      },
+      {
+        "id": 136,
+        "prob": 4
+      },
+      {
+        "id": 136,
+        "prob": 7
+      },
+      {
+        "id": 136,
+        "prob": 7
+      },
+      {
+        "id": 136,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 215,
+    "name": "Pegasus",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 64,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 5
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 8
+      },
+      {
+        "id": 132,
+        "prob": 4
+      },
+      {
+        "id": 132,
+        "prob": 4
+      },
+      {
+        "id": 132,
+        "prob": 4
+      },
+      {
+        "id": 132,
+        "prob": 4
+      },
+      {
+        "id": 132,
+        "prob": 4
+      },
+      {
+        "id": 132,
+        "prob": 7
+      },
+      {
+        "id": 132,
+        "prob": 7
+      },
+      {
+        "id": 132,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 216,
+    "name": "Small Heraan Interceptor",
+    "aiType": 4,
+    "govt": 174,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 246,
+        "prob": 40
+      },
+      {
+        "id": 155,
+        "prob": 5
+      },
+      {
+        "id": 156,
+        "prob": 3
+      },
+      {
+        "id": 153,
+        "prob": 1
+      },
+      {
+        "id": 302,
+        "prob": 5
+      },
+      {
+        "id": 303,
+        "prob": 13
+      },
+      {
+        "id": 304,
+        "prob": 12
+      },
+      {
+        "id": 305,
+        "prob": 9
+      },
+      {
+        "id": 306,
+        "prob": 8
+      },
+      {
+        "id": 295,
+        "prob": 1
+      },
+      {
+        "id": 296,
+        "prob": 1
+      },
+      {
+        "id": 297,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 217,
+    "name": "Trader",
+    "aiType": 4,
+    "govt": 153,
+    "booty": 127,
+    "infoTypes": 4096,
+    "ships": [
+      {
+        "id": 140,
+        "prob": 25
+      },
+      {
+        "id": 140,
+        "prob": 25
+      },
+      {
+        "id": 140,
+        "prob": 25
+      },
+      {
+        "id": 140,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 218,
+    "name": "Slyvilian Defence Scum",
+    "aiType": 4,
+    "govt": 153,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 140,
+        "prob": 5
+      },
+      {
+        "id": 133,
+        "prob": 9
+      },
+      {
+        "id": 137,
+        "prob": 32
+      },
+      {
+        "id": 279,
+        "prob": 7
+      },
+      {
+        "id": 195,
+        "prob": 4
+      },
+      {
+        "id": 196,
+        "prob": 4
+      },
+      {
+        "id": 197,
+        "prob": 4
+      },
+      {
+        "id": 198,
+        "prob": 4
+      },
+      {
+        "id": 199,
+        "prob": 4
+      },
+      {
+        "id": 135,
+        "prob": 9
+      },
+      {
+        "id": 280,
+        "prob": 7
+      },
+      {
+        "id": 281,
+        "prob": 7
+      },
+      {
+        "id": 282,
+        "prob": 2
+      },
+      {
+        "id": 283,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 219,
+    "name": "Large Heraan War Ships",
+    "aiType": 3,
+    "govt": 135,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 302,
+        "prob": 25
+      },
+      {
+        "id": 302,
+        "prob": 25
+      },
+      {
+        "id": 302,
+        "prob": 25
+      },
+      {
+        "id": 302,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 220,
+    "name": "Hune",
+    "aiType": 3,
+    "govt": 189,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 395,
+        "prob": 25
+      },
+      {
+        "id": 395,
+        "prob": 25
+      },
+      {
+        "id": 395,
+        "prob": 25
+      },
+      {
+        "id": 395,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 221,
+    "name": "Large Moash War Ships",
+    "aiType": 3,
+    "govt": 188,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 251,
+        "prob": 25
+      },
+      {
+        "id": 251,
+        "prob": 25
+      },
+      {
+        "id": 251,
+        "prob": 25
+      },
+      {
+        "id": 251,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 222,
+    "name": "Duellist",
+    "aiType": 4,
+    "govt": 175,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 246,
+        "prob": 50
+      },
+      {
+        "id": 155,
+        "prob": 5
+      },
+      {
+        "id": 156,
+        "prob": 5
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 10
+      },
+      {
+        "id": 305,
+        "prob": 13
+      },
+      {
+        "id": 306,
+        "prob": 12
+      }
+    ]
+  },
+  {
+    "id": 223,
+    "name": "The Pack",
+    "aiType": 4,
+    "govt": 135,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 246,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 224,
+    "name": "Duellists",
+    "aiType": 4,
+    "govt": 175,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 246,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 225,
+    "name": "Merrick'Ahh",
+    "aiType": 3,
+    "govt": 131,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 295,
+        "prob": 25
+      },
+      {
+        "id": 295,
+        "prob": 25
+      },
+      {
+        "id": 295,
+        "prob": 25
+      },
+      {
+        "id": 295,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 226,
+    "name": "Krane",
+    "aiType": 2,
+    "govt": 153,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 199,
+        "prob": 25
+      },
+      {
+        "id": 199,
+        "prob": 25
+      },
+      {
+        "id": 199,
+        "prob": 25
+      },
+      {
+        "id": 199,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 227,
+    "name": "Association - disabled",
+    "aiType": 3,
+    "govt": 177,
+    "booty": 68,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 5
+      },
+      {
+        "id": 147,
+        "prob": 9
+      },
+      {
+        "id": 150,
+        "prob": 17
+      },
+      {
+        "id": 151,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 236,
+        "prob": 5
+      },
+      {
+        "id": 237,
+        "prob": 5
+      },
+      {
+        "id": 238,
+        "prob": 5
+      },
+      {
+        "id": 275,
+        "prob": 17
+      },
+      {
+        "id": 285,
+        "prob": 2
+      },
+      {
+        "id": 286,
+        "prob": 2
+      },
+      {
+        "id": 287,
+        "prob": 2
+      },
+      {
+        "id": 291,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 228,
+    "name": "Association",
+    "aiType": 3,
+    "govt": 176,
+    "booty": 76,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 5
+      },
+      {
+        "id": 147,
+        "prob": 9
+      },
+      {
+        "id": 150,
+        "prob": 17
+      },
+      {
+        "id": 151,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 236,
+        "prob": 5
+      },
+      {
+        "id": 237,
+        "prob": 5
+      },
+      {
+        "id": 238,
+        "prob": 5
+      },
+      {
+        "id": 275,
+        "prob": 17
+      },
+      {
+        "id": 285,
+        "prob": 2
+      },
+      {
+        "id": 286,
+        "prob": 2
+      },
+      {
+        "id": 287,
+        "prob": 2
+      },
+      {
+        "id": 291,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 229,
+    "name": "McGowan",
+    "aiType": 3,
+    "govt": 169,
+    "booty": 64,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 287,
+        "prob": 25
+      },
+      {
+        "id": 287,
+        "prob": 25
+      },
+      {
+        "id": 287,
+        "prob": 25
+      },
+      {
+        "id": 287,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 230,
+    "name": "Leviathan - disabled",
+    "aiType": 1,
+    "govt": 160,
+    "booty": 68,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 131,
+        "prob": 25
+      },
+      {
+        "id": 131,
+        "prob": 25
+      },
+      {
+        "id": 131,
+        "prob": 25
+      },
+      {
+        "id": 131,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 231,
+    "name": "Rogue Pirates (Fighters)",
+    "aiType": 4,
+    "govt": 178,
+    "booty": 64,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 166,
+        "prob": 35
+      },
+      {
+        "id": 167,
+        "prob": 25
+      },
+      {
+        "id": 166,
+        "prob": 15
+      },
+      {
+        "id": 167,
+        "prob": 10
+      },
+      {
+        "id": 166,
+        "prob": 10
+      },
+      {
+        "id": 167,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 232,
+    "name": "Rogue Pirates - Freighters",
+    "aiType": 4,
+    "govt": 178,
+    "booty": 108,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 377,
+        "prob": 35
+      },
+      {
+        "id": 203,
+        "prob": 35
+      },
+      {
+        "id": 365,
+        "prob": 30
+      }
+    ]
+  },
+  {
+    "id": 233,
+    "name": "Rogue Pirates (mixed)",
+    "aiType": 4,
+    "govt": 178,
+    "booty": 108,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 166,
+        "prob": 11
+      },
+      {
+        "id": 167,
+        "prob": 11
+      },
+      {
+        "id": 166,
+        "prob": 10
+      },
+      {
+        "id": 167,
+        "prob": 10
+      },
+      {
+        "id": 335,
+        "prob": 9
+      },
+      {
+        "id": 336,
+        "prob": 9
+      },
+      {
+        "id": 377,
+        "prob": 9
+      },
+      {
+        "id": 203,
+        "prob": 9
+      },
+      {
+        "id": 365,
+        "prob": 9
+      },
+      {
+        "id": 370,
+        "prob": 9
+      },
+      {
+        "id": 367,
+        "prob": 2
+      },
+      {
+        "id": 371,
+        "prob": 2
+      }
+    ]
+  },
+  {
+    "id": 234,
+    "name": "Pirate",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 149,
+        "prob": 6
+      },
+      {
+        "id": 148,
+        "prob": 13
+      },
+      {
+        "id": 149,
+        "prob": 18
+      },
+      {
+        "id": 148,
+        "prob": 17
+      },
+      {
+        "id": 290,
+        "prob": 2
+      },
+      {
+        "id": 291,
+        "prob": 2
+      },
+      {
+        "id": 275,
+        "prob": 2
+      },
+      {
+        "id": 149,
+        "prob": 2
+      },
+      {
+        "id": 231,
+        "prob": 3
+      },
+      {
+        "id": 232,
+        "prob": 3
+      },
+      {
+        "id": 233,
+        "prob": 3
+      },
+      {
+        "id": 234,
+        "prob": 3
+      },
+      {
+        "id": 235,
+        "prob": 3
+      },
+      {
+        "id": 275,
+        "prob": 15
+      },
+      {
+        "id": 288,
+        "prob": 4
+      },
+      {
+        "id": 289,
+        "prob": 4
+      }
+    ]
+  },
+  {
+    "id": 235,
+    "name": "Auroran",
+    "aiType": 3,
+    "govt": 179,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 3
+      },
+      {
+        "id": 154,
+        "prob": 8
+      },
+      {
+        "id": 152,
+        "prob": 20
+      },
+      {
+        "id": 155,
+        "prob": 15
+      },
+      {
+        "id": 239,
+        "prob": 10
+      },
+      {
+        "id": 240,
+        "prob": 10
+      },
+      {
+        "id": 241,
+        "prob": 10
+      },
+      {
+        "id": 247,
+        "prob": 3
+      },
+      {
+        "id": 248,
+        "prob": 3
+      },
+      {
+        "id": 249,
+        "prob": 3
+      },
+      {
+        "id": 250,
+        "prob": 3
+      },
+      {
+        "id": 295,
+        "prob": 1
+      },
+      {
+        "id": 296,
+        "prob": 1
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 236,
+    "name": "Small Auroran Interceptor",
+    "aiType": 4,
+    "govt": 179,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 25
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 10
+      },
+      {
+        "id": 239,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 237,
+    "name": "Large Auroran War Ships",
+    "aiType": 3,
+    "govt": 179,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 25
+      },
+      {
+        "id": 154,
+        "prob": 26
+      },
+      {
+        "id": 247,
+        "prob": 6
+      },
+      {
+        "id": 152,
+        "prob": 4
+      },
+      {
+        "id": 239,
+        "prob": 2
+      },
+      {
+        "id": 240,
+        "prob": 2
+      },
+      {
+        "id": 241,
+        "prob": 2
+      },
+      {
+        "id": 248,
+        "prob": 6
+      },
+      {
+        "id": 249,
+        "prob": 6
+      },
+      {
+        "id": 250,
+        "prob": 6
+      },
+      {
+        "id": 295,
+        "prob": 5
+      },
+      {
+        "id": 296,
+        "prob": 5
+      },
+      {
+        "id": 297,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 238,
+    "name": "Tutorial Derelict",
+    "aiType": 1,
+    "govt": 180,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 166,
+        "prob": 25
+      },
+      {
+        "id": 166,
+        "prob": 25
+      },
+      {
+        "id": 166,
+        "prob": 25
+      },
+      {
+        "id": 166,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 239,
+    "name": "Duellists",
+    "aiType": 4,
+    "govt": 175,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 384,
+        "prob": 20
+      },
+      {
+        "id": 385,
+        "prob": 20
+      },
+      {
+        "id": 386,
+        "prob": 15
+      },
+      {
+        "id": 387,
+        "prob": 15
+      },
+      {
+        "id": 388,
+        "prob": 15
+      },
+      {
+        "id": 389,
+        "prob": 15
+      }
+    ]
+  },
+  {
+    "id": 240,
+    "name": "Initiates",
+    "aiType": 4,
+    "govt": 175,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 390,
+        "prob": 25
+      },
+      {
+        "id": 390,
+        "prob": 25
+      },
+      {
+        "id": 390,
+        "prob": 25
+      },
+      {
+        "id": 390,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 241,
+    "name": "Large Heraan War Ships",
+    "aiType": 3,
+    "govt": 182,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 302,
+        "prob": 25
+      },
+      {
+        "id": 302,
+        "prob": 25
+      },
+      {
+        "id": 302,
+        "prob": 25
+      },
+      {
+        "id": 302,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 242,
+    "name": "Large Dani War Ships",
+    "aiType": 3,
+    "govt": 181,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 153,
+        "prob": 5
+      },
+      {
+        "id": 252,
+        "prob": 20
+      },
+      {
+        "id": 252,
+        "prob": 20
+      },
+      {
+        "id": 243,
+        "prob": 45
+      },
+      {
+        "id": 295,
+        "prob": 2
+      },
+      {
+        "id": 296,
+        "prob": 2
+      },
+      {
+        "id": 297,
+        "prob": 1
+      },
+      {
+        "id": 299,
+        "prob": 5
+      }
+    ]
+  },
+  {
+    "id": 243,
+    "name": "Disabled Auroran Cruiser",
+    "aiType": 1,
+    "govt": 160,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 154,
+        "prob": 25
+      },
+      {
+        "id": 154,
+        "prob": 25
+      },
+      {
+        "id": 154,
+        "prob": 25
+      },
+      {
+        "id": 154,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 244,
+    "name": "Temmin Shard",
+    "aiType": 3,
+    "govt": 185,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 332,
+        "prob": 25
+      },
+      {
+        "id": 332,
+        "prob": 25
+      },
+      {
+        "id": 332,
+        "prob": 25
+      },
+      {
+        "id": 332,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 245,
+    "name": "Leviathan",
+    "aiType": 1,
+    "govt": 186,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 131,
+        "prob": 25
+      },
+      {
+        "id": 131,
+        "prob": 25
+      },
+      {
+        "id": 131,
+        "prob": 25
+      },
+      {
+        "id": 131,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 246,
+    "name": "Lone Federation Ship",
+    "aiType": 4,
+    "govt": 186,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 11
+      },
+      {
+        "id": 172,
+        "prob": 20
+      },
+      {
+        "id": 144,
+        "prob": 11
+      },
+      {
+        "id": 145,
+        "prob": 11
+      },
+      {
+        "id": 187,
+        "prob": 10
+      },
+      {
+        "id": 215,
+        "prob": 3
+      },
+      {
+        "id": 216,
+        "prob": 3
+      },
+      {
+        "id": 217,
+        "prob": 3
+      },
+      {
+        "id": 223,
+        "prob": 5
+      },
+      {
+        "id": 224,
+        "prob": 4
+      },
+      {
+        "id": 225,
+        "prob": 5
+      },
+      {
+        "id": 226,
+        "prob": 4
+      },
+      {
+        "id": 351,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 247,
+    "name": "Pyro shuttle craft",
+    "aiType": 1,
+    "govt": 173,
+    "booty": 16,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 391,
+        "prob": 25
+      },
+      {
+        "id": 392,
+        "prob": 25
+      },
+      {
+        "id": 393,
+        "prob": 25
+      },
+      {
+        "id": 393,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 248,
+    "name": "Sigma shuttle craft",
+    "aiType": 1,
+    "govt": 172,
+    "booty": 16,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 391,
+        "prob": 25
+      },
+      {
+        "id": 392,
+        "prob": 25
+      },
+      {
+        "id": 393,
+        "prob": 25
+      },
+      {
+        "id": 393,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 249,
+    "name": "Civilian shuttle craft",
+    "aiType": 1,
+    "govt": 157,
+    "booty": 16,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 391,
+        "prob": 25
+      },
+      {
+        "id": 392,
+        "prob": 25
+      },
+      {
+        "id": 393,
+        "prob": 25
+      },
+      {
+        "id": 393,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 250,
+    "name": "Polaris Sprite shuttle",
+    "aiType": 1,
+    "govt": 130,
+    "booty": 16,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 394,
+        "prob": 25
+      },
+      {
+        "id": 394,
+        "prob": 25
+      },
+      {
+        "id": 394,
+        "prob": 25
+      },
+      {
+        "id": 394,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 251,
+    "name": "Abomination",
+    "aiType": 4,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 40
+      },
+      {
+        "id": 239,
+        "prob": 30
+      },
+      {
+        "id": 240,
+        "prob": 20
+      },
+      {
+        "id": 241,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 252,
+    "name": "Pirate Valkyrie",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 68,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 149,
+        "prob": 25
+      },
+      {
+        "id": 149,
+        "prob": 25
+      },
+      {
+        "id": 149,
+        "prob": 25
+      },
+      {
+        "id": 149,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 253,
+    "name": "Pirate Starbridge",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 68,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 148,
+        "prob": 25
+      },
+      {
+        "id": 148,
+        "prob": 25
+      },
+      {
+        "id": 148,
+        "prob": 25
+      },
+      {
+        "id": 148,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 254,
+    "name": "Auroran Cruiser",
+    "aiType": 4,
+    "govt": 129,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 154,
+        "prob": 40
+      },
+      {
+        "id": 247,
+        "prob": 30
+      },
+      {
+        "id": 248,
+        "prob": 20
+      },
+      {
+        "id": 249,
+        "prob": 10
+      }
+    ]
+  },
+  {
+    "id": 255,
+    "name": "Fed Destroyer",
+    "aiType": 3,
+    "govt": 128,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 141,
+        "prob": 40
+      },
+      {
+        "id": 211,
+        "prob": 15
+      },
+      {
+        "id": 212,
+        "prob": 15
+      },
+      {
+        "id": 213,
+        "prob": 15
+      },
+      {
+        "id": 214,
+        "prob": 15
+      }
+    ]
+  },
+  {
+    "id": 256,
+    "name": "Fed Patrol Boat",
+    "aiType": 3,
+    "govt": 128,
+    "booty": 64,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 142,
+        "prob": 40
+      },
+      {
+        "id": 215,
+        "prob": 20
+      },
+      {
+        "id": 216,
+        "prob": 20
+      },
+      {
+        "id": 217,
+        "prob": 20
+      }
+    ]
+  },
+  {
+    "id": 257,
+    "name": "Manticore",
+    "aiType": 3,
+    "govt": 137,
+    "booty": 68,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 40
+      },
+      {
+        "id": 227,
+        "prob": 15
+      },
+      {
+        "id": 228,
+        "prob": 15
+      },
+      {
+        "id": 229,
+        "prob": 15
+      },
+      {
+        "id": 230,
+        "prob": 15
+      }
+    ]
+  },
+  {
+    "id": 258,
+    "name": "Raczak",
+    "aiType": 3,
+    "govt": 145,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 220,
+        "prob": 25
+      },
+      {
+        "id": 220,
+        "prob": 25
+      },
+      {
+        "id": 220,
+        "prob": 25
+      },
+      {
+        "id": 220,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 259,
+    "name": "Lone idiot in terrapin",
+    "aiType": 2,
+    "govt": 157,
+    "booty": 127,
+    "infoTypes": 45056,
+    "ships": [
+      {
+        "id": 136,
+        "prob": 25
+      },
+      {
+        "id": 136,
+        "prob": 25
+      },
+      {
+        "id": 136,
+        "prob": 25
+      },
+      {
+        "id": 136,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 260,
+    "name": "Marauders - Advanced dude",
+    "aiType": 4,
+    "govt": 178,
+    "booty": 108,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 399,
+        "prob": 15
+      },
+      {
+        "id": 400,
+        "prob": 15
+      },
+      {
+        "id": 401,
+        "prob": 15
+      },
+      {
+        "id": 402,
+        "prob": 15
+      },
+      {
+        "id": 403,
+        "prob": 15
+      },
+      {
+        "id": 404,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 261,
+    "name": "Pirates - Advanced dude",
+    "aiType": 4,
+    "govt": 137,
+    "booty": 108,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 399,
+        "prob": 15
+      },
+      {
+        "id": 400,
+        "prob": 15
+      },
+      {
+        "id": 401,
+        "prob": 15
+      },
+      {
+        "id": 402,
+        "prob": 15
+      },
+      {
+        "id": 403,
+        "prob": 15
+      },
+      {
+        "id": 404,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 262,
+    "name": "Big Rebels",
+    "aiType": 3,
+    "govt": 141,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 405,
+        "prob": 25
+      },
+      {
+        "id": 405,
+        "prob": 25
+      },
+      {
+        "id": 405,
+        "prob": 25
+      },
+      {
+        "id": 405,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 263,
+    "name": "Small Auroran Interceptor",
+    "aiType": 4,
+    "govt": 191,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 152,
+        "prob": 25
+      },
+      {
+        "id": 155,
+        "prob": 20
+      },
+      {
+        "id": 156,
+        "prob": 14
+      },
+      {
+        "id": 153,
+        "prob": 10
+      },
+      {
+        "id": 239,
+        "prob": 5
+      },
+      {
+        "id": 240,
+        "prob": 5
+      },
+      {
+        "id": 241,
+        "prob": 5
+      },
+      {
+        "id": 303,
+        "prob": 5
+      },
+      {
+        "id": 304,
+        "prob": 5
+      },
+      {
+        "id": 305,
+        "prob": 3
+      },
+      {
+        "id": 306,
+        "prob": 3
+      }
+    ]
+  },
+  {
+    "id": 264,
+    "name": "Large Heraan War Ships",
+    "aiType": 4,
+    "govt": 135,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 255,
+        "prob": 25
+      },
+      {
+        "id": 255,
+        "prob": 25
+      },
+      {
+        "id": 255,
+        "prob": 25
+      },
+      {
+        "id": 255,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 265,
+    "name": "Pirates",
+    "aiType": 3,
+    "govt": 192,
+    "booty": 68,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 146,
+        "prob": 9
+      },
+      {
+        "id": 147,
+        "prob": 5
+      },
+      {
+        "id": 150,
+        "prob": 17
+      },
+      {
+        "id": 151,
+        "prob": 17
+      },
+      {
+        "id": 227,
+        "prob": 2
+      },
+      {
+        "id": 228,
+        "prob": 2
+      },
+      {
+        "id": 229,
+        "prob": 2
+      },
+      {
+        "id": 230,
+        "prob": 2
+      },
+      {
+        "id": 236,
+        "prob": 5
+      },
+      {
+        "id": 237,
+        "prob": 5
+      },
+      {
+        "id": 238,
+        "prob": 5
+      },
+      {
+        "id": 275,
+        "prob": 17
+      },
+      {
+        "id": 285,
+        "prob": 2
+      },
+      {
+        "id": 286,
+        "prob": 2
+      },
+      {
+        "id": 287,
+        "prob": 2
+      },
+      {
+        "id": 291,
+        "prob": 6
+      }
+    ]
+  },
+  {
+    "id": 266,
+    "name": "Association",
+    "aiType": 3,
+    "govt": 176,
+    "booty": 76,
+    "infoTypes": 12288,
+    "ships": [
+      {
+        "id": 289,
+        "prob": 25
+      },
+      {
+        "id": 289,
+        "prob": 25
+      },
+      {
+        "id": 289,
+        "prob": 25
+      },
+      {
+        "id": 289,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 267,
+    "name": "Duellists",
+    "aiType": 4,
+    "govt": 175,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 246,
+        "prob": 25
+      },
+      {
+        "id": 255,
+        "prob": 30
+      },
+      {
+        "id": 246,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 268,
+    "name": "Pirate Carrier",
+    "aiType": 1,
+    "govt": 169,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 287,
+        "prob": 25
+      },
+      {
+        "id": 287,
+        "prob": 25
+      },
+      {
+        "id": 287,
+        "prob": 25
+      },
+      {
+        "id": 287,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 269,
+    "name": "RAGE Gunboat",
+    "aiType": 4,
+    "govt": 193,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 270,
+    "name": "Shards",
+    "aiType": 3,
+    "govt": 194,
+    "booty": 0,
+    "infoTypes": 0,
+    "ships": [
+      {
+        "id": 406,
+        "prob": 5
+      },
+      {
+        "id": 302,
+        "prob": 10
+      },
+      {
+        "id": 255,
+        "prob": 20
+      },
+      {
+        "id": 357,
+        "prob": 25
+      },
+      {
+        "id": 407,
+        "prob": 10
+      },
+      {
+        "id": 408,
+        "prob": 15
+      },
+      {
+        "id": 246,
+        "prob": 15
+      }
+    ]
+  },
+  {
+    "id": 271,
+    "name": "Scarab",
+    "aiType": 3,
+    "govt": 155,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 407,
+        "prob": 25
+      },
+      {
+        "id": 407,
+        "prob": 25
+      },
+      {
+        "id": 407,
+        "prob": 25
+      },
+      {
+        "id": 407,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 272,
+    "name": "Small Polaris",
+    "aiType": 4,
+    "govt": 147,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 408,
+        "prob": 20
+      },
+      {
+        "id": 409,
+        "prob": 30
+      },
+      {
+        "id": 410,
+        "prob": 25
+      },
+      {
+        "id": 410,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 273,
+    "name": "RAGE Gunboat",
+    "aiType": 4,
+    "govt": 195,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      },
+      {
+        "id": 373,
+        "prob": 25
+      }
+    ]
+  },
+  {
+    "id": 274,
+    "name": "Big Rebels",
+    "aiType": 3,
+    "govt": 141,
+    "booty": 0,
+    "infoTypes": 32768,
+    "ships": [
+      {
+        "id": 181,
+        "prob": 6
+      },
+      {
+        "id": 180,
+        "prob": 6
+      },
+      {
+        "id": 347,
+        "prob": 2
+      },
+      {
+        "id": 348,
+        "prob": 2
+      },
+      {
+        "id": 165,
+        "prob": 8
+      },
+      {
+        "id": 412,
+        "prob": 12
+      },
+      {
+        "id": 332,
+        "prob": 6
+      },
+      {
+        "id": 349,
+        "prob": 2
+      },
+      {
+        "id": 350,
+        "prob": 2
+      },
+      {
+        "id": 354,
+        "prob": 8
+      },
+      {
+        "id": 356,
+        "prob": 6
+      },
+      {
+        "id": 355,
+        "prob": 8
+      },
+      {
+        "id": 357,
+        "prob": 2
+      },
+      {
+        "id": 358,
+        "prob": 3
+      },
+      {
+        "id": 413,
+        "prob": 15
+      },
+      {
+        "id": 414,
+        "prob": 12
+      }
+    ]
+  }
+]

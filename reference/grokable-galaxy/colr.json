@@ -1,0 +1,75 @@
+{
+  "buttonUp": 16777215,
+  "buttonDown": 8421504,
+  "buttonGrey": 2500134,
+  "menuFont": "Geneva",
+  "menuFontSize": 9,
+  "menuBright": 16711680,
+  "menuDim": 8388608,
+  "gridLine": 4210752,
+  "gridSelection": 16711680,
+  "progressBar": {
+    "top": 280,
+    "left": -100,
+    "bottom": 290,
+    "right": 100
+  },
+  "progBright": 16711680,
+  "progDim": 8388608,
+  "progOutline": 4210752,
+  "buttons": [
+    {
+      "x": 349,
+      "y": 400
+    },
+    {
+      "x": 344,
+      "y": 464
+    },
+    {
+      "x": 345,
+      "y": 528
+    },
+    {
+      "x": 555,
+      "y": 401
+    },
+    {
+      "x": 581,
+      "y": 464
+    },
+    {
+      "x": 580,
+      "y": 528
+    }
+  ],
+  "floatingMap": 789516,
+  "listText": 16777215,
+  "listBkgnd": 0,
+  "listHilite": 8388608,
+  "escortHilite": 8388608,
+  "buttonFont": "Charcoal",
+  "buttonFontSize": 12,
+  "logo": {
+    "x": 191,
+    "y": 162
+  },
+  "rollover": {
+    "x": 444,
+    "y": 465
+  },
+  "slides": [
+    {
+      "x": 343,
+      "y": 399
+    },
+    {
+      "x": 337,
+      "y": 462
+    },
+    {
+      "x": 337,
+      "y": 526
+    }
+  ]
+}

@@ -1,0 +1,3382 @@
+[
+  {
+    "id": 128,
+    "name": "Small Federation Fleet",
+    "leadShip": 141,
+    "escorts": [
+      {
+        "id": 223,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 224,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 129,
+    "name": "Federation Carrier + Escorts",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 211,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 130,
+    "name": "Leviathan + Escorts",
+    "leadShip": 131,
+    "escorts": [
+      {
+        "id": 140,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      }
+    ],
+    "govt": 157,
+    "linkSyst": -1,
+    "appearOn": ""
+  },
+  {
+    "id": 131,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 132,
+    "name": "Liner + Escorts",
+    "leadShip": 134,
+    "escorts": [
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 133,
+    "name": "Little Traders",
+    "leadShip": 129,
+    "escorts": [
+      {
+        "id": 128,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 136,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 134,
+    "name": "Pirate Raiders",
+    "leadShip": 146,
+    "escorts": [
+      {
+        "id": 149,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 148,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 166,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 275,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 135,
+    "name": "Pirates",
+    "leadShip": 149,
+    "escorts": [
+      {
+        "id": 166,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 275,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 333,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 334,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 136,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 137,
+    "name": "Auroran Fleet",
+    "leadShip": 153,
+    "escorts": [
+      {
+        "id": 154,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 138,
+    "name": "Small Polaris Fleet",
+    "leadShip": 158,
+    "escorts": [
+      {
+        "id": 161,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 163,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 186,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 147,
+    "linkSyst": 10002,
+    "appearOn": ""
+  },
+  {
+    "id": 139,
+    "name": "Polaris Freighters + escorts",
+    "leadShip": 182,
+    "escorts": [
+      {
+        "id": 160,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 161,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 163,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 182,
+        "min": 1,
+        "max": 2
+      }
+    ],
+    "govt": 130,
+    "linkSyst": 10002,
+    "appearOn": ""
+  },
+  {
+    "id": 140,
+    "name": "Kick-the-butt Polaris Serious Fleet",
+    "leadShip": 162,
+    "escorts": [
+      {
+        "id": 158,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 163,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 161,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 186,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 147,
+    "linkSyst": 10002,
+    "appearOn": ""
+  },
+  {
+    "id": 141,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 142,
+    "name": "Wraith Tribe (nice)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 139,
+    "linkSyst": 10011,
+    "appearOn": ""
+  },
+  {
+    "id": 143,
+    "name": "Wraith Tribe (nasty)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 138,
+    "linkSyst": 10010,
+    "appearOn": ""
+  },
+  {
+    "id": 144,
+    "name": "Wild Geese",
+    "leadShip": 165,
+    "escorts": [
+      {
+        "id": 133,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 157,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 137,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 3
+      }
+    ],
+    "govt": 144,
+    "linkSyst": 10016,
+    "appearOn": ""
+  },
+  {
+    "id": 145,
+    "name": "Vell-os Armada",
+    "leadShip": 175,
+    "escorts": [
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 136,
+    "linkSyst": 130,
+    "appearOn": ""
+  },
+  {
+    "id": 146,
+    "name": "Roughnecks",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 143,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 141,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 145,
+        "min": 1,
+        "max": 2
+      }
+    ],
+    "govt": 162,
+    "linkSyst": 10017,
+    "appearOn": ""
+  },
+  {
+    "id": 147,
+    "name": "Wild Geese",
+    "leadShip": 165,
+    "escorts": [
+      {
+        "id": 133,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 157,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 137,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 3
+      }
+    ],
+    "govt": 144,
+    "linkSyst": 10016,
+    "appearOn": ""
+  },
+  {
+    "id": 148,
+    "name": "Hyperioids",
+    "leadShip": 171,
+    "escorts": [
+      {
+        "id": 171,
+        "min": 1,
+        "max": 3
+      }
+    ],
+    "govt": 148,
+    "linkSyst": 10010,
+    "appearOn": ""
+  },
+  {
+    "id": 149,
+    "name": "Rebels",
+    "leadShip": 181,
+    "escorts": [
+      {
+        "id": 178,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 179,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 180,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 177,
+        "min": 1,
+        "max": 2
+      }
+    ],
+    "govt": 141,
+    "linkSyst": 10000,
+    "appearOn": "b332 | b148)"
+  },
+  {
+    "id": 150,
+    "name": "Rebel Fleet",
+    "leadShip": 181,
+    "escorts": [
+      {
+        "id": 181,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 180,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 179,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 178,
+        "min": 1,
+        "max": 2
+      }
+    ],
+    "govt": 141,
+    "linkSyst": 10000,
+    "appearOn": "b332 | b148)"
+  },
+  {
+    "id": 151,
+    "name": "Moash Task Force",
+    "leadShip": 251,
+    "escorts": [
+      {
+        "id": 242,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 131,
+    "linkSyst": 10003,
+    "appearOn": ""
+  },
+  {
+    "id": 152,
+    "name": "Moash Fleet",
+    "leadShip": 298,
+    "escorts": [
+      {
+        "id": 251,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 131,
+    "linkSyst": 10003,
+    "appearOn": ""
+  },
+  {
+    "id": 153,
+    "name": "Tekel Task Force",
+    "leadShip": 254,
+    "escorts": [
+      {
+        "id": 245,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 132,
+    "linkSyst": 10006,
+    "appearOn": ""
+  },
+  {
+    "id": 154,
+    "name": "Vella Task Force",
+    "leadShip": 253,
+    "escorts": [
+      {
+        "id": 244,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 133,
+    "linkSyst": 10005,
+    "appearOn": ""
+  },
+  {
+    "id": 155,
+    "name": "Dani Task Force",
+    "leadShip": 252,
+    "escorts": [
+      {
+        "id": 243,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 134,
+    "linkSyst": 10006,
+    "appearOn": ""
+  },
+  {
+    "id": 156,
+    "name": "Heraan Task Force",
+    "leadShip": 255,
+    "escorts": [
+      {
+        "id": 246,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 135,
+    "linkSyst": 10007,
+    "appearOn": ""
+  },
+  {
+    "id": 157,
+    "name": "Tekel Fleet",
+    "leadShip": 301,
+    "escorts": [
+      {
+        "id": 254,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 132,
+    "linkSyst": 10004,
+    "appearOn": ""
+  },
+  {
+    "id": 158,
+    "name": "Vella Fleet",
+    "leadShip": 300,
+    "escorts": [
+      {
+        "id": 253,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 133,
+    "linkSyst": 10005,
+    "appearOn": ""
+  },
+  {
+    "id": 159,
+    "name": "Dani Fleet",
+    "leadShip": 299,
+    "escorts": [
+      {
+        "id": 252,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 134,
+    "linkSyst": 10006,
+    "appearOn": ""
+  },
+  {
+    "id": 160,
+    "name": "Heraan Fleet",
+    "leadShip": 302,
+    "escorts": [
+      {
+        "id": 255,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 135,
+    "linkSyst": 10007,
+    "appearOn": ""
+  },
+  {
+    "id": 161,
+    "name": "Rimertan Fleet",
+    "leadShip": 302,
+    "escorts": [
+      {
+        "id": 255,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 142,
+    "linkSyst": 10014,
+    "appearOn": ""
+  },
+  {
+    "id": 162,
+    "name": "Rimertan Task Force",
+    "leadShip": 255,
+    "escorts": [
+      {
+        "id": 246,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 142,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 163,
+    "name": "Moash Task Force",
+    "leadShip": 251,
+    "escorts": [
+      {
+        "id": 242,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 131,
+    "linkSyst": 10007,
+    "appearOn": ""
+  },
+  {
+    "id": 164,
+    "name": "Tekel Task Force",
+    "leadShip": 254,
+    "escorts": [
+      {
+        "id": 245,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 132,
+    "linkSyst": 10006,
+    "appearOn": ""
+  },
+  {
+    "id": 165,
+    "name": "Dani Task Force",
+    "leadShip": 252,
+    "escorts": [
+      {
+        "id": 243,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 134,
+    "linkSyst": 10004,
+    "appearOn": ""
+  },
+  {
+    "id": 166,
+    "name": "Heraan Task Force",
+    "leadShip": 255,
+    "escorts": [
+      {
+        "id": 246,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 135,
+    "linkSyst": 10003,
+    "appearOn": ""
+  },
+  {
+    "id": 167,
+    "name": "Heraan Task Force",
+    "leadShip": 255,
+    "escorts": [
+      {
+        "id": 246,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 135,
+    "linkSyst": 10003,
+    "appearOn": ""
+  },
+  {
+    "id": 168,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 169,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 170,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 171,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 172,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 173,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 174,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 175,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 176,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 3
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 177,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 178,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 179,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 180,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 181,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 182,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 183,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 184,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 185,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 186,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 187,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 188,
+    "name": "Cargo Drones",
+    "leadShip": 130,
+    "escorts": [
+      {
+        "id": 130,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "id": 128,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 189,
+    "name": "Fed +S. Vell",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 129,
+    "appearOn": ""
+  },
+  {
+    "id": 190,
+    "name": "Fed +S. Vell",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 144,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 132,
+    "appearOn": ""
+  },
+  {
+    "id": 191,
+    "name": "Fed +S. Vell",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 144,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 192,
+    "name": "Fed +S. Vell",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 144,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 193,
+    "name": "Fed +S. Vell",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 144,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 194,
+    "name": "Fed +S. Vell",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 142,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 144,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 195,
+    "name": "Vellos",
+    "leadShip": 175,
+    "escorts": [
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 2
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 133,
+    "appearOn": ""
+  },
+  {
+    "id": 196,
+    "name": "Vellos",
+    "leadShip": 175,
+    "escorts": [
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 2
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 197,
+    "name": "Vellos",
+    "leadShip": 175,
+    "escorts": [
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 0,
+        "max": 2
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 198,
+    "name": "Wraith Tribe (nasty)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 138,
+    "linkSyst": 521,
+    "appearOn": ""
+  },
+  {
+    "id": 199,
+    "name": "Wraith Tribe (nasty)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 138,
+    "linkSyst": 510,
+    "appearOn": ""
+  },
+  {
+    "id": 200,
+    "name": "Wraith Tribe (nice)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 139,
+    "linkSyst": 568,
+    "appearOn": ""
+  },
+  {
+    "id": 201,
+    "name": "Wraith Tribe (nice)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 139,
+    "linkSyst": 557,
+    "appearOn": ""
+  },
+  {
+    "id": 202,
+    "name": "Wraith Tribe (nasty)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 138,
+    "linkSyst": 10010,
+    "appearOn": ""
+  },
+  {
+    "id": 203,
+    "name": "Wraith Tribe (nasty)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 138,
+    "linkSyst": 10010,
+    "appearOn": ""
+  },
+  {
+    "id": 204,
+    "name": "Wraith Tribe (nice)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 139,
+    "linkSyst": 10011,
+    "appearOn": ""
+  },
+  {
+    "id": 205,
+    "name": "Wraith Tribe (nice)",
+    "leadShip": 168,
+    "escorts": [
+      {
+        "id": 168,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 169,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 170,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 139,
+    "linkSyst": 10011,
+    "appearOn": ""
+  },
+  {
+    "id": 206,
+    "name": "Small Federation Fleet",
+    "leadShip": 141,
+    "escorts": [
+      {
+        "id": 144,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 223,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 224,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 128,
+    "appearOn": ""
+  },
+  {
+    "id": 207,
+    "name": "Small Federation Fleet",
+    "leadShip": 141,
+    "escorts": [
+      {
+        "id": 144,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 223,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 224,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 129,
+    "appearOn": ""
+  },
+  {
+    "id": 208,
+    "name": "Small Federation Fleet",
+    "leadShip": 141,
+    "escorts": [
+      {
+        "id": 144,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 223,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 224,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 209,
+    "name": "Small Federation Fleet",
+    "leadShip": 141,
+    "escorts": [
+      {
+        "id": 144,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 223,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 224,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 210,
+    "name": "Small Federation Fleet",
+    "leadShip": 141,
+    "escorts": [
+      {
+        "id": 144,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 223,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 224,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 376,
+    "appearOn": ""
+  },
+  {
+    "id": 211,
+    "name": "Federation Carrier + Escorts",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 211,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 212,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 213,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 159,
+    "appearOn": ""
+  },
+  {
+    "id": 212,
+    "name": "Federation Carrier + Escorts",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 211,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 212,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 213,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 213,
+    "name": "Federation Carrier + Escorts",
+    "leadShip": 143,
+    "escorts": [
+      {
+        "id": 141,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 212,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 213,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 214,
+    "name": "Leviathan + Escorts",
+    "leadShip": 131,
+    "escorts": [
+      {
+        "id": 140,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": -1,
+    "linkSyst": 130,
+    "appearOn": ""
+  },
+  {
+    "id": 215,
+    "name": "Leviathan + Escorts",
+    "leadShip": 131,
+    "escorts": [
+      {
+        "id": 140,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": -1,
+    "linkSyst": 130,
+    "appearOn": ""
+  },
+  {
+    "id": 216,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 132,
+    "appearOn": ""
+  },
+  {
+    "id": 217,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 132,
+    "appearOn": ""
+  },
+  {
+    "id": 218,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 219,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 220,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 221,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 222,
+    "name": "Smaller Private Freighters",
+    "leadShip": 132,
+    "escorts": [
+      {
+        "id": 136,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 310,
+    "appearOn": ""
+  },
+  {
+    "id": 223,
+    "name": "Liner + Escorts",
+    "leadShip": 134,
+    "escorts": [
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 224,
+    "name": "Liner + Escorts",
+    "leadShip": 134,
+    "escorts": [
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 225,
+    "name": "Liner + Escorts",
+    "leadShip": 134,
+    "escorts": [
+      {
+        "id": 167,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 335,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 336,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 226,
+    "name": "Pirate Raiders",
+    "leadShip": 146,
+    "escorts": [
+      {
+        "id": 149,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 148,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 166,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 227,
+    "name": "Pirate Raiders",
+    "leadShip": 146,
+    "escorts": [
+      {
+        "id": 149,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 148,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 166,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 228,
+    "name": "Little Traders",
+    "leadShip": 129,
+    "escorts": [
+      {
+        "id": 128,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 136,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 229,
+    "name": "Little Traders",
+    "leadShip": 129,
+    "escorts": [
+      {
+        "id": 128,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 136,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 230,
+    "name": "Little Traders",
+    "leadShip": 129,
+    "escorts": [
+      {
+        "id": 128,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 136,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 231,
+    "name": "Little Traders",
+    "leadShip": 129,
+    "escorts": [
+      {
+        "id": 128,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 136,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 1
+      }
+    ],
+    "govt": 157,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 232,
+    "name": "Little Traders",
+    "leadShip": 129,
+    "escorts": [
+      {
+        "id": 128,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 136,
+        "min": 1,
+        "max": 1
+      },
+      {
+        "id": 167,
+        "min": 1,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 233,
+    "name": "Pirates",
+    "leadShip": 149,
+    "escorts": [
+      {
+        "id": 166,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 333,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 334,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 234,
+    "name": "Pirates",
+    "leadShip": 149,
+    "escorts": [
+      {
+        "id": 166,
+        "min": 0,
+        "max": 2
+      },
+      {
+        "id": 333,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 334,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 235,
+    "name": "Pirates",
+    "leadShip": 149,
+    "escorts": [
+      {
+        "id": 166,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 333,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 334,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 236,
+    "name": "Pirates",
+    "leadShip": 149,
+    "escorts": [
+      {
+        "id": 166,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 333,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 334,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 137,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 237,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 325,
+    "appearOn": ""
+  },
+  {
+    "id": 238,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 376,
+    "appearOn": ""
+  },
+  {
+    "id": 239,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 240,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 241,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 242,
+    "name": "Auroran Task Force",
+    "leadShip": 154,
+    "escorts": [
+      {
+        "id": 152,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 133,
+    "appearOn": ""
+  },
+  {
+    "id": 243,
+    "name": "Auroran Fleet",
+    "leadShip": 153,
+    "escorts": [
+      {
+        "id": 154,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 315,
+    "appearOn": ""
+  },
+  {
+    "id": 244,
+    "name": "Auroran Fleet",
+    "leadShip": 153,
+    "escorts": [
+      {
+        "id": 154,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 315,
+    "appearOn": ""
+  },
+  {
+    "id": 245,
+    "name": "Auroran Fleet",
+    "leadShip": 153,
+    "escorts": [
+      {
+        "id": 154,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 129,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 246,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 247,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 248,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 249,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10001,
+    "appearOn": ""
+  },
+  {
+    "id": 250,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 251,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 252,
+    "name": "Auroran Traders",
+    "leadShip": 139,
+    "escorts": [
+      {
+        "id": 139,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 155,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 155,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 156,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 158,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 253,
+    "name": "Vell-os Armada",
+    "leadShip": 175,
+    "escorts": [
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 174,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 173,
+        "min": 1,
+        "max": 2
+      },
+      {
+        "id": 173,
+        "min": 1,
+        "max": 2
+      }
+    ],
+    "govt": 128,
+    "linkSyst": 10000,
+    "appearOn": ""
+  },
+  {
+    "id": 254,
+    "name": "Hyperioids",
+    "leadShip": 171,
+    "escorts": [
+      {
+        "id": 171,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 171,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 148,
+    "linkSyst": 10010,
+    "appearOn": ""
+  },
+  {
+    "id": 255,
+    "name": "Hyperioids",
+    "leadShip": 171,
+    "escorts": [
+      {
+        "id": 171,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": 171,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "govt": 148,
+    "linkSyst": 10010,
+    "appearOn": ""
+  }
+]

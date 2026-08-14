@@ -1,0 +1,260 @@
+[
+  {
+    "id": 128,
+    "name": "Metal Small",
+    "strength": 100,
+    "spinRate": 100,
+    "yieldType": 4,
+    "yieldQty": 4,
+    "partCount": 20,
+    "partColor": 7566220,
+    "fragTypes": [],
+    "fragCount": 0,
+    "explodeType": 0,
+    "mass": 150
+  },
+  {
+    "id": 129,
+    "name": "Metal Medium",
+    "strength": 125,
+    "spinRate": 75,
+    "yieldType": 4,
+    "yieldQty": 8,
+    "partCount": 25,
+    "partColor": 3289661,
+    "fragTypes": [
+      128,
+      136
+    ],
+    "fragCount": 2,
+    "explodeType": 0,
+    "mass": 300
+  },
+  {
+    "id": 130,
+    "name": "Metal Big",
+    "strength": 175,
+    "spinRate": 50,
+    "yieldType": 4,
+    "yieldQty": 12,
+    "partCount": 30,
+    "partColor": 3289661,
+    "fragTypes": [
+      129,
+      137
+    ],
+    "fragCount": 2,
+    "explodeType": 1,
+    "mass": 600
+  },
+  {
+    "id": 131,
+    "name": "Metal Huge",
+    "strength": 300,
+    "spinRate": 25,
+    "yieldType": 4,
+    "yieldQty": 16,
+    "partCount": 35,
+    "partColor": 3289661,
+    "fragTypes": [
+      130,
+      137
+    ],
+    "fragCount": 2,
+    "explodeType": 2,
+    "mass": 1200
+  },
+  {
+    "id": 132,
+    "name": "Ice Small",
+    "strength": 80,
+    "spinRate": 80,
+    "yieldType": 1006,
+    "yieldQty": 6,
+    "partCount": 15,
+    "partColor": 15658734,
+    "fragTypes": [],
+    "fragCount": 0,
+    "explodeType": 0,
+    "mass": 125
+  },
+  {
+    "id": 133,
+    "name": "Ice Medium",
+    "strength": 100,
+    "spinRate": 60,
+    "yieldType": 1006,
+    "yieldQty": 12,
+    "partCount": 20,
+    "partColor": 15658734,
+    "fragTypes": [
+      132
+    ],
+    "fragCount": 2,
+    "explodeType": 0,
+    "mass": 250
+  },
+  {
+    "id": 134,
+    "name": "Ice Big",
+    "strength": 140,
+    "spinRate": 40,
+    "yieldType": 1006,
+    "yieldQty": 18,
+    "partCount": 25,
+    "partColor": 15658734,
+    "fragTypes": [
+      133,
+      132
+    ],
+    "fragCount": 2,
+    "explodeType": 1,
+    "mass": 500
+  },
+  {
+    "id": 135,
+    "name": "Ice Huge",
+    "strength": 200,
+    "spinRate": 20,
+    "yieldType": 1006,
+    "yieldQty": 24,
+    "partCount": 30,
+    "partColor": 15658734,
+    "fragTypes": [
+      134,
+      133
+    ],
+    "fragCount": 2,
+    "explodeType": 2,
+    "mass": 1500
+  },
+  {
+    "id": 136,
+    "name": "Dust Small",
+    "strength": 60,
+    "spinRate": 60,
+    "yieldType": -1,
+    "yieldQty": 0,
+    "partCount": 20,
+    "partColor": 12485706,
+    "fragTypes": [],
+    "fragCount": 0,
+    "explodeType": 0,
+    "mass": 100
+  },
+  {
+    "id": 137,
+    "name": "Dust Medium",
+    "strength": 75,
+    "spinRate": 45,
+    "yieldType": -1,
+    "yieldQty": 0,
+    "partCount": 20,
+    "partColor": 12485706,
+    "fragTypes": [
+      136
+    ],
+    "fragCount": 2,
+    "explodeType": 0,
+    "mass": 200
+  },
+  {
+    "id": 138,
+    "name": "Dust Big",
+    "strength": 105,
+    "spinRate": 30,
+    "yieldType": -1,
+    "yieldQty": 0,
+    "partCount": 25,
+    "partColor": 12485706,
+    "fragTypes": [
+      136,
+      137
+    ],
+    "fragCount": 2,
+    "explodeType": 1,
+    "mass": 400
+  },
+  {
+    "id": 139,
+    "name": "Dust Huge",
+    "strength": 150,
+    "spinRate": 15,
+    "yieldType": -1,
+    "yieldQty": 0,
+    "partCount": 30,
+    "partColor": 12485706,
+    "fragTypes": [
+      137,
+      138
+    ],
+    "fragCount": 2,
+    "explodeType": 2,
+    "mass": 800
+  },
+  {
+    "id": 140,
+    "name": "Crystal Small",
+    "strength": 250,
+    "spinRate": 120,
+    "yieldType": 1018,
+    "yieldQty": 2,
+    "partCount": 25,
+    "partColor": 789567,
+    "fragTypes": [],
+    "fragCount": -1,
+    "explodeType": 0,
+    "mass": 125
+  },
+  {
+    "id": 141,
+    "name": "Crystal Medium",
+    "strength": 150,
+    "spinRate": 90,
+    "yieldType": 1018,
+    "yieldQty": 4,
+    "partCount": 35,
+    "partColor": 789567,
+    "fragTypes": [
+      140,
+      136
+    ],
+    "fragCount": 1,
+    "explodeType": 0,
+    "mass": 250
+  },
+  {
+    "id": 142,
+    "name": "Crystal Big",
+    "strength": 210,
+    "spinRate": 60,
+    "yieldType": 1018,
+    "yieldQty": 8,
+    "partCount": 40,
+    "partColor": 789567,
+    "fragTypes": [
+      141,
+      136
+    ],
+    "fragCount": 2,
+    "explodeType": 1,
+    "mass": 500
+  },
+  {
+    "id": 143,
+    "name": "Crystal Huge",
+    "strength": 350,
+    "spinRate": 30,
+    "yieldType": 1018,
+    "yieldQty": 16,
+    "partCount": 50,
+    "partColor": 789567,
+    "fragTypes": [
+      142,
+      137
+    ],
+    "fragCount": 2,
+    "explodeType": 2,
+    "mass": 1000
+  }
+]

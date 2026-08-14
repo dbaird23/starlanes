@@ -1,0 +1,34 @@
+[
+  {
+    "id": 128,
+    "name": ".Trader",
+    "cash": 25000,
+    "shipType": 128,
+    "systems": [
+      128,
+      136,
+      170,
+      184
+    ],
+    "records": [],
+    "kills": 0,
+    "introPicts": [
+      8200,
+      8201,
+      8202
+    ],
+    "pictDelays": [
+      45,
+      45,
+      45
+    ],
+    "introTextId": -1,
+    "onStart": "",
+    "flags": 1,
+    "startDay": 23,
+    "startMonth": 6,
+    "startYear": 1177,
+    "datePrefix": "",
+    "dateSuffix": " NC"
+  }
+]

@@ -1405,6 +1405,38 @@ const outDir = join(
 mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, "galaxy.json"), JSON.stringify(galaxy));
 
+// Write human-friendly per-resource files for reference
+const refDir = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "reference",
+  "grokable-galaxy",
+);
+mkdirSync(refDir, { recursive: true });
+const pp = (v) => JSON.stringify(v, null, 2);
+writeFileSync(join(refDir, "colr.json"), pp(galaxy.colr));
+writeFileSync(join(refDir, "systems.json"), pp(galaxy.systems));
+writeFileSync(join(refDir, "spobs.json"), pp(galaxy.spobs));
+writeFileSync(join(refDir, "govts.json"), pp(galaxy.govts));
+writeFileSync(join(refDir, "descs.json"), pp(galaxy.descs));
+writeFileSync(join(refDir, "ships.json"), pp(galaxy.ships));
+writeFileSync(join(refDir, "weapons.json"), pp(galaxy.weapons));
+writeFileSync(join(refDir, "outfits.json"), pp(galaxy.outfits));
+writeFileSync(join(refDir, "missions.json"), pp(galaxy.missions));
+writeFileSync(join(refDir, "junks.json"), pp(galaxy.junks));
+writeFileSync(join(refDir, "dudes.json"), pp(galaxy.dudes));
+writeFileSync(join(refDir, "persons.json"), pp(galaxy.persons));
+writeFileSync(join(refDir, "sgtrLists.json"), pp(galaxy.strLists));
+writeFileSync(join(refDir, "chars.json"), pp(galaxy.chars));
+writeFileSync(join(refDir, "roids.json"), pp(galaxy.roids));
+writeFileSync(join(refDir, "interfaces.json"), pp(galaxy.interfaces));
+writeFileSync(join(refDir, "crons.json"), pp(galaxy.crons));
+writeFileSync(join(refDir, "fleets.json"), pp(galaxy.fleets));
+writeFileSync(join(refDir, "ranks.json"), pp(galaxy.ranks));
+writeFileSync(join(refDir, "booms.json"), pp(galaxy.booms));
+writeFileSync(join(refDir, "oopses.json"), pp(galaxy.oopses));
+writeFileSync(join(refDir, "nebulae.json"), pp(galaxy.nebulae));
+
 console.log(
   `\nExtracted: ${systems.length} systems (${systs.length} raw), ${spobs.length} spobs, ` +
     `${govts.length} govts, ${Object.keys(descs).length} landing descriptions, ${ships.length} ships`,

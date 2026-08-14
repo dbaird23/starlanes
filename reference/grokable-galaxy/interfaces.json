@@ -1,0 +1,450 @@
+[
+  {
+    "id": 128,
+    "name": "Default status bar",
+    "brightText": "#ffffff",
+    "dimText": "#888888",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 199,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#bd0000",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#a6a6a6",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#4c5c6f",
+    "fuelPartial": "#28333f",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 700
+  },
+  {
+    "id": 129,
+    "name": "Polaris status bar",
+    "brightText": "#ffffff",
+    "dimText": "#888888",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 199,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#bd6db5",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#6c7887",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#1344bf",
+    "fuelPartial": "#152d6b",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 701
+  },
+  {
+    "id": 130,
+    "name": "Federation Status bar",
+    "brightText": "#e3f1ff",
+    "dimText": "#788087",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 200,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#1422bd",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#a6a6a6",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#4c5c6f",
+    "fuelPartial": "#3c4958",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 702
+  },
+  {
+    "id": 131,
+    "name": "Rebellion status bar",
+    "brightText": "#19ff19",
+    "dimText": "#009900",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 200,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#0ecc1b",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#a6a6a6",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#4c5c6f",
+    "fuelPartial": "#3c4958",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 703
+  },
+  {
+    "id": 132,
+    "name": "Auroran status bar",
+    "brightText": "#ff0400",
+    "dimText": "#820200",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 200,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#bd0000",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#a6a6a6",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#4c5c6f",
+    "fuelPartial": "#3c4958",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 704
+  },
+  {
+    "id": 133,
+    "name": "Pirate status bar",
+    "brightText": "#ffffff",
+    "dimText": "#888888",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 200,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#bd0000",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#a6a6a6",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#4c5c6f",
+    "fuelPartial": "#3c4958",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 705
+  },
+  {
+    "id": 134,
+    "name": "Vell-os status bar",
+    "brightText": "#f3faff",
+    "dimText": "#829099",
+    "radarArea": {
+      "x": 8,
+      "y": 8,
+      "w": 176,
+      "h": 176
+    },
+    "brightRadar": "#ffffff",
+    "dimRadar": "#808080",
+    "shieldArea": {
+      "x": 35,
+      "y": 200,
+      "w": 149,
+      "h": 7
+    },
+    "shieldColor": "#3da5ff",
+    "armorArea": {
+      "x": 35,
+      "y": 216,
+      "w": 149,
+      "h": 7
+    },
+    "armorColor": "#e3ffff",
+    "fuelArea": {
+      "x": 35,
+      "y": 234,
+      "w": 149,
+      "h": 7
+    },
+    "fuelFull": "#a3c7ff",
+    "fuelPartial": "#51637f",
+    "navArea": {
+      "x": 8,
+      "y": 254,
+      "w": 176,
+      "h": 32
+    },
+    "weapArea": {
+      "x": 8,
+      "y": 300,
+      "w": 176,
+      "h": 15
+    },
+    "targArea": {
+      "x": 8,
+      "y": 330,
+      "w": 176,
+      "h": 112
+    },
+    "cargoArea": {
+      "x": 8,
+      "y": 458,
+      "w": 176,
+      "h": 94
+    },
+    "statusFont": "Geneva",
+    "statFontSize": 12,
+    "subtitleSize": 10,
+    "statusBkgnd": 706
+  }
+]

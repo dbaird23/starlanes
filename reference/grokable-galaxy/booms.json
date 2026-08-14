@@ -1,0 +1,107 @@
+[
+  {
+    "id": 128,
+    "name": "FAE Small",
+    "frameAdvance": 100,
+    "soundIndex": 2,
+    "graphicIndex": 0
+  },
+  {
+    "id": 129,
+    "name": "FAE Medium",
+    "frameAdvance": 100,
+    "soundIndex": 1,
+    "graphicIndex": 1
+  },
+  {
+    "id": 130,
+    "name": "FAE Large",
+    "frameAdvance": 100,
+    "soundIndex": 0,
+    "graphicIndex": 2
+  },
+  {
+    "id": 131,
+    "name": "mushroom",
+    "frameAdvance": 60,
+    "soundIndex": 1,
+    "graphicIndex": 3
+  },
+  {
+    "id": 132,
+    "name": "ship breakup",
+    "frameAdvance": 100,
+    "soundIndex": 2,
+    "graphicIndex": 0
+  },
+  {
+    "id": 133,
+    "name": "ship exploding",
+    "frameAdvance": 100,
+    "soundIndex": 3,
+    "graphicIndex": 2
+  },
+  {
+    "id": 134,
+    "name": "FPC Impact",
+    "frameAdvance": 100,
+    "soundIndex": 1,
+    "graphicIndex": 4
+  },
+  {
+    "id": 135,
+    "name": "Nuclear detonation",
+    "frameAdvance": 30,
+    "soundIndex": 0,
+    "graphicIndex": 5
+  },
+  {
+    "id": 136,
+    "name": "Small Railgun Impact",
+    "frameAdvance": 100,
+    "soundIndex": 2,
+    "graphicIndex": 6
+  },
+  {
+    "id": 137,
+    "name": "Medium Railgun Impact",
+    "frameAdvance": 100,
+    "soundIndex": 2,
+    "graphicIndex": 7
+  },
+  {
+    "id": 138,
+    "name": "Large Railgun Impact",
+    "frameAdvance": 100,
+    "soundIndex": 1,
+    "graphicIndex": 8
+  },
+  {
+    "id": 139,
+    "name": "Superlarge Railgun Impact",
+    "frameAdvance": 100,
+    "soundIndex": 1,
+    "graphicIndex": 9
+  },
+  {
+    "id": 140,
+    "name": "Small Polaron Detonation",
+    "frameAdvance": 100,
+    "soundIndex": 2,
+    "graphicIndex": 10
+  },
+  {
+    "id": 141,
+    "name": "Large Polaron Detonation",
+    "frameAdvance": 100,
+    "soundIndex": 1,
+    "graphicIndex": 11
+  },
+  {
+    "id": 142,
+    "name": "HellHound Detonation",
+    "frameAdvance": 50,
+    "soundIndex": 14,
+    "graphicIndex": 12
+  }
+]

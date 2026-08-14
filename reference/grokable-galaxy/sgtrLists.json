@@ -1,0 +1,1115 @@
+{
+  "134": [
+    "No Record",
+    "No Record",
+    "No Convictions",
+    "Minor Offender",
+    "Offender",
+    "Criminal",
+    "Wanted Criminal",
+    "Fugitive",
+    "Hunted Fugitive",
+    "Public Enemy",
+    "Citizen",
+    "Good Citizen",
+    "Upstanding Citizen",
+    "Leading Citizen",
+    "Model Citizen",
+    "Virtuous Citizen",
+    "Military Dictator",
+    "Military Governor"
+  ],
+  "138": [
+    "No Ability",
+    "Little Ability",
+    "Fair Ability",
+    "Average Ability",
+    "Good Ability",
+    "Competent",
+    "Very Competent",
+    "Worthy of Note",
+    "Dangerous",
+    "Deadly",
+    "Frightening"
+  ],
+  "150": [
+    "Leave",
+    "Buy",
+    "Sell",
+    "Buy Ship",
+    "Done",
+    "Recharge",
+    "Trade Center",
+    "Outfitter",
+    "Shipyard",
+    "Bar",
+    "Gamble",
+    "Holovid",
+    "Hire Escort",
+    "Bet 1000",
+    "Bet 5000",
+    "Mission BBS",
+    "-",
+    "+",
+    "^",
+    "&",
+    "Close Channel",
+    "Greetings",
+    "Request Assistance",
+    "Offer Bribe",
+    "Beg For Mercy",
+    "Accept",
+    "Okay",
+    "Accept Payment",
+    "Demand More",
+    "Accept Price",
+    "Lower Price",
+    "Release",
+    "Select",
+    "Cancel",
+    "Abort",
+    "General",
+    "Cargo",
+    "Extras",
+    "Honors",
+    "Cargo",
+    "Credits",
+    "Ammo",
+    "Energy",
+    "Capture Ship",
+    "Demand Tribute",
+    "Use As Escort",
+    "Use As My Ship",
+    "Info",
+    "Clear Route",
+    "Yes",
+    "No",
+    "Upgrade Escort",
+    "Cancel Upgrade",
+    "Sell Escort",
+    "Cancel Sale",
+    "Show Borders",
+    "Hide Borders",
+    "Help",
+    "Bet",
+    "Find",
+    "Jettison Cargo"
+  ],
+  "1000": [
+    "Message Buoy to all Auroran ships: you have entered Federation space, prepare to be scanned.",
+    "Message Buoy: UHP-1001 not to be landed on.",
+    "Message Buoy: Welcome to Porto Rillia, the most open port in the Federation.",
+    "To all aliens:  You have entered Polaris space.  Unless you have official business please leave.",
+    "To non-Nil'kemorya ships:  This system is off-limits to any not of the warrior caste.  Do not disturb Iusia's grave with your presence.",
+    "Message Buoy: You have entered the Empire; those with evil intent, beware.",
+    "Message Buoy: You have entered Tekel space and are being monitored by Tekel Family warriors.",
+    "Message Buoy to all travellers:  Beware the ringed world Kont.  Many who have stayed for any length of time have disappeared.  You have been warned.",
+    "Message Buoy to all travellers:  This system is a prison-system.  Any variations from your flight-plan will be viewed as suspicious behavior.  Be aware that we are monitoring you closely.",
+    "Message Buoy: Welcome to Schmoo in the Gary system, the favorite honeymoon destination for couples from all over the Empire.",
+    "Message Buoy: You are travelling through Dani space and are being monitored by the Dani military.",
+    "Message Buoy to all travellers:  Any variations from your flight-plan will be viewed as suspicious behavior.  Be aware that we are monitoring you closely.",
+    "Message Buoy: Welcome to the capital of the Auroran Empire.",
+    "Message Buoy: You are now in Heraan space and our warriors will be watching you.  Take care but enjoy yourselves.",
+    "Message Buoy: You have entered Moash space.  We are the First Family and will not tolerate unruly behavior.  You have been warned.",
+    "Message Buoy: You are in Vella space and are being monitored by Vella Family warriors.",
+    "Message Buoy: You have entered a Rebellion-controlled system.  For security reasons we will be watching all traffic.",
+    "Congratulations on finishing the game!!!",
+    "Message Buoy: This system is controlled by the Guild of Free Traders.  Any non-approved behavior will be dealt with harshly.",
+    "Message Buoy: To all non-Federation ships; you have entered Federation space and you are under the observation of the Federation Navy."
+  ],
+  "4000": [
+    "Food",
+    "Industrial",
+    "Medical Supplies",
+    "Luxury Goods",
+    "Metal",
+    "Equipment",
+    "*Passengers",
+    "Military Stores",
+    "*Military Team",
+    "*Counter-Intel Team",
+    "*Federation Commandos",
+    "Money Train",
+    "*Prisoners",
+    "*Cunjo Head",
+    "*Prisoner",
+    "Stolen Goods",
+    "*Information",
+    "*Rebel Agent",
+    "*Encrypted Message Pod",
+    "*Bureau Agent",
+    "*Polaris Ambassador",
+    "Holo-Scanning Technology",
+    "*Eamon Flannigon",
+    "*Commander Krane",
+    "*Polaris Telepaths",
+    "*Rebel Leaders",
+    "Wild Geese",
+    "*Admiral Raczak",
+    "*Vell-os Telepath",
+    "*Mu'Randa",
+    "*Polaris Leader",
+    "Sample",
+    "*Mu'hari",
+    "*Ambassador",
+    "*Scouting Team",
+    "*Du'Nakh",
+    "*Llyrell",
+    "*Polaris Leaders",
+    "Personal Effects",
+    "Jewellery",
+    "Artwork",
+    "*Business Papers",
+    "*Business Contracts",
+    "Sealed Packages",
+    "'Made by Helen'(tm) Clothing",
+    "Warrior Blades",
+    "Terraforming Team",
+    "Colonists",
+    "Weapon Parts",
+    "*Wraith Cannon Pictures",
+    "Tre'ar Zalom Seafood",
+    "*Instructions",
+    "*Enterprise plans",
+    "*Michaleen Houge",
+    "*Michaleen's body",
+    "*Flynn Brereton",
+    "Explosives",
+    "*Data-Cube",
+    "Cargo",
+    "Cargo and Passengers",
+    "*Bazara",
+    "*Traitor",
+    "Supplies",
+    "Palladium",
+    "*Hune",
+    "*Data Crystals",
+    "*Ion Absorber Plans",
+    "Polaron Cannons",
+    "Alloy",
+    "Iridium Cuprite",
+    "*Heraan Spy",
+    "*Skullsplitter Assault Team",
+    "*Vell-os Slaves",
+    "*Barry Fletcher",
+    "*the 'Debris Field' band",
+    "*Space Probe",
+    "Vell-os Artifacts",
+    "*Sven Fjordnham",
+    "Terraforming Equipment",
+    "Passenger"
+  ],
+  "4002": [
+    "Food",
+    "IndGds",
+    "MedGds",
+    "LuxGds",
+    "Metal",
+    "Equpt",
+    "Passengers",
+    "Mil Stores",
+    "Mil Team",
+    "C-Int",
+    "Commandos",
+    "$Train",
+    "Prisoners",
+    "Cunjo Head",
+    "Prisoner",
+    "Stolen Goods",
+    "Info",
+    "Rebel Agent",
+    "Message Pod",
+    "Bureau Agent",
+    "Pol Ambssdr",
+    "Scanner",
+    "Eamon",
+    "Krane",
+    "Telepaths",
+    "Reb Leaders",
+    "Wild Geese",
+    "Raczak",
+    "Vell-os",
+    "Mu'Randa",
+    "Pol Leader",
+    "Sample",
+    "Mu'hari",
+    "Ambassador",
+    "Scout Team",
+    "Du'Nakh",
+    "Llyrell",
+    "Pol Leaders",
+    "Pers Effects",
+    "Jewellery",
+    "Artwork",
+    "Bus Papers",
+    "Bus Contracts",
+    "Sealed Pckgs",
+    "Helen(tm)",
+    "Blades",
+    "Terraform Tm",
+    "Colonists",
+    "Weapon Parts",
+    "Wraith Pics",
+    "Seafood",
+    "Instructions",
+    "Ent Plans",
+    "Michaleen",
+    "Body",
+    "Flynn",
+    "Explosives",
+    "Data-cube",
+    "Cargo",
+    "Multiple",
+    "Bazara",
+    "Traitor",
+    "Supplies",
+    "Palladium",
+    "Hune",
+    "Data Crystals",
+    "Plans",
+    "Polaron Cann",
+    "Alloy",
+    "ICu4",
+    "Spy",
+    "Assault Team",
+    "Vell-os",
+    "Barry",
+    "Band",
+    "Probe",
+    "Artifacts",
+    "Sven",
+    "Terrafm. Eq."
+  ],
+  "7000": [
+    "We wish only to help.  If you need anything, just call us.",
+    "Greetings from the government of the Federation.",
+    "We serve only to protect the Federation and its citizens from all dangers.",
+    "Beware the Aurorans.  They are both treacherous and deceiving.",
+    "Greetings from the Federation Navy.",
+    "Greetings from the Federation government.",
+    "If you have any complaints about Federation policy, please feel free to contact your representative councillor on Earth.",
+    "Join us against the savage Aurorans!",
+    "We shall be victorious over the Auroran savages!",
+    "If you see an Auroran, do not engage them.  Contact the nearest Federation authority and the problem will be dealt with."
+  ],
+  "7001": [
+    "We are the Aurorans.  We fight only for glory and honor.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "What is it you want?  Are you strong enough to do it?",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Strength, Honor and Impeccability; these are what we strive to obtain.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "Do not stray from the warriors path, for that way lies shame and dishonor.",
+    "The Federation is without honor, and we fight only to cleanse it.",
+    "We watch everyone we come across to measure them against ourselves to see if they are worthy foes.",
+    "Be careful when dealing with the Polaris.  They hide in their isolation, but they are stronger than any people we know, including ourselves."
+  ],
+  "7002": [
+    "The Tre'pira have the honor of feeding and working for our people.",
+    "We work to ensure that the Polaris both survives and prospers.",
+    "If there is work to be done, you will find the Tre'pira in the centre of it all.",
+    "If you need any work done, you have only to ask.",
+    "The Tre'pira have the honor of feeding and working for our people.",
+    "We work to ensure that the Polaris both survives and prospers.",
+    "If there is work to be done, you will find the Tre'pira in the centre of it all.",
+    "If you need any work done, you have only to ask.",
+    "You are from the Federation.  How are things there?",
+    "You have travelled far.  Very few Polaris leave our borders."
+  ],
+  "7003": [
+    "We are members of the Moash House.  We wish only for glory and honor.",
+    "May our actions bring honor to ourselves, but more importantly, our House.",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "The Federation is without honor, and we fight only to cleanse it.",
+    "The Heraan only survive because we let them live two centuries ago.  They will soon be defeated.",
+    "What have we here? A little Federation lapdog?",
+    "We are warriors for the First Family, we are watching you.",
+    "We are strong enough to defeat you.  We are members of the First House and what are you?",
+    "We hold the honor of the First Family of the Empire in our hands."
+  ],
+  "7004": [
+    "We are from the Tekel House.  We fight only for the glory and honor of our Family.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "The warriors of Dani House are without honor, and we fight them to teach them our moral strength.",
+    "The warriors of the Dani House are filled with flawed pride, and we must fight them to make them aware of this.",
+    "The warriors of Dani House are without honor, and we fight them to teach them our moral strength.",
+    "The warriors of the Dani House are filled with flawed pride, and we must fight them to make them aware of this.",
+    "We are from the Tekel House.  We fight only for the glory and honor of our Family.",
+    "May our actions bring honor to ourselves, to the Tekel Family and to the Empire."
+  ],
+  "7005": [
+    "We are warriors of the Vella Family.  We fight only for glory and honor.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "The House of Moash is without honor, and we fight to free them from their arrogance and complacency.",
+    "The First Family has become weak and decadent.  They must be brought down if only to make them stronger.",
+    "We are warriors of the Vella Family.  We fight only for glory and honor.",
+    "The House of Moash is without honor, and we fight to free them from their arrogance and complacency.",
+    "The First Family has become weak and decadent.  They must be brought down if only to make them stronger.",
+    "We are members of the Vella House.  We fight only for its glory and honor."
+  ],
+  "7006": [
+    "Our hearts and souls belong to the House of Dani.  We fight only for its glory and honor.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "The House of Tekel has become weak and soft.  We fight only to strengthen them.",
+    "Our hearts and souls belong to the House of Dani.  We fight only for its glory and honor.",
+    "The House of Tekel has become weak and soft.  We fight only to strengthen them.",
+    "Our hearts and souls belong to the Dani Family.  We fight only for its glory and honor.",
+    "May our actions bring honor to ourselves, the Dani Family and to the Empire.",
+    "*"
+  ],
+  "7007": [
+    "We serve the House of Heraan.  We strive to restore honor and justice to the Empire.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "We toil towards bringing about the full glory of the Empire.",
+    "The House of Moash, the First Family, has lost its honor, and we fight to remove it from its position.",
+    "Our nation has become headless.  The First Family has led our Empire into decadence and complacency.  We fight to restore it to its pre-eminence.",
+    "Be aware that our House will lead our Empire to greatness through strength, honor and intelligence.",
+    "So, you hail from the Federation.  What is it you want?",
+    "We have heard many things about the Polaris, all of them good.  One day we will test ourselves against them."
+  ],
+  "7008": [
+    "One day we will go beyond the veil.",
+    "We wait for the man who will precipitate our destiny.",
+    "We watch and we wait, forever waiting.",
+    "Who are you?  What is it you dream for?",
+    "Have you heard the prophecy?",
+    "The veil, it hangs before us just out of reach, and just beyond our understanding.",
+    "So many have gone though the veil.  We can feel them, just out of reach.",
+    "Your minds are so insulated from the universe, you cannot feel its spirit.",
+    "We can feel the call to move beyond the veil.",
+    "What is it you wish to be?  What is your life about?"
+  ],
+  "7009": [
+    "You have something we want.  Hand it over or we'll take it.",
+    "What makes you think that we want to TALK to you?",
+    "What makes you think that we want to talk to YOU?",
+    "What makes you think that we want to talk TO you?",
+    "If you want to talk, can you do it after we take your money?",
+    "I hope you realise that this is nothing personal.",
+    "We're not pirates, we are fully paid up members of the 'Associated Guild of Free Traders'.",
+    "Stop talking and hand over your valuables.",
+    "Shut up and go away!!",
+    "Go away or I will shoot a second time!"
+  ],
+  "7010": [
+    "<unstable transmission>",
+    "<encrypted message>",
+    "<burst static>",
+    "<undecipherable emissions>",
+    "<burst static>",
+    "<unstable transmission>",
+    "<encrypted message>",
+    "<burst static>",
+    "<undecipherable emissions>",
+    "<unstable transmission>"
+  ],
+  "7011": [
+    "<Greetings human>",
+    "<What do you want>",
+    "<The tribe wanders where it will>",
+    "<Why are you here>",
+    "<Our talk is not good>",
+    "<Greetings human>",
+    "<What do you want>",
+    "<The tribe wanders where it will>",
+    "<Why are you here>",
+    "<Our talk is not good>"
+  ],
+  "7012": [
+    "<Unauthorised interface>",
+    "<Transmission disrupted at source>",
+    "<Incoherent signal>",
+    "<Unauthorised computer access>",
+    "<Incoherent burst static>",
+    "<Unknown interface>",
+    "<Unregistered language>",
+    "<Irregular response>",
+    "<Static EM beam>",
+    "<Undecipherable transmission burst>"
+  ],
+  "7013": [
+    "We fight to remove from power the Bureau of Internal Investigation.",
+    "We want to restore executive power in the Federation back to the people and the representative government.",
+    "We do not recognise the Bureau of Internal Investigation as a constitutional body in any way.",
+    "We do not wish to fight the Federation military.  However, while it supports the Bureau, we must oppose them.",
+    "Beware of the Bureau.  They are probably observing you as we speak.",
+    "We fight to remove from power the Bureau of Internal Investigation.",
+    "We want to restore executive power in the Federation back to the people and the representative government.",
+    "We do not recognise the Bureau of Internal Investigation as a constitutional body in any way.",
+    "We do not wish to fight the Federation military.  However, while it supports the Bureau, we must oppose them.",
+    "Beware of the Bureau.  They are probably observing you as we speak."
+  ],
+  "7014": [
+    "We serve a higher order than ourselves.",
+    "If we die serving Aurora, then we have died as we should.",
+    "Duty, Courage, Honor, Integrity and Impeccability.  These are what we believe in.",
+    "We were born poor and weak.  We have survived, and we are now strong.",
+    "Our lives only have meaning if we spend them defending the Empire.",
+    "We have few friends and many enemies, but we will strive on nonetheless.",
+    "Until death we will spend all our effort in protecting our civilisation, and beyond death we will strive as we can.",
+    "Beware the Federation.  At their best they are deceptive.  At their worst they are downright treacherous.",
+    "We fight any and all who wish to bring harm to the leaders of the Empire.",
+    "Today, like any other day, is a good day to die."
+  ],
+  "7015": [
+    "We are the Aurorans.  We fight only for glory and honor.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "What is it you want?  Are you strong enough to do it?",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Strength, Honor and Impeccability; these are what we strive to obtain.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "Do not stray from the warriors path, for that way lies shame and dishonor.",
+    "The Federation is without honor, and we fight only to cleanse it.",
+    "We watch everyone we come across to measure them against ourselves to see if they are worthy foes.",
+    "We are watching you closely, Captain."
+  ],
+  "7016": [
+    "May God hold you in the palm of his hand.",
+    "Have you news of Ireland?  One day I must see it for myself.",
+    "The Wild Geese are we.  Quick to anger, quick to forget.",
+    "May the rains fall gently upon your fields.",
+    "Why do we fight?  Because we are all warriors born, and the need to test ourselves against our fellow man goes beyond what any normal man can resist.",
+    "When our drums roll out our call to battle, death walks in our shadow.",
+    "We worship love, beauty and song.  For without these our lives would mean nothing.",
+    "May God hold you in the palm of his hand.",
+    "Have you news of Ireland?  One day I must see it for myself.",
+    "May the rains fall gently upon your fields."
+  ],
+  "7017": [
+    "Another day in the corp!!",
+    "Goddamn I love the corp!!",
+    "Raczak's Roughnecks..  HOORAH!!",
+    "SIR!!  Yes SIR!!",
+    "Look into my eye!",
+    "Lets move on out people!",
+    "Yes sir, how can I help you sir?",
+    "Is that a goose, sergeant?  Then what are you waiting for?  Shoot damn you!",
+    "Look into my eye!",
+    "Raczak's Roughnecks..  HOORAH!!"
+  ],
+  "7018": [
+    "You are under observation.",
+    "We have you on our scanners.",
+    "State your business then move along.",
+    "Do not think that we are not watching you.",
+    "I would recommend that you do not deviate from your flight plan overmuch sir.",
+    "Do not test my patience, sir.",
+    "We have a mandate to protect the citizens of the Federation, do not test our resolve.",
+    "You are under observation.",
+    "We have you on our scanners.",
+    "Do not test my patience, sir."
+  ],
+  "7019": [
+    "The Nil'kemorya are the blazing falling Autumn Leaves.  We are searching for the best place to fall.",
+    "We, the Nil'kemorya, stand ever ready to protect the Polaris from any who would do it harm.",
+    "The Nil'kemorya are all followers of Iuso, the disciple of Iusia.  We will remember his sacrifice forever.",
+    "We warriors are those who float between the life we have left behind and the true death of a warrior protecting his people.",
+    "We, the Nil'kemorya have two weapons with us at all times.  Our bodies, and more importantly, our minds.",
+    "Decisions of the leaf; where to fall?",
+    "We, the Nil'kemorya have two weapons with us at all times.  Our bodies, and more importantly, our minds.",
+    "The Nil'kemorya are the blazing falling Autumn Leaves.  We are searching for the best place to fall.",
+    "The Nil'kemorya are all followers of Iuso, the disciple of Iusia.  We will remember his sacrifice forever.",
+    "We warriors are those who float between the life we have left behind and the true death of a warrior protecting his people."
+  ],
+  "7022": [
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP.",
+    "To:  Captain <PN>\rFrom:  Commander Krane\r\rReport to the bar on Earth ASAP."
+  ],
+  "7023": [
+    "We wish only to help.  If you need anything, just call us.",
+    "Greetings from the government of the Federation.",
+    "We serve only to protect the Federation and its citizens from all dangers.",
+    "Beware the Aurorans.  They are both treacherous and deceiving.",
+    "Greetings from the Federation Navy.",
+    "Greetings from the Federation government.",
+    "If you have any complaints about Federation policy, please feel free to contact your representative councillor on Earth.",
+    "Join us against the savage Aurorans!",
+    "We shall be victorious over the Auroran savages!",
+    "If you see an Auroran, do not engage them as they are too dangerous.  Get in contact with the nearest Federation authority and we will deal with the problem."
+  ],
+  "7024": [
+    "Another day in the corp!!",
+    "Goddamn I love the corp!!",
+    "Raczak's Roughnecks..  HOORAH!!",
+    "SIR!!  Yes SIR!!",
+    "Look into my eye!",
+    "Lets move on out people!",
+    "Yes sir, how can I help you sir?",
+    "Is that a goose, sergeant?  Then what are you waiting for?  Shoot damn you!",
+    "Look into my eye!",
+    "Raczak's Roughnecks..  HOORAH!!"
+  ],
+  "7025": [
+    "We wish only to trade peacefully amongst all peoples.",
+    "We sell a good product, we buy at a good price.  Of course we make a little money for ourselves, but not too much, eh?",
+    "We travel wherever there is profit to be made.",
+    "Greetings from a fellow Captain of Commerce.",
+    "How's the wife and kids?",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ],
+  "7026": [
+    "We wish only to help.  If you need anything, just call us.",
+    "Greetings from the government of the Federation.",
+    "We serve only to protect the Federation and its citizens from all dangers.",
+    "Beware the Rebels.  They are both treacherous and deceiving.",
+    "Greetings from the Federation Navy.",
+    "Greetings from the Federation government.",
+    "If you have any complaints about Federation policy, please feel free to contact your representative councillor on Earth.",
+    "Join us against the rebel terrorists!",
+    "We shall be victorious over the rebel terrorists!",
+    "If you see a rebel, do not engage them as they are too dangerous.  Get in contact with the nearest Federation authority and we will deal with the problem."
+  ],
+  "7027": [
+    "The Nil'kemorya are the blazing falling Autumn Leaves.  We are searching for the best place to fall.",
+    "We, the Nil'kemorya, stand ever ready to protect the Polaris from any who would do it harm.",
+    "The Nil'kemorya are all followers of Iuso, the disciple of Iusia.  We will remember his sacrifice forever.",
+    "We warriors are those who float between the life we have left behind and the true death of a warrior protecting his people.",
+    "We, the Nil'kemorya have two weapons with us at all times.  Our bodies, and more importantly, our minds.",
+    "Decisions of the leaf; where to fall?",
+    "We, the Nil'kemorya have two weapons with us at all times.  Our bodies, and more importantly, our minds.",
+    "The Nil'kemorya are the blazing falling Autumn Leaves.  We are searching for the best place to fall.",
+    "The Nil'kemorya are all followers of Iuso, the disciple of Iusia.  We will remember his sacrifice forever.",
+    "We warriors are those who float between the life we have left behind and the true death of a warrior protecting his people."
+  ],
+  "7028": [
+    "We are the Aurorans.  We fight only for glory and honor.",
+    "May our actions bring honor to ourselves, our House and our Empire.",
+    "What is it you want?  Are you strong enough to do it?",
+    "We fight to prove ourselves.  For if we do not challenge ourselves we will grow soft and complacent.",
+    "Strength, Honor and Impeccability; these are what we strive to obtain.",
+    "Our biggest fight is within our soul.  We strive to attain impeccability, and we will wrestle with it until we die.",
+    "Do not stray from the warriors path, for that way lies shame and dishonor.",
+    "The Federation is without honor, and we fight only to cleanse it.",
+    "We watch everyone we come across to measure them against ourselves to see if they are worthy foes.",
+    "Be careful when dealing with the Polaris.  They might hide behind a wall of mystery, but they are stronger than any people we know, including ourselves."
+  ],
+  "7029": [
+    "We wish only to trade peacefully amongst all peoples.",
+    "We sell a good product, we buy at a good price.  Of course we make a little money for ourselves, but not too much, eh?",
+    "We travel wherever there is profit to be made.",
+    "Greetings from a fellow Captain of Commerce.",
+    "How's the wife and kids?",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ],
+  "7030": [
+    "We wish only to trade peacefully amongst all peoples.",
+    "We sell a good product, we buy at a good price.  Of course we make a little money for ourselves, but not too much, eh?",
+    "We travel wherever there is profit to be made.",
+    "Greetings from a fellow Captain of Commerce.",
+    "How's the wife and kids?",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ],
+  "7034": [
+    "Another day in the corp!!",
+    "Goddamn I love the corp!!",
+    "Raczak's Roughnecks..  HOORAH!!",
+    "SIR!!  Yes SIR!!",
+    "Look into my eye!",
+    "Lets move on out people!",
+    "Yes sir, how can I help you sir?",
+    "I'm afraid I'm busy sir.",
+    "Look into my eye!",
+    "Raczak's Roughnecks..  HOORAH!!"
+  ],
+  "7035": [
+    "<Unauthorised interface>",
+    "<Transmission disrupted at source>",
+    "<Incoherent signal>",
+    "<Unauthorised computer access>",
+    "<Incoherent burst static>",
+    "<Unknown interface>",
+    "<Unregistered language>",
+    "<Irregular response>",
+    "<Static EM beam>",
+    "<Undecipherable transmission burst>"
+  ],
+  "7036": [
+    "This is the Bureau, how can we help?",
+    "We are keeping an eye on you.",
+    "How are you this fine day sir?",
+    "What can I help you with sir?",
+    "I'm afraid that you will have to take all your enquiries to the Federation Navy as we don't talk directly to civilians.",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*"
+  ],
+  "7037": [
+    "One day we will go beyond the veil.",
+    "We wait for the man who will precipitate our destiny.",
+    "We watch and we wait, forever waiting.",
+    "Who are you?  What is it you dream for?",
+    "Have you heard the prophecy?",
+    "The veil, it hangs before us just out of reach, and just beyond our understanding.",
+    "So many have gone though the veil.  We can feel them, just out of reach.",
+    "Human minds are so insulated from the universe, you cannot feel its spirit.",
+    "We can feel the call to move beyond the veil.",
+    "What is it you wish to be?  What is your life about?"
+  ],
+  "7038": [
+    "Greetings from United Shipping.",
+    "If you have any specialised items to send via a secure private courier, United Shipping is for you.",
+    "I'm actually on a delivery at the moment.  I'm afraid I don't have time to talk.",
+    "United Shipping - Fast and Reliable.",
+    "I suppose I can take a few minutes out of my schedule; how can I help you?",
+    "Sorry I can't talk, I have a deadline to meet.",
+    "*",
+    "*",
+    "*",
+    "*"
+  ],
+  "7040": [
+    "We, the Mu'hari, live to serve.",
+    "To our everlasting shame we work to ensure that the Polaris both survives and prospers.",
+    "Can I be of service?",
+    "If you need any work done, you have only to ask.",
+    "My shame is eternal, I can only hope that I serve well.",
+    "To our everlasting shame we work to ensure that the Polaris both survives and prospers.",
+    "My shame is eternal, I can only hope that I serve well.",
+    "We, the Mu'hari, live to serve.",
+    "You are from the Federation.  How are things there?",
+    "You have travelled far.  Very few Polaris leave our borders."
+  ],
+  "7041": [
+    "We wish only to trade amongst all peoples.",
+    "We sell a good product, we buy at a good price.  Of course we make a little money for ourselves, but not too much, eh?",
+    "Our goal is wealth, and we will try to make a profit however we can.",
+    "Greetings from a fellow Captain of Commerce.",
+    "We're not pirates, we are fully paid up members of the 'Associated Guild of Free Traders'.",
+    "I hope you realise that this is nothing personal.",
+    "You have something we want.  Hand it over or we'll take it.",
+    "*",
+    "*",
+    "*"
+  ],
+  "7042": [
+    "Once we were the Aurorans.  We fought only for glory and honor.",
+    "May our actions bring honor to ourselves, as our House and our Empire have forgotten us.",
+    "What is it you want?  Are you strong enough to do it?",
+    "We fight to survive.  For if we do not what we once were will be gone forever...",
+    "Strength, Honor and Impeccability; of these, we can only respect Strength, all else is lost to us.",
+    "Our biggest fight is within our soul.  We have lost our impeccability, and we will wrestle with that until we die.",
+    "We, who were once warriors, now live only to survive.",
+    "*",
+    "*",
+    "*"
+  ],
+  "7100": [
+    "You are something of a hard man to follow, Captain.",
+    "A man alone is weaker than any known force in the universe.",
+    "How do you prepare for death?\r  Learn how to live.\rHow do you learn how to live?\r  Prepare for death.",
+    "Until we meet again, may the rain fall gently on your fields and may God hold you in the palm of his hand.",
+    "What is all this?  What has happened to my game?",
+    "The classic 'o':\r\rRROOOOOOOOOOOOOOOOORR!!",
+    "Get out of my way or I'll blast 'ya to blazes!",
+    "I babysit, it pays better.  And don't tell me that was irrelevant, it was a hippopotamus.",
+    "Greetings from the U.F.S. Enterprise-E, the flagship of the Federation Navy.",
+    "Have you strayed from the Warrior's Code?",
+    "I think I took a wrong turn at Palshife...",
+    "I stand ready to direct the fall of the Nil'kemorya to protect the Polaris and as a memorial to my master Iusia and his sacrifice.",
+    "We are the spectre of those who have passed beyond the veil.  We wait for our living brethren to pass into the veil and take us with them.",
+    "Greetings, I wish you well.  Can I, or my Wild Geese, be of assistance?",
+    "A warrior can shape himself to suit anything in the universe, but a master can shape the universe to suit himself.",
+    "Greetings from the U.F.S. Dauntless, the finest ship in the Federation Navy.",
+    "Greetings, from the Captain of the U.F.S. Winston, a fine ship with a worthy name.",
+    "This is the Captain of the U.F.S. Eisenhower, how can I assist you?",
+    "This is the U.F.S. Ohio, how may we be of assistance?",
+    "Greetings from the U.F.S. Excalibur, the most decorated ship in the Navy.",
+    "Greetings from the Captain of the U.F.S. Bismarck.  Do you require any assistance?",
+    "Greetings from the U.F.S. Vengeance, Captain Pratanga speaking.  What is it that you need?",
+    "This is the Captain of the U.F.S. Excelsior, state your identity and reason for contacting us.",
+    "Greetings from the U.F.S. Razorback, the newest and latest capital ship to enter Federation service.",
+    "Dechanik means 'Skin of iron'.  This ship was given this name after it had taken part in its 400th sortie into battle.  Often damaged, she serves us still.",
+    "All the warriors on this ship have taken a Blood Oath to serve with honor.  To this day, none of these oaths have been broken.",
+    "Frunch'ek means 'She who holds back the sea', because we have successfully covered hundreds of retreats against Federation counterattacks.",
+    "A man alone is stronger than any known force in the universe.",
+    "I am a really good accountant.  I promise I won't lose too much of your money.",
+    "I don't know, dangit! Contact the author of the plug-in.",
+    "Despite the ease with which we could walk away, or perhaps because of it, we must strive always to keep our footsteps on the Warrior's Path.",
+    "Gjinchar, or 'Spattered with the gore of thousands', as it translates to, was given to us after we destroyed three Federation Carriers in single battle.",
+    "The song of a master swordsman is both terrible and beautiful to hear.  It is the sound of violence in its purest form.",
+    "This ship was given the name Ytrack (meaning 'Sneaky fist') when we snuck up on a pack of Fed Destroyers and destroyed one with a single volley.",
+    "A Warrior's Pride comes not from his strength of arms, but from the strength of his honor and integrity.",
+    "We are the most deadly warriors alive, those who care naught for our own lives, we care only for the deaths of Federation soldiers.  We are the Doomblade.",
+    "ShadeOfBlue sincerely hopes you do not mind him speaking in the third person as he greets you.",
+    "I'm studying nebula instabilities - seen any interesting nebulae?",
+    "Don't talk to me now, I'm too busy abusing my employees...",
+    "Do you want to try some archery with some Vell-os Arrows? You'll lose!",
+    "It is in beta 19854 - and moki has promised to get changed back to a man if it isn't out soon! Don't worry, wouldn't you rather it was polished...",
+    "How are you gentlemen!! All your base are belong to us. You have no chance to survive make your time. Ha ha ha ha....",
+    "Hello cheeky! What can I do for you? *ginormous grin*",
+    "Wise man say, \"Drowned man is full of water.\""
+  ],
+  "7101": [
+    "<OSN>: <PN>, I have recently been given information on a bounty.  Hail me if you're interested.",
+    "<OSN>: Fair winds to you, <PSN>.",
+    "<OSN>: Greetings, warrior-poet.",
+    "<OSN>: How's it going, <PSN>.",
+    "<OSN>: Everything has changed.",
+    "<OSN>: Hey <PSN>.",
+    "<OSN>: Do you mind, <PSN>?",
+    "<OSN>: Prepare to die, <PN>!",
+    "<OSN>: <PSN>, I've got a job for you. If you're interested, hail me.",
+    "Derelict vessel: This is an emergency distress call. We've been disabled by pirates and need immediate assistance ... Any ship please respond ...",
+    "<OSN>: <PSN>, I've got some extra cargo I need delivered ... hail me if you're interested.",
+    "<OSN>: Ahoy there, <PSN>!",
+    "<OSN>: Greetings, <PSN>.",
+    "<OSN>: <PN>, I have serious news. Hail me.",
+    "<OSN>: I need assistance, can you help?",
+    "<OSN>: I'll scatter you across the stars, you cowardly crassworm!",
+    "<OSN>: Meet my latest inventions, <PSN>!",
+    "<OSN>: Please understand that this isn't personal ... I attack everyone!",
+    "<OSN>: Go Support Federation Search and Rescue, Get LOST!",
+    "<OSN>: Out of my way, dammit! My fries are getting cold!",
+    "<OSN>: Do you know when the universe will close?",
+    "<OSN>: AARGH!!!! My coffee machine has broken!",
+    "<OSN>: Greetings from the Rocinante!",
+    "<OSN>: I'm bluuue, oh so bluuue.  Yes it's truuue, I'm so bluuuuue...",
+    "<OSN>: All truisms are correct - except for this one.",
+    "<OSN>: The only good Voinian is a dead Voinian.",
+    "<OSN>: I shall unleash my Lemonious Funk upon thee!",
+    "<OSN>: And yea, there was such a clamour that many space captains were roused from their sleep.",
+    "<OSN>: I am the Barbarian Accountant! I truly believe I know what I am doing.",
+    "<OSN>: Prepare to be boarded, ye scurvy dogs!",
+    "<OSN>: Isn't life insanely great?",
+    "<OSN>: Just try it.",
+    "<OSN>: Life is a great sunrise. I do not see why death should not be an even greater one.",
+    "<OSN>: The Disco Bison LUVS disco music.",
+    "<OSN>: In the face of danger, never hesitate... to run like mad.",
+    "<OSN>: This is Dr Ralph, from the Stromlo Astronomical Institute, on a five year mission to survey the galaxy.",
+    "<OSN>: I can't accept your resignation this week, I've had too many go already...",
+    "<OSN>: Rodger is busy right now playing Vell-os Darts, leave a message after the tone...",
+    "<OSN>: Ahoy there <PN>.  Woozle wanna-be!",
+    "<OSN>: For great justice!",
+    "<OSN>: Hey there gorgeous! *wink*",
+    "<OSN>: Greetings, Mortal"
+  ],
+  "8100": [
+    "Local eatery has an offer of all you can eat for 2 credits for all off-worlders for your entire stay.",
+    "Local entrepeneur is offering her unique brand of clothing extra-cheap.",
+    "\"We have the drink of your choice on tap, or your first drink is free,\" claims owner of spaceport bar.",
+    "A local community announcement:  Looking for work?  Try the Mission BBS.",
+    "Spaceport apartments are available on a time-share basis.  Enquire in the lobby.",
+    "Local real estate agent promises cheap, good value land deals.  \"A developer's dream,\" he proclaims.",
+    "Visit Earth - Home of Humanity.",
+    "Looking for somewhere to stay?  The spaceport hotel has plenty of rooms available.",
+    "Looking to secure your ship?  Local security guarantees its safety, or will pay you market value for it.",
+    "Happy hour at the bar is between 7 and 8pm local time.",
+    "Looking for a meal, a good drop, interesting company or a live band?  The spaceport bar has it all."
+  ],
+  "8101": [
+    "Local News:  A recent spate of thefts around the spaceport have local traders up in arms.",
+    "Border Battle:  Auroran forces launched a major offensive along several points on the border today.  They were beaten off with huge losses to both sides.",
+    "Border Battle:  Federation raiding attempts have caused enormous damage to Auroran interests.",
+    "Financial News:  Stock prices fall again. Gli-Tech shares have reached a 750 year low of 1823 credits per share.",
+    "Environmental News:  Radical eco-group predicts galactic catastrophe will result from new weapons supposedly being tested by the Federation.",
+    "Bizarre news:  Unidentified vessels have been spotted along the North-Western frontier of the Federation bordering on what was Vell-os space.",
+    "Top News:  Pirate raids on the increase Federation-wide.  Information leading to the discovery of their home-base is now worth 1 billion credits.",
+    "Financial News:  Bank of Kane announces plans for its 1000 year anniversary coming up soon.",
+    "Business News:  Sigma Shipyards, the largest corporation in Known Space, has bought out yet another small private concern.",
+    "Environmental News:  Biologists estimate that there has been an increase of around 10% in biodiversity on Earth compared to 1000 years ago.",
+    "Federation News:  Admiral Mahiney unveils plans to use recently developed cryogenic technology to freeze Federation troops to extend their useful lives.",
+    "Auroran News:  Tekel Thurokiir publically shames warriors who claimed false kills.  Their penance will be working as laborers in the Gladius Shipyards."
+  ],
+  "15000": [
+    "The Polaris have recently opened diplomatic discussions with the Wraith ending two centuries of hostility.",
+    "The cessation of hostilities between the Wraith and the Polaris has led to enormous advances in the field of astro-xenobiology.",
+    "The Polaris have begun exploring parts of Wraith space in an effort to come to a greater understanding of the lives of these space-based life-forms."
+  ],
+  "15001": [
+    "The Ver'ash and the P'aedt working together on Ver'a Se have improved the cloaking device so that ships are no longer required to drop their shields when they cloak."
+  ],
+  "15002": [
+    "The Ver'ash and the P'aedt working together on Ver'a Se have grown an organ that replicates the cloaking capabilities of the Wraith."
+  ],
+  "15003": [
+    "The Ver'ash and the P'aedt on Ver'a Se have grown an organ combines the capabilities of the Wraith with more traditional hyperspace manipulation techniques used by the Multi-Jump Organ."
+  ],
+  "15004": [
+    "The Ver'ash and the P'aedt working together on Ver'a Se have adapted both Polaron and Wraithii technology so that they can be launched whilst the parent ship is cloaked."
+  ],
+  "15005": [
+    "Auroran officials humourously warn tourists to keep an eye out above their heads as it is the mating season of the Auroran Drop Bears.",
+    "From Auroran Bureau of Statistics:  Attacks by Auroran Drop Bears in the last ten years - 24017; Deaths due to these attacks - 1349.",
+    "Local authorities warn with a smile that increased Auroran Drop Bear activity has been observed in the area.",
+    "Local expert informs tourist that the best way to avoid being a victim of the Auroran Drop Bear is to watch for overhanging trees and walls."
+  ],
+  "15006": [
+    "Sigma Shipyard engineers can now upgrade the standard Starbridge into the far more capable Starbridge C, most commonly known as the Chrome Valkyrie."
+  ],
+  "15007": [
+    "News from the Auroran/Federation border:  In response to Auroran 'aggression', Federation ships have raided into neutral territory and laid claim to the Neirt system."
+  ],
+  "15008": [
+    "News from the Auroran/Federation border:  Auroran ships have launched an attack on the Federation station in the Gateway system.  Reports are sketchy, but the station appears to have been disabled."
+  ],
+  "15009": [
+    "News from the Auroran/Federation border:  In response to Auroran raids, Federation ships have raided the Vemap system in an attempt to neutralise the Auroran launching point there."
+  ],
+  "15010": [
+    "News from the Auroran/Federation border:  Auroran raiders have struck against the Federation outpost in the Alphara system, forcing the Federation fleet in that system to regroup in a nearby system."
+  ],
+  "15011": [
+    "News from the Auroran/Federation border:  Auroran ships have launched simultaneous attacks on both the Alphara and Gateway systems.  Reports are sketchy, but the situation appears grim."
+  ],
+  "15012": [
+    "News from the border:  In response to countless raids, the Federation has attacked an Auroran post in the Unin system.  Initial reports indicate a rout of Auroran forces in that system."
+  ],
+  "15013": [
+    "News from the border:  Responding to continued aggression, the Federation attacked an Auroran post in the SPC-050 system.  Initial reports indicate a rout of Auroran forces in that system."
+  ],
+  "15014": [
+    "News from the Auroran/Federation border:  Earlier today the Auroran Empire launched an attack on Federation forces patrolling the Xante system.  Early reports say that few Federation vessels escaped."
+  ],
+  "15015": [
+    "News from the border:  Responding to Auroran agression, the Federation launched simultaneous attacks on Auroran forces in the Unin and SPC-050 systems."
+  ],
+  "15016": [
+    "News from the Federation border:  Auroran ships have launched a surprise attack on the Tichel system this morning.  Initial reports are sketchy, but it appears that the Federation Navy has been forced to regroup."
+  ],
+  "15017": [
+    "News from the Auroran/Federation border:  Following their successes,  Federation forces have chased the fleeing Auroran ships as far as the Wittor System."
+  ],
+  "15018": [
+    "News from the Auroran/Federation border:  In their success in taking the Unin system Federation ships have continued on, engaging further Auroran forces in the Aria system."
+  ],
+  "15019": [
+    "News from the Auroran/Federation border:  While the bulk of the Federation attack fleet has remained in the Vemap system, a small task force was launched against Auroran interests in the Sale system."
+  ],
+  "15020": [
+    "News from the Auroran/Federation border:  After laying claim to the Neirt system, Federation forces have continued on to the Creyt system where they continue to battle against Auroran ships."
+  ],
+  "15021": [
+    "News from the Auroran/Federation border:  In an attempt to force the Aurorans to withdraw from the Xante system, the Federation Navy launched a sneak attack behind Auroran lines in the Biri system."
+  ],
+  "15022": [
+    "News from the border:  There have been reports of heavy clashes between Auroran and Federation forces in the Narcissus system.  At this stage it appears that the battle is still hanging in the balance."
+  ],
+  "15023": [
+    "News from the border:  After being fought to a standstill in both the Alphara and Gateway systems, an Auroran task force snuck behind our front lines and attacked Federation forces in the Spica system."
+  ],
+  "15024": [
+    "News from the Auroran/Federation border:  Continuing their successful campaign, Federation ships have continued on, leaving the Aria system chasing the retreating Auroran forces to the Hope system."
+  ],
+  "15025": [
+    "News from the Auroran/Federation border:  After successful raids in the Sale and Wittor systems, Federation warships have continued on to harass Auroran shipping in the Inci system."
+  ],
+  "15026": [
+    "News from the border:  After outflanking the Auroran forces in the Vemap system, Federation ships have raided Auroran holdings in the Heraan Cov system, but they appear to be meeting stiff resistance."
+  ],
+  "15027": [
+    "News from the Auroran/Federation border:  In response to Auroran raids, Federation ships have raided into neutral territory and attacked Auroran shipping in the SPC-034 system."
+  ],
+  "15028": [
+    "News from the Auroran/Federation border:  An Auroran task force has come from neutral territory and raided Federation shipping in the Kerella system.  Federation forces there are trying to contain them."
+  ],
+  "15029": [
+    "News from the border:  After defeating the Auroran forces in the Narcissus system, the Federation task force has followed up on their victory and attacked the reserve Auroran fleet waiting in the SPC-1367 system."
+  ],
+  "15030": [
+    "News from Sol:  In an attempt to draw Federation forces away from the Tichel system, Auroran ships have launched a raid on Sol.  Early reports say that the Federation forces have them contained."
+  ],
+  "15031": [
+    "News from the Auroran/Federation border:  After smashing through the Xante system, the Aurorans have moved into the Nesre Secundus system.  It seems that Admiral Raczak has things well in hand."
+  ],
+  "15032": [
+    "News from Fomalhaut:  After outflanking the Federation forces in the Tichel system, the Auroran raiders have attacked further Federation vessels, as well as merchant shipping, in the Fomalhaut system."
+  ],
+  "15033": [
+    "News from the Auroran/Federation border:  After outflanking Federation forces in the Tichel system, the Auroran raiders have attacked further Federation vessels, as well as merchant shipping, in the Kania system."
+  ],
+  "15034": [
+    "News from the border:  After defeating the Federation forces in the Narcissus system, the Auroran raiders have followed up their victory by attacking Federation forces in the Lalande 21185 system."
+  ],
+  "15035": [
+    "News from the border:  After quelling Auroran resistance in the Unin and SPC-050 systems, Federation forces have penetrated as far as the Uroa system chasing the fleeing Aurorans."
+  ],
+  "15036": [
+    "News just to hand:  In a cowardly raid, pirate vessels, claiming to be rebels, have ransacked a large number of Federation ships in the Nesre Primus system."
+  ],
+  "15037": [
+    "Current Events:  Claiming to be members of a political 'rebellion', a number of pirates have looted and destroyed a number of Federation and merchant vessels in the Aldebaran system."
+  ],
+  "15038": [
+    "News from the Kane Band:  It appears that Federation scientists and engineers, working with their counterparts from the GLi-tech corporation, have created a new Federation gunboat called the 'RAGE'."
+  ],
+  "15039": [
+    "General News: A group of retired merchants, calling themselves the Somta group, have begun a campaign of reforms on Brass.",
+    "General News: Is Brass on the way to a recovery?  It certainly looks that way thanks to the efforts of the Somta group.",
+    "General News: Will a representative of Brass soon take their seat on the Federation Council?  A young man by the name of Geoff Daniels may well be the first to do so."
+  ],
+  "15040": [
+    "Political News: Finally a representative for Nova (formally known as Brass) sits on the Federation Council.  Meet Councillor Geoff Daniels, elected by a landslide last month.",
+    "General News: The results of the referendum for a change of name for Brass show a 71% support rating for the new name 'Nova'.",
+    "General News: With the election of Councillor Daniels, it seems the economic recovery of 'Nova' is now complete.  Corporations from across the galaxy are desperately competing for a piece of the new market."
+  ],
+  "15041": [
+    "General News: A group of terraformers from Nirvana Engineering Corporation have begun the process of returning New Ireland to a habitable state.",
+    "General News: New Ireland deemed fit for human habitation.  Scientists say that it will still be some time before New Ireland is restored to its former state.",
+    "General News: Will the Wild Geese take over the government of New Ireland again in the near future?  Perhaps so."
+  ],
+  "15042": [
+    "News from the Federation border:  Auroran warriors have launched simultaneous attacks on both the Alphara and Gateway systems.  Reports are sketchy, but it appears that they are pushing back the Federation dogs."
+  ],
+  "15043": [
+    "News from the Federation border:  Yesterday, the Federation launched a cowardly attack on the Auroran Listening Post in the Unin system.  The warriors were forced to withdraw and call on reinforcements."
+  ],
+  "15044": [
+    "News from the Federation border:  The Federation launched another cowardly attack on the listening post in the SPC-050 system.  The warriors fought bravely to slow the Federation advance."
+  ],
+  "15045": [
+    "News from the Federation border:  The Federation launched a series of cowardly raids on the Unin and SPC-050 systems.  Warriors there have been successful in slowing the Federation advance."
+  ],
+  "15046": [
+    "News from the Federation border:  After their deceitful attack on the Unin system, Federation ships have moved on, attempting to engage the warriors stationed in the Aria system."
+  ],
+  "15047": [
+    "News from the Federation border:  After laying waste to the Neirt system, the cowardly Federation forces have continued on to the Creyt system where they continue to battle against warriors there."
+  ],
+  "15048": [
+    "News from the Federation border:  After fighting the Federation to a standstill in the Alphara and Gateway systems, a task force of warriors outflanked the enemy and successfully raided the Spica system."
+  ],
+  "15049": [
+    "News from the Federation border:  After their cowardly attack on the Aria system, the Federation dogs have moved into the Hope system, but have been met by the steely reserves stationed there."
+  ],
+  "15050": [
+    "News from the Federation border:  After sneaking past the warriors in the Sale and Wittor systems, the Federation bandits have begun harassing merchants and civilians in the Inci system."
+  ],
+  "15051": [
+    "News from the Federation border:  After swarming over the Auroran forces in the Vemap system, the Federation launched raids into the Heraan Cov system, but thus far the Heraani are undefeated."
+  ],
+  "15052": [
+    "News from the Federation border:  After defeating the warriors in the Vemap system, Federation ships are now attacking Heraan holdings in the Heraan Cov system, but are in danger of being cut-off."
+  ],
+  "15053": [
+    "News from the Federation border:  Federation forces have begun attacking merchants and civilians in the SPC-034 system."
+  ],
+  "15054": [
+    "News from the Federation border:  An Auroran task force has struck behind enemy lines and destroyed and damaged Federation interests in the Kerella system."
+  ],
+  "15055": [
+    "News from the Federation border:  After sneaking past the patrols in the Narcissus system, the Federation launched a cowardly attack on the warriors in the SPC-1367 system, but have made little headway."
+  ],
+  "15056": [
+    "News from the Federation front:  A task force of warriors have successfully raided the Sol system.  The resulting withdrawal of forces from the Tichel system gave the warriors a huge advantage."
+  ],
+  "15057": [
+    "News from the Federation border:  After outmaneuvering Federation forces in the Xante system, Auroran warriors moved on to the Nesre Secundus system, to test themselves against Admiral Raczak and his men."
+  ],
+  "15058": [
+    "News from the front:  A Rebel task force has extracted an endangered cell of informants from the Nesre Primus system.  Unfortunately, they had to destroy a number of Federation vessels as they were leaving."
+  ],
+  "15059": [
+    "Current Events:  The Bureau yesterday organized a Federation task force to attack some of our operatives in the Aldebaran system.  Unfortunately, in escaping, our ships destroyed a number of Federation vessels."
+  ],
+  "15060": [
+    "Crime report: A leaked document from the Federation Naval Crime Statistics Department (FNCSD) points to an alarming increase in pirate acivity in recent months."
+  ],
+  "15061": [
+    "Federation Watch: Apparently the Bureau has given pirate gangs a license to increase their activities and to travel through the Federation to attack Auroran shipping."
+  ],
+  "15062": [
+    "Federation Watch: Mu'hari working inside the Federation report that there have been some high-level talks between the Federation and various pirate groups.  Within days, an increase in pirate activity was noted."
+  ],
+  "15063": [
+    "Bureau Watch: Rebel Intelligence indicates that the recent increase in pirate activity has been authorized by the Bureau."
+  ],
+  "15064": [
+    "Local News: Local merchant groups are very concerned about the recent increase in pirate activity in the area.  It has already had a noticeable effect on commerce."
+  ],
+  "15065": [
+    "Military News: The newly formed 'Wolf Pack,' commanded by the mighty KarHallarn, have shown the universe the strength of the Heraan House by launching a devastating raid on Sol, the very heart of the Federation."
+  ],
+  "15066": [
+    "Military News: A new Heraani unit, commanded by the recently named KarHallarn, has launched a successful raid on Sol, the very heart of the Federation."
+  ],
+  "15067": [
+    "Military News: A unit of infiltrators, commanded by a traitor who goes by the moniker 'KarHallarn,' snuck past our outer defenses and launched a cowardly attack on merchant shipping in the Sol system."
+  ],
+  "15068": [
+    "House News: The mighty KarHallarn has once again brought honor to the Heraan House by defeating warriors from all the other houses to be crowned 'Auroran Champion.'"
+  ],
+  "15069": [
+    "Auroran News: The new Auroran Champion is the mighty KarHallarn of the Heraan House."
+  ],
+  "15070": [
+    "House News: After the heroic death of Techerakh, a group of warriors fought to gain the right to fill the position.  The mighty KarHallarn prevailed."
+  ],
+  "15071": [
+    "Political News: Following the death of Techerakh, the old Heraan Thurokiir, the well-known KarHallarn has been chosen to replace him."
+  ],
+  "15072": [
+    "Auroran News: The criminal KarHallarn has managed to wiggle into a position of authority in the command chain of one of the minor Auroran Houses."
+  ],
+  "15073": [
+    "Auroran News: The notable warrior KarHallarn has won the right to be Thurokiir of the Heraan House after the death of the former Thurokiir, Techerakh."
+  ],
+  "15074": [
+    "Empire News: With the recent disgrace of the Moash House that resulted in the elevation of the Heraan, the mighty KarHallarn is now the Thurokiir of the First Family, and hence the Auroran Empire."
+  ],
+  "15075": [
+    "Auroran News: As a result of sneaky manipulation, the well-known criminal KarHallarn, has assumed an office of considerable authority within the Leading House of the Auroran Empire."
+  ],
+  "15076": [
+    "Auroran News: With the recent disgrace of the Moash House that resulted in the elevation of the Heraan, the noted warrior KarHallarn is now the Thurokiir of the First Family, and hence the Auroran Empire."
+  ],
+  "15077": [
+    "Breaking News: After serious talks between the Rebel leaders and representatives of the Polaris Council, an agreement has been reached to allow the Rebellion access to a few pieces of advanced technology."
+  ],
+  "15078": [
+    "Crime Watch: In a successful operation the Federation Navy destroyed a major pirate organization (who claimed to be a political rebellion) based to the North of Federation space.",
+    "Crime Watch: As a result of a successful operation to destroy a pirate cartel in the galactic North, the cartel leaders are being brought to justice."
+  ],
+  "15079": [
+    "Federation News: The Federation Navy claims to have destroyed a major pirate organization (who claimed to be a political rebellion) based to the North of Federation space.",
+    "Federation News: The Federation claims to have the leaders of the self-titled 'Rebellion' in custody, although chances are they will only be found guilty of whatever the Bureau decides they will be guilty of."
+  ],
+  "15080": [
+    "Breaking News: In an unprecedented attack, the leader of the Polaris and the Federation Vice-President have been assassinated in an act of terrorism.  War between the Polaris and the Federation seems imminent."
+  ],
+  "15081": [
+    "Breaking News: The leader of the Polaris, Bis Andreya, and the Federation Vice-President have been assassinated in a terrorist attack by the Bureau.  War between the Polaris and the Federation seems imminent."
+  ],
+  "15082": [
+    "Military News: In a series of savage battles, the Federation Navy, though stretched nearly to its breaking point, has managed to defeat the Polaris invasion in a final battle in the Tichel system."
+  ],
+  "15083": [
+    "Vell-os News: With the inspirational intervention of Ory'hara, a team of P'aedt and Ver'ash have discovered a way to allow a single Vell-os to be freed from the enslavement devices they are all fitted with."
+  ],
+  "15084": [
+    "Federation News: With the discrediting of the Bureau of Internal Investigation, the leaders of the Rebellion have achieved their aims and rejoined mainstream Federation society."
+  ],
+  "15085": [
+    "Criminal Watch: In a battle for supremacy, two pirate fleets met in the Aral system recently.  Reports are sketchy, but total victory was achieved by one of them."
+  ]
+}

@@ -1,0 +1,2249 @@
+[
+  {
+    "id": 128,
+    "name": "Federation",
+    "voiceType": 1,
+    "flags": 58032,
+    "flags2": 32,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 1,
+    "disabPenalty": 1,
+    "boardPenalty": 2,
+    "killPenalty": 5,
+    "shootPenalty": 5,
+    "initialRec": 0,
+    "maxOdds": 200,
+    "commName": "Fed.",
+    "classes": [
+      1
+    ],
+    "allies": [
+      0,
+      1,
+      12,
+      13
+    ],
+    "enemies": [
+      2,
+      10,
+      16,
+      9
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 129,
+    "name": "Auroran Empire",
+    "voiceType": 4,
+    "flags": 178,
+    "flags2": 32,
+    "scanMask": 16384,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 10,
+    "disabPenalty": 1,
+    "boardPenalty": 10,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Auroran",
+    "classes": [
+      2
+    ],
+    "allies": [
+      2,
+      13
+    ],
+    "enemies": [
+      1,
+      12,
+      18
+    ],
+    "color": 13569036,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 130,
+    "name": "Polaris",
+    "voiceType": 3,
+    "flags": 16,
+    "flags2": 32,
+    "scanMask": 8192,
+    "crimeTol": 0,
+    "scanFine": 10,
+    "smugPenalty": 3,
+    "disabPenalty": 1,
+    "boardPenalty": 5,
+    "killPenalty": 5,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Polaris",
+    "classes": [
+      16
+    ],
+    "allies": [
+      18,
+      10,
+      11
+    ],
+    "enemies": [
+      0,
+      3,
+      9
+    ],
+    "color": 8133756,
+    "shipColor": 0,
+    "interfaceId": 129,
+    "newsPic": 9002
+  },
+  {
+    "id": 131,
+    "name": "Family Moash",
+    "voiceType": 4,
+    "flags": 62128,
+    "flags2": 35,
+    "scanMask": 16896,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 15,
+    "disabPenalty": 2,
+    "boardPenalty": 20,
+    "killPenalty": 4,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Moash",
+    "classes": [
+      3
+    ],
+    "allies": [
+      0,
+      2,
+      3
+    ],
+    "enemies": [
+      5,
+      7,
+      12
+    ],
+    "color": 4144959,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9003
+  },
+  {
+    "id": 132,
+    "name": "Family Tekel",
+    "voiceType": 4,
+    "flags": 16560,
+    "flags2": 35,
+    "scanMask": 16640,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 5,
+    "disabPenalty": 1,
+    "boardPenalty": 8,
+    "killPenalty": 2,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Tekel",
+    "classes": [
+      4
+    ],
+    "allies": [
+      2,
+      5
+    ],
+    "enemies": [
+      0,
+      1,
+      6,
+      12
+    ],
+    "color": 6250335,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9005
+  },
+  {
+    "id": 133,
+    "name": "Family Vella",
+    "voiceType": 4,
+    "flags": 20656,
+    "flags2": 35,
+    "scanMask": 16640,
+    "crimeTol": 0,
+    "scanFine": 9,
+    "smugPenalty": 10,
+    "disabPenalty": 15,
+    "boardPenalty": 2,
+    "killPenalty": 3,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Vella",
+    "classes": [
+      5
+    ],
+    "allies": [
+      2,
+      4
+    ],
+    "enemies": [
+      0,
+      1,
+      3,
+      11
+    ],
+    "color": 5197647,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9004
+  },
+  {
+    "id": 134,
+    "name": "Family Dani",
+    "voiceType": 4,
+    "flags": 20656,
+    "flags2": 35,
+    "scanMask": 16640,
+    "crimeTol": 0,
+    "scanFine": 12,
+    "smugPenalty": 12,
+    "disabPenalty": 2,
+    "boardPenalty": 10,
+    "killPenalty": 4,
+    "shootPenalty": 0,
+    "initialRec": 2,
+    "maxOdds": 275,
+    "commName": "Dani",
+    "classes": [
+      6,
+      27
+    ],
+    "allies": [
+      2,
+      7,
+      27
+    ],
+    "enemies": [
+      0,
+      1,
+      4,
+      9
+    ],
+    "color": 5197647,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9006
+  },
+  {
+    "id": 135,
+    "name": "Family Heraan",
+    "voiceType": 4,
+    "flags": 144,
+    "flags2": 34,
+    "scanMask": 16640,
+    "crimeTol": 0,
+    "scanFine": 12,
+    "smugPenalty": 20,
+    "disabPenalty": 1,
+    "boardPenalty": 20,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 200,
+    "commName": "Heraan",
+    "classes": [
+      7
+    ],
+    "allies": [
+      2,
+      7,
+      10,
+      11
+    ],
+    "enemies": [
+      0,
+      1,
+      3,
+      9
+    ],
+    "color": 7303023,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9007
+  },
+  {
+    "id": 136,
+    "name": "Vell-os",
+    "voiceType": 1,
+    "flags": 146,
+    "flags2": 50,
+    "scanMask": 36864,
+    "crimeTol": 0,
+    "scanFine": 9,
+    "smugPenalty": 0,
+    "disabPenalty": 10,
+    "boardPenalty": 15,
+    "killPenalty": 40,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 350,
+    "commName": "Vell-os",
+    "classes": [
+      8,
+      1
+    ],
+    "allies": [
+      1,
+      17,
+      0,
+      12
+    ],
+    "enemies": [
+      2,
+      9,
+      10,
+      14
+    ],
+    "color": 12829456,
+    "shipColor": 0,
+    "interfaceId": 134,
+    "newsPic": 9000
+  },
+  {
+    "id": 137,
+    "name": "Pirate",
+    "voiceType": 5,
+    "flags": 62131,
+    "flags2": 162,
+    "scanMask": 2048,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 1,
+    "killPenalty": 2,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Pirate",
+    "classes": [
+      9
+    ],
+    "allies": [
+      9
+    ],
+    "enemies": [
+      13,
+      10,
+      11
+    ],
+    "color": 4144959,
+    "shipColor": 0,
+    "interfaceId": 133,
+    "newsPic": 9001
+  },
+  {
+    "id": 138,
+    "name": "Wraith",
+    "voiceType": -1,
+    "flags": 272,
+    "flags2": 171,
+    "scanMask": 64,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 0,
+    "disabPenalty": 4,
+    "boardPenalty": 0,
+    "killPenalty": 16,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Wraith",
+    "classes": [
+      15
+    ],
+    "allies": [
+      15,
+      8,
+      17
+    ],
+    "enemies": [
+      18,
+      9
+    ],
+    "color": 1865334,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 139,
+    "name": "Wraith",
+    "voiceType": -1,
+    "flags": 432,
+    "flags2": 171,
+    "scanMask": 64,
+    "crimeTol": 0,
+    "scanFine": 2,
+    "smugPenalty": 0,
+    "disabPenalty": 4,
+    "boardPenalty": 0,
+    "killPenalty": 16,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Wraith",
+    "classes": [
+      15
+    ],
+    "allies": [
+      15,
+      16,
+      8,
+      17
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 1865334,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 140,
+    "name": "Krypt",
+    "voiceType": -1,
+    "flags": 48,
+    "flags2": 43,
+    "scanMask": 32,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 2,
+    "boardPenalty": 0,
+    "killPenalty": 5,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 300,
+    "commName": "Krypt",
+    "classes": [
+      14
+    ],
+    "allies": [
+      14
+    ],
+    "enemies": [
+      8
+    ],
+    "color": 4473924,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 141,
+    "name": "Rebellion",
+    "voiceType": 2,
+    "flags": 16528,
+    "flags2": 66,
+    "scanMask": 1024,
+    "crimeTol": 0,
+    "scanFine": 12,
+    "smugPenalty": 10,
+    "disabPenalty": 2,
+    "boardPenalty": 10,
+    "killPenalty": 10,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 200,
+    "commName": "Rebel",
+    "classes": [
+      10
+    ],
+    "allies": [
+      7,
+      16,
+      13,
+      11
+    ],
+    "enemies": [
+      0,
+      3,
+      9
+    ],
+    "color": 2861611,
+    "shipColor": 0,
+    "interfaceId": 131,
+    "newsPic": 9000
+  },
+  {
+    "id": 142,
+    "name": "Rimerta",
+    "voiceType": 4,
+    "flags": 16770,
+    "flags2": 39,
+    "scanMask": 16512,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 10,
+    "disabPenalty": 0,
+    "boardPenalty": 10,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Decht.",
+    "classes": [
+      2
+    ],
+    "allies": [
+      2,
+      7,
+      10
+    ],
+    "enemies": [
+      0,
+      1,
+      12
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 143,
+    "name": "Auroran Empire",
+    "voiceType": 4,
+    "flags": 384,
+    "flags2": 33,
+    "scanMask": 16384,
+    "crimeTol": 0,
+    "scanFine": 15,
+    "smugPenalty": 25,
+    "disabPenalty": 1,
+    "boardPenalty": 25,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 300,
+    "commName": "Auroran",
+    "classes": [
+      2
+    ],
+    "allies": [
+      2,
+      7
+    ],
+    "enemies": [
+      0,
+      1,
+      9,
+      12
+    ],
+    "color": 13569036,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 144,
+    "name": "Wild Geese",
+    "voiceType": 6,
+    "flags": 18,
+    "flags2": 34,
+    "scanMask": 128,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 1,
+    "boardPenalty": 5,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 175,
+    "commName": "W Gse",
+    "classes": [
+      11
+    ],
+    "allies": [
+      1,
+      7,
+      11,
+      13
+    ],
+    "enemies": [
+      0,
+      3,
+      9,
+      2
+    ],
+    "color": 13056,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 145,
+    "name": "Roughnecks",
+    "voiceType": 1,
+    "flags": 560,
+    "flags2": 34,
+    "scanMask": 32770,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 2,
+    "disabPenalty": 5,
+    "boardPenalty": 5,
+    "killPenalty": 10,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Rncks",
+    "classes": [
+      12
+    ],
+    "allies": [
+      1,
+      13
+    ],
+    "enemies": [
+      2,
+      9,
+      10
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 146,
+    "name": "Federation",
+    "voiceType": 1,
+    "flags": 560,
+    "flags2": 32,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 2,
+    "smugPenalty": 3,
+    "disabPenalty": 5,
+    "boardPenalty": 5,
+    "killPenalty": 10,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Fed.",
+    "classes": [
+      1
+    ],
+    "allies": [
+      1,
+      8,
+      12,
+      13
+    ],
+    "enemies": [
+      2,
+      9,
+      10,
+      16
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 147,
+    "name": "Nil'kemorya",
+    "voiceType": 3,
+    "flags": 144,
+    "flags2": 3,
+    "scanMask": 8193,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 5,
+    "killPenalty": 5,
+    "shootPenalty": 2,
+    "initialRec": -5,
+    "maxOdds": 175,
+    "commName": "Polaris",
+    "classes": [
+      16,
+      18
+    ],
+    "allies": [
+      16,
+      10
+    ],
+    "enemies": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "color": 7081068,
+    "shipColor": 0,
+    "interfaceId": 129,
+    "newsPic": 9002
+  },
+  {
+    "id": 148,
+    "name": "Hyperioid",
+    "voiceType": -1,
+    "flags": 1040,
+    "flags2": 174,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 15,
+    "smugPenalty": 0,
+    "disabPenalty": 2,
+    "boardPenalty": 0,
+    "killPenalty": 5,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 50,
+    "commName": "Hyper.",
+    "classes": [],
+    "allies": [],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 149,
+    "name": "Guild of Bounty Hunters",
+    "voiceType": 0,
+    "flags": 4146,
+    "flags2": 39,
+    "scanMask": 50176,
+    "crimeTol": 0,
+    "scanFine": 12,
+    "smugPenalty": 0,
+    "disabPenalty": 5,
+    "boardPenalty": 5,
+    "killPenalty": 10,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 150,
+    "commName": "Guild",
+    "classes": [
+      13
+    ],
+    "allies": [
+      10,
+      11,
+      13
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 133,
+    "newsPic": 9000
+  },
+  {
+    "id": 150,
+    "name": "Federation",
+    "voiceType": 1,
+    "flags": 16,
+    "flags2": 32,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 200,
+    "commName": "Fed.",
+    "classes": [
+      0
+    ],
+    "allies": [
+      0,
+      1,
+      3,
+      9
+    ],
+    "enemies": [
+      2,
+      10,
+      16
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 151,
+    "name": "Federation",
+    "voiceType": 1,
+    "flags": 16914,
+    "flags2": 33,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 2,
+    "killPenalty": 4,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Fed.",
+    "classes": [
+      1
+    ],
+    "allies": [
+      1,
+      10,
+      13
+    ],
+    "enemies": [
+      2,
+      9
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 152,
+    "name": "Roughnecks",
+    "voiceType": 1,
+    "flags": 560,
+    "flags2": 34,
+    "scanMask": 32770,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 2,
+    "disabPenalty": 5,
+    "boardPenalty": 5,
+    "killPenalty": 10,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 300,
+    "commName": "Rncks",
+    "classes": [
+      12
+    ],
+    "allies": [
+      7,
+      8,
+      11,
+      13
+    ],
+    "enemies": [
+      0,
+      2,
+      3,
+      9
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 153,
+    "name": "Bureau",
+    "voiceType": 1,
+    "flags": 57904,
+    "flags2": 34,
+    "scanMask": 32776,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 2,
+    "killPenalty": 4,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 150,
+    "commName": "Bureau",
+    "classes": [
+      0
+    ],
+    "allies": [
+      1,
+      3,
+      0,
+      9
+    ],
+    "enemies": [
+      7,
+      10,
+      16
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 154,
+    "name": "Federation",
+    "voiceType": 1,
+    "flags": 18,
+    "flags2": 32,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 350,
+    "commName": "Fed.",
+    "classes": [
+      1
+    ],
+    "allies": [
+      0,
+      1,
+      3,
+      9
+    ],
+    "enemies": [
+      7,
+      10,
+      16
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 155,
+    "name": "Polaris",
+    "voiceType": 3,
+    "flags": 144,
+    "flags2": 34,
+    "scanMask": 8192,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 5,
+    "killPenalty": 5,
+    "shootPenalty": 2,
+    "initialRec": -5,
+    "maxOdds": 400,
+    "commName": "Polaris",
+    "classes": [
+      16,
+      18
+    ],
+    "allies": [
+      7,
+      16,
+      18
+    ],
+    "enemies": [
+      0,
+      3,
+      9
+    ],
+    "color": 8133756,
+    "shipColor": 0,
+    "interfaceId": 129,
+    "newsPic": 9002
+  },
+  {
+    "id": 156,
+    "name": "Auroran Empire",
+    "voiceType": 4,
+    "flags": 144,
+    "flags2": 35,
+    "scanMask": 16384,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 10,
+    "disabPenalty": 1,
+    "boardPenalty": 10,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 350,
+    "commName": "Auroran",
+    "classes": [
+      2
+    ],
+    "allies": [
+      2,
+      7,
+      10
+    ],
+    "enemies": [
+      0,
+      1,
+      9,
+      11
+    ],
+    "color": 13569036,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 157,
+    "name": "Civvies",
+    "voiceType": 0,
+    "flags": 8720,
+    "flags2": 34,
+    "scanMask": 32784,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 3,
+    "disabPenalty": 3,
+    "boardPenalty": 5,
+    "killPenalty": 7,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Trader",
+    "classes": [
+      13
+    ],
+    "allies": [
+      1,
+      2,
+      10,
+      13
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 6908265,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 158,
+    "name": "Civvies",
+    "voiceType": 0,
+    "flags": 8720,
+    "flags2": 36,
+    "scanMask": 16400,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 3,
+    "disabPenalty": 3,
+    "boardPenalty": 5,
+    "killPenalty": 7,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 150,
+    "commName": "Trader",
+    "classes": [
+      13
+    ],
+    "allies": [
+      1,
+      2,
+      10,
+      13
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 6908265,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9000
+  },
+  {
+    "id": 159,
+    "name": "Wraith",
+    "voiceType": -1,
+    "flags": 3200,
+    "flags2": 171,
+    "scanMask": 64,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": -1,
+    "disabPenalty": -1,
+    "boardPenalty": -1,
+    "killPenalty": -1,
+    "shootPenalty": -1,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Wraith",
+    "classes": [
+      15
+    ],
+    "allies": [
+      15,
+      16
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 1865334,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 160,
+    "name": "Derelicts",
+    "voiceType": -1,
+    "flags": 3328,
+    "flags2": 39,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 32000,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 100,
+    "commName": "Derelict",
+    "classes": [],
+    "allies": [
+      17,
+      9
+    ],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 161,
+    "name": "ATMOS",
+    "voiceType": 0,
+    "flags": 58000,
+    "flags2": 192,
+    "scanMask": 4,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 20,
+    "disabPenalty": 20,
+    "boardPenalty": 20,
+    "killPenalty": 20,
+    "shootPenalty": 20,
+    "initialRec": 0,
+    "maxOdds": 1000,
+    "commName": "ATMOS",
+    "classes": [
+      13
+    ],
+    "allies": [
+      13
+    ],
+    "enemies": [],
+    "color": 11468924,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 162,
+    "name": "Roughnecks",
+    "voiceType": 1,
+    "flags": 544,
+    "flags2": 33,
+    "scanMask": 32770,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 2,
+    "disabPenalty": 5,
+    "boardPenalty": 5,
+    "killPenalty": 10,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 300,
+    "commName": "Rnecks",
+    "classes": [
+      12
+    ],
+    "allies": [
+      1,
+      12,
+      13
+    ],
+    "enemies": [
+      2,
+      3,
+      7,
+      11
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 163,
+    "name": "Krypt",
+    "voiceType": -1,
+    "flags": 48,
+    "flags2": 41,
+    "scanMask": 32,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 2,
+    "boardPenalty": 0,
+    "killPenalty": 5,
+    "shootPenalty": 0,
+    "initialRec": 10,
+    "maxOdds": 300,
+    "commName": "Krypt",
+    "classes": [
+      14
+    ],
+    "allies": [
+      14
+    ],
+    "enemies": [],
+    "color": 4473924,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 164,
+    "name": "Bureau",
+    "voiceType": 1,
+    "flags": 16916,
+    "flags2": 34,
+    "scanMask": 32776,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 2,
+    "killPenalty": 4,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Bureau",
+    "classes": [
+      0
+    ],
+    "allies": [
+      0,
+      3,
+      9
+    ],
+    "enemies": [
+      7,
+      10,
+      16
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 165,
+    "name": "Vell-os",
+    "voiceType": 1,
+    "flags": 146,
+    "flags2": 50,
+    "scanMask": 4096,
+    "crimeTol": 0,
+    "scanFine": 10,
+    "smugPenalty": 0,
+    "disabPenalty": 10,
+    "boardPenalty": 15,
+    "killPenalty": 40,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 350,
+    "commName": "Vell-os",
+    "classes": [
+      17
+    ],
+    "allies": [
+      8
+    ],
+    "enemies": [],
+    "color": 12829456,
+    "shipColor": 0,
+    "interfaceId": 134,
+    "newsPic": 9000
+  },
+  {
+    "id": 166,
+    "name": "United Shipping",
+    "voiceType": 0,
+    "flags": 8720,
+    "flags2": 38,
+    "scanMask": 57344,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 3,
+    "disabPenalty": 3,
+    "boardPenalty": 5,
+    "killPenalty": 7,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 175,
+    "commName": "Un Shp",
+    "classes": [
+      55
+    ],
+    "allies": [
+      1,
+      2,
+      10,
+      16
+    ],
+    "enemies": [
+      9,
+      21
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 167,
+    "name": "Ambrosia",
+    "voiceType": 0,
+    "flags": 62096,
+    "flags2": 192,
+    "scanMask": 4,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 20,
+    "disabPenalty": 20,
+    "boardPenalty": 20,
+    "killPenalty": 20,
+    "shootPenalty": 20,
+    "initialRec": 0,
+    "maxOdds": 1000,
+    "commName": "AmbrSW",
+    "classes": [
+      13
+    ],
+    "allies": [
+      13
+    ],
+    "enemies": [],
+    "color": 5204303,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 168,
+    "name": "Mu'Hari",
+    "voiceType": 3,
+    "flags": 16,
+    "flags2": 0,
+    "scanMask": 8193,
+    "crimeTol": 0,
+    "scanFine": 1,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 5,
+    "killPenalty": 5,
+    "shootPenalty": 2,
+    "initialRec": 2,
+    "maxOdds": 150,
+    "commName": "Pol.",
+    "classes": [
+      16,
+      18
+    ],
+    "allies": [
+      16,
+      10
+    ],
+    "enemies": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "color": 7081068,
+    "shipColor": 0,
+    "interfaceId": 129,
+    "newsPic": 9002
+  },
+  {
+    "id": 169,
+    "name": "Associated Guild of Free Traders",
+    "voiceType": 0,
+    "flags": 62002,
+    "flags2": 38,
+    "scanMask": 2048,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 1,
+    "killPenalty": 2,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Fr Trad",
+    "classes": [
+      9
+    ],
+    "allies": [
+      9,
+      0
+    ],
+    "enemies": [
+      11,
+      21
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 133,
+    "newsPic": 9000
+  },
+  {
+    "id": 170,
+    "name": "Houseless Warriors",
+    "voiceType": 4,
+    "flags": 62131,
+    "flags2": 162,
+    "scanMask": 2048,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 1,
+    "killPenalty": 2,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Houseless",
+    "classes": [
+      9
+    ],
+    "allies": [],
+    "enemies": [],
+    "color": 4144959,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9000
+  },
+  {
+    "id": 171,
+    "name": "Spanner",
+    "voiceType": 0,
+    "flags": 61953,
+    "flags2": 167,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 0,
+    "commName": "Spnr",
+    "classes": [],
+    "allies": [],
+    "enemies": [
+      1,
+      2,
+      9,
+      10
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 172,
+    "name": "Sigma Shipyards",
+    "voiceType": 0,
+    "flags": 8720,
+    "flags2": 70,
+    "scanMask": 16,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 3,
+    "disabPenalty": 3,
+    "boardPenalty": 5,
+    "killPenalty": 7,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 115,
+    "commName": "Sigma",
+    "classes": [
+      13
+    ],
+    "allies": [
+      1,
+      2,
+      10,
+      13
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 5855577,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 173,
+    "name": "Pyrogenesis Skymining",
+    "voiceType": 0,
+    "flags": 8720,
+    "flags2": 38,
+    "scanMask": 16,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 3,
+    "disabPenalty": 3,
+    "boardPenalty": 5,
+    "killPenalty": 7,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 115,
+    "commName": "Pyro",
+    "classes": [
+      13
+    ],
+    "allies": [
+      1,
+      2,
+      10,
+      13
+    ],
+    "enemies": [
+      9
+    ],
+    "color": 2631720,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 174,
+    "name": "Family Heraan",
+    "voiceType": 4,
+    "flags": 147,
+    "flags2": 38,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": -5,
+    "maxOdds": 1000,
+    "commName": "Heraan",
+    "classes": [
+      25
+    ],
+    "allies": [],
+    "enemies": [
+      25
+    ],
+    "color": 7303023,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9007
+  },
+  {
+    "id": 175,
+    "name": "Duellist",
+    "voiceType": 4,
+    "flags": 130,
+    "flags2": 55,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 1000,
+    "commName": "Duellist",
+    "classes": [
+      33
+    ],
+    "allies": [],
+    "enemies": [],
+    "color": 1973790,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9000
+  },
+  {
+    "id": 176,
+    "name": "Association of Free Traders",
+    "voiceType": 0,
+    "flags": 12850,
+    "flags2": 38,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 3,
+    "killPenalty": 3,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 175,
+    "commName": "Assoc",
+    "classes": [
+      17
+    ],
+    "allies": [
+      10,
+      11
+    ],
+    "enemies": [
+      9,
+      21
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 133,
+    "newsPic": 9000
+  },
+  {
+    "id": 177,
+    "name": "Association of Free Traders",
+    "voiceType": 0,
+    "flags": 14898,
+    "flags2": 38,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 3,
+    "killPenalty": 3,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 175,
+    "commName": "Assoc",
+    "classes": [
+      17
+    ],
+    "allies": [
+      10,
+      11
+    ],
+    "enemies": [
+      9,
+      21
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 133,
+    "newsPic": 9000
+  },
+  {
+    "id": 178,
+    "name": "Marauder",
+    "voiceType": 0,
+    "flags": 62099,
+    "flags2": 38,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 175,
+    "commName": "Marauder",
+    "classes": [
+      21
+    ],
+    "allies": [],
+    "enemies": [
+      1,
+      2,
+      16,
+      9
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 179,
+    "name": "Auroran Empire",
+    "voiceType": 4,
+    "flags": 178,
+    "flags2": 32,
+    "scanMask": 16384,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 10,
+    "disabPenalty": 1,
+    "boardPenalty": 10,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Auroran",
+    "classes": [
+      25
+    ],
+    "allies": [],
+    "enemies": [
+      1,
+      18
+    ],
+    "color": 13569036,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 180,
+    "name": "Derelicts",
+    "voiceType": 0,
+    "flags": 3072,
+    "flags2": 39,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 32000,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 100,
+    "commName": "Drlct",
+    "classes": [],
+    "allies": [],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 181,
+    "name": "Family Dani",
+    "voiceType": 4,
+    "flags": 20656,
+    "flags2": 35,
+    "scanMask": 16640,
+    "crimeTol": 0,
+    "scanFine": 12,
+    "smugPenalty": 12,
+    "disabPenalty": 2,
+    "boardPenalty": 10,
+    "killPenalty": 4,
+    "shootPenalty": 0,
+    "initialRec": 2,
+    "maxOdds": 275,
+    "commName": "Dani",
+    "classes": [
+      27,
+      6
+    ],
+    "allies": [
+      6
+    ],
+    "enemies": [],
+    "color": 5197647,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9006
+  },
+  {
+    "id": 182,
+    "name": "Family Heraan",
+    "voiceType": 2004,
+    "flags": 144,
+    "flags2": 34,
+    "scanMask": 16640,
+    "crimeTol": 0,
+    "scanFine": 12,
+    "smugPenalty": 20,
+    "disabPenalty": 1,
+    "boardPenalty": 20,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 10,
+    "maxOdds": 200,
+    "commName": "Heraan",
+    "classes": [],
+    "allies": [
+      7
+    ],
+    "enemies": [
+      27
+    ],
+    "color": 7303023,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9007
+  },
+  {
+    "id": 183,
+    "name": "Hypergate",
+    "voiceType": -1,
+    "flags": 0,
+    "flags2": 8,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 0,
+    "commName": "TargetCode",
+    "classes": [],
+    "allies": [],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 184,
+    "name": "Cargo Drone Robots",
+    "voiceType": -1,
+    "flags": 1168,
+    "flags2": 45,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 0,
+    "commName": "Trader",
+    "classes": [
+      50
+    ],
+    "allies": [
+      1,
+      2,
+      8,
+      10
+    ],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 185,
+    "name": "Temmin Shard",
+    "voiceType": -1,
+    "flags": 0,
+    "flags2": 38,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 0,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 0,
+    "killPenalty": 0,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 300,
+    "commName": "Shard",
+    "classes": [
+      7
+    ],
+    "allies": [
+      7
+    ],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9000
+  },
+  {
+    "id": 186,
+    "name": "Federation;hates Temmin Shard",
+    "voiceType": 1,
+    "flags": 25264,
+    "flags2": 32,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 1,
+    "disabPenalty": 1,
+    "boardPenalty": 2,
+    "killPenalty": 5,
+    "shootPenalty": 5,
+    "initialRec": 0,
+    "maxOdds": 200,
+    "commName": "Fed.",
+    "classes": [
+      1
+    ],
+    "allies": [
+      0,
+      1,
+      12,
+      13
+    ],
+    "enemies": [
+      2,
+      10,
+      16,
+      7
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 187,
+    "name": "Federation",
+    "voiceType": 1,
+    "flags": 58032,
+    "flags2": 32,
+    "scanMask": 32768,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 1,
+    "disabPenalty": 1,
+    "boardPenalty": 2,
+    "killPenalty": 5,
+    "shootPenalty": 5,
+    "initialRec": 0,
+    "maxOdds": 200,
+    "commName": "Fed.",
+    "classes": [
+      2
+    ],
+    "allies": [
+      2
+    ],
+    "enemies": [],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 188,
+    "name": "Family Moash",
+    "voiceType": 2004,
+    "flags": 62128,
+    "flags2": 35,
+    "scanMask": 16896,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 15,
+    "disabPenalty": 2,
+    "boardPenalty": 20,
+    "killPenalty": 4,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Moash",
+    "classes": [
+      3
+    ],
+    "allies": [
+      0,
+      2,
+      3
+    ],
+    "enemies": [
+      5,
+      7,
+      12
+    ],
+    "color": 4144959,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9003
+  },
+  {
+    "id": 189,
+    "name": "Rimerta",
+    "voiceType": 2004,
+    "flags": 16770,
+    "flags2": 39,
+    "scanMask": 16512,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 10,
+    "disabPenalty": 0,
+    "boardPenalty": 10,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 250,
+    "commName": "Decht.",
+    "classes": [
+      2
+    ],
+    "allies": [
+      2,
+      7,
+      10
+    ],
+    "enemies": [
+      0,
+      1,
+      12
+    ],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 190,
+    "name": "United Shipping refuelling for free",
+    "voiceType": 0,
+    "flags": 0,
+    "flags2": 6,
+    "scanMask": 0,
+    "crimeTol": 0,
+    "scanFine": 60,
+    "smugPenalty": 3,
+    "disabPenalty": 3,
+    "boardPenalty": 5,
+    "killPenalty": 7,
+    "shootPenalty": 2,
+    "initialRec": 0,
+    "maxOdds": 175,
+    "commName": "Un Shp",
+    "classes": [
+      55
+    ],
+    "allies": [
+      55
+    ],
+    "enemies": [],
+    "color": 0,
+    "shipColor": 0,
+    "interfaceId": 128,
+    "newsPic": 9000
+  },
+  {
+    "id": 191,
+    "name": "Auroran Empire",
+    "voiceType": 4,
+    "flags": 144,
+    "flags2": 35,
+    "scanMask": 16384,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 10,
+    "disabPenalty": 1,
+    "boardPenalty": 10,
+    "killPenalty": 1,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 350,
+    "commName": "Auroran",
+    "classes": [],
+    "allies": [
+      2,
+      7,
+      10
+    ],
+    "enemies": [
+      0,
+      1,
+      9,
+      11
+    ],
+    "color": 13569036,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9008
+  },
+  {
+    "id": 192,
+    "name": "Pirate",
+    "voiceType": 5,
+    "flags": 62131,
+    "flags2": 162,
+    "scanMask": 2048,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 1,
+    "killPenalty": 2,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Pirate",
+    "classes": [
+      39
+    ],
+    "allies": [
+      9
+    ],
+    "enemies": [
+      13,
+      10,
+      11
+    ],
+    "color": 4144959,
+    "shipColor": 0,
+    "interfaceId": 133,
+    "newsPic": 9001
+  },
+  {
+    "id": 193,
+    "name": "Bureau",
+    "voiceType": 1,
+    "flags": 16916,
+    "flags2": 34,
+    "scanMask": 32776,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 2,
+    "killPenalty": 4,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Bureau",
+    "classes": [],
+    "allies": [
+      3,
+      9
+    ],
+    "enemies": [
+      7,
+      10,
+      16,
+      1
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  },
+  {
+    "id": 194,
+    "name": "Shards",
+    "voiceType": 4,
+    "flags": 4256,
+    "flags2": 162,
+    "scanMask": 2048,
+    "crimeTol": 0,
+    "scanFine": 3,
+    "smugPenalty": 0,
+    "disabPenalty": 0,
+    "boardPenalty": 1,
+    "killPenalty": 2,
+    "shootPenalty": 0,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Shards",
+    "classes": [
+      55
+    ],
+    "allies": [
+      2,
+      18,
+      7,
+      10
+    ],
+    "enemies": [
+      0,
+      1
+    ],
+    "color": 4144959,
+    "shipColor": 0,
+    "interfaceId": 132,
+    "newsPic": 9000
+  },
+  {
+    "id": 195,
+    "name": "Bureau",
+    "voiceType": 1,
+    "flags": 16916,
+    "flags2": 34,
+    "scanMask": 32776,
+    "crimeTol": 0,
+    "scanFine": 6,
+    "smugPenalty": 2,
+    "disabPenalty": 2,
+    "boardPenalty": 2,
+    "killPenalty": 4,
+    "shootPenalty": 1,
+    "initialRec": 0,
+    "maxOdds": 125,
+    "commName": "Bureau",
+    "classes": [
+      35
+    ],
+    "allies": [
+      3,
+      9,
+      35
+    ],
+    "enemies": [
+      1,
+      2,
+      16
+    ],
+    "color": 2895023,
+    "shipColor": 0,
+    "interfaceId": 130,
+    "newsPic": 9001
+  }
+]
