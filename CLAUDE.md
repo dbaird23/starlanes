@@ -334,6 +334,29 @@ Polaris43a "Federation"/"Auroran", so those are branch choices where
 rendering "Accept"/"Refuse" loses the question the dialog is asking. 22
 missions set both; empty falls back to Nova's own STR# 150 wording.
 
+**The Wild Geese b-path runs end to end — verified leg by leg.** The
+storyline that started the AvailRecord investigation was walked in the
+browser through `window.game`, accepting each leg from the counter the data
+names and flying to each destination: 634 in Earth's **bar** → 635 (New
+Ireland bar) → the `R(b804 b805)` roll picks the b-path → 642 at Earth's
+**spaceport** (AvailLoc 3, the storefront fix) → 643 → 644 → 645 → Harbor →
+647 → 648. Every leg was offered exactly where its AvailStel/AvailLoc say,
+and every OnSuccess bit fired.
+
+The Harbor leg is the one worth keeping: by the time 645 sends you there the
+per-system ledger reads **-8 in Scheall** — the storyline really has turned
+the pirates against you, as the player reported — so Harbor (MinStatus 2)
+refuses clearance, and it is the *active-mission destination override* in
+`tryLand` that gets you down. Cold, with no mission covering it, the same
+landing opens traffic control and the Pirates' 0x8000 bribe asks 23,450 of a
+65,000 bankroll (2000 + a third). Both routes in, exactly as intended.
+
+One gate to know about: 634 carries **AvailRating 5**, so a brand-new pilot
+cannot open Wild Geese at all until they have a couple of kills behind them
+(the walkthrough needed `ratingPoints` seeded). Whether 5 rating points is
+~2 small kills or ~20 depends on the internal multiplier — see
+`RATING_POINT_SCALE`, still unpinned.
+
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
 if the ship happened to be the player's current target, and otherwise fed a
