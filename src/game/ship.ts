@@ -333,6 +333,13 @@ export class NpcShip extends Ship {
   personId: number | null = null;
   /** already plundered — you only get the cargo once */
   boarded = false;
+  /**
+   * This ship has boarded and robbed the player. The Nova beta history:
+   * "non-xenophobic pirate ships will no longer give assistance after
+   * plundering the player" — you do not get a tow from the crew that just
+   * emptied your hold.
+   */
+  plunderedPlayer = false;
   /** the ship that most recently dealt damage to this one — focus target */
   lastAttacker: Ship | null = null;
   /**

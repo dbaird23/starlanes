@@ -3568,8 +3568,29 @@ export class Game {
       opts.push({
         label: this.btnLabel(23, "Request Assistance"),
         action: () => {
+          /*
+           * "non-xenophobic pirate ships will no longer give assistance after
+           * plundering the player" — the crew that just emptied your hold is
+           * not going to tow you anywhere.
+           */
+          if (t.plunderedPlayer) {
+            return `"${shipComm(SHIP_COMM.noWay, "In your dreams, pal.")}"`;
+          }
           if (!freeRepair && !battleAssist && record < -10) {
             return `"${shipComm(SHIP_COMM.ratherNot, "I'd rather not.")}"`;
+          }
+          /*
+           * "when player has a rank that grants assistance from other ships,
+           * they are more likely to heed it" — so heeding is a roll, not a
+           * certainty, and a rank (or a government that runs Roadside
+           * Assistance) shortens the odds rather than bypassing them. A
+           * good record helps on its own; a rank makes it near-certain.
+           */
+          const heedChance = freeRepair || battleAssist
+            ? 0.95
+            : Math.max(0.25, Math.min(0.9, 0.55 + record * 0.01));
+          if (Math.random() > heedChance) {
+            return `"${shipComm(SHIP_COMM.tooBusy, "I have other business.")}"`;
           }
           // under fire, a rank that carries battle assistance turns the
           // neighbourhood: everything of theirs in scanner range takes your
@@ -3611,8 +3632,13 @@ export class Game {
           if (inCombat)
             return `"${shipComm(SHIP_COMM.tooBusy, "I'm a little busy right now.")}"`;
 
-          // Fuel assistance: needs at least one jump to get underway.
-          const needFuel = this.player.fuelJumps < 1;
+          /*
+           * Fuel assistance needs at least one jump to get underway — and a
+           * hull that can hold fuel at all: "AI ships will no longer offer to
+           * refuel to player ships that can't carry fuel".
+           */
+          const canCarryFuel = this.player.maxFuelJumps > 0;
+          const needFuel = canCarryFuel && this.player.fuelJumps < 1;
           const hurt = this.ship.armor < this.ship.maxArmor;
           const crippled = this.ship.disabled;
           if (!needFuel && !hurt && !crippled)
@@ -3654,8 +3680,21 @@ export class Game {
            *   ≥ 150 or freeRepair — gratis: dispatch immediately
            */
           if (needFuel) {
+            /*
+             * "auto-refueller now properly adjusts for the player's amount of
+             * credits" — the ask is not a flat rate. It opens at three times
+             * the station price but is trimmed to something a broke pilot can
+             * actually cover (a quarter of the purse), so being stranded with
+             * 200 credits is a predicament rather than a dead end. It never
+             * rises above the flat rate, so a rich pilot is not gouged for
+             * being rich; that is what the bribe fields are for.
+             */
+            const askedFuel = REFUEL_COST_PER_JUMP * 3;
+            const affordable = Math.floor(this.player.credits * 0.25);
             const fuelFee =
-              freeRepair || record >= 150 ? 0 : REFUEL_COST_PER_JUMP * 3;
+              freeRepair || record >= 150
+                ? 0
+                : Math.max(1, Math.min(askedFuel, affordable));
             if (fuelFee > 0) {
               // Hand off to the negotiation overlay; return null keeps hail open.
               this.showFuelNegotiation(t, fuelFee, fuelFee);
@@ -3699,6 +3738,43 @@ export class Game {
    * Squeezing is a real gamble: each demand risks the ship deciding it would
    * rather shoot, and the odds get worse the more you have already extracted.
    */
+  /**
+   * A boarder that has docked with the player's disabled ship robs it.
+   *
+   * The approach was already implemented and the boarding party already
+   * crossed over; nothing was ever taken, so being disabled next to a pirate
+   * cost you only time. Nova's own consequence is cargo and credits, and the
+   * beta history confirms the aftermath matters — "non-xenophobic pirate
+   * ships will no longer give assistance after plundering the player" — so
+   * the raider is marked and will refuse to help you afterwards.
+   *
+   * How much they take is ours: the Bible sets no rate. A raider empties a
+   * share of the hold and a slice of the purse, and mission cargo is left
+   * alone — it is not theirs to sell, and losing it would silently fail
+   * storylines from a fight you already lost.
+   */
+  private plunderPlayer(npc: NpcShip): void {
+    npc.plunderedPlayer = true;
+    const taken: string[] = [];
+    for (const [id, qty] of Object.entries(this.player.cargo)) {
+      if (qty <= 0) continue;
+      const grab = Math.max(1, Math.floor(qty * (0.5 + Math.random() * 0.5)));
+      this.player.cargo[id] = qty - grab;
+      taken.push(`${grab} ${UI.ton(grab)} of ${cargoLabel(id)}`);
+    }
+    const purse = Math.floor(this.player.credits * (0.1 + Math.random() * 0.15));
+    if (purse > 0) {
+      this.player.credits -= purse;
+      taken.push(`${purse.toLocaleString()} ${UI.cr()}`);
+    }
+    playSnd(SND.AIRLOCK, 0.45);
+    this.message(
+      taken.length
+        ? `${this.shipLabel(npc)} boards you and takes ${taken.join(", ")}.`
+        : `${this.shipLabel(npc)} boards you, but finds nothing worth taking.`,
+    );
+  }
+
   private showRansomOffer(
     t: NpcShip,
     amount: number,
@@ -4932,6 +5008,9 @@ export class Game {
               npc.vel.y = 0;
               target.vel.x = 0;
               target.vel.y = 0;
+              // Boarding the *player* actually takes something — the AI
+              // already flew the whole approach and then stole nothing.
+              if (target === this.ship) this.plunderPlayer(npc);
             }
           }
         }

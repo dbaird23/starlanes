@@ -469,11 +469,35 @@ while its callers passed entry-minus-one, which read as an off-by-one every
 time anyone checked it against the resource. And the negotiation and
 assistance refusals now speak from STR# 3000 rather than hand-written
 English — "I'd rather not" for a bad record, "I'm a little busy right now"
-under fire, "You're not in any trouble" when you are unhurt. The beta
-history has more that is still unbuilt: refuelling adjusts to the player's
-credits, a ship that has plundered you will not then help you, ships do not
-offer fuel to hulls that cannot carry it, and a rank that grants assistance
-makes them "more likely to heed it".
+under fire, "You're not in any trouble" when you are unhurt. Four more behaviours the beta history names are now in, and they change
+what Request Assistance means:
+
+- **Heeding is a roll, not a certainty.** "when player has a rank that
+  grants assistance from other ships, they are more likely to heed it" only
+  makes sense if the base case can be refused, so the chance runs
+  `clamp(0.55 + record×0.01, 0.25, 0.9)` and a rank (or a government running
+  Roadside Assistance) lifts it to 0.95. A refusal speaks from STR# 3000's
+  "I'm busy" group. The numbers are ours; the shape is the history's.
+- **A raider will not tow you.** "non-xenophobic pirate ships will no longer
+  give assistance after plundering the player" — `NpcShip.plunderedPlayer`
+  is set when a boarder robs you, and those ships refuse outright.
+- **Ships that cannot carry fuel are never offered it** — the fuel branch is
+  gated on `maxFuelJumps > 0`, so a fuel-less hull only ever hears "you're
+  not in any trouble".
+- **The refuelling ask adjusts to your purse.** "auto-refueller now properly
+  adjusts for the player's amount of credits": it opens at 3× the station
+  rate but is trimmed to a quarter of what you actually hold, so being
+  stranded with 800 credits costs 200 rather than being a dead end. It never
+  rises above the flat rate — a rich pilot is not gouged for being rich,
+  which is what the bribe fields are for.
+
+**Pirates now actually rob a disabled player.** The AI already flew the
+entire three-phase boarding approach at a crippled player's ship, docked,
+and then took nothing — being disabled next to a pirate cost you only time.
+`plunderPlayer` empties a share of the hold and a slice of the purse (rates
+are ours; the Bible sets none) and marks the raider. **Mission cargo is
+deliberately untouched**: it is not theirs to sell, and losing it would
+silently fail storylines out of a fight you had already lost.
 
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
