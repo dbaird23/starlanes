@@ -211,6 +211,15 @@ export interface MissionType {
   datePostInc: number;
   /** Require: two u32 halves and'ed against the player's Contribute pool */
   require: [number, number];
+  /**
+   * Custom labels for the offer dialog's two buttons. Empty means Nova's
+   * own "Yes"/"No" (STR# 150). Not always agreement: Wild Geese 7aI asks
+   * "Rebels" or "Aurorans".
+   */
+  acceptButton: string;
+  refuseButton: string;
+  /** mïsn DispWeight: higher sorts nearer the top of the bar / BBS list */
+  dispWeight: number;
   /** governments whose ScanMask overlaps treat the mission cargo as illegal */
   scanMask: number;
   id: number;

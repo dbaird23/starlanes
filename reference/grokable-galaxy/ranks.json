@@ -6,6 +6,10 @@
     "govt": 128,
     "priceMod": 85,
     "salary": 200,
+    "contribute": [
+      123,
+      0
+    ],
     "flags": 2824,
     "convName": "Commander",
     "shortName": "Commander"
@@ -17,6 +21,10 @@
     "govt": 128,
     "priceMod": 60,
     "salary": 500,
+    "contribute": [
+      511,
+      0
+    ],
     "flags": 3848,
     "convName": "Federation Ambassador",
     "shortName": "Ambassador"
@@ -28,6 +36,10 @@
     "govt": 130,
     "priceMod": 80,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "Ory'hara",
     "shortName": "Ory'hara"
@@ -39,6 +51,10 @@
     "govt": 136,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "T5",
     "shortName": "T5"
@@ -50,6 +66,10 @@
     "govt": 136,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "T4",
     "shortName": "T4"
@@ -61,6 +81,10 @@
     "govt": 136,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "T3",
     "shortName": "T3"
@@ -72,6 +96,10 @@
     "govt": 136,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "T2",
     "shortName": "T2"
@@ -83,6 +111,10 @@
     "govt": 136,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "T1",
     "shortName": "T1"
@@ -94,6 +126,10 @@
     "govt": 136,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "T0",
     "shortName": "T0"
@@ -105,6 +141,10 @@
     "govt": 141,
     "priceMod": 80,
     "salary": 150,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 2824,
     "convName": "Ory-Hara",
     "shortName": "Ory-Hara"
@@ -116,6 +156,10 @@
     "govt": 144,
     "priceMod": 50,
     "salary": 750,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "Sir Knight",
     "shortName": "Sir"
@@ -127,6 +171,10 @@
     "govt": 135,
     "priceMod": 95,
     "salary": 150,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 2824,
     "convName": "Heraani Warrior",
     "shortName": "Warrior"
@@ -138,6 +186,10 @@
     "govt": 135,
     "priceMod": 80,
     "salary": 250,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "KarHallarn: Pack-Leader",
     "shortName": "KarHallarn"
@@ -149,6 +201,10 @@
     "govt": 135,
     "priceMod": 50,
     "salary": 500,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "Heraan Thurokiir",
     "shortName": "Thurokiir"
@@ -160,6 +216,10 @@
     "govt": 129,
     "priceMod": 50,
     "salary": 500,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "First Thurokiir",
     "shortName": "Thurokiir"
@@ -171,6 +231,10 @@
     "govt": 176,
     "priceMod": 50,
     "salary": 750,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "Guild Master",
     "shortName": "Guild Master"
@@ -182,6 +246,10 @@
     "govt": 176,
     "priceMod": 75,
     "salary": 350,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3848,
     "convName": "Guild Master",
     "shortName": "Guild Master"
@@ -193,6 +261,10 @@
     "govt": 190,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3336,
     "convName": "United Shipping Courier",
     "shortName": "Courier"
@@ -204,6 +276,10 @@
     "govt": 149,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 3328,
     "convName": "Member of the Guild of Bounty Hunters",
     "shortName": "Bounty Hunter"
@@ -215,6 +291,10 @@
     "govt": 183,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 520,
     "convName": "Have Access to Hypergate System",
     "shortName": "Hypergate Access"
@@ -226,6 +306,10 @@
     "govt": 141,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 324,
     "convName": "",
     "shortName": ""
@@ -237,6 +321,10 @@
     "govt": 128,
     "priceMod": 10,
     "salary": 1000,
+    "contribute": [
+      511,
+      0
+    ],
     "flags": 3848,
     "convName": "Bureau Director",
     "shortName": "Director"
@@ -248,6 +336,10 @@
     "govt": 147,
     "priceMod": 100,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 324,
     "convName": "",
     "shortName": ""
@@ -259,6 +351,10 @@
     "govt": -1,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 8,
     "convName": "Cunjo Hunter",
     "shortName": "Cunjo Hunter"
@@ -270,6 +366,10 @@
     "govt": -1,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 8,
     "convName": "Sworn Enemy of the Wild Geese",
     "shortName": "Sworn Enemy"
@@ -281,6 +381,10 @@
     "govt": 129,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 320,
     "convName": "",
     "shortName": ""
@@ -292,6 +396,10 @@
     "govt": 131,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 320,
     "convName": "",
     "shortName": ""
@@ -303,6 +411,10 @@
     "govt": 132,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 320,
     "convName": "",
     "shortName": ""
@@ -314,6 +426,10 @@
     "govt": 133,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 320,
     "convName": "",
     "shortName": ""
@@ -325,6 +441,10 @@
     "govt": 134,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 320,
     "convName": "",
     "shortName": ""
@@ -336,6 +456,10 @@
     "govt": 135,
     "priceMod": 0,
     "salary": 0,
+    "contribute": [
+      0,
+      0
+    ],
     "flags": 320,
     "convName": "",
     "shortName": ""

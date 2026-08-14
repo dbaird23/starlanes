@@ -17,6 +17,14 @@
     "enableOn": "b317 & !b1300",
     "onStart": "b1300",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -48,6 +56,14 @@
     "enableOn": "!(b17 & b9998)",
     "onStart": "",
     "onEnd": "b9998",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -79,6 +95,14 @@
     "enableOn": "b17 & !b35",
     "onStart": "b35",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -110,6 +134,14 @@
     "enableOn": "b18 & !b36",
     "onStart": "b36",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -141,6 +173,14 @@
     "enableOn": "b19 & !b37",
     "onStart": "b37",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -172,6 +212,14 @@
     "enableOn": "b20 & !b38",
     "onStart": "b38",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -203,6 +251,14 @@
     "enableOn": "b21 & !b39",
     "onStart": "b39",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -234,6 +290,14 @@
     "enableOn": "b22 & !b40",
     "onStart": "b40",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -265,6 +329,14 @@
     "enableOn": "b23 & !b41",
     "onStart": "b41",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -296,6 +368,14 @@
     "enableOn": "b319 & !b320",
     "onStart": "b320",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -327,6 +407,14 @@
     "enableOn": "b321 & !b1301",
     "onStart": "b1301",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -358,6 +446,14 @@
     "enableOn": "(b321 | b1300) & !b284",
     "onStart": "b284",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -389,6 +485,14 @@
     "enableOn": "b1301 & !b1302",
     "onStart": "b1302",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -420,6 +524,14 @@
     "enableOn": "b1302 & !b1303",
     "onStart": "b1303",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -451,6 +563,14 @@
     "enableOn": "b1303 & !b1304",
     "onStart": "b1304",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -482,6 +602,14 @@
     "enableOn": "b1304 & !b1305",
     "onStart": "b1305",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -513,6 +641,14 @@
     "enableOn": "b280 & !b1301",
     "onStart": "b1301",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -544,6 +680,14 @@
     "enableOn": "b279 & !b1306",
     "onStart": "b1306",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -575,6 +719,14 @@
     "enableOn": "b1306 & !b1307",
     "onStart": "b1307",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -606,6 +758,14 @@
     "enableOn": "b1307 & !b1308",
     "onStart": "b1308",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -637,6 +797,14 @@
     "enableOn": "b1308 & !b1309",
     "onStart": "b1309",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -668,6 +836,14 @@
     "enableOn": "b322 & !b324",
     "onStart": "b324",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -699,6 +875,14 @@
     "enableOn": "b324 & !b325",
     "onStart": "b325",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -730,6 +914,14 @@
     "enableOn": "b325 & !b326",
     "onStart": "b326",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -761,6 +953,14 @@
     "enableOn": "b326 & !b327",
     "onStart": "b327",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       0,
@@ -792,6 +992,14 @@
     "enableOn": "b512 & !b513",
     "onStart": "b513",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -823,6 +1031,14 @@
     "enableOn": "b130 & !b152",
     "onStart": "b152",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -854,6 +1070,14 @@
     "enableOn": "b152 & !b153",
     "onStart": "b153",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -885,6 +1109,14 @@
     "enableOn": "!b42",
     "onStart": "b42",
     "onEnd": "!b42",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       129,
       0,
@@ -916,6 +1148,14 @@
     "enableOn": "!b4000",
     "onStart": "",
     "onEnd": "b4000",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       0,
@@ -947,6 +1187,14 @@
     "enableOn": "b199 & !(b750 | b749)",
     "onStart": "b750",
     "onEnd": "!b750 b749",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -978,6 +1226,14 @@
     "enableOn": "b751 & !(b752 | b753)",
     "onStart": "b753",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1009,6 +1265,14 @@
     "enableOn": "b752 & !b753",
     "onStart": "b753",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1040,6 +1304,14 @@
     "enableOn": "!(b6030 | b6031) & !b333",
     "onStart": "b6000 b6030",
     "onEnd": "!b6000 !b6030",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1071,6 +1343,14 @@
     "enableOn": "!(b6030 | b6031) & !b333",
     "onStart": "b6001 b6030",
     "onEnd": "!b6001 !b6030",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1102,6 +1382,14 @@
     "enableOn": "!(b6030 | b6031) & !b333",
     "onStart": "b6002 b6030",
     "onEnd": "!b6002 !b6030",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1133,6 +1421,14 @@
     "enableOn": "!(b6030 | b6031) & !b333",
     "onStart": "b6003 b6030",
     "onEnd": "!b6003 !b6030",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1164,6 +1460,14 @@
     "enableOn": "!(b6030 | b6031) & !b333",
     "onStart": "b6017 b6030",
     "onEnd": "!b6017 !b6030",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1195,6 +1499,14 @@
     "enableOn": "!(b6029 | b6031)  & !b333",
     "onStart": "b6004 b6029",
     "onEnd": "!b6004 !b6029",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1226,6 +1538,14 @@
     "enableOn": "!(b6029 | b6031) & !b333",
     "onStart": "b6005 b6029",
     "onEnd": "!b6005 !b6029",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1257,6 +1577,14 @@
     "enableOn": "!(b6029 | b6031)  & !b333",
     "onStart": "b6007 b6029",
     "onEnd": "!b6007 !b6029",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1288,6 +1616,14 @@
     "enableOn": "!(b6029 | b6031) & !b333",
     "onStart": "b6006 b6029",
     "onEnd": "!b6003 !b6029",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1319,6 +1655,14 @@
     "enableOn": "!(b6029 | b6030) & (b6006 & !b333)",
     "onStart": "R(b6008 b6009)",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1350,6 +1694,14 @@
     "enableOn": "b6008 & !b333",
     "onStart": "",
     "onEnd": "!b6008",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1381,6 +1733,14 @@
     "enableOn": "b6009 & !b333",
     "onStart": "",
     "onEnd": "!b6009",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1412,6 +1772,14 @@
     "enableOn": "!((b6029 | b6030) | b333) & (b6005 | b6012)",
     "onStart": "b6010",
     "onEnd": "!b6010",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       0,
@@ -1443,6 +1811,14 @@
     "enableOn": "!(b6029 | b6030) & (b6004 & !b333)",
     "onStart": "b6011",
     "onEnd": "!b6011",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1474,6 +1850,14 @@
     "enableOn": "!(b6029 | b6030) & (b6002 & !b333)",
     "onStart": "b6012",
     "onEnd": "!b6012",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1505,6 +1889,14 @@
     "enableOn": "!(b6029 | b6030) & (b6000 & !b333)",
     "onStart": "b6013",
     "onEnd": "!b6013",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1536,6 +1928,14 @@
     "enableOn": "!(b6029 | b6030) & (b6013 & !b333)",
     "onStart": "b6014",
     "onEnd": "!b6014",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1567,6 +1967,14 @@
     "enableOn": "!(b6029 | b6030) & (b6007 & !b333)",
     "onStart": "b6015",
     "onEnd": "!b6015",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1598,6 +2006,14 @@
     "enableOn": "!(b6029 | b6031)  & !b333",
     "onStart": "b6016",
     "onEnd": "!b6016",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1629,6 +2045,14 @@
     "enableOn": "!(b6029 | b6030) & (b6017 & !b333)",
     "onStart": "b6018",
     "onEnd": "!b6018",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1660,6 +2084,14 @@
     "enableOn": "b6011 & !b333",
     "onStart": "b6019",
     "onEnd": "!b6019",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1691,6 +2123,14 @@
     "enableOn": "(b6012 & b6010) & !b333",
     "onStart": "b6020",
     "onEnd": "!b6020",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1722,6 +2162,14 @@
     "enableOn": "b6002 & !b333",
     "onStart": "b6032",
     "onEnd": "!b6032",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1753,6 +2201,14 @@
     "enableOn": "!b6031 & !b333",
     "onStart": "b6021",
     "onEnd": "!b6021",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1784,6 +2240,14 @@
     "enableOn": "!b6031 & !b333",
     "onStart": "b6022",
     "onEnd": "!b6022",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1815,6 +2279,14 @@
     "enableOn": "b6016 & !(b6028 | b333)",
     "onStart": "b6023",
     "onEnd": "!b6023",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1846,6 +2318,14 @@
     "enableOn": "b6008 & !b333",
     "onStart": "b6024",
     "onEnd": "!b6024",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1877,6 +2357,14 @@
     "enableOn": "b6007 & !b333",
     "onStart": "b6025",
     "onEnd": "!b6025",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -1908,6 +2396,14 @@
     "enableOn": "b6008 & !b333",
     "onStart": "b6026",
     "onEnd": "!b6026",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1939,6 +2435,14 @@
     "enableOn": "b6008 & !b333",
     "onStart": "b6027",
     "onEnd": "!b6027",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -1970,6 +2474,14 @@
     "enableOn": "b6016 & !(b6023 | b333)",
     "onStart": "b6028",
     "onEnd": "!b6028",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2001,6 +2513,14 @@
     "enableOn": "!b6031 & !b332",
     "onStart": "b6033",
     "onEnd": "!b6033",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       141,
@@ -2032,6 +2552,14 @@
     "enableOn": "b6033 & !b332",
     "onStart": "b6034",
     "onEnd": "!b6034",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       141,
@@ -2063,6 +2591,14 @@
     "enableOn": "(b511 & !b341) & !(b50 | b61)",
     "onStart": "b341",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       0,
@@ -2094,6 +2630,14 @@
     "enableOn": "b6100",
     "onStart": "",
     "onEnd": "!b6100",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2125,6 +2669,14 @@
     "enableOn": "b6200",
     "onStart": "",
     "onEnd": "!b6200",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2156,6 +2708,14 @@
     "enableOn": "b6101",
     "onStart": "",
     "onEnd": "!b6101",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2187,6 +2747,14 @@
     "enableOn": "b6201",
     "onStart": "",
     "onEnd": "!b6201",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2218,6 +2786,14 @@
     "enableOn": "b6102",
     "onStart": "",
     "onEnd": "!b6102",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2249,6 +2825,14 @@
     "enableOn": "b6202",
     "onStart": "",
     "onEnd": "!b6202",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2280,6 +2864,14 @@
     "enableOn": "b6103",
     "onStart": "",
     "onEnd": "!b6103",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2311,6 +2903,14 @@
     "enableOn": "b6203",
     "onStart": "",
     "onEnd": "!b6203",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2342,6 +2942,14 @@
     "enableOn": "b6104",
     "onStart": "",
     "onEnd": "!b6104",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2373,6 +2981,14 @@
     "enableOn": "b6204",
     "onStart": "",
     "onEnd": "!b6204",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2404,6 +3020,14 @@
     "enableOn": "b6105",
     "onStart": "",
     "onEnd": "!b6105",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2435,6 +3059,14 @@
     "enableOn": "b6205",
     "onStart": "",
     "onEnd": "!b6205",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2466,6 +3098,14 @@
     "enableOn": "b6106",
     "onStart": "",
     "onEnd": "!b6106",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2497,6 +3137,14 @@
     "enableOn": "b6206",
     "onStart": "",
     "onEnd": "!b6206",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2528,6 +3176,14 @@
     "enableOn": "(b279 | b130) & !b6300",
     "onStart": "",
     "onEnd": "b6300",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2559,6 +3215,14 @@
     "enableOn": "b6300 & !b6301",
     "onStart": "",
     "onEnd": "b6301",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2590,6 +3254,14 @@
     "enableOn": "(b353 | b62) & !b6302",
     "onStart": "",
     "onEnd": "b6302",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2621,6 +3293,14 @@
     "enableOn": "b96",
     "onStart": "",
     "onEnd": "!b96",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2652,6 +3332,14 @@
     "enableOn": "b850 & !b851",
     "onStart": "b851",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2683,6 +3371,14 @@
     "enableOn": "b9011 & o358",
     "onStart": "d358 R(g374 g261)",
     "onEnd": "!b9011",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2714,6 +3410,14 @@
     "enableOn": "b9012 & o359",
     "onStart": "d359 g375",
     "onEnd": "!b9012",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2745,6 +3449,14 @@
     "enableOn": "b9013 & o360",
     "onStart": "d360 g376",
     "onEnd": "!b9013 b9014",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2776,6 +3488,14 @@
     "enableOn": "b9014 & o376",
     "onStart": "d376 g377",
     "onEnd": "!b9014 b9015",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2807,6 +3527,14 @@
     "enableOn": "b9015 & o377",
     "onStart": "d377 g378",
     "onEnd": "!b9015",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2838,6 +3566,14 @@
     "enableOn": "(b237 & b850) &!b851",
     "onStart": "b851",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2869,6 +3605,14 @@
     "enableOn": "(b237 & b851) &!b852",
     "onStart": "b852",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2900,6 +3644,14 @@
     "enableOn": "b609 & !b610",
     "onStart": "b610",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2931,6 +3683,14 @@
     "enableOn": "b436 & !b437",
     "onStart": "",
     "onEnd": "b437",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2962,6 +3722,14 @@
     "enableOn": "b435 & !b438",
     "onStart": "b438",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -2993,6 +3761,14 @@
     "enableOn": "b439 & !b437",
     "onStart": "",
     "onEnd": "b437",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3024,6 +3800,14 @@
     "enableOn": "b443 & !b444",
     "onStart": "b444",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3055,6 +3839,14 @@
     "enableOn": "b445 & !b446",
     "onStart": "b446",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3086,6 +3878,14 @@
     "enableOn": "b450",
     "onStart": "",
     "onEnd": "G342",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3117,6 +3917,14 @@
     "enableOn": "b170",
     "onStart": "",
     "onEnd": "!b170",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3148,6 +3956,14 @@
     "enableOn": "b166 & !b167",
     "onStart": "",
     "onEnd": "b167",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3179,6 +3995,14 @@
     "enableOn": "b168 & !b169",
     "onStart": "",
     "onEnd": "b169",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3210,6 +4034,14 @@
     "enableOn": "b511 & !b179",
     "onStart": "",
     "onEnd": "b179",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       0,
       0,
@@ -3241,6 +4073,14 @@
     "enableOn": "b8338",
     "onStart": "",
     "onEnd": "!b8338",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3272,6 +4112,14 @@
     "enableOn": "b8444",
     "onStart": "",
     "onEnd": "!b8444",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3303,6 +4151,14 @@
     "enableOn": "b7780",
     "onStart": "",
     "onEnd": "!b7780",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3334,6 +4190,14 @@
     "enableOn": "b201 & !b3789",
     "onStart": "",
     "onEnd": "b3789",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3365,6 +4229,14 @@
     "enableOn": "b217 & !b5999",
     "onStart": "",
     "onEnd": "b5999",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3396,6 +4268,14 @@
     "enableOn": "b6666",
     "onStart": "",
     "onEnd": "!b6666",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3427,6 +4307,14 @@
     "enableOn": "b8888 & !b8889",
     "onStart": "b8889",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -3458,6 +4346,14 @@
     "enableOn": "b8890 & !b8891",
     "onStart": "b8891",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       135,
       129,
@@ -3489,6 +4385,14 @@
     "enableOn": "b8892 & !b8893",
     "onStart": "b8893",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       135,
       129,
@@ -3520,6 +4424,14 @@
     "enableOn": "b8894 & !b8895",
     "onStart": "b8895",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       135,
       129,
@@ -3551,6 +4463,14 @@
     "enableOn": "b8896 & !b8897",
     "onStart": "b8897",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       129,
       128,
@@ -3582,6 +4502,14 @@
     "enableOn": "b8898 & !b8899",
     "onStart": "b8899",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       141,
       130,
@@ -3613,6 +4541,14 @@
     "enableOn": "b8900 & !b8901",
     "onStart": "b8901",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       -1,
@@ -3644,6 +4580,14 @@
     "enableOn": "b8902 & !b8903",
     "onStart": "b8903",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       130,
@@ -3675,6 +4619,14 @@
     "enableOn": "b8904 & !b8905",
     "onStart": "b8905",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       129,
@@ -3706,6 +4658,14 @@
     "enableOn": "b8906 & !b8907",
     "onStart": "b8907",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       -1,
@@ -3737,6 +4697,14 @@
     "enableOn": "b8908 & !b8909",
     "onStart": "b8909",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       130,
       129,
@@ -3768,6 +4736,14 @@
     "enableOn": "b8910 & !b8911",
     "onStart": "b8911",
     "onEnd": "",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       128,
       -1,
@@ -3799,6 +4775,14 @@
     "enableOn": "b9333 & !b9334",
     "onStart": "",
     "onEnd": "b9334",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3830,6 +4814,14 @@
     "enableOn": "b33 & !b34",
     "onStart": "",
     "onEnd": "b34",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,
@@ -3861,6 +4853,14 @@
     "enableOn": "b47 & !b48",
     "onStart": "",
     "onEnd": "b48",
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "newsGovts": [
       -1,
       -1,

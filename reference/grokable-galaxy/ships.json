@@ -17,6 +17,14 @@
     "cost": 0,
     "mass": 6,
     "length": 10,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 0,
     "strength": 250,
@@ -68,6 +76,14 @@
     "cost": 0,
     "mass": 60,
     "length": 30,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 0,
     "strength": 500,
@@ -124,6 +140,14 @@
     "cost": 0,
     "mass": 200,
     "length": 100,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 0,
     "strength": 750,
@@ -190,6 +214,14 @@
     "cost": 0,
     "mass": 1850,
     "length": 490,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 220,
     "strength": 575,
@@ -265,6 +297,14 @@
     "cost": 0,
     "mass": 6,
     "length": 10,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 0,
     "strength": 250,
@@ -310,6 +350,14 @@
     "cost": 0,
     "mass": 60,
     "length": 30,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 0,
     "strength": 500,
@@ -355,6 +403,14 @@
     "cost": 0,
     "mass": 200,
     "length": 100,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 0,
     "strength": 750,
@@ -400,6 +456,14 @@
     "cost": 0,
     "mass": 1,
     "length": 2,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 1,
     "strength": 1,
@@ -441,6 +505,14 @@
     "cost": 1,
     "mass": 100,
     "length": 30,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 0,
     "strength": 500,
@@ -492,6 +564,14 @@
     "cost": 1,
     "mass": 50,
     "length": 20,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 0,
     "strength": 425,
@@ -543,6 +623,14 @@
     "cost": 1,
     "mass": 25,
     "length": 10,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 0,
     "strength": 350,
@@ -594,6 +682,14 @@
     "cost": 1,
     "mass": 10,
     "length": 30,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 0,
     "strength": 100,
@@ -645,6 +741,14 @@
     "cost": 1,
     "mass": 60,
     "length": 30,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 0,
     "strength": 450,
@@ -696,6 +800,14 @@
     "cost": 1,
     "mass": 100,
     "length": 30,
+    "contribute": [
+      0,
+      0
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 0,
     "strength": 425,
@@ -747,6 +859,14 @@
     "cost": 2000,
     "mass": 10,
     "length": 4,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 0,
     "strength": 1,
@@ -792,6 +912,14 @@
     "cost": 2000,
     "mass": 10,
     "length": 4,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 0,
     "strength": 1,
@@ -837,6 +965,14 @@
     "cost": 4995,
     "mass": 15,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 1,
     "strength": 1,
@@ -884,6 +1020,14 @@
     "cost": 9995,
     "mass": 25,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 2,
     "strength": 2,
@@ -931,6 +1075,14 @@
     "cost": 10000,
     "mass": 15,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 1,
     "strength": 2,
@@ -978,6 +1130,14 @@
     "cost": 10000,
     "mass": 15,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 0,
     "strength": 2,
@@ -1025,6 +1185,14 @@
     "cost": 15000,
     "mass": 15,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 1,
     "strength": 2,
@@ -1077,6 +1245,14 @@
     "cost": 17500,
     "mass": 25,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 2,
     "strength": 3,
@@ -1124,6 +1300,14 @@
     "cost": 17500,
     "mass": 25,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 0,
     "strength": 3,
@@ -1171,6 +1355,14 @@
     "cost": 27500,
     "mass": 25,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 2,
     "strength": 3,
@@ -1212,6 +1404,14 @@
     "cost": 60000,
     "mass": 15,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 1,
     "strength": 2,
@@ -1259,6 +1459,14 @@
     "cost": 75000,
     "mass": 25,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 2,
     "strength": 3,
@@ -1306,6 +1514,14 @@
     "cost": 80000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 30,
@@ -1353,6 +1569,14 @@
     "cost": 100000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 60,
@@ -1404,6 +1628,14 @@
     "cost": 100000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 65,
@@ -1455,6 +1687,14 @@
     "cost": 110000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 65,
@@ -1506,6 +1746,14 @@
     "cost": 110000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 35,
@@ -1558,6 +1806,14 @@
     "cost": 110000,
     "mass": 175,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 4,
     "strength": 20,
@@ -1599,6 +1855,14 @@
     "cost": 120000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 65,
@@ -1650,6 +1914,14 @@
     "cost": 145000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 70,
@@ -1706,6 +1978,14 @@
     "cost": 150000,
     "mass": 175,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 4,
     "strength": 20,
@@ -1753,6 +2033,14 @@
     "cost": 150000,
     "mass": 15,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      2,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 75,
@@ -1809,6 +2097,14 @@
     "cost": 150000,
     "mass": 12,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 55,
@@ -1860,6 +2156,14 @@
     "cost": 150000,
     "mass": 13,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 80,
@@ -1916,6 +2220,14 @@
     "cost": 150000,
     "mass": 175,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 4,
     "strength": 20,
@@ -1968,6 +2280,14 @@
     "cost": 150000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 60,
@@ -2024,6 +2344,14 @@
     "cost": 150000,
     "mass": 15,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 85,
@@ -2080,6 +2408,14 @@
     "cost": 150000,
     "mass": 8,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 1,
     "strength": 250,
@@ -2131,6 +2467,14 @@
     "cost": 150000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 40,
@@ -2183,6 +2527,14 @@
     "cost": 150000,
     "mass": 90,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 6,
     "strength": 20,
@@ -2230,6 +2582,14 @@
     "cost": 150000,
     "mass": 13,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 80,
@@ -2286,6 +2646,14 @@
     "cost": 155000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 75,
@@ -2347,6 +2715,14 @@
     "cost": 185000,
     "mass": 12,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 55,
@@ -2398,6 +2774,14 @@
     "cost": 195000,
     "mass": 13,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 75,
@@ -2454,6 +2838,14 @@
     "cost": 200000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 200,
@@ -2510,6 +2902,14 @@
     "cost": 200000,
     "mass": 175,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 4,
     "strength": 20,
@@ -2562,6 +2962,14 @@
     "cost": 200000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 80,
@@ -2623,6 +3031,14 @@
     "cost": 200000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1073741825
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -2670,6 +3086,14 @@
     "cost": 200000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 65,
@@ -2721,6 +3145,14 @@
     "cost": 220000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 200,
@@ -2782,6 +3214,14 @@
     "cost": 220000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 200,
@@ -2838,6 +3278,14 @@
     "cost": 220000,
     "mass": 15,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 80,
@@ -2894,6 +3342,14 @@
     "cost": 240000,
     "mass": 12,
     "length": 8,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 65,
@@ -2950,6 +3406,14 @@
     "cost": 250000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      2,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 25,
@@ -3002,6 +3466,14 @@
     "cost": 250000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 225,
@@ -3063,6 +3535,14 @@
     "cost": 250000,
     "mass": 8,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 250,
@@ -3114,6 +3594,14 @@
     "cost": 250000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 200,
@@ -3175,6 +3663,14 @@
     "cost": 250000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 200,
@@ -3226,6 +3722,14 @@
     "cost": 250000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 50,
@@ -3278,6 +3782,14 @@
     "cost": 250000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 55,
@@ -3335,6 +3847,14 @@
     "cost": 250000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 225,
@@ -3401,6 +3921,14 @@
     "cost": 250000,
     "mass": 13,
     "length": 9,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 110,
@@ -3462,6 +3990,14 @@
     "cost": 250000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 80,
@@ -3518,6 +4054,14 @@
     "cost": 250000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 225,
@@ -3579,6 +4123,14 @@
     "cost": 275000,
     "mass": 10,
     "length": 7,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 120,
@@ -3640,6 +4192,14 @@
     "cost": 275000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1073741825
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -3697,6 +4257,14 @@
     "cost": 280000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 120,
@@ -3749,6 +4317,14 @@
     "cost": 300000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 120,
@@ -3801,6 +4377,14 @@
     "cost": 300000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 80,
@@ -3857,6 +4441,14 @@
     "cost": 300000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 95,
@@ -3918,6 +4510,14 @@
     "cost": 310000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 225,
@@ -3984,6 +4584,14 @@
     "cost": 320000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 120,
@@ -4041,6 +4649,14 @@
     "cost": 325000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 225,
@@ -4107,6 +4723,14 @@
     "cost": 350000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1073807361
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -4164,6 +4788,14 @@
     "cost": 350000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 70,
@@ -4225,6 +4857,14 @@
     "cost": 350000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -4286,6 +4926,14 @@
     "cost": 350000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 120,
@@ -4343,6 +4991,14 @@
     "cost": 350000,
     "mass": 8,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -4399,6 +5055,14 @@
     "cost": 350000,
     "mass": 20,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 3,
     "strength": 105,
@@ -4460,6 +5124,14 @@
     "cost": 350000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 10,
     "strength": 450,
@@ -4516,6 +5188,14 @@
     "cost": 375000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -4572,6 +5252,14 @@
     "cost": 385000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -4629,6 +5317,14 @@
     "cost": 385000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -4681,6 +5377,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -4737,6 +5441,14 @@
     "cost": 400000,
     "mass": 75,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      2,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 180,
@@ -4793,6 +5505,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -4849,6 +5569,14 @@
     "cost": 400000,
     "mass": 75,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 180,
@@ -4905,6 +5633,14 @@
     "cost": 400000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      2147483649
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -4957,6 +5693,14 @@
     "cost": 400000,
     "mass": 175,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 4,
     "strength": 20,
@@ -5004,6 +5748,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5060,6 +5812,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5116,6 +5876,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5172,6 +5940,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5228,6 +6004,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5284,6 +6068,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5340,6 +6132,14 @@
     "cost": 400000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5406,6 +6206,14 @@
     "cost": 410000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5462,6 +6270,14 @@
     "cost": 425000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5518,6 +6334,14 @@
     "cost": 425000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 150,
@@ -5579,6 +6403,14 @@
     "cost": 425000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -5640,6 +6472,14 @@
     "cost": 425000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -5701,6 +6541,14 @@
     "cost": 450000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 300,
@@ -5752,6 +6600,14 @@
     "cost": 450000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5808,6 +6664,14 @@
     "cost": 450000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -5875,6 +6739,14 @@
     "cost": 475000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -5936,6 +6808,14 @@
     "cost": 475000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 250,
@@ -5997,6 +6877,14 @@
     "cost": 500000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      65
+    ],
+    "require": [
+      64,
+      0
+    ],
     "inherentAi": 1,
     "crew": 300,
     "strength": 40,
@@ -6044,6 +6932,14 @@
     "cost": 500000,
     "mass": 95,
     "length": 35,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      2,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 250,
@@ -6100,6 +6996,14 @@
     "cost": 500000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -6161,6 +7065,14 @@
     "cost": 500000,
     "mass": 1500,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 5,
     "strength": 100,
@@ -6206,6 +7118,14 @@
     "cost": 500000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 300,
@@ -6257,6 +7177,14 @@
     "cost": 500000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 300,
@@ -6313,6 +7241,14 @@
     "cost": 500000,
     "mass": 95,
     "length": 35,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 250,
@@ -6369,6 +7305,14 @@
     "cost": 500000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -6430,6 +7374,14 @@
     "cost": 500000,
     "mass": 1500,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 5,
     "strength": 100,
@@ -6475,6 +7427,14 @@
     "cost": 500000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 150,
@@ -6536,6 +7496,14 @@
     "cost": 500000,
     "mass": 1500,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 0,
     "strength": 100,
@@ -6581,6 +7549,14 @@
     "cost": 500000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      2147483649
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -6633,6 +7609,14 @@
     "cost": 525000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 275,
@@ -6708,6 +7692,14 @@
     "cost": 545000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      65
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 300,
     "strength": 40,
@@ -6760,6 +7752,14 @@
     "cost": 550000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 300,
@@ -6821,6 +7821,14 @@
     "cost": 550000,
     "mass": 50,
     "length": 10,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 300,
@@ -6882,6 +7890,14 @@
     "cost": 550000,
     "mass": 15,
     "length": 12,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 1,
     "strength": 225,
@@ -6948,6 +7964,14 @@
     "cost": 550000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -7009,6 +8033,14 @@
     "cost": 575000,
     "mass": 95,
     "length": 35,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 250,
@@ -7065,6 +8097,14 @@
     "cost": 600000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      2147483649
+    ],
+    "require": [
+      11,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -7117,6 +8157,14 @@
     "cost": 600000,
     "mass": 150,
     "length": 30,
+    "contribute": [
+      0,
+      65
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 300,
     "strength": 40,
@@ -7164,6 +8212,14 @@
     "cost": 600000,
     "mass": 95,
     "length": 35,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 250,
@@ -7235,6 +8291,14 @@
     "cost": 600000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -7301,6 +8365,14 @@
     "cost": 600000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -7362,6 +8434,14 @@
     "cost": 600000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1073741825
+    ],
+    "require": [
+      11,
+      0
+    ],
     "inherentAi": 2,
     "crew": 4,
     "strength": 200,
@@ -7419,6 +8499,14 @@
     "cost": 640000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -7471,6 +8559,14 @@
     "cost": 640000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -7523,6 +8619,14 @@
     "cost": 650000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -7584,6 +8688,14 @@
     "cost": 650000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      2147483649
+    ],
+    "require": [
+      11,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -7646,6 +8758,14 @@
     "cost": 700000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 325,
@@ -7702,6 +8822,14 @@
     "cost": 700000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -7759,6 +8887,14 @@
     "cost": 700000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -7816,6 +8952,14 @@
     "cost": 700000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 325,
@@ -7877,6 +9021,14 @@
     "cost": 700000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 325,
@@ -7938,6 +9090,14 @@
     "cost": 700000,
     "mass": 150,
     "length": 25,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 4,
     "strength": 225,
@@ -8009,6 +9169,14 @@
     "cost": 700000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 2,
     "strength": 375,
@@ -8065,6 +9233,14 @@
     "cost": 700000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 35,
     "strength": 325,
@@ -8121,6 +9297,14 @@
     "cost": 725000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -8182,6 +9366,14 @@
     "cost": 725000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -8243,6 +9435,14 @@
     "cost": 725000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -8304,6 +9504,14 @@
     "cost": 725000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -8365,6 +9573,14 @@
     "cost": 750000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      195,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 300,
@@ -8417,6 +9633,14 @@
     "cost": 750000,
     "mass": 125,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 280,
@@ -8474,6 +9698,14 @@
     "cost": 800000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 250,
@@ -8536,6 +9768,14 @@
     "cost": 800000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -8597,6 +9837,14 @@
     "cost": 800000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 300,
@@ -8668,6 +9916,14 @@
     "cost": 800000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -8724,6 +9980,14 @@
     "cost": 800000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 425,
@@ -8785,6 +10049,14 @@
     "cost": 820000,
     "mass": 125,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 300,
@@ -8847,6 +10119,14 @@
     "cost": 850000,
     "mass": 255,
     "length": 55,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 35,
     "strength": 325,
@@ -8908,6 +10188,14 @@
     "cost": 850000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 300,
@@ -8965,6 +10253,14 @@
     "cost": 875000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -9026,6 +10322,14 @@
     "cost": 875000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -9087,6 +10391,14 @@
     "cost": 875000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -9148,6 +10460,14 @@
     "cost": 875000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 325,
@@ -9219,6 +10539,14 @@
     "cost": 900000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 10,
     "strength": 375,
@@ -9275,6 +10603,14 @@
     "cost": 950000,
     "mass": 98,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 275,
@@ -9341,6 +10677,14 @@
     "cost": 950000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 300,
@@ -9403,6 +10747,14 @@
     "cost": 950000,
     "mass": 125,
     "length": 20,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 2,
     "strength": 320,
@@ -9465,6 +10817,14 @@
     "cost": 950000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -9521,6 +10881,14 @@
     "cost": 1000000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 375,
@@ -9577,6 +10945,14 @@
     "cost": 1000000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 375,
@@ -9633,6 +11009,14 @@
     "cost": 1050000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 375,
@@ -9689,6 +11073,14 @@
     "cost": 1100000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 375,
@@ -9745,6 +11137,14 @@
     "cost": 1100000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 300,
@@ -9807,6 +11207,14 @@
     "cost": 1250000,
     "mass": 2000,
     "length": 100,
+    "contribute": [
+      0,
+      33
+    ],
+    "require": [
+      64,
+      0
+    ],
     "inherentAi": 1,
     "crew": 10,
     "strength": 75,
@@ -9854,6 +11262,14 @@
     "cost": 1275000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 10,
     "strength": 450,
@@ -9910,6 +11326,14 @@
     "cost": 1400000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 425,
@@ -9971,6 +11395,14 @@
     "cost": 1400000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 425,
@@ -10032,6 +11464,14 @@
     "cost": 1450000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 425,
@@ -10093,6 +11533,14 @@
     "cost": 1500000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10159,6 +11607,14 @@
     "cost": 1600000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10225,6 +11681,14 @@
     "cost": 1600000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10291,6 +11755,14 @@
     "cost": 1700000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10357,6 +11829,14 @@
     "cost": 1750000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 375,
@@ -10413,6 +11893,14 @@
     "cost": 1800000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10479,6 +11967,14 @@
     "cost": 1800000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10545,6 +12041,14 @@
     "cost": 2000000,
     "mass": 2000,
     "length": 100,
+    "contribute": [
+      0,
+      33
+    ],
+    "require": [
+      64,
+      0
+    ],
     "inherentAi": 1,
     "crew": 10,
     "strength": 75,
@@ -10592,6 +12096,14 @@
     "cost": 2000000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      203,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 325,
@@ -10658,6 +12170,14 @@
     "cost": 2000000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10724,6 +12244,14 @@
     "cost": 2000000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 600,
@@ -10780,6 +12308,14 @@
     "cost": 2000000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 350,
@@ -10846,6 +12382,14 @@
     "cost": 2000000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 350,
@@ -10912,6 +12456,14 @@
     "cost": 2000000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -10978,6 +12530,14 @@
     "cost": 2000000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -11044,6 +12604,14 @@
     "cost": 2000000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -11100,6 +12668,14 @@
     "cost": 2000000,
     "mass": 2000,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      64,
+      0
+    ],
     "inherentAi": 1,
     "crew": 10,
     "strength": 75,
@@ -11157,6 +12733,14 @@
     "cost": 2000000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 750,
@@ -11213,6 +12797,14 @@
     "cost": 2050000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -11269,6 +12861,14 @@
     "cost": 2100000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -11325,6 +12925,14 @@
     "cost": 2150000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -11381,6 +12989,14 @@
     "cost": 2200000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -11447,6 +13063,14 @@
     "cost": 2250000,
     "mass": 1200,
     "length": 470,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 150,
     "strength": 425,
@@ -11513,6 +13137,14 @@
     "cost": 2250000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 375,
@@ -11569,6 +13201,14 @@
     "cost": 2350000,
     "mass": 2000,
     "length": 100,
+    "contribute": [
+      0,
+      33
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 10,
     "strength": 75,
@@ -11616,6 +13256,14 @@
     "cost": 2350000,
     "mass": 2000,
     "length": 100,
+    "contribute": [
+      0,
+      33
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 10,
     "strength": 75,
@@ -11663,6 +13311,14 @@
     "cost": 2400000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 10,
     "strength": 450,
@@ -11719,6 +13375,14 @@
     "cost": 2500000,
     "mass": 6000,
     "length": 475,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 15,
     "strength": 175,
@@ -11764,6 +13428,14 @@
     "cost": 2500000,
     "mass": 150,
     "length": 23,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 4,
     "crew": 4,
     "strength": 450,
@@ -11825,6 +13497,14 @@
     "cost": 2500000,
     "mass": 6000,
     "length": 475,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 15,
     "strength": 175,
@@ -11870,6 +13550,14 @@
     "cost": 2500000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 10,
     "strength": 450,
@@ -11926,6 +13614,14 @@
     "cost": 2500000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 375,
@@ -11997,6 +13693,14 @@
     "cost": 2500000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 350,
@@ -12063,6 +13767,14 @@
     "cost": 2500000,
     "mass": 150,
     "length": 23,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      3,
+      0
+    ],
     "inherentAi": 4,
     "crew": 4,
     "strength": 450,
@@ -12124,6 +13836,14 @@
     "cost": 2750000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 325,
@@ -12190,6 +13910,14 @@
     "cost": 2750000,
     "mass": 2000,
     "length": 100,
+    "contribute": [
+      0,
+      33
+    ],
+    "require": [
+      64,
+      0
+    ],
     "inherentAi": 1,
     "crew": 10,
     "strength": 75,
@@ -12242,6 +13970,14 @@
     "cost": 3000000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 375,
@@ -12298,6 +14034,14 @@
     "cost": 3000000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 375,
@@ -12354,6 +14098,14 @@
     "cost": 3000000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 750,
@@ -12410,6 +14162,14 @@
     "cost": 3000000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 375,
@@ -12481,6 +14241,14 @@
     "cost": 3000000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 425,
@@ -12560,6 +14328,14 @@
     "cost": 3250000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 350,
@@ -12631,6 +14407,14 @@
     "cost": 3500000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 325,
@@ -12697,6 +14481,14 @@
     "cost": 3500000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 325,
@@ -12768,6 +14560,14 @@
     "cost": 3500000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 600,
@@ -12824,6 +14624,14 @@
     "cost": 3500000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 600,
@@ -12880,6 +14688,14 @@
     "cost": 3750000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 350,
@@ -12951,6 +14767,14 @@
     "cost": 4000000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 425,
@@ -13030,6 +14854,14 @@
     "cost": 4000000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 375,
@@ -13113,6 +14945,14 @@
     "cost": 4000000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 375,
@@ -13174,6 +15014,14 @@
     "cost": 4500000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 325,
@@ -13240,6 +15088,14 @@
     "cost": 4500000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 750,
@@ -13296,6 +15152,14 @@
     "cost": 4500000,
     "mass": 650,
     "length": 165,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 750,
@@ -13352,6 +15216,14 @@
     "cost": 4500000,
     "mass": 800,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 50,
     "strength": 375,
@@ -13435,6 +15307,14 @@
     "cost": 5000000,
     "mass": 100,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 10,
     "strength": 425,
@@ -13514,6 +15394,14 @@
     "cost": 5000000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 950,
@@ -13575,6 +15463,14 @@
     "cost": 5000000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 450,
@@ -13641,6 +15537,14 @@
     "cost": 6000000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 450,
@@ -13707,6 +15611,14 @@
     "cost": 7000000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 900,
@@ -13768,6 +15680,14 @@
     "cost": 7000000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 900,
@@ -13829,6 +15749,14 @@
     "cost": 7000000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 900,
@@ -13890,6 +15818,14 @@
     "cost": 7000000,
     "mass": 650,
     "length": 180,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 2,
     "crew": 100,
     "strength": 450,
@@ -13956,6 +15892,14 @@
     "cost": 9000000,
     "mass": 90,
     "length": 50,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 4,
     "crew": 2,
     "strength": 400,
@@ -14012,6 +15956,14 @@
     "cost": 9500000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 950,
@@ -14073,6 +16025,14 @@
     "cost": 9500000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 950,
@@ -14134,6 +16094,14 @@
     "cost": 9500000,
     "mass": 700,
     "length": 200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 20,
     "strength": 950,
@@ -14195,6 +16163,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1350,
@@ -14256,6 +16232,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1350,
@@ -14317,6 +16301,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1350,
@@ -14378,6 +16370,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1350,
@@ -14439,6 +16439,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1350,
@@ -14500,6 +16508,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -14561,6 +16577,14 @@
     "cost": 10000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -14622,6 +16646,14 @@
     "cost": 11000000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -14693,6 +16725,14 @@
     "cost": 11000000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -14759,6 +16799,14 @@
     "cost": 11500000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -14825,6 +16873,14 @@
     "cost": 12000000,
     "mass": 10000,
     "length": 500,
+    "contribute": [
+      0,
+      17
+    ],
+    "require": [
+      64,
+      0
+    ],
     "inherentAi": 1,
     "crew": 20,
     "strength": 100,
@@ -14866,6 +16922,14 @@
     "cost": 12000000,
     "mass": 2000,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      207,
+      0
+    ],
     "inherentAi": 3,
     "crew": 200,
     "strength": 500,
@@ -14932,6 +16996,14 @@
     "cost": 12000000,
     "mass": 1750,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 120,
     "strength": 425,
@@ -14993,6 +17065,14 @@
     "cost": 12000000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15059,6 +17139,14 @@
     "cost": 12000000,
     "mass": 10000,
     "length": 500,
+    "contribute": [
+      0,
+      17
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 20,
     "strength": 100,
@@ -15106,6 +17194,14 @@
     "cost": 12000000,
     "mass": 2000,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 200,
     "strength": 500,
@@ -15185,6 +17281,14 @@
     "cost": 12000000,
     "mass": 1750,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 120,
     "strength": 425,
@@ -15251,6 +17355,14 @@
     "cost": 12000000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15330,6 +17442,14 @@
     "cost": 12000000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15396,6 +17516,14 @@
     "cost": 12000000,
     "mass": 1750,
     "length": 525,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15479,6 +17607,14 @@
     "cost": 12500000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15554,6 +17690,14 @@
     "cost": 12500000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15620,6 +17764,14 @@
     "cost": 13000000,
     "mass": 10000,
     "length": 500,
+    "contribute": [
+      0,
+      17
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 1,
     "crew": 20,
     "strength": 100,
@@ -15672,6 +17824,14 @@
     "cost": 13500000,
     "mass": 1750,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 120,
     "strength": 425,
@@ -15733,6 +17893,14 @@
     "cost": 13500000,
     "mass": 1750,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 250,
     "strength": 475,
@@ -15816,6 +17984,14 @@
     "cost": 14000000,
     "mass": 1750,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 120,
     "strength": 425,
@@ -15882,6 +18058,14 @@
     "cost": 14000000,
     "mass": 1400,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 100,
     "strength": 900,
@@ -15948,6 +18132,14 @@
     "cost": 15000000,
     "mass": 1850,
     "length": 490,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 220,
     "strength": 475,
@@ -16014,6 +18206,14 @@
     "cost": 15000000,
     "mass": 2000,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 200,
     "strength": 500,
@@ -16080,6 +18280,14 @@
     "cost": 15000000,
     "mass": 2000,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 200,
     "strength": 500,
@@ -16159,6 +18367,14 @@
     "cost": 15000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -16220,6 +18436,14 @@
     "cost": 15000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -16281,6 +18505,14 @@
     "cost": 15000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -16342,6 +18574,14 @@
     "cost": 15000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -16403,6 +18643,14 @@
     "cost": 15000000,
     "mass": 1200,
     "length": 1200,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 30,
     "strength": 1450,
@@ -16464,6 +18712,14 @@
     "cost": 15500000,
     "mass": 1750,
     "length": 100,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 120,
     "strength": 425,
@@ -16525,6 +18781,14 @@
     "cost": 15750000,
     "mass": 1850,
     "length": 490,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 220,
     "strength": 475,
@@ -16604,6 +18868,14 @@
     "cost": 17000000,
     "mass": 2000,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 200,
     "strength": 500,
@@ -16670,6 +18942,14 @@
     "cost": 17000000,
     "mass": 1850,
     "length": 490,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 220,
     "strength": 475,
@@ -16749,6 +19029,14 @@
     "cost": 18000000,
     "mass": 1850,
     "length": 490,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 220,
     "strength": 475,
@@ -16828,6 +19116,14 @@
     "cost": 20000000,
     "mass": 2000,
     "length": 500,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 200,
     "strength": 500,
@@ -16899,6 +19195,14 @@
     "cost": 50000000,
     "mass": 700,
     "length": 150,
+    "contribute": [
+      0,
+      1
+    ],
+    "require": [
+      0,
+      0
+    ],
     "inherentAi": 3,
     "crew": 1,
     "strength": 400,

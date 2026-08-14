@@ -899,6 +899,19 @@ function decodeMisn(res) {
     require: [d.readUInt32BE(1622), d.readUInt32BE(1626)],
     scanMask: d.readUInt16BE(1630),
     onShipDone: s(1632),
+    /*
+     * The last three fields, in the Bible's own order behind OnShipDone.
+     * AcceptButton @1887 and RefuseButton @1919 are 32-byte strings — the
+     * bounds are visible in the raw bytes (Rebel3 reads "I'm in" at 1887 and
+     * "I need more time" at 1919, gapless) — and 22 missions set both. They
+     * are not always yes/no: Wild Geese 7aI labels its two buttons "Rebels"
+     * and "Aurorans", which is the storyline branch it is actually asking
+     * about. DispWeight @1952 sorts the bar and BBS lists, higher first;
+     * it reads 0 on 747 missions and 1/5/10/100 on the rest.
+     */
+    acceptButton: cstr(d, 1887, 32),
+    refuseButton: cstr(d, 1919, 32),
+    dispWeight: d.readInt16BE(1952),
   };
 }
 

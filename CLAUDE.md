@@ -323,6 +323,50 @@ stop re-offering the Guild intro forever. The gövt pass also picked up
 **InhJam1-4 @92** (the Federation reads 7/5/0/0) and **MediumName @100**,
 extracted for later use.
 
+The mïsn record ends with three more fields, all previously unread:
+**AcceptButton @1887** and **RefuseButton @1919**, 32-byte strings whose
+bounds are visible in the raw bytes (Rebel3 reads "I'm in" at 1887 and "I
+need more time" at 1919, gapless), and **DispWeight @1952**, which "controls
+the order that the mission is presented in the bar and mission BBS list"
+(higher first; 44 missions set one). The buttons are **not always
+agree/decline** — Wild Geese 7aI labels them "Rebels" and "Aurorans" and
+Polaris43a "Federation"/"Auroran", so those are branch choices where
+rendering "Accept"/"Refuse" loses the question the dialog is asking. 22
+missions set both; empty falls back to Nova's own STR# 150 wording.
+
+**Crossfire: one tolerance band, no target special case.** Ships turned
+hostile far too easily, and inconsistently — a single hit provoked instantly
+if the ship happened to be the player's current target, and otherwise fed a
+damage accumulator, so whether a graze started a war depended on whether you
+were cycling targets or hailing at the time. The Bible says nothing about
+this, but the **Nova beta history** (same docs folder) records the whole
+shape of the rule: "AI ships are more forgiving of accidental weapon hits",
+three rounds of "changed / tweaked AI ships' tolerance for stray shots", and
+— the entry that pins the inputs — "fixed bug where govt ships would ignore
+stray shots if player had an 'always let land' rank", which only makes sense
+if the tolerance consults the player's standing with that government. So it
+is one accumulator per ship, a reputation-scaled threshold, and forgiveness
+over time:
+
+    tolerance = min(maxHp × 0.5, 40 + maxHp × 0.12) × clamp(1 + rec×0.02, 0.4, 3)
+
+The absolute floor is what stops small hulls being hair-triggered — a
+fraction-only band let one graze turn a Shuttle while a Leviathan absorbed
+twenty, which is backwards, since it is the same shot. The `maxHp × 0.5` cap
+keeps the floor under what the hull can actually take, so nothing dies
+without ever having fought back. Stray damage decays a full band over
+`STRAY_FORGIVE_SECONDS` (8), so a burst that stops is forgotten in the same
+wall-clock time whatever the hull; the old decay scaled off maxHp, which had
+big ships forgetting instantly and small ones never. Measured in the
+browser: a 650-hp Federation trader forgives 24 light-blaster grazes but
+turns on the **first** 8-gun Manticore volley — accidents forgiven,
+deliberate attacks answered at once — a 40-hp Shuttle forgives 4 and a
+3500-hp Leviathan 460, and the same trader's band runs 47 at record -50,
+118 at 0 and 354 at +100. The interceptors' "piracy police" cascade stays
+inside `provoke()` for the same reason: what they witness is an attack, not
+a graze. **The numbers are ours** — the beta history proves the shape, never
+the constants, so retune `strayTolerance` freely on feel.
+
 **Hypergates / wormholes (Bible-aligned transit).** Selecting a working
 hypergate (L cycle or click) starts the ring open animation; landing on it
 when slow enough opens the **normal galaxy map** as a destination chooser —

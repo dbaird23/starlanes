@@ -302,6 +302,8 @@ const BOARDER_GOVTS = new Set([137, 169, 170, 176, 177, 192]);
 
 const LAND_DIST = 2.4; // multiples of planet radius (from surface-ish)
 const LAND_SPEED = 130;
+/** How long a ship takes to forgive a full tolerance band of stray fire. */
+const STRAY_FORGIVE_SECONDS = 8;
 /** Leave a gate slightly too fast to re-dock without braking. */
 const GATE_EMERGE_SPEED = LAND_SPEED + 20;
 /**
@@ -2107,11 +2109,17 @@ export class Game {
     }
     for (const npc of this.npcs) {
       npc.rechargeShields(dt);
-      // stray-fire memory fades — a burst of crossfire is forgiven over ~10s
+      /*
+       * Stray-fire memory fades: a full tolerance band is forgiven over
+       * STRAY_FORGIVE_SECONDS, so a burst that stops is forgotten in the same
+       * wall-clock time whatever the hull, and only sustained fire stacks up.
+       * (Scaling the decay off maxHp instead made big ships forget almost
+       * instantly and small ones never.)
+       */
       if (npc.strayDamage > 0)
         npc.strayDamage = Math.max(
           0,
-          npc.strayDamage - (npc.maxShield + npc.maxArmor) * 0.1 * dt,
+          npc.strayDamage - (this.strayTolerance(npc) / STRAY_FORGIVE_SECONDS) * dt,
         );
       if (npc === this.fuelHelper) {
         this.updateFuelHelperAi(npc, dt);
@@ -5176,6 +5184,11 @@ export class Game {
      * "attacking any ship that fires on or attempts to board another,
      * non-enemy ship while the interceptor is watching". Watching means in
      * sensor range of the ship that was hit.
+     *
+     * This sits inside provoke() rather than at the hit site on purpose: it
+     * fires only once the victim's own stray-fire tolerance is spent, so a
+     * graze in a crossfire doesn't turn every patrol in the system. What the
+     * interceptor witnesses is an attack, not an accident.
      */
     for (const other of this.npcs) {
       if (other === npc || other.aiType !== 4 || other.hostile || other.ally)
@@ -5188,34 +5201,47 @@ export class Game {
   }
 
   /**
-   * Provoke an NPC hit by the player, respecting stray-fire tolerance.
+   * How much of the player's fire a ship shrugs off before it fights back.
    *
-   * If the player has the NPC explicitly targeted, a single shot is enough —
-   * they know exactly what they're shooting at. Otherwise the shot is treated
-   * as stray fire: damage is accumulated against a tolerance band that scales
-   * with the player's reputation with that government.
+   * Nova's rule is not documented in the Bible, but the beta history records
+   * its whole shape: "AI ships are more forgiving of accidental weapon hits",
+   * then three separate rounds of "changed / tweaked AI ships' tolerance for
+   * stray shots", and — the one that pins the inputs — "fixed bug where govt
+   * ships would ignore stray shots if player had an 'always let land' rank",
+   * which only makes sense if the tolerance consults the player's standing
+   * with that government. So: one damage accumulator per ship, a threshold
+   * scaled by reputation, and forgiveness over time.
    *
-   *   tolerance = (maxShield + maxArmor) × fraction
-   *   fraction  = clamp(0.06 + record × 0.003, 0.01, 0.75)
+   *   tolerance = min(maxHp × 0.5, FLOOR + maxHp × 0.12) × repScale
+   *   repScale  = clamp(1 + record × 0.02, 0.4, 3)
    *
-   * At record 0 the band is 6% of total HP — a handful of grazing hits before
-   * they turn. At record +200 (trusted ally) it's 66%, absorbing the vast
-   * majority of crossfire. At record −50 (already suspect) it's down to 1%,
-   * one solid hit and they're hostile.
+   * The absolute FLOOR is what stops small hulls being hair-triggered: a
+   * fraction-only band let one blaster graze turn a Shuttle while a Leviathan
+   * absorbed twenty, which is backwards — the shot is the same shot. The
+   * `maxHp × 0.5` cap keeps the floor from exceeding what the hull can even
+   * take, so nothing can be destroyed without ever having fought back.
+   *
+   * There is deliberately **no special case for the player's current target**.
+   * An earlier pass provoked instantly on a single hit if the ship happened to
+   * be targeted, which made provocation bimodal — a graze started a war or
+   * didn't depending on whether you were cycling targets or hailing at the
+   * time, which has nothing to do with intent. The beta history only ever
+   * describes one mechanism. Deliberate attacks still turn a ship almost at
+   * once: sustained fire crosses the threshold in well under a second.
    */
+  private strayTolerance(npc: NpcShip): number {
+    const STRAY_FLOOR = 40; // damage every hull forgives outright
+    const maxHp = npc.maxShield + npc.maxArmor;
+    const record = getGovtRecord(this.player, npc.govtId, this.player.systemId);
+    const repScale = Math.max(0.4, Math.min(3, 1 + record * 0.02));
+    return Math.min(maxHp * 0.5, STRAY_FLOOR + maxHp * 0.12) * repScale;
+  }
+
+  /** Provoke an NPC hit by the player, once its stray-fire tolerance is spent. */
   private maybeProvoke(npc: NpcShip, damage: number): void {
     if (npc.ally || npc.hostile) return;
-    if (npc === this.targetNpc) {
-      this.provoke(npc);
-      return;
-    }
-    const record = getGovtRecord(this.player, npc.govtId, this.player.systemId);
-    const maxHp = npc.maxShield + npc.maxArmor;
-    const fraction = Math.max(0.05, Math.min(0.75, 0.15 + record * 0.003));
     npc.strayDamage += damage;
-    if (npc.strayDamage >= maxHp * fraction) {
-      this.provoke(npc);
-    }
+    if (npc.strayDamage >= this.strayTolerance(npc)) this.provoke(npc);
   }
 
   /** Disable goals tick over the moment the target stops fighting. */

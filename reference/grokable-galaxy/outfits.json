@@ -657,7 +657,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -688,8 +688,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      1,
+      1
     ],
     "mods": [
       [
@@ -725,7 +725,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -752,12 +752,12 @@
     "buyRandom": 95,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -793,7 +793,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -824,8 +824,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      1,
+      1
     ],
     "mods": [
       [
@@ -860,8 +860,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      1,
+      1
     ],
     "mods": [
       [
@@ -900,8 +900,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      9,
+      1
     ],
     "mods": [
       [
@@ -932,12 +932,12 @@
     "buyRandom": 90,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -972,8 +972,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1004,8 +1004,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1032,12 +1032,12 @@
     "buyRandom": 80,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1068,12 +1068,12 @@
     "buyRandom": 80,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1104,12 +1104,12 @@
     "buyRandom": 95,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1136,12 +1136,12 @@
     "buyRandom": 100,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1172,8 +1172,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1204,8 +1204,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1232,12 +1232,12 @@
     "buyRandom": 90,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1264,12 +1264,12 @@
     "buyRandom": 100,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1301,7 +1301,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1333,7 +1333,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1364,8 +1364,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1396,8 +1396,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1428,8 +1428,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1460,8 +1460,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -1493,7 +1493,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1525,7 +1525,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1557,7 +1557,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1589,7 +1589,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1621,7 +1621,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1653,7 +1653,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1692,8 +1692,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -1728,8 +1728,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -1760,8 +1760,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -1793,7 +1793,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1828,8 +1828,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -1860,8 +1860,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -1893,7 +1893,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1925,7 +1925,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1957,7 +1957,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -1989,7 +1989,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2020,8 +2020,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2056,8 +2056,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2088,8 +2088,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2124,8 +2124,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2156,8 +2156,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2192,8 +2192,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2224,8 +2224,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2260,8 +2260,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2292,8 +2292,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2328,8 +2328,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2360,8 +2360,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2396,8 +2396,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -2428,8 +2428,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      256,
+      1
     ],
     "mods": [
       [
@@ -2464,8 +2464,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      256,
+      1
     ],
     "mods": [
       [
@@ -2501,7 +2501,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2532,12 +2532,12 @@
     "buyRandom": 70,
     "requireGovt": 127,
     "contribute": [
-      0,
+      512,
       0
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2573,7 +2573,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2609,7 +2609,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2641,7 +2641,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2681,7 +2681,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2717,7 +2717,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2753,7 +2753,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2788,8 +2788,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -2824,8 +2824,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      2,
+      1
     ],
     "mods": [
       [
@@ -2857,7 +2857,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2893,7 +2893,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2929,7 +2929,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2965,7 +2965,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -2997,7 +2997,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3033,7 +3033,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3065,7 +3065,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3101,7 +3101,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3137,7 +3137,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3169,7 +3169,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3205,7 +3205,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3237,7 +3237,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3273,7 +3273,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3305,7 +3305,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3341,7 +3341,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3373,7 +3373,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3409,7 +3409,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3441,7 +3441,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3477,7 +3477,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3509,7 +3509,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3545,7 +3545,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3581,7 +3581,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3617,7 +3617,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3649,7 +3649,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3685,7 +3685,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3721,7 +3721,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3757,7 +3757,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3789,7 +3789,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3821,7 +3821,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3857,7 +3857,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3893,7 +3893,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3925,7 +3925,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3957,7 +3957,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -3989,7 +3989,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4025,7 +4025,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4057,7 +4057,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4089,7 +4089,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4121,7 +4121,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4153,7 +4153,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4189,7 +4189,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4225,7 +4225,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4261,7 +4261,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4297,7 +4297,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4329,7 +4329,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4365,7 +4365,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4401,7 +4401,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4437,7 +4437,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4469,7 +4469,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4501,7 +4501,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4533,7 +4533,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4569,7 +4569,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4601,7 +4601,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4633,7 +4633,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4665,7 +4665,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4701,7 +4701,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4733,7 +4733,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4765,7 +4765,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4797,7 +4797,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4829,7 +4829,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4861,7 +4861,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4897,7 +4897,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4941,7 +4941,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -4985,7 +4985,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5017,7 +5017,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5049,7 +5049,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5081,7 +5081,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5113,7 +5113,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5149,7 +5149,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5181,7 +5181,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5213,7 +5213,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5245,7 +5245,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5277,7 +5277,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5309,7 +5309,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5341,7 +5341,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5373,7 +5373,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5413,7 +5413,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5453,7 +5453,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5485,7 +5485,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5517,7 +5517,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5549,7 +5549,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5581,7 +5581,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5612,8 +5612,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -5645,7 +5645,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5677,7 +5677,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5709,7 +5709,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5741,7 +5741,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5773,7 +5773,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5805,7 +5805,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5841,7 +5841,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5877,7 +5877,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5913,7 +5913,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5949,7 +5949,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -5981,7 +5981,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6013,7 +6013,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6044,8 +6044,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -6076,8 +6076,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      8,
+      1
     ],
     "mods": [
       [
@@ -6109,7 +6109,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6141,7 +6141,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6173,7 +6173,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6205,7 +6205,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6237,7 +6237,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6269,7 +6269,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6301,7 +6301,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6333,7 +6333,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6365,7 +6365,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6397,7 +6397,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6428,8 +6428,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -6464,8 +6464,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      4,
+      1
     ],
     "mods": [
       [
@@ -6496,8 +6496,8 @@
       0
     ],
     "require": [
-      0,
-      0
+      1,
+      1
     ],
     "mods": [
       [
@@ -6529,7 +6529,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6561,7 +6561,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6593,7 +6593,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6625,7 +6625,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6657,7 +6657,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6721,7 +6721,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6753,7 +6753,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -6780,7 +6780,7 @@
     "buyRandom": 100,
     "requireGovt": 127,
     "contribute": [
-      0,
+      1,
       0
     ],
     "require": [
@@ -6807,7 +6807,7 @@
     "buyRandom": 100,
     "requireGovt": 127,
     "contribute": [
-      0,
+      2,
       0
     ],
     "require": [
@@ -6834,7 +6834,7 @@
     "buyRandom": 100,
     "requireGovt": 127,
     "contribute": [
-      0,
+      8,
       0
     ],
     "require": [
@@ -6861,7 +6861,7 @@
     "buyRandom": 100,
     "requireGovt": 127,
     "contribute": [
-      0,
+      4,
       0
     ],
     "require": [
@@ -6888,7 +6888,7 @@
     "buyRandom": 90,
     "requireGovt": 127,
     "contribute": [
-      0,
+      64,
       0
     ],
     "require": [
@@ -6915,11 +6915,11 @@
     "buyRandom": 80,
     "requireGovt": 127,
     "contribute": [
-      0,
+      128,
       0
     ],
     "require": [
-      0,
+      64,
       0
     ],
     "mods": [],
@@ -6942,7 +6942,7 @@
     "buyRandom": 60,
     "requireGovt": 127,
     "contribute": [
-      0,
+      511,
       0
     ],
     "require": [
@@ -7134,7 +7134,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7166,7 +7166,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7262,7 +7262,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7294,7 +7294,7 @@
     ],
     "require": [
       0,
-      0
+      2147483649
     ],
     "mods": [],
     "desc": "Sigma Shipyard engineers recently came up with a relatively simple process for upgrading the standard Starbridge into the far more capable Starbridge C, most commonly known as the Chrome Valkyrie for reasons known only to its original designers.  The process takes barely 24 hours and at the end of it the new ship is ready for action.  The only drawback is that the process will strip all of your outfits from your old model and only leaves the 'standard' fittings for the Starbridge C type{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
@@ -7321,7 +7321,7 @@
     ],
     "require": [
       0,
-      0
+      2147483649
     ],
     "mods": [],
     "desc": "Before he defected, Mr. Donald Chick and his engineers were working on processes of updating older versions of spare vessels to later models.  Since then he has perfected the techniques required, and here is the resulting process to upgrade a standard Starbridge to the slightly more capable Rebellion standard type.  It takes just short of 24 hours and strips all excess outfits, leaving only those outfits defined as standard for the Rebel version.  However it is cheap, and relatively simple{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
@@ -7348,7 +7348,7 @@
     ],
     "require": [
       0,
-      0
+      1073741825
     ],
     "mods": [],
     "desc": "Before he defected, Mr. Donald Chick and his engineers were working on processes of updating older versions of spare vessels to later models.  Since then he has perfected the techniques required, and here is the resulting process to upgrade a standard Valkyrie to the slightly more capable Rebellion standard type.  It takes just short of 24 hours and strips all excess outfits, leaving only those outfits defined as standard for the Rebel version.  However it is cheap, and relatively simple{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
@@ -7375,7 +7375,7 @@
     ],
     "require": [
       0,
-      0
+      2147483649
     ],
     "mods": [],
     "desc": "In a direct rip-off of the Sigma Shipyards upgrading process (which was probably taken from the upgrading process used by engineers working for the Rebellion), underhanded outfitters can now upgrade your standard Starbridge to the base level Pirate type.  Like the Sigma Shipyards process, all existing outfits are stripped from your vessel, leaving only those outfits deemed to be standard according to the new vessel type{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
@@ -7402,7 +7402,7 @@
     ],
     "require": [
       0,
-      0
+      1073741825
     ],
     "mods": [],
     "desc": "With only a few relatively minor modifications, many shady outfitters have been able to take the Sigma Shipyards Starbridge upgrading process and use it to upgrade standard Valkyries to the much more feared pirate type.  Like all processes of this type, all existing outfits are stripped from your vessel, leaving only those outfits deemed to be standard according to the parameters of the new model{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
@@ -7429,7 +7429,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [],
     "desc": "You are a little dubious as to the veracity of the claims of this shifty, grinning merchant trying to sell you bottles of Auroran Drop Bear repellant.  But you cannot help feeling that anything that helps protect you from the well-documented deadly Drop Bear attacks will stand you in good stead.\r\rStill, it is strange that just about everyone who walks past you starts grinning and shaking their heads as you consider buying from the smiling merchant..."
@@ -7456,7 +7456,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7500,7 +7500,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7540,7 +7540,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7576,7 +7576,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7620,7 +7620,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7652,7 +7652,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [],
     "desc": "The Sigma Shipyards engineers are capable of adding numerous small 'weapons pods' to the outside of your hull without seriously unbalancing your vessel.  The result is a mere 5 extra tons of weapons space, but it is 5 tons gained without the loss of any cargo space and, as any pilot can tell you, that extra 5 tons can make all the difference{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}{b424 \"\r\rYou stare at this item, and the others around it, for several long, sad moments, knowing that you may never be able to buy any of them ever again.\" \"\"}"
@@ -7679,7 +7679,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7711,7 +7711,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7747,7 +7747,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7779,7 +7779,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7811,7 +7811,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7843,7 +7843,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -7897,7 +7897,7 @@
     "buyRandom": 5,
     "requireGovt": 127,
     "contribute": [
-      0,
+      511,
       0
     ],
     "require": [
@@ -7924,7 +7924,7 @@
     "buyRandom": 5,
     "requireGovt": 127,
     "contribute": [
-      0,
+      511,
       0
     ],
     "require": [
@@ -7956,7 +7956,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -8000,7 +8000,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -8032,7 +8032,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [
@@ -8064,7 +8064,7 @@
     ],
     "require": [
       0,
-      0
+      1
     ],
     "mods": [
       [

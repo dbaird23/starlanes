@@ -1195,6 +1195,15 @@ export class LandedUi {
     // mission freight rides in your own hull, so escort holds don't count
     const freeSpace = this.game.holdSpace();
     const fits = !active.cargoLoaded || active.cargoQty <= freeSpace;
+    /*
+     * mïsn AcceptButton / RefuseButton: 22 missions label their own buttons,
+     * and they are not always agreement — Wild Geese 7aI reads "Rebels" and
+     * "Aurorans", which is the branch the dialog is really asking about, so
+     * showing Accept/Refuse there loses the question. Empty falls back to
+     * Nova's own wording.
+     */
+    const acceptLabel = m.acceptButton?.trim() ?? "";
+    const refuseLabel = m.refuseButton?.trim() ?? "";
     const noSpaceNote = fits
       ? ""
       : `<p class="hint warn">This job needs ${active.cargoQty} tons free <em>in your own hold</em> — you have ${Math.max(0, freeSpace)}. Your escorts cannot carry it. Sell some cargo or fly a bigger ship.</p>`;
@@ -1207,9 +1216,9 @@ export class LandedUi {
         ${noSpaceNote}
         <div class="btnrow">
           ${cantRefuse && back === "shipOffer"
-            ? '<button class="evbtn primary" id="btn-accept" data-modal-default>Okay</button>'
-            : `<button class="evbtn primary" id="btn-accept" data-modal-default ${fits ? "" : "disabled"}>Accept</button>
-          ${!cantRefuse ? '<button class="evbtn" id="btn-refuse" data-modal-cancel>Refuse</button>' : ""}
+            ? `<button class="evbtn primary" id="btn-accept" data-modal-default>${escapeHtml(acceptLabel || "Okay")}</button>`
+            : `<button class="evbtn primary" id="btn-accept" data-modal-default ${fits ? "" : "disabled"}>${escapeHtml(acceptLabel || "Accept")}</button>
+          ${!cantRefuse ? `<button class="evbtn" id="btn-refuse" data-modal-cancel>${escapeHtml(refuseLabel || "Refuse")}</button>` : ""}
           ${cantRefuse && !fits ? '<button class="evbtn" id="btn-decline" data-modal-cancel>Decline</button>' : ""}
           <button class="evbtn" id="btn-offer-map">Map</button>`}
         </div>

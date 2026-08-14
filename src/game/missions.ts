@@ -239,6 +239,11 @@ export function availableMissions(
     if (!DESCS[String(4000 + m.id - 128)] && m.availLoc !== 0) continue; // need offer text for dialogs
     out.push(m);
   }
+  // mïsn DispWeight "controls the order that the mission is presented in the
+  // bar and mission BBS list. Missions with higher DispWeight values are
+  // presented first." 44 missions set one; the rest read 0 and keep their
+  // resource order behind them.
+  out.sort((a, b) => (b.dispWeight ?? 0) - (a.dispWeight ?? 0));
   // a modest board: don't flood the BBS
   return out.slice(0, 12);
 }
