@@ -3298,8 +3298,14 @@ export class Game {
   }
 
   /** STR# 150 holds Nova's own button labels; 20-24 are the comms panel's. */
-  private btnLabel(index: number, fallback: string): string {
-    return STR_LISTS["150"]?.[index] ?? fallback;
+  /**
+   * STR# 150 "button labels", **1-based** like every other STR# reference in
+   * this codebase (`ui()`, sÿst Message, përs CommQuote). It used to take a
+   * 0-based array index while its callers passed entry-minus-one, which read
+   * as an off-by-one every time anyone checked it against the resource.
+   */
+  private btnLabel(entry: number, fallback: string): string {
+    return STR_LISTS["150"]?.[entry - 1] ?? fallback;
   }
 
   /**
@@ -3452,51 +3458,87 @@ export class Game {
 
     if (t.hostile) {
       opts.push({
-        label: this.btnLabel(21, "Greetings"),
+        label: this.btnLabel(22, "Greetings"),
         action: () => this.hailGreeting(t),
       });
-      if (!untalkative) {
-        /*
-         * gövt Flags: 0x0200 "warships will take bribes", 0x2000 "freighters
-         * will take bribes", 0x8000 "demand a larger percentage" (pirates).
-         * Bribeable ships enter the barter flow; others get the old plea.
-         */
-        const flags =
-          t.govtId >= 128 ? (GOVT_FLAGS[String(t.govtId)] ?? 0) : 0;
-        const freighter = t.aiType === 1 || t.aiType === 2;
-        const takesBribes = freighter
-          ? (flags & 0x2000) !== 0
-          : (flags & 0x0200) !== 0;
-        const greedy = (flags & 0x8000) !== 0;
+      /*
+       * Nova has **two** buttons here, and they are governed by different
+       * fields. Offer Bribe is money and is gated only on whether this
+       * government takes bribes at all — gövt Flags 0x0200 for warships,
+       * 0x2000 for freighters (the split is by the attacker's AI type), with
+       * 0x8000 "demand a larger percentage of your cash supply" raising the
+       * ask. Beg For Mercy is free and is gated on Flags2 **0x0001**, whose
+       * text names it outright: "the request assistance / beg for mercy
+       * button is disabled and the govt is not talkative". So an untalkative
+       * government will still take your money — it just won't hear a plea.
+       */
+      const flags = t.govtId >= 128 ? (GOVT_FLAGS[String(t.govtId)] ?? 0) : 0;
+      const freighter = t.aiType === 1 || t.aiType === 2;
+      const takesBribes = freighter
+        ? (flags & 0x2000) !== 0
+        : (flags & 0x0200) !== 0;
+      const greedy = (flags & 0x8000) !== 0;
+
+      /*
+       * A ship that is losing offers *you* money to break off — the other
+       * direction of the same negotiation, and what STR# 150's otherwise
+       * unused "Accept Payment" / "Demand More" pair is for. It needs
+       * something to pay with (its düde Booty roll) and a reason to want out.
+       */
+      if (t.booty > 0 && t.armor < t.maxArmor * 0.4 && !t.disabled) {
         opts.push({
-          label: this.btnLabel(24, "Beg For Mercy"),
+          label: this.btnLabel(28, "Accept Payment"),
           action: () => {
-            if (takesBribes) {
-              const amount = Math.min(
-                this.player.credits,
-                2000 +
-                  Math.floor(this.player.credits * (greedy ? 0.33 : 0.1)),
-              );
-              this.showMercyNegotiation(t, amount, amount);
-              return null;
-            }
-            // Non-bribeable: plea only — works if they're badly damaged or
-            // barely provoked (same rule as the old system).
+            this.showRansomOffer(t, t.booty);
+            return null;
+          },
+        });
+      }
+
+      if (takesBribes) {
+        opts.push({
+          label: this.btnLabel(24, "Offer Bribe"),
+          action: () => {
+            const amount = Math.min(
+              this.player.credits,
+              2000 + Math.floor(this.player.credits * (greedy ? 0.33 : 0.1)),
+            );
+            if (this.player.credits < 2000)
+              return `"${shipComm(SHIP_COMM.cantAfford, "You can't afford it.")}"`;
+            this.showMercyNegotiation(t, amount, amount);
+            return null;
+          },
+        });
+      }
+
+      if (!untalkative) {
+        opts.push({
+          label: this.btnLabel(25, "Beg For Mercy"),
+          action: () => {
+            /*
+             * A free plea. It works on a ship that is already hurt or that
+             * barely holds a grudge; otherwise they tell you where to go.
+             * Standing counts — a captain who likes you lets it slide,
+             * which is STR# 3000's "only because I like you" group.
+             */
             const merciful = t.armor < t.maxArmor * 0.4 || record > -10;
             if (merciful) {
               t.hostile = false;
               t.phase = "leaving";
               const ang =
-                Math.atan2(t.pos.y, t.pos.x) +
-                (Math.random() - 0.5) * Math.PI;
+                Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
               t.target = {
                 x: t.pos.x + Math.cos(ang) * 5000,
                 y: t.pos.y + Math.sin(ang) * 5000,
               };
               this.message("The attacker breaks off.");
-              return `"...Fine. You're not worth the plating. Get out of our sight."`;
+              return `"${
+                record > 20
+                  ? shipComm(SHIP_COMM.becauseILikeYou, "All right, but only because I like you.")
+                  : shipComm(SHIP_COMM.leaveYouAlone, "All right, I'll leave you alone.")
+              }"`;
             }
-            return `"Mercy? You should have thought of that earlier."`;
+            return `"${shipComm(SHIP_COMM.noWay, "Not a chance.")}"`;
           },
         });
       }
@@ -3505,7 +3547,7 @@ export class Game {
 
     if (!noGreeting) {
       opts.push({
-        label: this.btnLabel(21, "Greetings"),
+        label: this.btnLabel(22, "Greetings"),
         action: () => { playSnd(151, 0.4); return this.hailGreeting(t); },
       });
     }
@@ -3524,10 +3566,10 @@ export class Game {
         roadsideAssistance ||
         (t.govtId >= 128 && this.rankFlag(t.govtId, 0x0800));
       opts.push({
-        label: this.btnLabel(22, "Request Assistance"),
+        label: this.btnLabel(23, "Request Assistance"),
         action: () => {
           if (!freeRepair && !battleAssist && record < -10) {
-            return `"We don't help ships with your reputation. Good luck out there."`;
+            return `"${shipComm(SHIP_COMM.ratherNot, "I'd rather not.")}"`;
           }
           // under fire, a rank that carries battle assistance turns the
           // neighbourhood: everything of theirs in scanner range takes your
@@ -3567,18 +3609,18 @@ export class Game {
               Math.hypot(n.pos.x - t.pos.x, n.pos.y - t.pos.y) < 3000,
           );
           if (inCombat)
-            return `"A bit busy right now, Captain. You're on your own."`;
+            return `"${shipComm(SHIP_COMM.tooBusy, "I'm a little busy right now.")}"`;
 
           // Fuel assistance: needs at least one jump to get underway.
           const needFuel = this.player.fuelJumps < 1;
           const hurt = this.ship.armor < this.ship.maxArmor;
           const crippled = this.ship.disabled;
           if (!needFuel && !hurt && !crippled)
-            return `"You look in good shape to us, Captain. Safe flying."`;
+            return `"${shipComm(SHIP_COMM.notInTrouble, "You're not in any trouble.")}"`;
           let dispatchedFueler = false;
           if (needFuel) {
             if (this.fuelHelper)
-              return `"Help is already on the way, Captain. Hold your position."`;
+              return `"${shipComm(SHIP_COMM.holdOnComing, "Just hold on, I'm coming.")}"`;
           }
           /*
            * gövt Flags2 0x0010 / ränk Flags 0x0800: full free repairs.
@@ -3632,8 +3674,8 @@ export class Game {
               ? `"We're patching enough hull for thrusters and dispatching a fueler. Limp clear, Captain."`
               : `"We're patching enough hull for thrusters. You're not pretty, but you're free to fly."`;
           if (dispatchedFueler)
-            return `"Acknowledged — dispatching a fueler. Hold position, Captain."`;
-          return `"You look in good shape to us, Captain. Safe flying."`;
+            return `"${shipComm(SHIP_COMM.onMyWay, "Okay, I'm on my way.")}"`;
+          return `"${shipComm(SHIP_COMM.notInTrouble, "You're not in any trouble.")}"`;
         },
       });
     }
@@ -3645,6 +3687,105 @@ export class Game {
    * On accept the attacker stands down and leaves; on a failed Lower Price
    * they raise their demand and lock out further bargaining this hail.
    */
+  /**
+   * The other direction of the bribe: a ship that is losing offers *you*
+   * money to break off. STR# 150's "Accept Payment" / "Demand More" pair
+   * exists for this and nothing else, and STR# 3000 carries the whole
+   * exchange — they hand it over (group 36 "Here, take it and go!"), they
+   * grudgingly pay extra (35), they genuinely cannot (34 "Are you kidding? I
+   * can't afford to pay that!"), or pushing too hard flips them back to a
+   * fight (31 "What? How dare you! Prepare to die!").
+   *
+   * Squeezing is a real gamble: each demand risks the ship deciding it would
+   * rather shoot, and the odds get worse the more you have already extracted.
+   */
+  private showRansomOffer(
+    t: NpcShip,
+    amount: number,
+    demands = 0,
+    line?: string,
+  ): void {
+    const offered = Math.max(0, Math.round(amount));
+    const standDown = (): void => {
+      t.hostile = false;
+      t.phase = "leaving";
+      const ang =
+        Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
+      t.target = {
+        x: t.pos.x + Math.cos(ang) * 5000,
+        y: t.pos.y + Math.sin(ang) * 5000,
+      };
+    };
+
+    const opts: HailOption[] = [
+      {
+        label: this.btnLabel(28, "Accept Payment"),
+        action: () => {
+          playSnd(151, 0.4);
+          this.player.credits += offered;
+          t.booty = 0;
+          standDown();
+          this.message(
+            `${this.shipLabel(t)} pays ${offered.toLocaleString()} ${UI.cr()} and breaks off.`,
+          );
+          this.hailUi.close();
+          return null;
+        },
+      },
+    ];
+
+    /*
+     * Their purse is what the düde Booty roll gave them; past about half as
+     * much again they simply have not got it, whatever you threaten.
+     */
+    const ceiling = Math.round(t.booty * 1.5);
+    if (offered < ceiling) {
+      opts.push({
+        label: this.btnLabel(29, "Demand More"),
+        action: () => {
+          // The more you have squeezed, the likelier they fight instead.
+          const patience = 0.55 - demands * 0.2;
+          if (Math.random() > patience) {
+            playSnd(153, 0.4);
+            this.provoke(t);
+            this.hailUi.close();
+            this.message(
+              `${this.shipLabel(t)}: "${shipComm(SHIP_COMM.bribeRefusedAttack, "What? How dare you! Prepare to die!")}"`,
+            );
+            return null;
+          }
+          const raised = Math.round(offered * (1.3 + Math.random() * 0.3));
+          if (raised > ceiling) {
+            // They cannot cover it — the offer stands where it was.
+            this.showRansomOffer(
+              t,
+              offered,
+              demands + 1,
+              shipComm(
+                SHIP_COMM.cantPayThatMuch,
+                "Are you kidding? I can't afford to pay that!",
+              ),
+            );
+            return null;
+          }
+          this.showRansomOffer(
+            t,
+            raised,
+            demands + 1,
+            shipComm(SHIP_COMM.grudginglyPays, "All right! Fine! I'll pay extra!"),
+          );
+          return null;
+        },
+      });
+    }
+
+    this.hailUi.showShipNegotiation(
+      t,
+      `"${line ?? shipComm(SHIP_COMM.handsOverBribe, "Here, take it and go!")}" (${offered.toLocaleString()} ${UI.cr()})`,
+      opts,
+    );
+  }
+
   private showMercyNegotiation(
     t: NpcShip,
     amount: number,
@@ -3654,10 +3795,15 @@ export class Game {
   ): void {
     const capped = Math.min(this.player.credits, Math.round(amount));
     const lo = Math.min(lowestOffered, capped);
+    /*
+     * Their answer to a lowball. STR# 3000 group 14 is the "you're wasting my
+     * time" set and group 20 the flat refusals; a captain who already thinks
+     * well of you sometimes takes it anyway (group 33).
+     */
     const rejectionLines = [
-      `"Not enough. We don't come cheap."`,
-      `"We've already lowered our price. That's as far as we go."`,
-      `"Stop wasting our time. Final offer."`,
+      `"${shipComm(SHIP_COMM.wastingMyTime, "Stop wasting my time.")}"`,
+      `"${shipComm(SHIP_COMM.noWay, "Not a chance.")}"`,
+      `"${shipComm(SHIP_COMM.cantDoThat, "Sorry, I can't do that.")}"`,
     ];
     const standDown = (): void => {
       t.hostile = false;
@@ -3676,7 +3822,7 @@ export class Game {
         label: "Accept Price",
         action: () => {
           if (this.player.credits < capped)
-            return `"You don't have the funds. We'll be collecting in scrap, then."`;
+            return `"${shipComm(SHIP_COMM.cantAfford, "You can't afford it.")}"`;
           playSnd(151, 0.4);
           this.player.credits -= capped;
           standDown();

@@ -434,6 +434,47 @@ the same kind-pairing as STR# 2002's 22/23, 67/68, 71/72 and 87/88 — when a
 group looks short, check whether its entries are a pair rather than
 alternatives.
 
+**The hail is two negotiations, not one, and the buttons are governed by
+different fields.** STR# 150 names five: Greetings (22), Request Assistance
+(23), Offer Bribe (24), Beg For Mercy (25), Close Channel (21) — plus the
+pair that had never been used, **Accept Payment (28) / Demand More (29)**.
+The split matters because the Bible gates them separately: Offer Bribe is
+money and depends only on whether the government takes bribes at all (gövt
+Flags **0x0200** warships / **0x2000** freighters, split by the attacker's
+AI type, with **0x8000** raising the ask), while Beg For Mercy is free and
+is gated on Flags2 **0x0001**, whose text names it outright — "the request
+assistance / beg for mercy button is disabled and the govt is not
+talkative". So an untalkative government still takes your money; it just
+will not hear a plea. Verified in play: a hostile Family Moash warship
+offers Greetings / Offer Bribe / Close Channel and no mercy button, where a
+Pirate offers all four. These were one conflated button before, labelled
+"Beg For Mercy" and running the bribe.
+
+**A losing ship ransoms itself.** Accept Payment / Demand More exist for the
+other direction of the same negotiation, and STR# 3000 carries the whole
+exchange: they hand it over (group 36 "Here, take it and go!"), they
+grudgingly pay extra (35), they genuinely cannot (34 "Are you kidding? I
+can't afford to pay that!"), or pushing too hard flips them back to a fight
+(31 "Die, cheapskate!"). The offer appears on a hostile ship that is below
+40% armour, not yet disabled, and carrying a düde Booty roll to pay with;
+their ceiling is 1.5× that purse and each demand costs 20 percentage points
+of patience, so squeezing is a real gamble. Accepting zeroes `booty` — the
+ransom *is* the money, so you cannot pay-then-board for it twice. Measured:
+a Leviathan opened at 12,000, was squeezed to 15,989, and a second ship
+turned on the third demand.
+
+Two smaller things from the same pass. **`btnLabel` is 1-based now**, like
+`ui()` and every other STR# reference here; it took a 0-based array index
+while its callers passed entry-minus-one, which read as an off-by-one every
+time anyone checked it against the resource. And the negotiation and
+assistance refusals now speak from STR# 3000 rather than hand-written
+English — "I'd rather not" for a bad record, "I'm a little busy right now"
+under fire, "You're not in any trouble" when you are unhurt. The beta
+history has more that is still unbuilt: refuelling adjusts to the player's
+credits, a ship that has plundered you will not then help you, ships do not
+offer fuel to hulls that cannot carry it, and a rank that grants assistance
+makes them "more likely to heed it".
+
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
 if the ship happened to be the player's current target, and otherwise fed a
