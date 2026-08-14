@@ -2047,17 +2047,25 @@ export class Game {
     this.ship.rechargeShields(dt);
     this.ship.dissipateIon(dt);
     for (const npc of this.npcs) npc.dissipateIon(dt);
-    // Decay weapon-glow overlays for all ships (shän WeapDecay is per 30th of
-    // a second; 255 is the top of the legacy 8-bit alpha range)
+    /*
+     * Decay weapon-glow overlays for all ships. shän WeapDecay's unit was
+     * measured against the original (Wine build, decay-10 Manticore firing
+     * Ion Cannons): the glow was still visible ~1.6s after the last shot and
+     * gone by ~2.8s, which rules out wd/255-per-30Hz-tick (0.85s) and fits
+     * wd/255 per 10Hz — a fade of 25.5/wd seconds, so the Bible's "good
+     * median" 50 is a half-second flash and the slowest shipped hulls (3-5)
+     * hold their glow for 5-8s. Retime against the original if the art reads
+     * wrong; the structure stays.
+     */
     if (this.ship.weapGlowAlpha > 0) {
       const wd = this.ship.sprite?.weapDecay ?? 0;
-      if (wd > 0) this.ship.weapGlowAlpha = Math.max(0, this.ship.weapGlowAlpha - (wd / 255) * 30 * dt);
+      if (wd > 0) this.ship.weapGlowAlpha = Math.max(0, this.ship.weapGlowAlpha - (wd / 255) * 10 * dt);
       else this.ship.weapGlowAlpha = 0;
     }
     for (const npc of this.npcs) {
       if (npc.weapGlowAlpha > 0) {
         const wd = npc.sprite?.weapDecay ?? 0;
-        if (wd > 0) npc.weapGlowAlpha = Math.max(0, npc.weapGlowAlpha - (wd / 255) * 30 * dt);
+        if (wd > 0) npc.weapGlowAlpha = Math.max(0, npc.weapGlowAlpha - (wd / 255) * 10 * dt);
         else npc.weapGlowAlpha = 0;
       }
     }
@@ -3758,7 +3766,11 @@ export class Game {
             if (Math.abs(diff) <= Math.PI / 4) aim = aimAngle;
           }
         }
-        if (slot.weap.triggersWeapGlow) this.ship.weapGlowAlpha = 1;
+        // shän WeapImageID is a hull property — "weapon effects" light up
+        // whenever the ship fires; there is no per-weapon trigger bit (wëap
+        // 0x0200 is "generates small smoke"). Hulls without a glow sprite
+        // simply never render it.
+        this.ship.weapGlowAlpha = 1;
         if (isBeam(slot.weap)) {
           this.fireBeam(this.ship, slot.weap, volley, true, aim);
         } else {
@@ -4836,7 +4848,7 @@ export class Game {
             npc.pos.y - this.ship.pos.y,
           );
         }
-        if (w.triggersWeapGlow) npc.weapGlowAlpha = 1;
+        npc.weapGlowAlpha = 1; // hull glow lights on any fire; see player path
         if (isBeam(w)) {
           const aim = Math.atan2(
             target.pos.y - npc.pos.y,

@@ -259,7 +259,6 @@ interface RawWeapon {
   subTheta: number;
   subLimit: number;
   proxSafety: number;
-  triggersWeapGlow: boolean;
   maxAmmo: number;
   recoil: number;
   liDensity: number;
@@ -1030,7 +1029,6 @@ export async function loadUniverse(): Promise<void> {
       blastRadius: w.blastRadius,
       jamVuln: w.jamVuln ?? [0, 0, 0, 0],
       ionization: w.ionization ?? 0,
-      triggersWeapGlow: w.triggersWeapGlow ?? false,
       exitType: w.exitType ?? -1,
       seeker: w.seeker ?? 0,
       /*

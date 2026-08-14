@@ -335,7 +335,6 @@ export interface WeaponType {
   /** ion charge dumped into whatever this hits */
   ionization: number;
   /** wëap Flags @72 bit 0x0200: firing this weapon flashes the hull's WeapImageID overlay */
-  triggersWeapGlow: boolean;
   /** which shän exit point class this fires from: 0 gun, 1 turret, 2 guided, 3 beam, -1 centre */
   exitType: number;
   /** guided-weapon behaviour flags (Seeker): 0x0002 decoyed by asteroids,

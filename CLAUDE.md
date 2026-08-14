@@ -292,7 +292,12 @@ the licensed weapons, armor and capital hulls require (the Fed Carrier wants
 missions require bits only Sigma-built hulls contribute, and the "Illegal"
 blaster line contributes 0x200 instead of requiring anything. oütf
 RequireGovt 128 on the licensed weapons means only Federation-allied shops
-check papers — a pirate outfitter sells to anybody. Offsets, all verified
+check papers — a pirate outfitter sells to anybody. Exactly 13 hulls
+contribute nothing at all — the six Vell-os ships, the Wraiths, the
+Hyperioid, the Krypt Pod and the Escape Pod — so every purchasable outfit's
+"is a ship" Require bit fails aboard them and no outfitter will sell to a
+Vell-os pilot, which is canon: ATMOS gated it through this system, and it
+works here for free. Offsets, all verified
 against the values in the resources themselves: oütf Contribute @30 /
 Require @38 (an earlier pass read @1012-1027, which is 16 bytes of zero),
 shïp @100 / @896, mïsn Require @1622, ränk Contribute @14, gövt Require @84
@@ -308,8 +313,10 @@ owned.
 
 The same offset hunt found two more mïsn fields past Require: **ScanMask
 @1630** (five missions; "Steal Hypergate Codes" reads 0xFFFF — contraband to
-every government; wired into `contraband()` while the mission cargo is
-aboard) and the real **OnShipDone @1632** — the old read at @1622 was the
+every government, and the low-bit values decode via the minor factions'
+scan masks: the Drop Bear missions' 0xE is contraband to the Roughnecks,
+Bureau, ATMOS and Ambrosia; wired into `contraband()` while the mission
+cargo is aboard) and the real **OnShipDone @1632** — the old read at @1622 was the
 Require field, so the 76 missions that carry a set string there never fired
 it. Bounty Hunter1's OnShipDone is "b96", the bit its own AvailBits needs to
 stop re-offering the Guild intro forever. The gövt pass also picked up
@@ -877,16 +884,20 @@ happened to live there.
   "hard" uses the exact lead point, "normal" averages the lead with the
   target's current position so the player can dodge by turning. NPC-on-NPC
   boarding also got a real three-phase dock (approach → brake → drift in).
-- **shän `WeapImageID` weapon glow renders now, but `WeapDecay`'s unit is a
-  chosen reading, not a pinned one.** The overlay draws additively over the
-  hull, frame-matched, whenever a weapon with wëap flag 0x0200 fires
-  (player and NPC paths both set `weapGlowAlpha = 1`), and fades at
-  `WeapDecay/255` alpha per 30Hz tick — so the Bible's "good median" 50
-  reads as a 0.17s muzzle-flash pulse and the shipped 3…100 span
-  2.8s…0.085s. Other readings put the same values at ~1s–35s. The original
-  runs on this machine: time a Manticore IPC ring or a Polaris hull glow
-  in the Wine build and retune the divisor in the decay step in `game.ts`
-  if it disagrees — the structure is right either way.
+- **shän `WeapImageID` weapon glow: the trigger and the decay rate are both
+  measured now — don't retune without new data.** The glow lights on *any*
+  weapon fire by a hull that has the sprite: it is a shän (hull) property,
+  and the wëap-flag gate an earlier pass used (0x0200) is actually "weapon
+  generates small smoke" — no stock weapon carries it, so the overlay could
+  never trigger at all. `WeapDecay`'s unit was timed against the original
+  (Wine build, decay-10 Manticore firing Ion Cannons): the glow was still
+  visible ~1.6s after the last shot and gone by ~2.8s, ruling out
+  wd/255-per-30Hz (0.85s). It now fades at wd/255 per 10Hz — 25.5/wd
+  seconds, so the Bible's "good median" 50 is a half-second flash, the
+  Manticore holds ~2.5s, and the slowest shipped hulls (3-5) keep a 5-8s
+  afterglow. Crafted test pilots for this kind of probe: the Windows .plt is
+  unencrypted — ship type index @6, outf counts @4126, weap counts @9246,
+  ammo @9758 (see also the per-system legal array @5148 and bits @0xb7c2).
 - **shän `ShieldImageID`** is `-1` on all 288 hulls and **`AltImageID`** is set
   on exactly one, so both are recorded but nothing renders them.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
@@ -972,8 +983,7 @@ Most of the earlier queue (pers loadout/HailPict, roid fragments, spob Fee /
 misn DatePostInc / junk BuyOn+SellOn, colr, ScanMask) is done — see above.
 Still open or only half-landed:
 
-1. **WeapDecay feel-check** — the glow renders; time a fade against the
-   original and retune the /255-per-tick reading if it disagrees.
+1. **WeapDecay is measured and pinned** — see the weapon-glow entry above.
 2. **Mass → days/jump is done** — shïp Mass bands set 1/2/3 days per jump and
    the two density-scanner blip sizes; ModType 22 still shifts the total with
    a floor of 1.
