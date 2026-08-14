@@ -140,8 +140,17 @@ export interface PlayerState {
   /** game date, in days since start */
   date: number;
   activeMissions: ActiveMission[];
-  /** legal record per government id */
+  /**
+   * Legacy: legal record per government id. Superseded by systemRecords —
+   * kept only so old saves can be migrated on load; nothing writes it.
+   */
   records: Record<string, number>;
+  /**
+   * Legal record per system id, sparse — a missing entry reads as the owning
+   * government's InitialRec. This is Nova's own model: the original pilot
+   * file stores one int16 per sÿst.
+   */
+  systemRecords?: Record<string, number>;
   /** combat rating points (from destroyed ships' strength) */
   ratingPoints: number;
   /** strict mode: death is permanent */

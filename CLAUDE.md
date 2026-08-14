@@ -657,18 +657,21 @@ Bible's order through here (ShipGoal@38, ShipBehav@40, ShipNameID@42,
 ShipStart@44, CompGovt@46, CompReward@48, ShipSubtitle@50), putting CompGovt
 immediately before the CompReward that was already read correctly.
 
-**spöb MinStatus is measured against the stellar's own government**, not the
-system's, with the system as fallback for an independent world. The Bible says
-"your record in the current system", but the field sits in the spöb's
-governmental-affiliation pair behind Govt, and 18 of the 170 gated stellars
-belong to a different government than the system around them. Spacedock V
-settles it: a Federation station (MinStatus 2) in Roughnecks space, where Fed5
-returns and Fed6 is offered, while the Federation Resupply chain pays only in
-Federation record — read against the system, that storyline cannot be
-finished. The fallback matters for the four independent gated stellars
-(Reflex-ion, Pan, Beacon, Keystone, all -5). ränk Flags **0x0200** — "all
-planets of the affiliated government will let the player land ... regardless of
-their MinStatus field" — is honoured too; 19 of the 31 ranks carry it.
+**spöb MinStatus is measured against the per-system ledger — the Bible's
+"your record in the current system", now taken literally.** An earlier pass
+read it against the stellar's own government instead, reasoning from
+Spacedock V: a Federation station (MinStatus 2) in Roughnecks space, on a
+storyline that pays only Federation CompRewards — under the old
+one-number-per-govt record model, reading the system meant reading the
+Roughnecks and the storyline could not be finished. The per-system model
+dissolves that: the Roughnecks' Ally classes include 1, the Federation's, so
+Federation rewards lift Nesre Secundus at ally weight and Spacedock V clears
+on its own system's record. The four independent gated stellars (Reflex-ion,
+Pan, Beacon, Keystone, all -5) read their system's ledger too, which for an
+untouched independent system is 0. ränk Flags **0x0200** — "all planets of
+the affiliated government will let the player land ... regardless of their
+MinStatus field" — is still honoured against `landingGovtId` (the stellar's
+own govt, system fallback); 19 of the 31 ranks carry it.
 
 **AI ships visit planets instead of evaporating on them.** Any NPC within 60px
 of a stellar was deleted outright, and the spawn rolled a flat 70% chance of
@@ -811,19 +814,31 @@ happened to live there.
   mission whose destination is the planet overrides the clearance check in
   `tryLand`, and the pirates shooting at you regardless are gövt Flags 0x0001
   Xenophobic — hostility says nothing about the landing rules.
-- **The legal-record model is per-govt; Nova's is per-system.** The original
-  pilot file stores one int16 per sÿst id, seeded from the owning govt's
-  InitialRec (verified against a real .plt: Nil'kemorya systems -5, Family
-  Dani +2, Krypt +10, everything else 0 — untouched by kills elsewhere).
-  `reputation.ts` keeps one number per govt and propagates every kill to
-  allies (-1/2) and enemies (+1/4) galaxy-wide, so a pirate-farming player is
-  hated in pirate space they have never visited, where Nova would still read
-  InitialRec. With AvailRecord fixed the stock record gates are small (0..50)
-  and mostly benign, but MinStatus landing checks feel this divergence.
-- **NPC gunnery fires one weapon.** `attackAi` picks the *first* primary in
-  the hull's stock loadout and fires only that, on one ship-wide cooldown, and
-  only when the nose is within 0.2 rad of the target — turrets included, which
-  should bear anywhere. Secondaries (missiles) are never fired by NPCs at all.
+- **Legal records are per-system now — Nova's own model.** `reputation.ts`
+  keeps a sparse ledger keyed by sÿst id: an untouched system reads its owning
+  govt's InitialRec (the original .plt seeds exactly so — Nil'kemorya -5,
+  Family Dani +2, Krypt +10), and `applyGovtRecord` lands every crime, comp
+  reward and smuggling charge on all systems by the *system govt's own*
+  relation to the acted-on govt — its systems in full, allies' at half,
+  enemies' a quarter and inverted. `getGovtRecord` is a govt's standing view
+  of the player (local ledger on its own or allied turf, its home systems'
+  ledger elsewhere) and backs ship hails, provocation tolerance and
+  `hostileToPlayer`, which also honours gövt Flags 0x0002 (nosy: reads the
+  local ledger even off its turf). chär starting records seed per system;
+  old per-govt saves migrate on load (`migrateGovtRecords` in `backfill`).
+  `PlayerState.records` is legacy — nothing writes it. Verified in the
+  browser: a fresh pilot shows the InitialRec pattern with zero stored
+  entries, and one govt-137 pirate kill puts Scheall at -2 and every
+  Federation system at +1 across 178 touched ledgers.
+- **NPC gunnery is fixed — don't redo.** Every primary now fires
+  independently on its own per-weapon cooldown with its own lead point,
+  turrets and quadrant guns bear by their arcs rather than the nose, ammo
+  depletes per weapon, and secondaries fire on `missileCooldown` — one
+  missile type at a time, with fighter bays deploying one fighter per reload
+  when no missile is available. NPC aim honours the difficulty setting:
+  "hard" uses the exact lead point, "normal" averages the lead with the
+  target's current position so the player can dodge by turning. NPC-on-NPC
+  boarding also got a real three-phase dock (approach → brake → drift in).
 - **shän `WeapImageID`/`WeapDecay`** (81 hulls have a weapon glow): extracted
   into the manifest but not rendered. `WeapDecay`'s units are unpinned — the
   Bible says only that "50 is a good median number", and the shipped values
@@ -848,10 +863,14 @@ happened to live there.
   overlap almost entirely. The paired values at @126-140 are percentages
   (1..100) whose per-system sums do not reach 100, so they are independent
   chances rather than a distribution.
-- **shïp `UpgradeTo`/`EscUpgrdCost` are extracted but no escort can be
-  upgraded yet** — there is no UI for it. The same pass read `Subtitle`
-  (target display), `Flags3` and `EscortType` (the four escort-menu
-  categories), none of which is rendered either.
+- **Escort upgrade and sale are live** — the escort hail offers Upgrade
+  Escort (shïp `UpgradeTo`, priced by `EscUpgrdCost`) and, on captured
+  escorts, Sell Escort (`EscSellValue` via `escortSellValue`); both settle at
+  the next shipyard landing (`processEscortPending`). `Subtitle` renders in
+  the HUD target well and the shipyard Info dialog. Still unread: shïp
+  `Flags3`, and `EscortType`'s four categories are not yet shown anywhere —
+  the Bible only uses the field to organize the escort control menu, so a
+  category label on the escort hail or hire hall is all it is owed.
 - **spöb Flags 0x0100 is not "deadly" at that bit.** The Bible calls it
   "stellar is deadly - all ships that touch it are destroyed immediately", but
   all 27 stellars reading it are also landable, and they are Port Kane, Menin,
@@ -894,13 +913,15 @@ happened to live there.
   shooting a Federation ship cost 5 evilness against Nova's 0. It is now left
   out of the `Crime` union in `reputation.ts` outright, so charging it is a
   type error rather than a comment to be overlooked. Do not re-wire it.
-- **gövt `DisabPenalty` and `BoardPenalty` are extracted and not yet charged
-  — this one is a real gap, not a deliberate omission.** Unlike ShootPenalty
-  the Bible does not mark them ignored, so Nova honours both: disabling a
-  ship should cost DisabPenalty and plundering it BoardPenalty. `applyCrime`
-  accepts them and `penaltyFor` reads them, but nothing calls it with either
-  — only `"kill"` has call sites (`game.ts`, on player and NPC deaths). The
-  hooks would be `checkDisableGoals` and `tryBoard`/`claimPrize`.
+- **gövt `DisabPenalty` and `BoardPenalty` are charged now.** DisabPenalty
+  lands once, on the player shot or beam pass that first cripples a ship
+  (both hit sites in `game.ts` compare `disabled` across `takeHit`);
+  BoardPenalty lands in `tryBoard` as the boarding party crosses over, before
+  the plunder panel opens — reactivating your own disabled escort charges
+  nothing, and the derelict governments' penalties are 0 in the data so
+  boarding a Drifting Derelict stays free. Escort-inflicted disables charge
+  nothing (only the player's own fire does); their kills still charge
+  KillPenalty via `destroyNpc`. ShootPenalty stays deliberately uncharged.
 
 ### Queue, roughly by size
 
@@ -908,15 +929,14 @@ Most of the earlier queue (pers loadout/HailPict, roid fragments, spob Fee /
 misn DatePostInc / junk BuyOn+SellOn, colr, ScanMask) is done — see above.
 Still open or only half-landed:
 
-1. **NPC gunnery** — fire all primaries/turrets properly; fire secondaries.
+1. **Per-system legal records** — move `reputation.ts` off one-number-per-govt
+   to Nova's per-system model (see Known gaps).
 2. **shän WeapImageID / WeapDecay** — weapon-glow render once units are pinned
    against a reference build.
-3. **shïp escort upgrade UI** — UpgradeTo / EscUpgrdCost are extracted; no
-   screen uses them yet. Subtitle / Flags3 / EscortType also unread in UI.
-4. **Contribute / Require** — still cross-cutting and incomplete vs the Bible
+3. **Contribute / Require** — still cross-cutting and incomplete vs the Bible
    (ScanMask is live; the rest of the bit-mask gates are not fully wired).
-5. **sÿst @110-140** — still unidentified (~32 bytes); does not block play.
-6. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
+4. **sÿst @110-140** — still unidentified (~32 bytes); does not block play.
+5. **Mass → days/jump** — Bible ties hull Mass bands to 1/2/3 days per jump
    (and density-scanner blip size); we still advance a flat
    `max(1, 1 + hyperSpeed)` and ignore Mass for travel time.
 7. **Status-bar plate revisions.** All seven governments are covered — six

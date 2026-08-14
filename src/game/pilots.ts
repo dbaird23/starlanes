@@ -1,5 +1,6 @@
 import { getSystem, SHIPS } from "../data/universe";
 import { grantHullOutfits } from "./combat";
+import { migrateGovtRecords } from "./reputation";
 import type { PlayerState } from "../types";
 
 /** Multiple named pilot saves, EV-style, in localStorage. */
@@ -102,6 +103,9 @@ function backfill(p: PlayerState): PlayerState {
   p.ammo ??= {};
   p.bits ??= {};
   p.records ??= {};
+  // Saves written under the one-number-per-govt model: each system inherits
+  // its owning government's old number where it differed from the seed.
+  p.systemRecords ??= migrateGovtRecords(p.records);
   p.activeMissions ??= [];
   p.personsKilled ??= [];
   p.dominated ??= [];

@@ -1,12 +1,13 @@
 import {
-  ALL_GOVT_IDS,
   GOVTS,
   OUTFITS,
+  SYSTEMS,
+  getSystem,
   govtAllied,
   govtEnemy,
   junkFromCargoKey,
 } from "../data/universe";
-import type { PlayerState } from "../types";
+import type { PlayerState, SystemDef } from "../types";
 
 /**
  * EV-style combat rating levels, thresholds in accumulated strength points.
@@ -31,6 +32,12 @@ const RATING_LEVELS: [number, string][] = [
   [128000, "Ultimate Rating"],
 ];
 
+/**
+ * The same internal multiplier, for fields stated on the Bible's raw scale:
+ * mïsn AvailRating asks for 150 where our points ledger holds 1500.
+ */
+export const RATING_POINT_SCALE = 10;
+
 export function ratingLevel(points: number): number {
   let level = 0;
   for (let i = 0; i < RATING_LEVELS.length; i++) {
@@ -43,15 +50,111 @@ export function ratingName(points: number): string {
   return RATING_LEVELS[ratingLevel(points)][1];
 }
 
-export function getRecord(player: PlayerState, govtId: number): number {
-  if (govtId < 128) return 0;
-  return player.records[String(govtId)] ?? 0;
+/*
+ * Nova stores one legal record per SYSTEM, not per government. The original
+ * pilot file settles it: the Windows .plt holds an int16 per sÿst id, seeded
+ * from the owning govt's InitialRec (Nil'kemorya systems -5, Family Dani +2,
+ * Krypt +10, everything else 0) and moving only where something happens.
+ * Records are stored sparsely: a system the ledger has never touched reads
+ * its seed, so InitialRec needs no materialization at pilot creation.
+ */
+function systemById(systemId: string): SystemDef | null {
+  try {
+    return getSystem(systemId);
+  } catch {
+    return null;
+  }
 }
 
-function bumpRecord(player: PlayerState, govtId: number, delta: number): void {
-  if (govtId < 128) return;
-  const key = String(govtId);
-  player.records[key] = (player.records[key] ?? 0) + delta;
+function seedRecord(systemId: string): number {
+  const g = systemById(systemId)?.govtId ?? -1;
+  return g >= 128 ? (GOVTS[String(g)]?.initialRec ?? 0) : 0;
+}
+
+export function getSystemRecord(player: PlayerState, systemId: string): number {
+  const stored = player.systemRecords?.[systemId];
+  return stored !== undefined ? stored : seedRecord(systemId);
+}
+
+function bumpSystemRecord(
+  player: PlayerState,
+  systemId: string,
+  delta: number,
+): void {
+  player.systemRecords ??= {};
+  player.systemRecords[systemId] = getSystemRecord(player, systemId) + delta;
+}
+
+/**
+ * Land an act for (positive) or against (negative) a government on every
+ * system, by the system's own government's relation to it: that govt's
+ * systems take it in full, its allies' at half, and its enemies' a quarter
+ * and inverted — the Bible's "doing evil deeds to one government will improve
+ * your rating with its enemies, and vice versa. Allied governments also
+ * communicate your actions."
+ */
+export function applyGovtRecord(
+  player: PlayerState,
+  govtId: number,
+  amount: number,
+): void {
+  if (govtId < 128 || amount === 0) return;
+  const mag = Math.abs(amount);
+  const sign = Math.sign(amount);
+  for (const sys of SYSTEMS) {
+    const g = sys.govtId;
+    if (g < 128) continue;
+    let delta = 0;
+    if (g === govtId) delta = amount;
+    else if (govtAllied(g, govtId)) delta = sign * Math.ceil(mag / 2);
+    else if (govtEnemy(g, govtId)) delta = -sign * Math.ceil(mag / 4);
+    if (delta !== 0) bumpSystemRecord(player, String(sys.id), delta);
+  }
+}
+
+/**
+ * A government's standing view of the player. Nova has no single per-govt
+ * number, so a govt's ships judge you by the local ledger when they meet you
+ * on their own or allied turf, and by their home systems' ledger elsewhere
+ * (those all move in lockstep under applyGovtRecord, so any one of them is
+ * the govt's own book).
+ */
+export function getGovtRecord(
+  player: PlayerState,
+  govtId: number,
+  currentSystemId: string,
+): number {
+  if (govtId < 128) return 0;
+  const cur = systemById(currentSystemId);
+  if (
+    cur &&
+    cur.govtId >= 128 &&
+    (cur.govtId === govtId || govtAllied(cur.govtId, govtId))
+  )
+    return getSystemRecord(player, currentSystemId);
+  const home =
+    SYSTEMS.find((s) => s.govtId === govtId) ??
+    SYSTEMS.find((s) => s.govtId >= 128 && govtAllied(s.govtId, govtId));
+  return home ? getSystemRecord(player, String(home.id)) : 0;
+}
+
+/**
+ * One-time migration for saves written under the old one-number-per-govt
+ * model: each system inherits its owning government's old number where that
+ * differed from the InitialRec seed.
+ */
+export function migrateGovtRecords(
+  old: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const sys of SYSTEMS) {
+    const g = sys.govtId;
+    if (g < 128) continue;
+    const v = old[String(g)];
+    if (v !== undefined && v !== (GOVTS[String(g)]?.initialRec ?? 0))
+      out[String(sys.id)] = v;
+  }
+  return out;
 }
 
 /**
@@ -87,12 +190,7 @@ export function applyCrime(player: PlayerState, victimGovt: number, crime: Crime
   if (victimGovt < 128) return; // independents hold no grudges
   const penalty = penaltyFor(victimGovt, crime);
   if (penalty <= 0) return;
-  bumpRecord(player, victimGovt, -penalty);
-  for (const govtId of ALL_GOVT_IDS) {
-    if (govtId === victimGovt) continue;
-    if (govtAllied(victimGovt, govtId)) bumpRecord(player, govtId, -Math.ceil(penalty / 2));
-    else if (govtEnemy(victimGovt, govtId)) bumpRecord(player, govtId, Math.ceil(penalty / 4));
-  }
+  applyGovtRecord(player, victimGovt, -penalty);
 }
 
 /**
@@ -127,7 +225,7 @@ export function contraband(
 export function applySmuggling(player: PlayerState, govtId: number): number {
   const g = GOVTS[String(govtId)];
   if (!g) return 0;
-  if (g.smugPenalty > 0) bumpRecord(player, govtId, -g.smugPenalty);
+  if (g.smugPenalty > 0) applyGovtRecord(player, govtId, -g.smugPenalty);
   // ScanFine: 1 and up is a flat fine, -1 and below is that percent of cash
   const fine = g.scanFine >= 1 ? g.scanFine
     : g.scanFine <= -1 ? Math.floor(player.credits * (-g.scanFine / 100))
@@ -154,5 +252,12 @@ export function applyCompReward(
   failed: boolean,
 ): void {
   if (compGovt < 128 || compReward === 0) return;
-  bumpRecord(player, compGovt, failed ? -Math.floor(compReward / 2) : compReward);
+  /*
+   * Rewards ride the same propagation as crimes. They have to: Spacedock V
+   * (MinStatus 2) sits in Nesre Secundus, a Roughnecks system, and the
+   * Federation Resupply chain pays only Federation CompRewards — it is the
+   * Roughnecks' Ally classes (1 = the Federation's) that let those rewards
+   * lift the system the storyline returns to.
+   */
+  applyGovtRecord(player, compGovt, failed ? -Math.floor(compReward / 2) : compReward);
 }

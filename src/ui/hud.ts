@@ -306,7 +306,7 @@ export class HudUi {
       } else if (isGate) {
         const accessible = g.gateIsWorking(p) && g.hasHypergateAccess;
         dotColor = accessible ? "#e8d060" : "#e06a5a";
-      } else if (p.landable && g.clearedToLand(p, g.system.govtId)) {
+      } else if (p.landable && g.clearedToLand(p, g.player.systemId)) {
         dotColor = "#e8d060"; // friendly — yellow
       } else if (p.landable) {
         dotColor = "#e06a5a"; // hostile — red

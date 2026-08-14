@@ -45,7 +45,6 @@ import {
   GOVT_FLAGS,
   GOVT_FLAGS2,
   CRONS,
-  ALL_GOVT_IDS,
   OOPSES,
   GOVT_VOICES,
   SPOB_GOVT,
@@ -113,7 +112,8 @@ import {
   applySmuggling,
   contraband,
   crimeTolerance,
-  getRecord,
+  getGovtRecord,
+  getSystemRecord,
   ratingLevel,
   ratingName,
 } from "./reputation";
@@ -319,27 +319,21 @@ const GOVT_PREFER_HYPERGATES = 0x0040;
 const GOVT_PREFER_WORMHOLES = 0x0080;
 
 /**
- * A template's opening legal record. Nova sets the given status in that
- * government's space and its allies', and the negative of it among its
- * enemies, so a pilot can start wanted by one side and welcome on the other.
+ * A template's opening legal record, per system. Nova sets the given status
+ * across that government's space and its allies', and the negative of it in
+ * its enemies', so a pilot can start wanted by one side and welcome on the
+ * other. gövt InitialRec needs no seeding here: the per-system ledger is
+ * sparse and an untouched system reads its owning govt's InitialRec.
  */
 function startingRecords(tmpl: CharTemplate | null): Record<string, number> {
   const out: Record<string, number> = {};
-  /*
-   * gövt InitialRec is where every government's opinion of a new pilot starts
-   * — most read 0, but a few open in credit or in the red before the chär
-   * template's own starting records are layered on top.
-   */
-  for (const id of ALL_GOVT_IDS) {
-    const rec = GOVTS[String(id)]?.initialRec ?? 0;
-    if (rec !== 0) out[String(id)] = rec;
-  }
   for (const { govt, status } of tmpl?.records ?? []) {
     if (status === 0) continue;
-    for (const other of ALL_GOVT_IDS) {
-      if (other === govt || govtAllied(govt, other))
-        out[String(other)] = status;
-      else if (govtEnemy(govt, other)) out[String(other)] = -status;
+    for (const sys of SYSTEMS) {
+      const g = sys.govtId;
+      if (g < 128) continue;
+      if (g === govt || govtAllied(govt, g)) out[String(sys.id)] = status;
+      else if (govtEnemy(govt, g)) out[String(sys.id)] = -status;
     }
   }
   return out;
@@ -370,7 +364,8 @@ function defaultPlayer(): PlayerState {
     activeMissions: [],
     // chär Govt1-4 / Status1-4: the record this template opens with in each
     // government's space, and the negative of it in their enemies'.
-    records: startingRecords(tmpl),
+    records: {},
+    systemRecords: startingRecords(tmpl),
     ratingPoints: tmpl?.kills ?? 0,
     strict: false,
     difficulty: "normal",
@@ -1192,18 +1187,14 @@ export class Game {
   get hudClock(): number {
     return this.time;
   }
-  /** Debug helper: player.records keyed by government name instead of numeric ID. */
+  /** Debug helper: nonzero per-system records keyed "System (Government)". */
   get namedRecords(): Record<string, number> {
-    const nameCounts: Record<string, number> = {};
-    for (const g of Object.values(GOVTS)) {
-      nameCounts[g.name] = (nameCounts[g.name] ?? 0) + 1;
-    }
     const out: Record<string, number> = {};
-    for (const [idStr, val] of Object.entries(this.player.records)) {
-      const g = GOVTS[idStr];
-      if (!g) continue;
-      const key = nameCounts[g.name] > 1 ? `${g.name} (${idStr})` : g.name;
-      out[key] = val;
+    for (const sys of SYSTEMS) {
+      const val = getSystemRecord(this.player, String(sys.id));
+      if (val === 0) continue;
+      const g = GOVTS[String(sys.govtId)];
+      out[`${sys.name}${g ? ` (${g.name})` : ""}`] = val;
     }
     return out;
   }
@@ -2436,17 +2427,23 @@ export class Game {
    * — 19 of the 31 ranks carry it, among them the Federation Naval Rank of
    * Commander and the Vell-os T0-T5 ladder.
    */
-  clearedToLand(planet: PlanetDef, systemGovtId: number): boolean {
+  clearedToLand(planet: PlanetDef, systemId: string): boolean {
     if (this.player.dominated.includes(planet.id)) return true;
     if (this.bribedPlanets.has(planet.id)) return true;
+    const systemGovtId = getSystem(systemId).govtId;
     const govtId = landingGovtId(planet, systemGovtId);
     if (govtId >= 128 && this.rankFlag(govtId, 0x0200)) return true;
     // Block landing while a tribute siege is active (fleet not yet defeated, or
     // fleet defeated but planet not yet formally submitted on a second demand).
     if (this.domination.has(planet.id)) return false;
-    const govtRecord = getRecord(this.player, govtId);
+    // MinStatus is "the point on your record in the current system" — the
+    // per-system ledger, exactly as the pilot file stores it. Spacedock V
+    // still gates right without any stellar-govt special case: it sits in a
+    // Roughnecks system, and the Roughnecks ally the Federation's class, so
+    // Federation CompRewards lift that system's record at ally weight.
+    const sysRecord = getSystemRecord(this.player, systemId);
     const planetRecord = (this.player.planetRecords ?? {})[planet.id];
-    const record = planetRecord !== undefined ? planetRecord : govtRecord;
+    const record = planetRecord !== undefined ? planetRecord : sysRecord;
     return landingAllowed(planet, record);
   }
 
@@ -2599,6 +2596,10 @@ export class Game {
       this.message(`${this.shipLabel(t)} has already been stripped.`);
       return;
     }
+    // gövt BoardPenalty — "evilness from pirating one of this govt's ships" —
+    // charged once, as the boarding party crosses over. The Bible marks only
+    // ShootPenalty ignored; this one the original collects.
+    if (t.govtId >= 128) applyCrime(this.player, t.govtId, "board");
     this.openPlunder(t);
   }
 
@@ -2990,7 +2991,8 @@ export class Game {
   /** Call a world's traffic control. */
   private hailPlanet(p: PlanetDef): void {
     const govtId = SPOB_GOVT.get(p.id) ?? -1;
-    const record = getRecord(this.player, govtId);
+    // A world's mood is the local ledger: your record in this system.
+    const record = getSystemRecord(this.player, this.player.systemId);
     playSnd(154, 0.4);
 
     if (p.uninhabited || !p.landable) {
@@ -3018,7 +3020,7 @@ export class Game {
     const planetTakesBribes =
       (govtFlags & 0x4000) !== 0 || (govtFlags & 0x8000) !== 0;
     const greedyPlanet = (govtFlags & 0x8000) !== 0;
-    const alreadyCleared = this.clearedToLand(p, this.system.govtId);
+    const alreadyCleared = this.clearedToLand(p, this.player.systemId);
     const hostile = !alreadyCleared && p.minStatus !== MIN_STATUS_NEVER;
 
     const opts: { label: string; action: () => string | null | void }[] = [];
@@ -3188,7 +3190,7 @@ export class Game {
     }
     if (t.disabled) return `"We're dead in the water. Do what you like."`;
     const govt = this.govtLabel(t.govtId);
-    const record = getRecord(this.player, t.govtId);
+    const record = getGovtRecord(this.player, t.govtId, this.player.systemId);
     if (t.hostile) {
       return t.armor < t.maxArmor * 0.4
         ? `"We're hit bad. What do you want?"`
@@ -3331,7 +3333,7 @@ export class Game {
     }
 
     const opts: { label: string; action: () => string | null | void }[] = [];
-    const record = getRecord(this.player, t.govtId);
+    const record = getGovtRecord(this.player, t.govtId, this.player.systemId);
     const flags2 = t.govtId >= 128 ? (GOVT_FLAGS2[String(t.govtId)] ?? 0) : 0;
     const untalkative = (flags2 & 0x0001) !== 0;
     const noGreeting = (flags2 & 0x0008) !== 0;
@@ -4047,10 +4049,14 @@ export class Game {
     if (!hit) return;
     // Simultaneous beams stack damage; series passes count=1 so one emitter.
     const shots = Math.max(1, Math.min(count, 4));
+    const beamWasDisabled = hit.ship.disabled;
     hit.ship.takeHit(weap.shieldDmg * shots, weap.armorDmg * shots);
     if (fromPlayer) {
       const npc = hit.ship as NpcShip;
       if (this.npcs.includes(npc)) {
+        // gövt DisabPenalty: the beam pass that cripples her charges it too.
+        if (!beamWasDisabled && npc.disabled && npc.govtId >= 128)
+          applyCrime(this.player, npc.govtId, "disable");
         npc.lastAttacker = this.ship;
         this.maybeProvoke(npc, weap.shieldDmg * shots + weap.armorDmg * shots);
         if (npc.destroyed) this.destroyNpc(npc, true);
@@ -4958,7 +4964,11 @@ export class Game {
         const r =
           npc.radius + (p.armTime > 0 ? 4 : Math.max(4, p.weap.proxRadius));
         if (pathHitsCircle(x0, y0, p.x, p.y, npc.pos.x, npc.pos.y, r)) {
+          const wasDisabled = npc.disabled;
           npc.takeHit(p.weap.shieldDmg, p.weap.armorDmg);
+          // gövt DisabPenalty: charged once, on the shot that cripples her.
+          if (p.fromPlayer && !wasDisabled && npc.disabled && npc.govtId >= 128)
+            applyCrime(this.player, npc.govtId, "disable");
           if (p.weap.impact > 0) {
             const mass = SHIPS[npc.typeId ?? ""]?.mass ?? 200;
             const shove = (p.weap.impact * 12) / mass;
@@ -5179,7 +5189,7 @@ export class Game {
       this.provoke(npc);
       return;
     }
-    const record = getRecord(this.player, npc.govtId);
+    const record = getGovtRecord(this.player, npc.govtId, this.player.systemId);
     const maxHp = npc.maxShield + npc.maxArmor;
     const fraction = Math.max(0.05, Math.min(0.75, 0.15 + record * 0.003));
     npc.strayDamage += damage;
@@ -5578,7 +5588,7 @@ export class Game {
     const govtId = this.system.govtId;
     if (govtId < 128) return;
     const provoked = this.npcs.some((n) => n.hostile && n.govtId === govtId);
-    const wanted = getRecord(this.player, govtId) < -30;
+    const wanted = getSystemRecord(this.player, this.player.systemId) < -30;
     /*
      * gövt MaxOdds (50-1000 across 65 governments) is documented as the
      * threshold for this call — help arrives when "the combat odds against
@@ -6892,11 +6902,11 @@ export class Game {
       return (
         this.gateIsWorking(planet) &&
         this.hasHypergateAccess &&
-        this.clearedToLand(planet, this.system.govtId)
+        this.clearedToLand(planet, this.player.systemId)
       );
     if (!planet.landable) return false;
     if (this.hasActiveMissionToPlanet(planet.id)) return true;
-    return this.clearedToLand(planet, this.system.govtId);
+    return this.clearedToLand(planet, this.player.systemId);
   }
 
   private tryLand(chosen?: PlanetDef): void {
@@ -6967,7 +6977,7 @@ export class Game {
     if (
       !isGate &&
       !this.hasActiveMissionToPlanet(planet.id) &&
-      !this.clearedToLand(planet, this.system.govtId)
+      !this.clearedToLand(planet, this.player.systemId)
     ) {
       /*
        * gövt Flags 0x4000/0x8000: a bribable world doesn't just hang up — the
@@ -8089,7 +8099,20 @@ export class Game {
     if (this.rankFlag(govtId, 0x0100)) return false;
     if ((flags & 0x0004) !== 0) return true; // always attacks the player
     if ((flags & 0x0001) !== 0) return true; // xenophobic: everyone but allies
-    return getRecord(this.player, govtId) < -crimeTolerance(govtId);
+    /*
+     * Their own book first: the local ledger on their turf, their home
+     * systems' elsewhere. gövt Flags 0x0002 is the Bible's nosy bit — "ships
+     * of this govt will attack the player in non-allied systems if he's a
+     * criminal there" — so those also read the local system's record wherever
+     * they happen to be.
+     */
+    const tol = crimeTolerance(govtId);
+    if (getGovtRecord(this.player, govtId, this.player.systemId) < -tol)
+      return true;
+    return (
+      (flags & 0x0002) !== 0 &&
+      getSystemRecord(this.player, this.player.systemId) < -tol
+    );
   }
 
   private spawnNpc(anywhere = false): void {
@@ -9153,7 +9176,7 @@ export class Game {
         inhabited &&
         sys.planets.some(
           (p) =>
-            p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
+            p.landable && !p.uninhabited && this.clearedToLand(p, String(sys.id)),
         );
       const r = isCurrent || isNext ? 5.5 : inhabited ? 4 : 3;
       ctx.fillStyle = !inhabited
@@ -9521,7 +9544,7 @@ export class Game {
         inhabited &&
         sys.planets.some(
           (p) =>
-            p.landable && !p.uninhabited && this.clearedToLand(p, sys.govtId),
+            p.landable && !p.uninhabited && this.clearedToLand(p, String(sys.id)),
         );
       ctx.fillStyle = isGateLink
         ? isGateSel
@@ -9653,7 +9676,7 @@ export class Game {
       value(sel.govtName ?? "Independent");
       ty += 6;
       label("Legal Status:");
-      const rec = getRecord(this.player, sel.govtId);
+      const rec = getSystemRecord(this.player, String(sel.id));
       value(
         rec === 0
           ? "No Record"

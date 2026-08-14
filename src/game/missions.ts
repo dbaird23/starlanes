@@ -14,7 +14,7 @@ import {
   SYSTEMS,
 } from "../data/universe";
 import { freeHoldSpace } from "./cargo";
-import { getRecord } from "./reputation";
+import { RATING_POINT_SCALE, getSystemRecord } from "./reputation";
 import type {
   ActiveMission,
   MissionType,
@@ -173,14 +173,13 @@ export function availableMissions(
     if (m.shipCount > 0 && m.shipGoal > 5) continue;
     // pay < 0 encodes an outfit grant: -(count * 10000 + outfitNovaId); handled at completion
     if (m.flags & 0x0400) continue; // invisible missions
-    // Bible: "your legal record in this system" — use the system's government,
-    // not the spob's. For a Rebel world inside a Federation system this makes
-    // a meaningful difference (and avoids triggering Rebel hostility when the
-    // player deliberately takes a minor crime against the Federation to qualify).
-    const systemGovt =
-      getSystem(SPOB_INDEX.get(spob.id)?.systemId ?? "")?.govtId ??
-      (SPOB_GOVT.get(spob.id) ?? -1);
-    const record = getRecord(player, systemGovt);
+    // Bible: "your legal record in this system" — literally the per-system
+    // ledger now, which is what the original pilot file stores.
+    const systemId = SPOB_INDEX.get(spob.id)?.systemId;
+    const record =
+      systemId !== undefined
+        ? getSystemRecord(player, String(systemId))
+        : 0;
     // -32000 and below is Nova's sentinel for "only once you hold this world".
     // No mission in the stock scenario uses it, but plug-ins do.
     if (m.availRecord <= -32000 && !player.dominated.includes(spob.id))
@@ -190,8 +189,13 @@ export function availableMissions(
     // AvailRating is a threshold in combat-rating points (the STR# 138 scale:
     // 100 "Not a Threat" ... 12800 "Deadly"), not a level index — the bounty
     // chain asks for 5/100/200 points as the bounties grow and the late
-    // Auroran missions for 12500. -1 is the documented "ignored".
-    if (m.availRating > 0 && player.ratingPoints < m.availRating) continue;
+    // Auroran missions for 12500. -1 is the documented "ignored". Our points
+    // ledger runs on the same 10× internal multiplier as RATING_LEVELS.
+    if (
+      m.availRating > 0 &&
+      player.ratingPoints < m.availRating * RATING_POINT_SCALE
+    )
+      continue;
     /*
      * Who fits aboard, and who won't be offered the job.
      *
