@@ -16,6 +16,7 @@ import {
   COLR,
   MENU_SPRITES,
   SHIPS,
+  STR_LISTS,
   UI_PICTS,
   getSystem,
   targetPict,
@@ -224,11 +225,35 @@ const BUTTONS = [
   },
 ];
 
+/** Quote a data-driven string safely into an HTML attribute. */
+function escapeAttr(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 export interface MainMenuHandlers {
   /** Title "Enter ship" — resume paused session if any, else load. */
   enterShip: (pilotId: string, strict?: boolean) => void;
   /** Open Pilot / New Pilot — always load from the saved pilot file. */
   loadPilot: (pilotId: string, strict?: boolean, difficulty?: "normal" | "hard") => void;
+  /**
+   * Write a newly created pilot's opening state. Nova's New Pilot flow ends
+   * on the title screen, not in the cockpit — you pick Enter Ship yourself —
+   * so creation has to persist without starting a session.
+   */
+  seedPilot: (
+    pilotId: string,
+    identity: {
+      nickname: string;
+      gender: "male" | "female";
+      shipName: string;
+    },
+    strict: boolean,
+    difficulty: "normal" | "hard",
+  ) => void;
   /** Forget a paused session if that pilot file is deleted. */
   onDeletePilot?: (pilotId: string) => void;
 }
@@ -515,6 +540,7 @@ export class MainMenu {
     return `
       <div class="ttl-info left">
         ${field("Pilot Name:", summary.name)}
+        ${field("Ship Name:", state.shipName || "—")}
         ${field("Ship Class:", ship?.name.split(";")[0] ?? "—")}
         ${field("Credits:", state.credits.toLocaleString() + " cr")}
       </div>
@@ -663,48 +689,145 @@ export class MainMenu {
     return m;
   }
 
+  /** Dismiss the open dialog without the close-click plumbing. */
+  private closeModal(): void {
+    const m = this.root.querySelector<HTMLElement>("#ttl-modal")!;
+    if (!m.classList.contains("hidden")) m.classList.add("hidden");
+  }
+
   private notice(title: string, body: string): void {
     this.modal(`<h2>${title}</h2><p>${body}</p>
       <div class="btnrow"><button class="evbtn primary" data-close>OK</button></div>`);
   }
 
+  /**
+   * Nova's New Pilot flow, in its own order: who you are (name, nickname,
+   * gender), then the strict-play question on its own, then your ship's name
+   * — and then it drops you back on the title screen to pick Enter Ship
+   * yourself rather than launching you.
+   *
+   * The three fields open pre-filled from STR# 128 "Default Names", which
+   * holds three suggestions of each in one flat list: 1-3 full names, 4-6
+   * nicknames, 7-9 ship names. The grouping is not labelled in the resource
+   * — it is confirmed by the original's own title screen, which shows a
+   * fresh pilot flying the "Ring of Glory", entry 7.
+   */
   private newPilot(): void {
+    const names = STR_LISTS["128"] ?? [];
+    const pick = (from: number, to: number, fallback: string): string => {
+      const opts = names.slice(from, to).filter(Boolean);
+      return opts.length
+        ? opts[Math.floor(Math.random() * opts.length)]
+        : fallback;
+    };
+    const suggested = {
+      name: pick(0, 3, "Captain"),
+      nickname: pick(3, 6, "Ace"),
+      shipName: pick(6, 9, "Star Runner"),
+    };
+
+    const askShipName = (
+      name: string,
+      nickname: string,
+      gender: "male" | "female",
+      strict: boolean,
+      difficulty: "normal" | "hard",
+    ): void => {
+      const m = this.modal(`
+        <h2>Name Your Ship</h2>
+        <p class="ttl-note">Every ship needs a name. This one is yours.</p>
+        <label class="ttl-label">Ship name
+          <input id="np-ship" type="text" value="${escapeAttr(suggested.shipName)}" maxlength="32">
+        </label>
+        <div class="btnrow">
+          <button class="evbtn primary" id="np-done" data-modal-default>Create Pilot</button>
+          <button class="evbtn" data-close data-modal-cancel>Cancel</button>
+        </div>`);
+      const shipEl = m.querySelector<HTMLInputElement>("#np-ship")!;
+      shipEl.select();
+      m.querySelector("#np-done")!.addEventListener("click", () => {
+        const shipName = shipEl.value.trim() || suggested.shipName;
+        const id = createPilot(strict ? `${name} †` : name);
+        this.handlers.seedPilot(
+          id,
+          { nickname, gender, shipName },
+          strict,
+          difficulty,
+        );
+        /*
+         * Back to the title screen with the new pilot selected, exactly as
+         * the original leaves you: the chär intro sequence plays on Enter
+         * Ship, from `Game.startPilot`, not here.
+         */
+        this.closeModal();
+        this.show(id);
+      });
+    };
+
+    const askStrict = (
+      name: string,
+      nickname: string,
+      gender: "male" | "female",
+    ): void => {
+      const m = this.modal(`
+        <h2>Strict Play</h2>
+        <p class="ttl-note">In strict play a death is permanent — the pilot
+          cannot be flown again. Otherwise you resume from the last world you
+          left.</p>
+        <fieldset class="ttl-fieldset">
+          <legend>Difficulty</legend>
+          <label class="ttl-check"><input type="radio" name="np-diff" value="normal" checked>
+            Normal — enemies aim at your position</label>
+          <label class="ttl-check"><input type="radio" name="np-diff" value="hard">
+            Hard — enemies predict your movement</label>
+        </fieldset>
+        <div class="btnrow">
+          <button class="evbtn" id="np-strict-yes">Strict play</button>
+          <button class="evbtn primary" id="np-strict-no" data-modal-default>Normal play</button>
+        </div>`);
+      const diff = (): "normal" | "hard" =>
+        (m.querySelector<HTMLInputElement>("input[name=np-diff]:checked")
+          ?.value ?? "normal") as "normal" | "hard";
+      m.querySelector("#np-strict-yes")!.addEventListener("click", () => {
+        const d = diff();
+        this.closeModal();
+        askShipName(name, nickname, gender, true, d);
+      });
+      m.querySelector("#np-strict-no")!.addEventListener("click", () => {
+        const d = diff();
+        this.closeModal();
+        askShipName(name, nickname, gender, false, d);
+      });
+    };
+
     const m = this.modal(`
       <h2>New Pilot</h2>
-      <label class="ttl-label">Pilot name
-        <input id="np-name" type="text" value="Captain" maxlength="32">
+      <label class="ttl-label">Full name
+        <input id="np-name" type="text" value="${escapeAttr(suggested.name)}" maxlength="32">
+      </label>
+      <label class="ttl-label">Nickname
+        <input id="np-nick" type="text" value="${escapeAttr(suggested.nickname)}" maxlength="32">
       </label>
       <fieldset class="ttl-fieldset">
-        <legend>Difficulty</legend>
-        <label class="ttl-check"><input type="radio" name="np-diff" value="normal" checked>
-          Normal — enemies aim at your position</label>
-        <label class="ttl-check"><input type="radio" name="np-diff" value="hard">
-          Hard — enemies predict your movement</label>
+        <legend>Gender</legend>
+        <label class="ttl-check"><input type="radio" name="np-gender" value="male" checked> Male</label>
+        <label class="ttl-check"><input type="radio" name="np-gender" value="female"> Female</label>
       </fieldset>
-      <label class="ttl-check"><input id="np-strict" type="checkbox"> Strict play —
-        death is permanent and the pilot is deleted</label>
       <div class="btnrow">
-        <button class="evbtn primary" id="np-go">Create</button>
-        <button class="evbtn" data-close>Cancel</button>
+        <button class="evbtn primary" id="np-go" data-modal-default>Continue</button>
+        <button class="evbtn" data-close data-modal-cancel>Cancel</button>
       </div>`);
     const nameEl = m.querySelector<HTMLInputElement>("#np-name")!;
     nameEl.select();
     m.querySelector("#np-go")!.addEventListener("click", () => {
-      const strict = m.querySelector<HTMLInputElement>("#np-strict")!.checked;
-      const diffEl = m.querySelector<HTMLInputElement>("input[name=np-diff]:checked");
-      const difficulty = (diffEl?.value ?? "normal") as "normal" | "hard";
-      const name = nameEl.value.trim() || "Captain";
-      const id = createPilot(strict ? `${name} †` : name);
-      /*
-       * The chär opening sequence is not played here. The menu used to run
-       * its own hardcoded PICT 8200-8202 slideshow before handing over, and
-       * `Game.startPilot` plays the same pictures again from the chär
-       * template (IntroPict1-4 / PictDelay1-4 / IntroTextID) — so a new pilot
-       * sat through the preamble twice. The data-driven one wins; it also
-       * shows the IntroTextID dësc and follows a plug-in's own template.
-       */
-      this.hide();
-      this.handlers.loadPilot(id, strict, difficulty);
+      const name = nameEl.value.trim() || suggested.name;
+      const nickname =
+        m.querySelector<HTMLInputElement>("#np-nick")!.value.trim() || name;
+      const gender = (m.querySelector<HTMLInputElement>(
+        "input[name=np-gender]:checked",
+      )?.value ?? "male") as "male" | "female";
+      this.closeModal();
+      askStrict(name, nickname, gender);
     });
   }
 

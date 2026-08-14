@@ -96,6 +96,7 @@ import {
   instantiateMission,
   isSilentMission,
   missionDisplayName,
+  setPlayerIdentity,
   substituteTags,
   testContext,
   type MissionEvent,
@@ -727,6 +728,28 @@ export class Game {
     return true;
   }
 
+  /**
+   * Write a new pilot's opening state without flying it. Nova's New Pilot
+   * flow ends on the title screen — you choose Enter Ship yourself — so the
+   * pilot has to exist on disk, complete with the identity the dialogs
+   * collected, before any session starts.
+   */
+  seedPilot(
+    pilotId: string,
+    identity: { nickname: string; gender: "male" | "female"; shipName: string },
+    strict: boolean,
+    difficulty: "normal" | "hard",
+  ): void {
+    const state: PlayerState = {
+      ...defaultPlayer(),
+      ...identity,
+      strict,
+      difficulty,
+    };
+    savePilot(pilotId, state);
+    setPlayerIdentity(state);
+  }
+
   startPilot(pilotId: string, strict?: boolean, difficulty?: "normal" | "hard"): void {
     preloadCoreSnds();
     this.resumeMode = null;
@@ -742,6 +765,7 @@ export class Game {
       listPilots().find((p) => p.id === pilotId)?.name ?? "Captain";
     const saved = loadPilot(pilotId);
     this.player = { ...defaultPlayer(), ...(saved ?? {}) };
+    setPlayerIdentity(this.player);
     if (strict !== undefined) this.player.strict = strict;
     if (difficulty !== undefined) this.player.difficulty = difficulty;
     // Migration: Sigma4 onAccept fires k147 (rank 147 = hypergate access).

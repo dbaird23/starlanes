@@ -342,6 +342,29 @@ function resolveShipSystem(
 }
 
 /** Fill EV Nova's <wildcard> tags in mission text. */
+/*
+ * Who the player is, for the desc tags. Kept module-scoped and set by
+ * `Game.startPilot` rather than threaded through all 18 substituteTags call
+ * sites — the same shape as `setInterfaceForGovt` in data/universe.
+ */
+let PLAYER_IDENTITY: {
+  nickname: string;
+  gender: "male" | "female";
+  shipName: string;
+} = { nickname: "", gender: "male", shipName: "" };
+
+export function setPlayerIdentity(id: {
+  nickname?: string;
+  gender?: "male" | "female";
+  shipName?: string;
+}): void {
+  PLAYER_IDENTITY = {
+    nickname: id.nickname ?? "",
+    gender: id.gender ?? "male",
+    shipName: id.shipName ?? "",
+  };
+}
+
 export function substituteTags(
   text: string,
   _m: MissionType,
@@ -360,7 +383,14 @@ export function substituteTags(
   };
   return (
     text
-      .replace(/\{G\s*"([^"]*)"\s*"([^"]*)"\}/g, "$1") // gender variants; we use the first
+      /*
+       * {G "male text" "female text"} — the Bible's gender substitution.
+       * This used to always take the first string; it now reads the pilot's
+       * own gender, which is asked for at creation.
+       */
+      .replace(/\{G\s*"([^"]*)"\s*"([^"]*)"\}/g, (_all, male, female) =>
+        PLAYER_IDENTITY.gender === "female" ? female : male,
+      )
       .replace(/<CT>/g, active.cargoName ?? "cargo")
       .replace(/<CQ>/g, String(active.cargoQty ?? ""))
       .replace(/<DST>/g, spobName(active.travelSpobId))
@@ -368,7 +398,11 @@ export function substituteTags(
       .replace(/<RST>/g, spobName(active.returnSpobId))
       .replace(/<RSY>/g, sysName(active.returnSpobId))
       .replace(/<PN>/g, playerName)
-      .replace(/<PSN>/g, playerName)
+      // <PNN> is the nickname, and the Bible is explicit that it falls back
+      // to the full name; <PSN> is the ship's name, not the pilot's — an
+      // earlier pass had it echoing the player name.
+      .replace(/<PNN>/g, PLAYER_IDENTITY.nickname || playerName)
+      .replace(/<PSN>/g, PLAYER_IDENTITY.shipName || "my ship")
       // <PRK>/<SRK>/<PSR>: your commission, or plain "captain" if you hold none
       .replace(/<PRK>/g, ranks?.conv || "captain")
       .replace(/<SRK>/g, ranks?.short || "captain")

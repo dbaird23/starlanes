@@ -153,6 +153,15 @@ export interface PlayerState {
   systemRecords?: Record<string, number>;
   /** combat rating points (from destroyed ships' strength) */
   ratingPoints: number;
+  /**
+   * Who the pilot is. Nova asks for all three at creation and uses them in
+   * mission text: <PN> the full name, <PNN> the nickname ("If no nickname was
+   * specified, Nova will use the player's full name here instead"), <PSN> the
+   * ship's name. Gender drives the desc `{G "..." "..."}` substitution.
+   */
+  nickname?: string;
+  gender?: "male" | "female";
+  shipName?: string;
   /** strict mode: death is permanent */
   strict: boolean;
   /** normal: NPCs aim at current position; hard: NPCs lead the target */

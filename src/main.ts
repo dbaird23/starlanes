@@ -23,6 +23,8 @@ async function boot(): Promise<void> {
     enterShip: (pilotId, strict) => game.enterShip(pilotId, strict),
     // Open Pilot / New Pilot load from disk (last leave-planet save only).
     loadPilot: (pilotId, strict, difficulty) => game.startPilot(pilotId, strict, difficulty),
+    seedPilot: (pilotId, identity, strict, difficulty) =>
+      game.seedPilot(pilotId, identity, strict, difficulty),
     onDeletePilot: (pilotId) => game.clearPausedSession(pilotId),
   });
   game.onMenu = () => menu.show(game.pilotId);

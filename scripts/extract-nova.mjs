@@ -1250,6 +1250,13 @@ const cronNewsLists = [
 ].filter((id) => id > 0);
 // 1000 is the message-buoy bank a sÿst's Message field indexes into.
 for (const id of [
+  // 128 "Default Names": the suggestions the New Pilot dialog fills in, three
+  // of each in one flat list — 1-3 full names (Shane Merrol, Cade Connelly,
+  // Goroth Obarskyr), 4-6 nicknames (Hunter, Hawkeye, Maverick), 7-9 ship
+  // names (Ring of Glory, Snowy Owl, Cardinal Virtue). The grouping is not
+  // labelled in the resource; it is confirmed by the original's own title
+  // screen, which shows a fresh pilot flying the "Ring of Glory".
+  128,
   134,
   138,
   150,

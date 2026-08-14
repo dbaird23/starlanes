@@ -357,6 +357,39 @@ cannot open Wild Geese at all until they have a couple of kills behind them
 ~2 small kills or ~20 depends on the internal multiplier — see
 `RATING_POINT_SCALE`, still unpinned.
 
+**New Pilot is three dialogs, and it ends on the title screen.** Nova asks
+who you are (full name, nickname, gender), then the strict-play question on
+its own, then your ship's name — and then leaves you on the title screen to
+choose Enter Ship yourself rather than launching you into the cockpit. Ours
+was a single dialog that flew you immediately. All three now open pre-filled
+from **STR# 128 "Default Names"**, which holds three suggestions of each in
+one flat unlabelled list: 1-3 full names (Shane Merrol, Cade Connelly,
+Goroth Obarskyr), 4-6 nicknames (Hunter, Hawkeye, Maverick), 7-9 ship names
+(Ring of Glory, Snowy Owl, Cardinal Virtue). The grouping is confirmed by
+the original's own title screen, which shows a fresh pilot flying the "Ring
+of Glory" — entry 7. Creation persists through `Game.seedPilot` rather than
+`startPilot`, because the pilot has to exist on disk without a session
+starting; the chär intro sequence still plays on Enter Ship, from
+`startPilot`, and must not be moved into creation.
+
+The three fields are real state, not decoration: `<PNN>` is the nickname
+("If no nickname was specified, Nova will use the player's full name here
+instead"), `<PSN>` is the **ship's** name — an earlier pass had it echoing
+the pilot's — and gender drives the Bible's `{G "male" "female"}` desc
+substitution, which used to always take the male string. Those read through
+`setPlayerIdentity` in `missions.ts`, module-scoped and set by `startPilot`
+in the same shape as `setInterfaceForGovt`, rather than threading an extra
+argument through all eighteen `substituteTags` call sites.
+
+**STR# 2002 "misc strings" is 396 unextracted UI strings** — every stock
+label and message the engine prints, from "Welcome to Nova - it would be a
+good idea to start by docking at" through the plunder, escort-command,
+trade and map panels, down to "N/A". We hardcode English equivalents of
+most of it. Reading the bank would make those strings data-driven (and a
+plug-in's own wording work); nothing depends on it yet. Note entries 22/23
+are a docking/landing pair chosen by stellar type, and 24/25 embed the
+keybinding, which is why the original's opening hint names the 'L' key.
+
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
 if the ship happened to be the player's current target, and otherwise fed a
