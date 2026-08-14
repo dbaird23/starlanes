@@ -123,27 +123,29 @@ const RECORD_REACH = 6;
  * Land an act for (positive) or against (negative) a government, spreading
  * out from where it happened.
  *
- * **This is measured, not guessed.** One Valkyrie (govt 173 Pyrogenesis,
- * DisabPenalty 3 + KillPenalty 7) was destroyed in Sol in the original, and
- * the pilot file's per-system ledger moved like this:
+ * **Partly measured, and the measurement is confounded — read this before
+ * retuning.** One Valkyrie (govt 173 Pyrogenesis, DisabPenalty 3 +
+ * KillPenalty 7) was destroyed **in Tichel** in the original, and the pilot
+ * file's per-system ledger moved like this: 65 systems of 545 changed, all
+ * within a few jumps; Tichel itself -5, neighbouring Sol -10, three other
+ * neighbours -3, one neighbour (Kania) untouched, and a tail of -1. Nothing
+ * anywhere went up, including three systems of the victim's enemies that sat
+ * inside the affected area.
  *
- *   - Sol itself: **-10** — the disable *and* the kill, both charged.
- *   - 65 systems in all, every one within 6 jumps of Sol; nothing beyond.
- *   - Magnitudes fall off with distance: -5 and -3 among the near neighbours,
- *     -1 across the rest, and everything past 3 jumps was -1.
- *   - **Nothing went up.** Three systems belonging to Pyrogenesis's enemies
- *     were inside the affected radius (NGC-0946 and NGC-3183 at 5 jumps,
- *     Scheall at 6) and none of them improved, so the Bible's "doing evil
- *     deeds to one government will improve your rating with its enemies" did
- *     not fire here. We no longer credit enemies.
+ * Two things are safe, and are what this function implements: the spread is
+ * **local** rather than galaxy-wide (a uniform rule would have moved all 164
+ * allied systems), and **enemies are not credited** despite the Bible's
+ * "doing evil deeds to one government will improve your rating with its
+ * enemies". Everything else is unresolved: distance from the crime does not
+ * explain it (Sol, one jump out, took double the crime site while Kania at
+ * the same distance took nothing), nor does the system's government
+ * (Federation systems took -10, -5, -3 and -1 alike), nor the explored set,
+ * nor the count of inhabited stellars.
  *
- * The exact per-system weighting is **not** settled by one sample: it is not
- * distance alone (Wolf 359 is one jump from Sol and did not move, while
- * Tichel at the same distance took -5), not government alone (Federation
- * systems took -10, -5, -3 and -1 alike), and not simply the systems the
- * pilot had explored. What is reproduced here is the shape — full force where
- * it happened, halving next door, tailing to a single point at the edge of a
- * six-jump neighbourhood, and no windfall for anyone's enemies.
+ * The likely reason is that the sample covers a whole play session rather
+ * than one event — only the kill count is pinned (the rating moved by exactly
+ * one kill's worth). The decay below reproduces the measured shape and no
+ * more; a clean single-event save would settle the real rule.
  */
 export function applyGovtRecord(
   player: PlayerState,

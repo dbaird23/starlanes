@@ -1077,29 +1077,37 @@ happened to live there.
   cost. Level names now come from **STR# 138**, which holds exactly the
   eleven the Bible prints; raw 230 (Nova 46) reads "Little Ability", which
   is what the original's own title screen showed for that pilot.
-- **Crime records spread from where the crime happened, and the spread was
-  measured.** Destroying that Valkyrie (govt 173 Pyrogenesis, DisabPenalty 3
-  + KillPenalty 7) moved the original's per-system ledger like this: **Sol
-  itself -10** — the disable *and* the kill, which confirms Nova charges both
-  when you destroy a ship, as we now do — then 65 systems in all, every one
-  within **6 jumps** of Sol and nothing beyond, with magnitudes falling off
-  (-5 and -3 among near neighbours, -1 across the rest, everything past 3
-  jumps at -1). **Nothing went up**: three systems belonging to
-  Pyrogenesis's enemies sat inside the radius (NGC-0946, NGC-3183 at 5 jumps,
-  Scheall at 6) and none improved, so the Bible's "doing evil deeds to one
-  government will improve your rating with its enemies" did *not* fire —
-  `applyGovtRecord` no longer credits enemies.
+- **Crime records do not go galaxy-wide — but the exact rule is still open,
+  and the one sample we have is confounded.** A Valkyrie (govt 173
+  Pyrogenesis, DisabPenalty 3 + KillPenalty 7) was destroyed **in Tichel** in
+  the original and the pilot file's per-system ledger moved as follows: 65
+  systems of 545 changed, all of them within a few jumps of Tichel/Sol and
+  nothing beyond; Tichel itself took **-5**, neighbouring **Sol took -10**,
+  three other Tichel neighbours took -3, and one more (Kania) did not move at
+  all; the tail was -1. **Nothing went up** — three systems belonging to
+  Pyrogenesis's enemies sat inside the affected area (NGC-0946, NGC-3183,
+  Scheall) and none improved, so the Bible's "doing evil deeds to one
+  government will improve your rating with its enemies" did not fire.
 
-  The exact per-system weighting is **not** settled by one sample, and three
-  plausible rules were each ruled out: not distance alone (Wolf 359 is one
-  jump from Sol and did not move, while Tichel at the same distance took -5),
-  not government alone (Federation systems took -10, -5, -3 and -1 alike),
-  and not the set of systems the pilot had explored. What is implemented is
-  the measured *shape* — full force at the crime site, halving next door,
-  tailing to a single point at the edge of a six-jump neighbourhood, victim's
-  own and allied space only. A second kill from a different system would
-  pin the rest; the raw before/after ledgers are worth keeping if so.
-- **Legal records are per-system now — Nova's own model.** `reputation.ts`
+  Two conclusions are safe and are implemented: the spread is **local**, not
+  galaxy-wide (a uniform rule would have moved all 164 allied systems), and
+  **enemies are not credited**. Beyond that, nothing fits. Five hypotheses
+  were tested and all five died: distance from the crime (Sol, one jump out,
+  took double the crime site, and Kania at the same distance took nothing),
+  distance from Sol, the system's government (Federation systems took -10,
+  -5, -3 and -1 alike), the set of systems the pilot had explored, and the
+  count of inhabited stellars per system.
+
+  The likeliest reason nothing fits is that **the sample is a whole play
+  session, not one event** — the pilot also flew, landed twice and may have
+  disabled or been scanned by other ships, each of which moves the same
+  ledger. The rating moved by exactly one kill's worth (+40), which pins the
+  kills at one, but nothing else about the session is pinned. A clean
+  experiment would settle it: fresh pilot, snapshot the `.plt`, one kill, land
+  and quit immediately, touching nothing else. `applyGovtRecord` currently
+  reproduces the measured *shape* — full force at the crime site, decaying
+  outward, six-jump reach, victim's and allied space only.
+- **Legal records are per-system now — Nova's own model.**- **Legal records are per-system now — Nova's own model.** `reputation.ts`
   keeps a sparse ledger keyed by sÿst id: an untouched system reads its owning
   govt's InitialRec (the original .plt seeds exactly so — Nil'kemorya -5,
   Family Dani +2, Krypt +10), and `applyGovtRecord` lands every crime, comp
