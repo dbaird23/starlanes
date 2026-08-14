@@ -2993,11 +2993,16 @@ export class Game {
           ? `"${p.name} control. Always a pleasure — the pads are clear whenever you want them."`
           : `"${p.name} traffic control, go ahead."`;
 
-    // gövt Flags 0x4000: planets take bribes. 0x8000: always take bribes and
-    // demand a higher cut (same flag as ship greedy-bribe rule).
+    // gövt Flags 0x4000 "planets of this govt will take bribes"; 0x8000 "ships
+    // of this govt taking bribes will demand a larger percentage of your cash
+    // supply, and their planets will always take bribes". The Bible's own text
+    // ties the larger cut to planets too, so 0x8000 worlds open at a third of
+    // your cash where 0x4000 worlds open at 10% — the same split the ship
+    // bribe already charges.
     const govtFlags = GOVT_FLAGS[String(govtId)] ?? 0;
     const planetTakesBribes =
       (govtFlags & 0x4000) !== 0 || (govtFlags & 0x8000) !== 0;
+    const greedyPlanet = (govtFlags & 0x8000) !== 0;
     const alreadyCleared = this.clearedToLand(p, this.system.govtId);
     const hostile = !alreadyCleared && p.minStatus !== MIN_STATUS_NEVER;
 
@@ -3121,10 +3126,26 @@ export class Game {
       opts.push({
         label: "Offer Bribe",
         action: () => {
+          // 0x8000 worlds "always take bribes"; a 0x4000-only world still has
+          // standards, and turns away a player it considers a genuine criminal
+          // (the -20 line the greeting above already treats as a disgrace —
+          // the threshold is ours, the will/always split is the Bible's).
+          const planetRecord = (this.player.planetRecords ?? {})[p.id];
+          const effRecord = planetRecord !== undefined ? planetRecord : record;
+          if (!greedyPlanet && effRecord < -20)
+            return `"Your money is no good here, criminal. Clear the pattern."`;
           const current = this.bribeState.get(p.id);
           if (current?.rejected)
             return `"We already told you — get lost."`;
-          const startAmount = current?.nextAmount ?? 5000;
+          const startAmount =
+            current?.nextAmount ??
+            Math.min(
+              this.player.credits,
+              2000 +
+                Math.floor(
+                  this.player.credits * (greedyPlanet ? 0.33 : 0.1),
+                ),
+            );
           if (this.player.credits < startAmount)
             return `"Don't waste our time."`;
           playSnd(151, 0.4);
@@ -6931,6 +6952,27 @@ export class Game {
       !this.hasActiveMissionToPlanet(planet.id) &&
       !this.clearedToLand(planet, this.system.govtId)
     ) {
+      /*
+       * gövt Flags 0x4000/0x8000: a bribable world doesn't just hang up — the
+       * refusal opens traffic control, where the Offer Bribe flow already
+       * lives, which is how the original lets anyone buy their way down to
+       * Harbor. Not during a tribute siege: they are shooting, not selling.
+       */
+      const landingGovt = landingGovtId(planet, this.system.govtId);
+      const landingFlags =
+        landingGovt >= 128 ? (GOVT_FLAGS[String(landingGovt)] ?? 0) : 0;
+      if (
+        planet.minStatus !== MIN_STATUS_NEVER &&
+        (landingFlags & 0xc000) !== 0 &&
+        !this.domination.has(planet.id)
+      ) {
+        this.message(
+          `${planet.name} denies you landing clearance — but traffic control keeps the channel open.`,
+        );
+        playSnd(SND.LANDING_DENIED, 0.55); // snd 154
+        this.hailPlanet(planet);
+        return;
+      }
       this.message(
         planet.minStatus === MIN_STATUS_NEVER
           ? `${planet.name} refuses all traffic. You are not getting down there.`

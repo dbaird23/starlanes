@@ -794,16 +794,23 @@ happened to live there.
 
 ### Known gaps in completed work
 
-- **Landing bribes are not implemented, and Wild Geese 6b needs them.** gövt
+- **Landing bribes are live, and the will/always split is honoured.** gövt
   Flags **0x4000** "Planets of this govt will take bribes" and **0x8000**
-  "... their planets will always take bribes" are extracted and unread. The
-  Pirate govt (137) sets both, which is how the original lets anyone land on
-  Harbor (spöb 422, MinStatus 2, the only world in Scheall): clearance is
-  refused and the pirates take a payoff instead. Without it, mïsn 645 "Take
-  Peace-Proposal to McGowan" (ReturnStel 422) cannot be completed by a player
-  the pirates dislike — which is every player on that storyline. Note the
-  pirates who shoot at you regardless are gövt Flags 0x0001 Xenophobic;
-  hostility says nothing about the landing rules.
+  "... demand a larger percentage of your cash supply, and their planets will
+  always take bribes" both feed the planet-hail Offer Bribe flow, and a
+  record-refused landing on a bribable world now opens traffic control
+  directly instead of hanging up (`tryLand` → `hailPlanet`), which is how the
+  original lets anyone buy their way down to Harbor (spöb 422, MinStatus 2,
+  the only world in Scheall — its govt 137 sets both flags). The opening ask
+  mirrors the ship bribe: 2000 + 10% of cash, a third for 0x8000 worlds — the
+  Bible's own 0x8000 text ties the larger cut to planets. A 0x4000-only world
+  refuses a player whose record there is below -20 (the threshold is ours,
+  reusing the greeting's "disgrace" line; the will/always split is the
+  Bible's). Two other things about that storyline: mïsn 645 "Take
+  Peace-Proposal to McGowan" also completes without a bribe because an active
+  mission whose destination is the planet overrides the clearance check in
+  `tryLand`, and the pirates shooting at you regardless are gövt Flags 0x0001
+  Xenophobic — hostility says nothing about the landing rules.
 - **The legal-record model is per-govt; Nova's is per-system.** The original
   pilot file stores one int16 per sÿst id, seeded from the owning govt's
   InitialRec (verified against a real .plt: Nil'kemorya systems -5, Family
