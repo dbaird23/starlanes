@@ -604,6 +604,7 @@ export class LandedUi {
           dx,
           dy,
           "shop",
+          false,
         );
       }
       case "escorts": {
@@ -807,6 +808,7 @@ export class LandedUi {
     dx: number,
     dy: number,
     scroll: "shop" | "hire",
+    wrap = true,
   ): boolean {
     if (!ids.length || (dx === 0 && dy === 0)) return false;
     let idx = current != null ? ids.indexOf(current) : 0;
@@ -815,20 +817,21 @@ export class LandedUi {
     const row = Math.floor(idx / cols);
     let next = idx;
     if (dx !== 0) {
-      // wrap within this row (last row may be shorter than cols)
       const rowStart = row * cols;
       const rowLen = Math.min(cols, ids.length - rowStart);
       const colInRow = idx - rowStart;
-      const nextCol = (((colInRow + dx) % rowLen) + rowLen) % rowLen;
+      const nextCol = wrap
+        ? (((colInRow + dx) % rowLen) + rowLen) % rowLen
+        : Math.max(0, Math.min(rowLen - 1, colInRow + dx));
       next = rowStart + nextCol;
     } else {
-      // wrap within this column top↔bottom
       const colItems: number[] = [];
       for (let i = col; i < ids.length; i += cols) colItems.push(i);
       let pos = colItems.indexOf(idx);
       if (pos < 0) pos = 0;
-      const nextPos =
-        (((pos + dy) % colItems.length) + colItems.length) % colItems.length;
+      const nextPos = wrap
+        ? (((pos + dy) % colItems.length) + colItems.length) % colItems.length
+        : Math.max(0, Math.min(colItems.length - 1, pos + dy));
       next = colItems[nextPos];
     }
     if (ids[next] === current) return true;
