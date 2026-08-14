@@ -204,7 +204,7 @@ import type {
   Vec2,
   WeaponType,
 } from "../types";
-import { HailUi } from "../ui/hail";
+import { HailUi, type HailOption } from "../ui/hail";
 import { PlunderUi } from "../ui/plunder";
 import { HUD_W, HudUi } from "../ui/hud";
 import type { CaptureResult, PlunderHold } from "../ui/plunder";
@@ -480,6 +480,8 @@ export class Game {
   ship = new Ship(SPARROW);
   npcs: NpcShip[] = [];
   private npcSpawnTimer = 3;
+  /** NPC flying to the player to transfer fuel; null when no transfer in progress */
+  private fuelHelper: NpcShip | null = null;
   private observeTimer = 0.5;
   private secondaryIdx = 0;
   private reinforceTimer = 45;
@@ -2075,6 +2077,16 @@ export class Game {
         else this.spawnNpc();
       }
     }
+    // Abort a fuel transfer if the helper has been destroyed or turned hostile.
+    if (
+      this.fuelHelper &&
+      (this.fuelHelper.done ||
+        this.fuelHelper.hostile ||
+        !this.npcs.includes(this.fuelHelper))
+    ) {
+      this.message("Fuel transfer aborted.");
+      this.fuelHelper = null;
+    }
     for (const npc of this.npcs) {
       npc.rechargeShields(dt);
       // stray-fire memory fades — a burst of crossfire is forgiven over ~10s
@@ -2083,7 +2095,9 @@ export class Game {
           0,
           npc.strayDamage - (npc.maxShield + npc.maxArmor) * 0.1 * dt,
         );
-      if (npc.escorting && !npc.disabled && !npc.hostile) {
+      if (npc === this.fuelHelper) {
+        this.updateFuelHelperAi(npc, dt);
+      } else if (npc.escorting && !npc.disabled && !npc.hostile) {
         // the ship you're escorting flies with you
         this.updateEscorteeAi(npc, dt);
       } else if (npc.ionized && !npc.disabled) {
@@ -3293,58 +3307,44 @@ export class Game {
     }
 
     if (t.hostile) {
-      /*
-       * Who will even discuss money, per gövt Flags: 0x0200 "warships will
-       * take bribes" and 0x2000 "freighters will take bribes", split by the
-       * attacker's AI type the way the Bible splits it everywhere else (1-2
-       * are the traders, 3-4 the warships). 0x8000 is "ships of this govt
-       * taking bribes will demand a larger percentage of your cash supply",
-       * which is the pirates — 10% of your money buys off a patrol, a third of
-       * it buys off a raider.
-       */
-      const flags = t.govtId >= 128 ? (GOVT_FLAGS[String(t.govtId)] ?? 0) : 0;
-      const freighter = t.aiType === 1 || t.aiType === 2;
-      const takesBribes = freighter
-        ? (flags & 0x2000) !== 0
-        : (flags & 0x0200) !== 0;
-      const greedy = (flags & 0x8000) !== 0;
-      const bribe = takesBribes
-        ? Math.min(
-            this.player.credits,
-            2000 + Math.floor(this.player.credits * (greedy ? 0.33 : 0.1)),
-          )
-        : 0;
-      if (bribe > 0) {
-        opts.push({
-          label: this.btnLabel(23, "Offer Bribe"),
-          action: () => {
-            if (this.player.credits < bribe)
-              return `"Your account's as empty as your threats."`;
-            playSnd(151, 0.4);
-            this.player.credits -= bribe;
-            t.hostile = false;
-            t.phase = "leaving";
-            const ang =
-              Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
-            t.target = {
-              x: t.pos.x + Math.cos(ang) * 5000,
-              y: t.pos.y + Math.sin(ang) * 5000,
-            };
-            return `"${bribe.toLocaleString()} credits. Pleasure doing business — we were never here."`;
-          },
-        });
-      }
+      opts.push({
+        label: this.btnLabel(21, "Greetings"),
+        action: () => this.hailGreeting(t),
+      });
       if (!untalkative) {
+        /*
+         * gövt Flags: 0x0200 "warships will take bribes", 0x2000 "freighters
+         * will take bribes", 0x8000 "demand a larger percentage" (pirates).
+         * Bribeable ships enter the barter flow; others get the old plea.
+         */
+        const flags =
+          t.govtId >= 128 ? (GOVT_FLAGS[String(t.govtId)] ?? 0) : 0;
+        const freighter = t.aiType === 1 || t.aiType === 2;
+        const takesBribes = freighter
+          ? (flags & 0x2000) !== 0
+          : (flags & 0x0200) !== 0;
+        const greedy = (flags & 0x8000) !== 0;
         opts.push({
           label: this.btnLabel(24, "Beg For Mercy"),
           action: () => {
-            // the badly damaged and the barely-provoked can be talked down
+            if (takesBribes) {
+              const amount = Math.min(
+                this.player.credits,
+                2000 +
+                  Math.floor(this.player.credits * (greedy ? 0.33 : 0.1)),
+              );
+              this.showMercyNegotiation(t, amount, amount);
+              return null;
+            }
+            // Non-bribeable: plea only — works if they're badly damaged or
+            // barely provoked (same rule as the old system).
             const merciful = t.armor < t.maxArmor * 0.4 || record > -10;
             if (merciful) {
               t.hostile = false;
               t.phase = "leaving";
               const ang =
-                Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
+                Math.atan2(t.pos.y, t.pos.x) +
+                (Math.random() - 0.5) * Math.PI;
               t.target = {
                 x: t.pos.x + Math.cos(ang) * 5000,
                 y: t.pos.y + Math.sin(ang) * 5000,
@@ -3414,16 +3414,27 @@ export class Game {
               ? `"Hold on, Captain — we're coming about. All ships, engage."`
               : `"Acknowledged. We're calling in whatever is close by."`;
           }
-          const needFuel = this.player.fuelJumps < this.player.maxFuelJumps;
+          // Busy in combat — not available for repairs or fuel runs.
+          const inCombat = this.npcs.some(
+            (n) =>
+              n !== t &&
+              n.hostile &&
+              !n.done &&
+              Math.hypot(n.pos.x - t.pos.x, n.pos.y - t.pos.y) < 3000,
+          );
+          if (inCombat)
+            return `"A bit busy right now, Captain. You're on your own."`;
+
+          // Fuel assistance: needs at least one jump to get underway.
+          const needFuel = this.player.fuelJumps < 1;
           const hurt = this.ship.armor < this.ship.maxArmor;
           const crippled = this.ship.disabled;
           if (!needFuel && !hurt && !crippled)
             return `"You look in good shape to us, Captain. Safe flying."`;
+          let dispatchedFueler = false;
           if (needFuel) {
-            this.player.fuelJumps = Math.min(
-              this.player.maxFuelJumps,
-              this.player.fuelJumps + 1,
-            );
+            if (this.fuelHelper)
+              return `"Help is already on the way, Captain. Hold your position."`;
           }
           /*
            * gövt Flags2 0x0010 / ränk Flags 0x0800: full free repairs.
@@ -3450,21 +3461,177 @@ export class Game {
             this.ship.disabled = false;
             patched = true;
           }
+          /*
+           * Fuel dispatch. Three tiers by record:
+           *   < -10       — refused above
+           *   -10..149    — paid: open barter negotiation (3× station rate to start)
+           *   ≥ 150 or freeRepair — gratis: dispatch immediately
+           */
+          if (needFuel) {
+            const fuelFee =
+              freeRepair || record >= 150 ? 0 : REFUEL_COST_PER_JUMP * 3;
+            if (fuelFee > 0) {
+              // Hand off to the negotiation overlay; return null keeps hail open.
+              this.showFuelNegotiation(t, fuelFee, fuelFee);
+              return null;
+            }
+            t.boardingTimer = 0;
+            this.fuelHelper = t;
+            dispatchedFueler = true;
+          }
           if (fullSeal)
-            return needFuel
-              ? `"Hold position — transferring fuel and sealing that hull for you."`
+            return dispatchedFueler
+              ? `"Hold position — dispatching a fueler and sealing that hull for you."`
               : `"Hold position — sealing that hull for you. You're free to fly."`;
           if (patched)
-            return needFuel
-              ? `"We're patching enough hull for thrusters and topping up a jump of fuel. Limp clear, Captain."`
+            return dispatchedFueler
+              ? `"We're patching enough hull for thrusters and dispatching a fueler. Limp clear, Captain."`
               : `"We're patching enough hull for thrusters. You're not pretty, but you're free to fly."`;
-          if (needFuel)
-            return `"Transferring a jump's worth of fuel now. Safe travels, Captain."`;
+          if (dispatchedFueler)
+            return `"Acknowledged — dispatching a fueler. Hold position, Captain."`;
           return `"You look in good shape to us, Captain. Safe flying."`;
         },
       });
     }
     return opts;
+  }
+
+  /**
+   * Mercy barter for a hostile ship — same flow as fuel / docking bribes.
+   * On accept the attacker stands down and leaves; on a failed Lower Price
+   * they raise their demand and lock out further bargaining this hail.
+   */
+  private showMercyNegotiation(
+    t: NpcShip,
+    amount: number,
+    lowestOffered: number,
+    rejected = false,
+    overrideMsg?: string,
+  ): void {
+    const capped = Math.min(this.player.credits, Math.round(amount));
+    const lo = Math.min(lowestOffered, capped);
+    const rejectionLines = [
+      `"Not enough. We don't come cheap."`,
+      `"We've already lowered our price. That's as far as we go."`,
+      `"Stop wasting our time. Final offer."`,
+    ];
+    const standDown = (): void => {
+      t.hostile = false;
+      t.phase = "leaving";
+      const ang =
+        Math.atan2(t.pos.y, t.pos.x) + (Math.random() - 0.5) * Math.PI;
+      t.target = {
+        x: t.pos.x + Math.cos(ang) * 5000,
+        y: t.pos.y + Math.sin(ang) * 5000,
+      };
+      this.message("The attacker breaks off.");
+    };
+
+    const opts: HailOption[] = [
+      {
+        label: "Accept Price",
+        action: () => {
+          if (this.player.credits < capped)
+            return `"You don't have the funds. We'll be collecting in scrap, then."`;
+          playSnd(151, 0.4);
+          this.player.credits -= capped;
+          standDown();
+          this.hailUi.close();
+          return null;
+        },
+      },
+    ];
+
+    if (!rejected) {
+      opts.push({
+        label: "Lower Price",
+        action: () => {
+          const proposed = amount * (0.7 + Math.random() * 0.15);
+          const higher = Math.round(amount * (1.15 + Math.random() * 0.15));
+          if (Math.random() < 0.5 && proposed > lo) {
+            this.showMercyNegotiation(t, proposed, lo);
+          } else {
+            const msg =
+              rejectionLines[Math.floor(Math.random() * rejectionLines.length)];
+            this.showMercyNegotiation(t, higher, lo, true, msg);
+          }
+          return null;
+        },
+      });
+    }
+
+    const msg =
+      overrideMsg ??
+      `"${capped.toLocaleString()} credits and we'll let you go. Not a credit less."`;
+    this.hailUi.showShipNegotiation(t, msg, opts);
+  }
+
+  /**
+   * In-space fuel barter — mirrors the planet landing-bribe negotiation.
+   *
+   * Shows a ship-comms negotiation overlay with "Accept Price" and (while not
+   * yet rejected) "Lower Price". Lower Price has a 50% chance to succeed;
+   * failure raises the ask and locks out further bargaining for this hail.
+   *
+   * `amount`        current asking price
+   * `lowestOffered` floor: they will never agree to go at or below this again
+   * `rejected`      true after a failed bargain — removes the Lower Price button
+   * `overrideMsg`   shown instead of the price line (used for rejection quips)
+   */
+  private showFuelNegotiation(
+    t: NpcShip,
+    amount: number,
+    lowestOffered: number,
+    rejected = false,
+    overrideMsg?: string,
+  ): void {
+    const capped = Math.min(this.player.credits, Math.round(amount));
+    const lo = Math.min(lowestOffered, capped);
+    const rejectionLines = [
+      `"That's not enough. We're not a charity, Captain."`,
+      `"We've already come down. That's our final offer."`,
+      `"You're wasting our time. Take it or leave it."`,
+    ];
+
+    const opts: HailOption[] = [
+      {
+        label: "Accept Price",
+        action: () => {
+          if (this.player.credits < capped)
+            return `"You don't have the funds, Captain."`;
+          this.player.credits -= capped;
+          t.boardingTimer = 0;
+          this.fuelHelper = t;
+          this.hailUi.close();
+          return null;
+        },
+      },
+    ];
+
+    if (!rejected) {
+      opts.push({
+        label: "Lower Price",
+        action: () => {
+          const proposed = amount * (0.7 + Math.random() * 0.15);
+          const higher = Math.round(amount * (1.15 + Math.random() * 0.15));
+          if (Math.random() < 0.5 && proposed > lo) {
+            // Agree — go lower.
+            this.showFuelNegotiation(t, proposed, lo);
+          } else {
+            // Refuse — raise price, lock out further bargaining.
+            const msg =
+              rejectionLines[Math.floor(Math.random() * rejectionLines.length)];
+            this.showFuelNegotiation(t, higher, lo, true, msg);
+          }
+          return null;
+        },
+      });
+    }
+
+    const msg =
+      overrideMsg ??
+      `"${capped.toLocaleString()} credits to transfer a jump's worth of fuel."`;
+    this.hailUi.showShipNegotiation(t, msg, opts);
   }
 
   /**
@@ -4283,6 +4450,66 @@ export class Game {
         0.5,
         incoming.weap.explodBoom ?? 128,
       );
+    }
+  }
+
+  /**
+   * Fly the fuel helper NPC alongside the player and transfer fuel once docked.
+   * Uses the same three-phase boarding approach (approach → brake → drift in),
+   * but instead of boarding it trickles fuelJumps into the player until they
+   * have at least one jump. Transfer rate: 1 jump/second.
+   */
+  private updateFuelHelperAi(npc: NpcShip, dt: number): void {
+    const DOCK_RANGE = 25;
+    const DOCK_SPEED = 15;
+    const DRIFT_SPEED = 30;
+    const BRAKE_DIST = 350;
+    const FUEL_RATE = 1.0; // jumps per second
+
+    const dx = this.ship.pos.x - npc.pos.x;
+    const dy = this.ship.pos.y - npc.pos.y;
+    const dist = Math.hypot(dx, dy);
+
+    const braking = npc.boardingTimer === -1;
+    if (!braking && dist > BRAKE_DIST) {
+      // Approach — full thrust toward the player.
+      const facing = npc.steerToward(dt, Math.atan2(dy, dx));
+      npc.update(dt, 0, facing);
+    } else if (braking || npc.speed > DOCK_SPEED) {
+      // Brake — face retrograde and thrust until stopped.
+      npc.boardingTimer = -1;
+      if (npc.speed > DOCK_SPEED) {
+        const brakeAngle = Math.atan2(-npc.vel.y, -npc.vel.x);
+        const facing = npc.steerToward(dt, brakeAngle);
+        npc.update(dt, 0, facing);
+      } else {
+        npc.vel.x = 0;
+        npc.vel.y = 0;
+        npc.boardingTimer = 0;
+        npc.update(dt, 0, false);
+      }
+    } else {
+      // Stopped (or nearly). Nudge slowly toward the player if not yet in range.
+      if (dist > DOCK_RANGE) {
+        const len = dist || 1;
+        npc.vel.x = (dx / len) * DRIFT_SPEED;
+        npc.vel.y = (dy / len) * DRIFT_SPEED;
+      } else {
+        npc.vel.x = 0;
+        npc.vel.y = 0;
+      }
+      npc.update(dt, 0, false);
+      if (dist <= DOCK_RANGE) {
+        // Transfer fuel at FUEL_RATE jumps per second until one jump is full.
+        this.player.fuelJumps = Math.min(
+          this.player.maxFuelJumps,
+          this.player.fuelJumps + FUEL_RATE * dt,
+        );
+        if (this.player.fuelJumps >= 1) {
+          this.message("Fuel transfer complete. Safe travels, Captain.");
+          this.fuelHelper = null;
+        }
+      }
     }
   }
 

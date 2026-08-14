@@ -32,6 +32,8 @@ export class HailUi {
   private target: NpcShip | null = null;
   private planet: PlanetDef | null = null;
   private planetOptions: HailOption[] = [];
+  /** Non-null while a ship-side negotiation (e.g. fuel barter) is in progress. */
+  private shipNegOptions: HailOption[] | null = null;
   private currentOptions: HailOption[] = [];
   private reply = "";
 
@@ -48,6 +50,27 @@ export class HailUi {
     const wasOpen = this.open;
     this.target = target;
     this.planet = null;
+    this.shipNegOptions = null; // clear any stale negotiation state
+    this.reply = greeting;
+    this.root.classList.remove("hidden");
+    if (!wasOpen) playMenuOpen();
+    this.render();
+  }
+
+  /**
+   * Switch the open ship hail into a negotiation sub-screen (e.g. fuel barter).
+   * Uses the ship's own picture and class line but replaces the dynamic option
+   * list with the supplied static options — same pattern as showPlanet.
+   */
+  showShipNegotiation(
+    target: NpcShip,
+    greeting: string,
+    options: HailOption[],
+  ): void {
+    const wasOpen = this.open;
+    this.target = target;
+    this.planet = null;
+    this.shipNegOptions = options;
     this.reply = greeting;
     this.root.classList.remove("hidden");
     if (!wasOpen) playMenuOpen();
@@ -71,6 +94,7 @@ export class HailUi {
     this.target = null;
     this.planet = null;
     this.planetOptions = [];
+    this.shipNegOptions = null;
     this.root.classList.add("hidden");
     this.root.innerHTML = "";
     playMenuClose();
@@ -135,7 +159,9 @@ export class HailUi {
       if (!pict && t!.typeId) pict = shipyardPict(t!.typeId);
     }
     const title = p ? p.name : this.game.hailLabel(t!);
-    const options = p ? this.planetOptions : this.game.hailOptions(t!);
+    const options = p
+      ? this.planetOptions
+      : this.shipNegOptions ?? this.game.hailOptions(t!);
     this.currentOptions = options;
 
     this.root.innerHTML = `

@@ -450,11 +450,11 @@ export class HudUi {
       ),
     );
 
-    // ion has no ïntf colour of its own — the resource names three gauges
-    if (g.ship.ion > 0) {
-      const f = g.ship.ion / g.ship.maxIon;
-      rows.push(barRow("ion", g.ship.ionized ? "#d8c840" : "#8a7fd0", f, pct(f)));
-    }
+    // // ion has no ïntf colour of its own — the resource names three gauges
+    // if (g.ship.ion > 0) {
+    //   const f = g.ship.ion / g.ship.maxIon;
+    //   rows.push(barRow("ion", g.ship.ionized ? "#d8c840" : "#8a7fd0", f, pct(f)));
+    // }
 
     setHtml(this.gauges, rows.join(""));
   }
