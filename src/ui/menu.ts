@@ -543,7 +543,6 @@ export class MainMenu {
         ${field(ui(251, "Pilot Name:"), summary.name)}
         ${field(ui(255, "Ship Name:"), state.shipName || "—")}
         ${field(ui(256, "Ship Class:"), ship?.name.split(";")[0] ?? "—")}
-        ${field("Credits:", state.credits.toLocaleString() + " cr")}
       </div>
       ${silhouette}
       <div class="ttl-info right">
