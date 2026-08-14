@@ -257,6 +257,7 @@ interface RawWeapon {
   subTheta: number;
   subLimit: number;
   proxSafety: number;
+  triggersWeapGlow: boolean;
   maxAmmo: number;
   recoil: number;
   liDensity: number;
@@ -351,6 +352,8 @@ export let SHIP_SPRITES: Record<string, ShipSprite> = {};
 export let GLOW_SPRITES: Record<string, SheetSprite> = {};
 /** running lights (shän LightImageID), drawn over the hull and blinked */
 export let LIGHT_SPRITES: Record<string, SheetSprite> = {};
+/** weapon-glow overlays (shän WeapImageID), drawn while the ship fires */
+export let WEAP_GLOW_SPRITES: Record<string, SheetSprite> = {};
 export let WEAPON_SPRITES: Record<string, SheetSprite> = {};
 export let BOOM_SPRITES: Record<string, SheetSprite> = {};
 export let SHIPS: Record<string, ShipType> = {};
@@ -919,6 +922,7 @@ export async function loadUniverse(): Promise<void> {
     BOOM_SPRITES = manifest.booms ?? {};
     GLOW_SPRITES = manifest.glows ?? {};
     LIGHT_SPRITES = manifest.lights ?? {};
+    WEAP_GLOW_SPRITES = manifest.weapGlows ?? {};
     ROID_SPRITES = manifest.roids ?? {};
     CURSOR_SPRITE = manifest.ui?.cursor ?? null;
     MENU_SPRITES = manifest.menu ?? {};
@@ -1014,6 +1018,7 @@ export async function loadUniverse(): Promise<void> {
       blastRadius: w.blastRadius,
       jamVuln: w.jamVuln ?? [0, 0, 0, 0],
       ionization: w.ionization ?? 0,
+      triggersWeapGlow: w.triggersWeapGlow ?? false,
       exitType: w.exitType ?? -1,
       seeker: w.seeker ?? 0,
       /*

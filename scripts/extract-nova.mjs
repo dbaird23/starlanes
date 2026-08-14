@@ -526,6 +526,16 @@ function decodeWeap(res) {
     subTheta: d.readInt16BE(66),
     subLimit: d.readInt16BE(68),
     proxSafety: d.readInt16BE(70),
+    /*
+     * Flags @72: a flags word between ProxSafety and BurstCount. 0x0200 is
+     * "triggers the firing ship's weapon-glow overlay (shän WeapImageID)".
+     * Confirmed by wëap 201 "Ion Cannon;non-weapon glow": identical to wëap
+     * 142 in every byte except @72, where it lacks the 0x0200 bit — and in
+     * play the Manticore light-weapons variant (which fires wëap 201) never
+     * shows the IPC ring. The wëap name uses the semicolon to make the flag
+     * explicit.
+     */
+    triggersWeapGlow: !!(d.readUInt16BE(72) & 0x0200),
     burstCount: d.readInt16BE(90),
     burstReload: d.readInt16BE(92),
     flags3: d.readUInt16BE(102),

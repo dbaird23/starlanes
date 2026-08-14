@@ -251,11 +251,12 @@ function writeOnce(file, decoded) {
 
 const manifest = {
   ships: {}, stellars: {}, weapons: {}, booms: {}, glows: {}, lights: {},
-  roids: {}, ui: {}, menu: {},
+  weapGlows: {}, roids: {}, ui: {}, menu: {},
 };
 let shipCount = 0;
 let glowCount = 0;
 let lightCount = 0;
+let weapGlowCount = 0;
 let stellarCount = 0;
 let weaponCount = 0;
 let boomCount = 0;
@@ -304,9 +305,17 @@ for (const res of pool.values()) {
      * and 107 light images in the shipped data do match. So they index with
      * the hull's own set and frame.
      */
-    for (const [kind, off, bucket] of [
-      ["glow", SHAN.glowImage, manifest.glows],
-      ["light", SHAN.lightImage, manifest.lights],
+    for (const [kind, off, bucket, counter] of [
+      ["glow", SHAN.glowImage, manifest.glows, () => glowCount++],
+      ["light", SHAN.lightImage, manifest.lights, () => lightCount++],
+      /*
+       * Weapon glow (WeapImageID) is the energy-flare sprite drawn on top of
+       * the hull while the ship fires. Like engine glows and running lights it
+       * matches the hull frame-for-frame. WeapDecay governs how fast it fades
+       * after the ship stops firing; the extractor records the frames/size so
+       * the renderer can index it the same way as the hull.
+       */
+      ["weapGlow", SHAN.weapImage, manifest.weapGlows, () => weapGlowCount++],
     ]) {
       const id = d.readInt16BE(off);
       const src = id > 0 ? pool.get(`rlëD:${id}`) : null;
@@ -322,8 +331,7 @@ for (const res of pool.values()) {
           framesPer: shan.framesPer,
           sets: shan.sets,
         };
-        if (kind === "glow") glowCount++;
-        else lightCount++;
+        counter();
       } catch (e) {
         console.warn(`${kind} for shän ${res.id}: ${e.message}`);
       }
@@ -443,8 +451,8 @@ writeFileSync(
 );
 console.log(
   `Extracted ${shipCount} ship, ${glowCount} engine-glow, ${lightCount} running-light, ` +
-    `${stellarCount} stellar, ${weaponCount} weapon, ${boomCount} explosion, ` +
-    `${roidCount} asteroid sprites (${failed} failures)`,
+    `${weapGlowCount} weapon-glow, ${stellarCount} stellar, ${weaponCount} weapon, ` +
+    `${boomCount} explosion, ${roidCount} asteroid sprites (${failed} failures)`,
 );
 {
   const s = Object.values(manifest.ships);

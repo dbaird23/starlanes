@@ -10,6 +10,7 @@ import {
   getSystem,
   GLOW_SPRITES,
   LIGHT_SPRITES,
+  WEAP_GLOW_SPRITES,
   MISSIONS,
   OUTFITS,
   PERSONS,
@@ -2053,6 +2054,20 @@ export class Game {
     this.ship.rechargeShields(dt);
     this.ship.dissipateIon(dt);
     for (const npc of this.npcs) npc.dissipateIon(dt);
+    // Decay weapon-glow overlays for all ships (shän WeapDecay is per 30th of
+    // a second; 255 is the top of the legacy 8-bit alpha range)
+    if (this.ship.weapGlowAlpha > 0) {
+      const wd = this.ship.sprite?.weapDecay ?? 0;
+      if (wd > 0) this.ship.weapGlowAlpha = Math.max(0, this.ship.weapGlowAlpha - (wd / 255) * 30 * dt);
+      else this.ship.weapGlowAlpha = 0;
+    }
+    for (const npc of this.npcs) {
+      if (npc.weapGlowAlpha > 0) {
+        const wd = npc.sprite?.weapDecay ?? 0;
+        if (wd > 0) npc.weapGlowAlpha = Math.max(0, npc.weapGlowAlpha - (wd / 255) * 30 * dt);
+        else npc.weapGlowAlpha = 0;
+      }
+    }
     this.updateReinforcements(dt);
     this.updatePendingReinforcement();
     this.updateCloak(dt);
@@ -3733,6 +3748,7 @@ export class Game {
             if (Math.abs(diff) <= Math.PI / 4) aim = aimAngle;
           }
         }
+        if (slot.weap.triggersWeapGlow) this.ship.weapGlowAlpha = 1;
         if (isBeam(slot.weap)) {
           this.fireBeam(this.ship, slot.weap, volley, true, aim);
         } else {
@@ -4806,6 +4822,7 @@ export class Game {
             npc.pos.y - this.ship.pos.y,
           );
         }
+        if (w.triggersWeapGlow) npc.weapGlowAlpha = 1;
         if (isBeam(w)) {
           const aim = Math.atan2(
             target.pos.y - npc.pos.y,
@@ -8881,6 +8898,25 @@ export class Game {
         ctx.globalAlpha = baseAlpha;
         ctx.globalCompositeOperation = prev;
       }
+    }
+
+    // Weapon-glow overlay (shän WeapImageID): rotation-matched sprite drawn
+    // additively on top of the hull while weapGlowAlpha > 0, fading out via
+    // weapDecay. The Manticore's IPC ring and Polaris energy patterns use this.
+    const weapGlow = shipTypeId ? WEAP_GLOW_SPRITES[shipTypeId] : undefined;
+    if (weapGlow && ship.weapGlowAlpha > 0 && flash < 0.85) {
+      const prev = ctx.globalCompositeOperation;
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = baseAlpha * ship.weapGlowAlpha * (1 - flash);
+      drawSheetFrame(
+        ctx,
+        weapGlow,
+        spriteFrame(weapGlow.framesPer ?? 0, weapGlow.frames, angle, set),
+        0,
+        0,
+      );
+      ctx.globalAlpha = baseAlpha;
+      ctx.globalCompositeOperation = prev;
     }
 
     if (thrusting && flash < 0.85) {

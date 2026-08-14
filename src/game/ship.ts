@@ -55,6 +55,12 @@ export class Ship {
    * Enter ramps 0→1 before the ship leaves; exit starts at 1 and falls to 0.
    */
   gateFlash = 0;
+  /**
+   * Weapon-glow overlay alpha (shän WeapImageID). Set to 1.0 each time the
+   * ship fires a weapon; decays toward 0 at weapDecay/255 per game frame.
+   * Only ships whose sprite carries a non-negative weapImage render this.
+   */
+  weapGlowAlpha = 0;
 
   get ionized(): boolean {
     return this.ion >= this.maxIon;

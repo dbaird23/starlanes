@@ -110,6 +110,7 @@ export interface SpriteManifest {
   booms: Record<string, SheetSprite>;
   glows: Record<string, SheetSprite>;
   lights: Record<string, SheetSprite>;
+  weapGlows: Record<string, SheetSprite>;
   roids: Record<string, SheetSprite>;
   ui: { cursor?: SheetSprite };
   menu: Record<string, SheetSprite>;
