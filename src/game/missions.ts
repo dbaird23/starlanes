@@ -10,6 +10,7 @@ import {
   SHIPS,
   SPOB_GOVT,
   SPOB_INDEX,
+  SPOBS_BY_ID,
   STR_LISTS,
   SYSTEMS,
 } from "../data/universe";
@@ -127,6 +128,37 @@ function stelMatches(code: number, spob: PlanetDef): boolean {
   return false;
 }
 
+/**
+ * Nova's duplicate-stellar rule, which the Bible states under TravelStel:
+ * "the mission travel objectives will also be fulfilled when landing on a
+ * duplicate stellar that has the identical name and coordinates to the
+ * stellar you specify here".
+ *
+ * It matters because **68 of the shipped stellars belong to no system at
+ * all** — they are alternate copies of a world, and 26 missions name one as
+ * their destination. Without this they resolve to nothing and the mission can
+ * never be completed: "Free Eiric" (mïsn 639) returns to spöb 506, a second
+ * New Ireland, which dead-ends the whole Wild Geese a-path at its last leg.
+ * The Auroran, Polaris and United Shipping chains each have their own.
+ *
+ * The match is name **and** coordinates, as documented; every duplicate in
+ * the stock data agrees on both with its placed twin.
+ */
+function duplicateStelId(code: number): string | null {
+  const orphan = SPOBS_BY_ID.get(String(code));
+  if (!orphan) return null;
+  for (const entry of SPOB_INDEX.values()) {
+    const p = entry.planet;
+    if (
+      p.name === orphan.name &&
+      p.pos.x === orphan.pos.x &&
+      p.pos.y === orphan.pos.y
+    )
+      return p.id;
+  }
+  return null;
+}
+
 /** Pick a random landable spob matching a destination code, or a specific one. */
 function resolveStel(
   code: number,
@@ -141,7 +173,7 @@ function resolveStel(
   if (code === -2) candidates = all.filter((p) => !p.uninhabited);
   else if (code === -3) candidates = all.filter((p) => p.uninhabited);
   else if (code >= 128 && code <= 2175) {
-    return SPOB_INDEX.has(String(code)) ? String(code) : null;
+    return SPOB_INDEX.has(String(code)) ? String(code) : duplicateStelId(code);
   } else {
     candidates = all.filter((p) => stelMatches(code, p) && !p.uninhabited);
     if (candidates.length === 0) candidates = all.filter((p) => !p.uninhabited);

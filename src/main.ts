@@ -1,5 +1,6 @@
-import { GLOW_SPRITES, loadUniverse, SHIPS } from "./data/universe";
+import { GLOW_SPRITES, loadUniverse, MISSIONS, SHIPS } from "./data/universe";
 import { Game } from "./game/game";
+import { availableMissions } from "./game/missions";
 import { migrateLegacySave } from "./game/pilots";
 import { MainMenu } from "./ui/menu";
 
@@ -34,6 +35,12 @@ async function boot(): Promise<void> {
   (window as unknown as { game: Game }).game = game;
   (window as unknown as { SHIPS: typeof SHIPS }).SHIPS = SHIPS;
   (window as unknown as { GLOWS: typeof GLOW_SPRITES }).GLOWS = GLOW_SPRITES;
+  // the mission table and the offer filter, so a storyline can be walked from
+  // the console (a dynamic import would get a separate, empty module instance)
+  (window as unknown as { MISSIONS: typeof MISSIONS }).MISSIONS = MISSIONS;
+  (
+    window as unknown as { availableMissions: typeof availableMissions }
+  ).availableMissions = availableMissions;
 
   let last = performance.now();
   function frame(now: number): void {

@@ -499,6 +499,37 @@ are ours; the Bible sets none) and marks the raider. **Mission cargo is
 deliberately untouched**: it is not theirs to sell, and losing it would
 silently fail storylines out of a fight you had already lost.
 
+**Duplicate stellars: 26 missions pointed at a world that isn't in any
+system.** The Bible states the rule under TravelStel — "the mission travel
+objectives will also be fulfilled when landing on a duplicate stellar that
+has the identical name and coordinates to the stellar you specify here" — and
+it matters because **68 of the shipped stellars belong to no system at all**.
+They are alternate copies of a world, and 26 missions name one as their
+destination, so `resolveStel` returned null and those missions could never be
+completed. "Free Eiric" (mïsn 639) returns to spöb 506, a second New Ireland,
+which dead-ended the entire **Wild Geese a-path** at its final leg; the
+Auroran, Polaris and United Shipping chains each have their own
+(`Return to Aurora`, `Take Terraforming Team to New Ireland`, the UHP-1002
+deliveries). `duplicateStelId` now matches name **and** coordinates, as
+documented; every duplicate in the stock data agrees on both with its placed
+twin. `SPOBS_BY_ID` in `data/universe.ts` holds all stellars including the
+unplaced ones, since `SPOB_INDEX` deliberately holds only the placed.
+
+**The Wild Geese a-path runs end to end too — both branches.** Walked in the
+browser: 634 (Earth bar) → 635 → forcing the `R(b804 b805)` roll to b804 →
+636 at Earth's **spaceport** → 637 (Mairim) → 638 (Ryll) → 639 "Free Eiric",
+whose objective is a **board** in NGC-1894, not a delivery → 640 at Misfire.
+640 is the branch, and it renders its own labels from mïsn AcceptButton /
+RefuseButton: the buttons read **"Rebels" and "Aurorans"**, not
+Accept/Refuse. Taking Aurorans (refuse) sets b811 and **b6666**, the
+one-day delay bit that crön 221 clears, after which 641 "Talk with Aurorans"
+is offered — it carries AvailRandom 75, so it is a roll per landing. Two
+gotchas for anyone scripting this: `landedUi.spaceportOffers` is **drained**
+by the first `setView("spaceport")` (one offer per landing, by design), so
+read `availableMissions(spob, loc, player)` directly instead; and `main.ts`
+now exposes `window.MISSIONS` and `window.availableMissions` for exactly
+that, since a dynamic `import()` yields a separate, empty module instance.
+
 **Crossfire: one tolerance band, no target special case.** Ships turned
 hostile far too easily, and inconsistently — a single hit provoked instantly
 if the ship happened to be the player's current target, and otherwise fed a

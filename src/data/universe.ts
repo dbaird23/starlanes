@@ -524,6 +524,13 @@ export let SPOB_INDEX = new Map<
 >();
 /** spob govt ids (raw), for mission availability checks */
 export let SPOB_GOVT = new Map<string, number>();
+/**
+ * Every stellar by id, **including the 68 that belong to no system** — the
+ * alternate copies of a world that Nova's duplicate-stellar rule resolves by
+ * name and coordinates. SPOB_INDEX holds only the placed ones, so mission
+ * destinations naming a duplicate need this to find their twin.
+ */
+export let SPOBS_BY_ID = new Map<string, PlanetDef>();
 export interface PictInfo {
   file: string;
   w: number;
@@ -1130,6 +1137,9 @@ export async function loadUniverse(): Promise<void> {
     }
   }
   for (const sp of raw.spobs) SPOB_GOVT.set(String(sp.id), sp.govt);
+  SPOBS_BY_ID = new Map(
+    raw.spobs.map((sp) => [String(sp.id), makePlanet(sp, raw.descs)]),
+  );
 
   govtRelations = new Map();
   for (const g of raw.govts) {
