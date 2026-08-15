@@ -1938,7 +1938,7 @@ export class Game {
           (actionDown(this.input, "turnRight") ? 1 : 0);
       const thrust = actionDown(this.input, "accelerate");
       // Down swings the nose onto the reverse of your course, so a burn slows
-      // you; inertialess hulls simply stop instead
+      // you; inertialess hulls decelerate directly without a retro swing
       const braking = actionDown(this.input, "reverse");
       // Hold aim-assist: auto-turn toward the selected ship or stellar
       const aimAssist =
@@ -1961,6 +1961,7 @@ export class Game {
           this.message("Autopilot disengaged.");
         }
       } else {
+        const angleBefore = this.ship.angle;
         if (braking) {
           if (this.inertialess) {
             this.ship.vel.x *= Math.max(0, 1 - 2.5 * dt);
@@ -1995,11 +1996,6 @@ export class Game {
           this.afterburnerBurn > 0 &&
           actionDown(this.input, "afterburner") &&
           this.player.fuelJumps > 0.05;
-        if (this.inertialess && !thrust && !braking) {
-          // an inertialess hull holds station the moment you stop pushing
-          this.ship.vel.x *= Math.max(0, 1 - 3 * dt);
-          this.ship.vel.y *= Math.max(0, 1 - 3 * dt);
-        }
         if (this.ship.ionized) {
           // ionized: engines barely respond
           this.ship.vel.x *= Math.max(0, 1 - 1.5 * dt);
@@ -2020,6 +2016,13 @@ export class Game {
           this.ship.stats = base;
         } else {
           this.ship.update(dt, turn as -1 | 0 | 1, thrust);
+        }
+        if (this.inertialess && this.ship.angle !== angleBefore && this.ship.speed > 0) {
+          // any rotation (manual or auto-steer) redirects velocity to the new
+          // heading, preserving speed
+          const spd = this.ship.speed;
+          this.ship.vel.x = Math.cos(this.ship.angle) * spd;
+          this.ship.vel.y = Math.sin(this.ship.angle) * spd;
         }
       }
 
