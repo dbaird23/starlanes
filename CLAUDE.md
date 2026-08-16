@@ -221,6 +221,64 @@ Buy and Sell are gated on whether the world actually trades the item, with
 Flags **0x0800** ("can be sold anywhere, regardless of tech level") as the
 documented exception, and the status line says which it is.
 
+**S7evyn exists, and every storyline's last mission moves you to it.** The
+Bounty Hunter, Federation and Rebellion chains were walked leg by leg in the
+browser, and all three finished — but the closing `M472` did nothing in any of
+them. **sÿst 472 is "S7evyn"**, the ATMOS epilogue system holding *Our Spiel*
+and *Link*, gated `b9995` — the bit the finale itself sets one operator
+earlier. Seven missions fire it: **354 Rebel I22, 381 Rebel II27, 417 Vellos31,
+474 Fed43, 686 Auroran 029, 712 Pirate 011 and 887 Polaris 46** — the last leg
+of all six major strings.
+
+It was being deleted at extract time. Nova ships 545 sÿst resources for 403
+systems, each variant gated by its own Visibility, and the pass that picks the
+live one **dropped any name with no variant live at game start** — while the
+comment directly above it promised the opposite and named S7evyn as the case
+it was written for. Six groups were lost, and they are exactly the
+post-storyline galaxy: Pentori/Willon/Chicea/Varden behind `b9500`, "Koria;
+Rebs assim" behind `b148`, and S7evyn behind `b9995`.
+
+What the fix rests on, all measured across the raw resources:
+
+- **Group by the name before any ';'.** Only one pair differs on it — 483
+  "Koria;Rebs !assim" against 533 "Koria; Rebs assim", same coordinates, same
+  links, gated `!b148 & !b305` against `b148 | b305`. They are two states of
+  one system, and merging them also stops the annotation being printed to the
+  player as the system's name.
+- **Lowest id is canonical.** For all 404 groups that have a variant live at
+  start, that is the same resource the old pass kept, so no saved pilot's
+  explored list or per-system ledger moves.
+- **Exactly one variant is live at a time** — 0 groups have two. So a group is
+  present iff some variant is true.
+- **Only a start-dormant group may ever be hidden.** `visibleIf` is populated
+  for those five groups and empty for every other, which is what stops a bit
+  that merely switches variants from making a system vanish: Rebel I22 sets
+  b147, which turns Sol's variant 130 off in favour of 531, and hiding on
+  "current variant false" would have deleted **Sol** at the end of the
+  Rebellion.
+
+`systemHidden` / `chartedSystems` in `data/universe.ts` read the live bits
+(`setVisibilityBits` re-points at `player.bits` in `startPilot`). A hidden
+system is out of `Game.allSystems()` — the single choke point for every map
+pass, so nodes, lanes, government haze and the unexplored-neighbour dots all
+followed for free — out of `findRoute`, out of the ModType 16 bulk charts and
+out of `resolveStel`'s random destination pool. It still exists, which is the
+whole point: `moveToSystem` can put you there. `galaxy.json` also carries a
+**`systemAlias`** map now (142 entries) and `getSystem` resolves through it —
+mïsn 676's ShipSyst is 765, SPC-1421's b995 variant of the kept 308, and
+resolved to nothing before.
+
+One consequence worth knowing: an ncb move fires *inside* `collectLandingEvents`,
+i.e. during `LandedUi.show()`, so `moveToSystem` calls `hide()` (which nulls
+`planet`, making `render()` a no-op) and then `show()` carried on and re-opened
+an empty panel. `LandedUi` now notices it was moved off the pad, restores the
+planet long enough to draw the ending, and closes to flight on the last
+Continue rather than falling through to the spaceport of a world it has left.
+Verified end to end: Fed43 at Earth plays both ending pages and drops you in
+S7evyn; a fresh pilot still charts **398** systems with no route to any gated
+one and no gated world in 2373 random destination draws; after the finale it is
+403.
+
 **The bar offers more than one job, and Nova's brake on that is a control
 bit.** Walking into a bar and being handed four storyline intros back to back
 looked like a bug. The manual says the plural is intended — "the quantity and
@@ -1388,6 +1446,16 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
+- **ShipGoal 6 (chase off) costs the Rebel II half of the Rebellion.**
+  `availableMissions` drops any mission with `shipCount > 0 && shipGoal > 5`,
+  and eleven missions carry goal 6. Ten are optional defence flavour, but
+  **391 "Defend Rebel II; Rebel II18"** is the only thing in the shipped data
+  that sets **b188**, which 389 (Rebel II19) requires — so the branch reached
+  by *failing* Rebel7 (339's OnFailure is `b199 b132`, against the accept path's
+  `b132` alone) dead-ends there. Verified standing on Rebel II with b189 set
+  and record 40: the spaceport board is empty, and the filter runs before the
+  AvailRandom roll so the mission is categorically absent. The Rebel I half is
+  unaffected and completes.
 - **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
   @110-124, 8 small values at @126-140, used together by ~65 systems). It is
   **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points

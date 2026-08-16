@@ -60,7 +60,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 900,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 129,
@@ -124,7 +125,8 @@
     "murk": 0,
     "reinfFleet": 189,
     "reinfTime": 450,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 130,
@@ -193,7 +195,8 @@
     "murk": 0,
     "reinfFleet": 145,
     "reinfTime": 480,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 131,
@@ -251,7 +254,8 @@
     "murk": 20,
     "reinfFleet": 189,
     "reinfTime": 450,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 132,
@@ -317,7 +321,8 @@
     "murk": 0,
     "reinfFleet": 189,
     "reinfTime": 630,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 133,
@@ -377,7 +382,8 @@
     "murk": 5,
     "reinfFleet": 146,
     "reinfTime": 360,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 134,
@@ -440,7 +446,8 @@
     "murk": 0,
     "reinfFleet": 144,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 135,
@@ -501,7 +508,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 900,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 136,
@@ -563,7 +571,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 137,
@@ -625,7 +634,8 @@
     "murk": 7,
     "reinfFleet": 128,
     "reinfTime": 2700,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 138,
@@ -689,7 +699,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 900,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 139,
@@ -748,7 +759,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1080,
-    "reinfInterval": 11
+    "reinfInterval": 11,
+    "visibleIf": []
   },
   {
     "id": 140,
@@ -807,7 +819,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1080,
-    "reinfInterval": 11
+    "reinfInterval": 11,
+    "visibleIf": []
   },
   {
     "id": 141,
@@ -872,7 +885,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 630,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 142,
@@ -934,7 +948,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 720,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 143,
@@ -997,7 +1012,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 900,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 144,
@@ -1060,7 +1076,8 @@
     "murk": 7,
     "reinfFleet": 128,
     "reinfTime": 900,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 145,
@@ -1121,7 +1138,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 146,
@@ -1180,7 +1198,8 @@
     "murk": 5,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 147,
@@ -1243,7 +1262,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 900,
-    "reinfInterval": 8
+    "reinfInterval": 8,
+    "visibleIf": []
   },
   {
     "id": 148,
@@ -1306,7 +1326,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 900,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 149,
@@ -1368,7 +1389,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 540,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 150,
@@ -1425,7 +1447,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 540,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 151,
@@ -1483,7 +1506,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1980,
-    "reinfInterval": 17
+    "reinfInterval": 17,
+    "visibleIf": []
   },
   {
     "id": 152,
@@ -1542,7 +1566,8 @@
     "murk": 0,
     "reinfFleet": -1,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 153,
@@ -1601,7 +1626,8 @@
     "murk": 7,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 154,
@@ -1660,7 +1686,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 720,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 155,
@@ -1718,7 +1745,8 @@
     "murk": 50,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 156,
@@ -1776,7 +1804,8 @@
     "murk": 6,
     "reinfFleet": 128,
     "reinfTime": 1800,
-    "reinfInterval": 16
+    "reinfInterval": 16,
+    "visibleIf": []
   },
   {
     "id": 157,
@@ -1834,7 +1863,8 @@
     "murk": 4,
     "reinfFleet": 128,
     "reinfTime": 1260,
-    "reinfInterval": 14
+    "reinfInterval": 14,
+    "visibleIf": []
   },
   {
     "id": 158,
@@ -1890,7 +1920,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1440,
-    "reinfInterval": 16
+    "reinfInterval": 16,
+    "visibleIf": []
   },
   {
     "id": 159,
@@ -1950,7 +1981,8 @@
     "murk": 7,
     "reinfFleet": 189,
     "reinfTime": 450,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 160,
@@ -2006,7 +2038,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 2160,
-    "reinfInterval": 21
+    "reinfInterval": 21,
+    "visibleIf": []
   },
   {
     "id": 161,
@@ -2066,7 +2099,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1260,
-    "reinfInterval": 14
+    "reinfInterval": 14,
+    "visibleIf": []
   },
   {
     "id": 162,
@@ -2124,7 +2158,8 @@
     "murk": 5,
     "reinfFleet": 145,
     "reinfTime": 360,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 163,
@@ -2175,7 +2210,8 @@
     "murk": 0,
     "reinfFleet": -1,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 164,
@@ -2231,7 +2267,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 165,
@@ -2290,7 +2327,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1980,
-    "reinfInterval": 23
+    "reinfInterval": 23,
+    "visibleIf": []
   },
   {
     "id": 166,
@@ -2350,7 +2388,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 990,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 167,
@@ -2408,7 +2447,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1560,
-    "reinfInterval": 18
+    "reinfInterval": 18,
+    "visibleIf": []
   },
   {
     "id": 168,
@@ -2466,7 +2506,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1650,
-    "reinfInterval": 18
+    "reinfInterval": 18,
+    "visibleIf": []
   },
   {
     "id": 169,
@@ -2525,7 +2566,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 170,
@@ -2584,7 +2626,8 @@
     "murk": 13,
     "reinfFleet": 128,
     "reinfTime": 990,
-    "reinfInterval": 13
+    "reinfInterval": 13,
+    "visibleIf": []
   },
   {
     "id": 171,
@@ -2643,7 +2686,8 @@
     "murk": 5,
     "reinfFleet": 149,
     "reinfTime": 810,
-    "reinfInterval": 10
+    "reinfInterval": 10,
+    "visibleIf": []
   },
   {
     "id": 172,
@@ -2702,7 +2746,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 173,
@@ -2760,7 +2805,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1440,
-    "reinfInterval": 16
+    "reinfInterval": 16,
+    "visibleIf": []
   },
   {
     "id": 174,
@@ -2816,7 +2862,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 175,
@@ -2875,7 +2922,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 176,
@@ -2933,7 +2981,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 900,
-    "reinfInterval": 10
+    "reinfInterval": 10,
+    "visibleIf": []
   },
   {
     "id": 177,
@@ -2991,7 +3040,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 178,
@@ -3050,7 +3100,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 179,
@@ -3108,7 +3159,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1530,
-    "reinfInterval": 16
+    "reinfInterval": 16,
+    "visibleIf": []
   },
   {
     "id": 180,
@@ -3169,7 +3221,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 181,
@@ -3225,7 +3278,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 182,
@@ -3281,7 +3335,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 183,
@@ -3339,7 +3394,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 2430,
-    "reinfInterval": 23
+    "reinfInterval": 23,
+    "visibleIf": []
   },
   {
     "id": 184,
@@ -3399,7 +3455,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 185,
@@ -3457,7 +3514,8 @@
     "murk": 0,
     "reinfFleet": 144,
     "reinfTime": 360,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 186,
@@ -3515,7 +3573,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1440,
-    "reinfInterval": 16
+    "reinfInterval": 16,
+    "visibleIf": []
   },
   {
     "id": 187,
@@ -3573,7 +3632,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1350,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 188,
@@ -3632,7 +3692,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 540,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 189,
@@ -3690,7 +3751,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1170,
-    "reinfInterval": 13
+    "reinfInterval": 13,
+    "visibleIf": []
   },
   {
     "id": 190,
@@ -3748,7 +3810,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1080,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 191,
@@ -3806,7 +3869,8 @@
     "murk": 0,
     "reinfFleet": -1,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 192,
@@ -3862,7 +3926,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 193,
@@ -3920,7 +3985,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 720,
-    "reinfInterval": 8
+    "reinfInterval": 8,
+    "visibleIf": []
   },
   {
     "id": 194,
@@ -3979,7 +4045,8 @@
     "murk": 0,
     "reinfFleet": 129,
     "reinfTime": 540,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 195,
@@ -4036,7 +4103,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 196,
@@ -4094,7 +4162,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1080,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 197,
@@ -4152,7 +4221,8 @@
     "murk": 0,
     "reinfFleet": 128,
     "reinfTime": 1080,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 198,
@@ -4214,7 +4284,8 @@
     "murk": 0,
     "reinfFleet": 189,
     "reinfTime": 540,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 199,
@@ -4272,7 +4343,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 200,
@@ -4331,7 +4403,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 201,
@@ -4388,7 +4461,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 202,
@@ -4438,7 +4512,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 203,
@@ -4498,7 +4573,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 204,
@@ -4555,7 +4631,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 205,
@@ -4600,7 +4677,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 206,
@@ -4653,7 +4731,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 270,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 207,
@@ -4694,7 +4773,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 208,
@@ -4747,7 +4827,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 270,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 209,
@@ -4800,7 +4881,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 210,
@@ -4852,7 +4934,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 211,
@@ -4893,7 +4976,8 @@
     "murk": 17,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 212,
@@ -4933,7 +5017,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 213,
@@ -4977,7 +5062,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 214,
@@ -5024,7 +5110,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 215,
@@ -5070,7 +5157,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 216,
@@ -5113,7 +5201,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 217,
@@ -5157,7 +5246,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 218,
@@ -5205,7 +5295,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 219,
@@ -5247,7 +5338,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 220,
@@ -5291,7 +5383,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 600,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 221,
@@ -5332,7 +5425,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 222,
@@ -5377,7 +5471,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 600,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 223,
@@ -5422,7 +5517,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 224,
@@ -5464,7 +5560,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 225,
@@ -5505,7 +5602,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 226,
@@ -5557,7 +5655,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 227,
@@ -5602,7 +5701,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 228,
@@ -5645,7 +5745,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 600,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 229,
@@ -5686,7 +5787,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 230,
@@ -5731,7 +5833,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 231,
@@ -5777,7 +5880,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 232,
@@ -5820,7 +5924,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 233,
@@ -5865,7 +5970,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 234,
@@ -5911,7 +6017,8 @@
     "murk": 3,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 235,
@@ -5956,7 +6063,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 236,
@@ -6003,7 +6111,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 237,
@@ -6057,7 +6166,8 @@
     "murk": 5,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 238,
@@ -6101,7 +6211,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 239,
@@ -6150,7 +6261,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 240,
@@ -6189,7 +6301,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 241,
@@ -6238,7 +6351,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 242,
@@ -6284,7 +6398,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 243,
@@ -6327,7 +6442,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 244,
@@ -6377,7 +6493,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 245,
@@ -6422,7 +6539,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 270,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 246,
@@ -6470,7 +6588,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 247,
@@ -6512,7 +6631,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 248,
@@ -6554,7 +6674,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 249,
@@ -6600,7 +6721,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 250,
@@ -6642,7 +6764,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 251,
@@ -6684,7 +6807,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 600,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 252,
@@ -6727,7 +6851,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 253,
@@ -6770,7 +6895,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 254,
@@ -6811,7 +6937,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 255,
@@ -6853,7 +6980,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 600,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 256,
@@ -6898,7 +7026,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 257,
@@ -6941,7 +7070,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 258,
@@ -6988,7 +7118,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 259,
@@ -7032,7 +7163,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 260,
@@ -7074,7 +7206,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 261,
@@ -7120,7 +7253,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 262,
@@ -7161,7 +7295,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 263,
@@ -7208,7 +7343,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 360,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 264,
@@ -7253,7 +7389,8 @@
     "murk": 3,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 265,
@@ -7305,7 +7442,8 @@
     "murk": 0,
     "reinfFleet": 140,
     "reinfTime": 240,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 266,
@@ -7348,7 +7486,8 @@
     "murk": 0,
     "reinfFleet": 138,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 267,
@@ -7394,7 +7533,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 268,
@@ -7441,7 +7581,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 269,
@@ -7492,7 +7633,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 270,
@@ -7540,7 +7682,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 271,
@@ -7582,7 +7725,8 @@
     "murk": 50,
     "reinfFleet": 136,
     "reinfTime": 1200,
-    "reinfInterval": 30
+    "reinfInterval": 30,
+    "visibleIf": []
   },
   {
     "id": 272,
@@ -7630,7 +7774,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 273,
@@ -7677,7 +7822,8 @@
     "murk": 26,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 274,
@@ -7725,7 +7871,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 275,
@@ -7772,7 +7919,8 @@
     "murk": 0,
     "reinfFleet": 153,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 276,
@@ -7816,7 +7964,8 @@
     "murk": 0,
     "reinfFleet": 157,
     "reinfTime": 360,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 277,
@@ -7859,7 +8008,8 @@
     "murk": 0,
     "reinfFleet": 153,
     "reinfTime": 1200,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 278,
@@ -7904,7 +8054,8 @@
     "murk": 0,
     "reinfFleet": 157,
     "reinfTime": 360,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 279,
@@ -7952,7 +8103,8 @@
     "murk": 0,
     "reinfFleet": 153,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 280,
@@ -7997,7 +8149,8 @@
     "murk": 0,
     "reinfFleet": 157,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 281,
@@ -8042,7 +8195,8 @@
     "murk": 0,
     "reinfFleet": 157,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 282,
@@ -8092,7 +8246,8 @@
     "murk": 0,
     "reinfFleet": 157,
     "reinfTime": 300,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 283,
@@ -8136,7 +8291,8 @@
     "murk": 0,
     "reinfFleet": 153,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 284,
@@ -8182,7 +8338,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 285,
@@ -8224,7 +8381,8 @@
     "murk": 17,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 286,
@@ -8271,7 +8429,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 600,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 287,
@@ -8318,7 +8477,8 @@
     "murk": 0,
     "reinfFleet": 153,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 288,
@@ -8366,7 +8526,8 @@
     "murk": 20,
     "reinfFleet": 134,
     "reinfTime": 450,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 289,
@@ -8412,7 +8573,8 @@
     "murk": 20,
     "reinfFleet": 134,
     "reinfTime": 900,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 290,
@@ -8459,7 +8621,8 @@
     "murk": 20,
     "reinfFleet": 134,
     "reinfTime": 900,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 291,
@@ -8507,7 +8670,8 @@
     "murk": 0,
     "reinfFleet": 155,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 292,
@@ -8553,7 +8717,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 293,
@@ -8602,7 +8767,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 294,
@@ -8643,7 +8809,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 295,
@@ -8686,7 +8853,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 296,
@@ -8730,7 +8898,8 @@
     "murk": 0,
     "reinfFleet": 159,
     "reinfTime": 360,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 297,
@@ -8773,7 +8942,8 @@
     "murk": 0,
     "reinfFleet": 155,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 298,
@@ -8822,7 +8992,8 @@
     "murk": 0,
     "reinfFleet": 159,
     "reinfTime": 300,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 299,
@@ -8866,7 +9037,8 @@
     "murk": 0,
     "reinfFleet": 159,
     "reinfTime": 390,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 300,
@@ -8909,7 +9081,8 @@
     "murk": 0,
     "reinfFleet": 155,
     "reinfTime": 900,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 301,
@@ -8952,7 +9125,8 @@
     "murk": 0,
     "reinfFleet": 155,
     "reinfTime": 480,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 302,
@@ -8997,7 +9171,8 @@
     "murk": 0,
     "reinfFleet": 159,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 303,
@@ -9049,7 +9224,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 304,
@@ -9094,7 +9270,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 305,
@@ -9146,7 +9323,8 @@
     "murk": 0,
     "reinfFleet": 161,
     "reinfTime": 300,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 306,
@@ -9198,7 +9376,8 @@
     "murk": 0,
     "reinfFleet": 153,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 307,
@@ -9248,7 +9427,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 308,
@@ -9309,7 +9489,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 309,
@@ -9367,7 +9548,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 310,
@@ -9420,7 +9602,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 311,
@@ -9469,7 +9652,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 312,
@@ -9514,7 +9698,8 @@
     "murk": 0,
     "reinfFleet": 161,
     "reinfTime": 300,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 313,
@@ -9560,7 +9745,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 314,
@@ -9603,7 +9789,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 315,
@@ -9655,7 +9842,8 @@
     "murk": 0,
     "reinfFleet": 161,
     "reinfTime": 270,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 316,
@@ -9697,7 +9885,8 @@
     "murk": 0,
     "reinfFleet": 162,
     "reinfTime": 450,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 317,
@@ -9740,7 +9929,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 318,
@@ -9781,7 +9971,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 319,
@@ -9833,7 +10024,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 320,
@@ -9891,7 +10083,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 321,
@@ -9949,7 +10142,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 322,
@@ -10001,7 +10195,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 390,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 323,
@@ -10050,7 +10245,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 324,
@@ -10103,7 +10299,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 390,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 325,
@@ -10155,7 +10352,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 326,
@@ -10213,7 +10411,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 330,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 327,
@@ -10273,7 +10472,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 360,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 328,
@@ -10315,7 +10515,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 900,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 329,
@@ -10357,7 +10558,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 330,
@@ -10398,7 +10600,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 900,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 331,
@@ -10441,7 +10644,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 330,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 332,
@@ -10483,7 +10687,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 333,
@@ -10524,7 +10729,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 900,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 334,
@@ -10568,7 +10774,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 330,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 335,
@@ -10618,7 +10825,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 336,
@@ -10670,7 +10878,8 @@
     "murk": 7,
     "reinfFleet": 161,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 337,
@@ -10726,7 +10935,8 @@
     "murk": 3,
     "reinfFleet": 160,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 338,
@@ -10770,7 +10980,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 339,
@@ -10813,7 +11024,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 340,
@@ -10857,7 +11069,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 341,
@@ -10906,7 +11119,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 342,
@@ -10956,7 +11170,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 343,
@@ -10998,7 +11213,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 330,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 344,
@@ -11057,7 +11273,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 300,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 345,
@@ -11100,7 +11317,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 390,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 346,
@@ -11143,7 +11361,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 330,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 347,
@@ -11196,7 +11415,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 330,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 348,
@@ -11246,7 +11466,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 349,
@@ -11296,7 +11517,8 @@
     "murk": 0,
     "reinfFleet": 151,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 350,
@@ -11356,7 +11578,8 @@
     "murk": 0,
     "reinfFleet": 152,
     "reinfTime": 450,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 351,
@@ -11405,7 +11628,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 352,
@@ -11450,7 +11674,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 353,
@@ -11493,7 +11718,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 354,
@@ -11534,7 +11760,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 355,
@@ -11576,7 +11803,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 356,
@@ -11620,7 +11848,8 @@
     "murk": 0,
     "reinfFleet": 160,
     "reinfTime": 330,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 357,
@@ -11666,7 +11895,8 @@
     "murk": 0,
     "reinfFleet": 156,
     "reinfTime": 450,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 358,
@@ -11708,7 +11938,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 660,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 359,
@@ -11753,7 +11984,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 360,
@@ -11794,7 +12026,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 361,
@@ -11837,7 +12070,8 @@
     "murk": 3,
     "reinfFleet": 151,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 362,
@@ -11895,7 +12129,8 @@
     "murk": 3,
     "reinfFleet": 152,
     "reinfTime": 390,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 363,
@@ -11938,7 +12173,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 364,
@@ -11995,7 +12231,8 @@
     "murk": 3,
     "reinfFleet": 152,
     "reinfTime": 420,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 365,
@@ -12041,7 +12278,8 @@
     "murk": 3,
     "reinfFleet": 152,
     "reinfTime": 390,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 366,
@@ -12091,7 +12329,8 @@
     "murk": 5,
     "reinfFleet": 152,
     "reinfTime": 390,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 367,
@@ -12138,7 +12377,8 @@
     "murk": 3,
     "reinfFleet": 151,
     "reinfTime": 420,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 368,
@@ -12183,7 +12423,8 @@
     "murk": 3,
     "reinfFleet": 152,
     "reinfTime": 390,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 369,
@@ -12224,7 +12465,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 370,
@@ -12269,7 +12511,8 @@
     "murk": 0,
     "reinfFleet": 151,
     "reinfTime": 450,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 371,
@@ -12313,7 +12556,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 372,
@@ -12355,7 +12599,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 373,
@@ -12399,7 +12644,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 9
+    "reinfInterval": 9,
+    "visibleIf": []
   },
   {
     "id": 374,
@@ -12450,7 +12696,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 600,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 375,
@@ -12504,7 +12751,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 480,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 376,
@@ -12554,7 +12802,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 480,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 377,
@@ -12603,7 +12852,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 378,
@@ -12653,7 +12903,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 480,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 379,
@@ -12711,7 +12962,8 @@
     "murk": 0,
     "reinfFleet": 158,
     "reinfTime": 390,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 380,
@@ -12763,7 +13015,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 510,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 381,
@@ -12816,7 +13069,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 510,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 382,
@@ -12860,7 +13114,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 420,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 383,
@@ -12910,7 +13165,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 750,
-    "reinfInterval": 12
+    "reinfInterval": 12,
+    "visibleIf": []
   },
   {
     "id": 384,
@@ -12960,7 +13216,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 900,
-    "reinfInterval": 15
+    "reinfInterval": 15,
+    "visibleIf": []
   },
   {
     "id": 385,
@@ -13003,7 +13260,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 510,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 386,
@@ -13047,7 +13305,8 @@
     "murk": 0,
     "reinfFleet": 158,
     "reinfTime": 420,
-    "reinfInterval": 5
+    "reinfInterval": 5,
+    "visibleIf": []
   },
   {
     "id": 387,
@@ -13097,7 +13356,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 550,
-    "reinfInterval": 8
+    "reinfInterval": 8,
+    "visibleIf": []
   },
   {
     "id": 388,
@@ -13147,7 +13407,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 389,
@@ -13196,7 +13457,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 520,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 390,
@@ -13242,7 +13504,8 @@
     "murk": 0,
     "reinfFleet": 137,
     "reinfTime": 420,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   },
   {
     "id": 391,
@@ -13292,7 +13555,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 392,
@@ -13337,7 +13601,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 393,
@@ -13388,7 +13653,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 510,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 394,
@@ -13434,7 +13700,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 780,
-    "reinfInterval": 10
+    "reinfInterval": 10,
+    "visibleIf": []
   },
   {
     "id": 395,
@@ -13483,7 +13750,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 520,
-    "reinfInterval": 8
+    "reinfInterval": 8,
+    "visibleIf": []
   },
   {
     "id": 396,
@@ -13528,7 +13796,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 550,
-    "reinfInterval": 8
+    "reinfInterval": 8,
+    "visibleIf": []
   },
   {
     "id": 397,
@@ -13570,7 +13839,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 550,
-    "reinfInterval": 8
+    "reinfInterval": 8,
+    "visibleIf": []
   },
   {
     "id": 398,
@@ -13615,7 +13885,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 990,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 399,
@@ -13659,7 +13930,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 600,
-    "reinfInterval": 10
+    "reinfInterval": 10,
+    "visibleIf": []
   },
   {
     "id": 400,
@@ -13708,7 +13980,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 1200,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 401,
@@ -13758,7 +14031,8 @@
     "murk": 0,
     "reinfFleet": 136,
     "reinfTime": 1200,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 402,
@@ -13781,7 +14055,8 @@
     "murk": 4,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 403,
@@ -13825,7 +14100,8 @@
     "murk": 0,
     "reinfFleet": 154,
     "reinfTime": 480,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 404,
@@ -13870,7 +14146,8 @@
     "murk": 5,
     "reinfFleet": 136,
     "reinfTime": 510,
-    "reinfInterval": 7
+    "reinfInterval": 7,
+    "visibleIf": []
   },
   {
     "id": 405,
@@ -13911,7 +14188,8 @@
     "murk": 6,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 406,
@@ -13953,7 +14231,8 @@
     "murk": 6,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 407,
@@ -13994,7 +14273,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 408,
@@ -14035,7 +14315,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 409,
@@ -14078,7 +14359,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 410,
@@ -14103,7 +14385,8 @@
     "murk": 13,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 411,
@@ -14126,7 +14409,8 @@
     "murk": 17,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 412,
@@ -14152,7 +14436,8 @@
     "murk": 23,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 413,
@@ -14176,7 +14461,8 @@
     "murk": 33,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 414,
@@ -14226,7 +14512,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 415,
@@ -14250,7 +14537,8 @@
     "murk": 33,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 416,
@@ -14291,7 +14579,8 @@
     "murk": 27,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 417,
@@ -14314,7 +14603,8 @@
     "murk": 6,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 418,
@@ -14357,7 +14647,8 @@
     "murk": 27,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 419,
@@ -14398,7 +14689,8 @@
     "murk": 20,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 420,
@@ -14439,7 +14731,8 @@
     "murk": 26,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 421,
@@ -14480,7 +14773,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 422,
@@ -14523,7 +14817,8 @@
     "murk": 27,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 423,
@@ -14564,7 +14859,8 @@
     "murk": 33,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 424,
@@ -14608,7 +14904,8 @@
     "murk": 33,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 425,
@@ -14656,7 +14953,8 @@
     "murk": 13,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 426,
@@ -14697,7 +14995,8 @@
     "murk": 13,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 427,
@@ -14707,6 +15006,7 @@
     "links": [
       433,
       198,
+      428,
       417,
       425,
       426
@@ -14747,7 +15047,55 @@
     "murk": 6,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
+  },
+  {
+    "id": 428,
+    "name": "Pentori",
+    "x": -149,
+    "y": -134,
+    "links": [
+      441,
+      427
+    ],
+    "spobs": [
+      409
+    ],
+    "dudes": [
+      {
+        "id": 134,
+        "prob": 40
+      },
+      {
+        "id": 146,
+        "prob": 10
+      },
+      {
+        "id": 134,
+        "prob": 30
+      },
+      {
+        "id": 134,
+        "prob": 20
+      }
+    ],
+    "avgShips": 1,
+    "govt": -1,
+    "asteroids": 2,
+    "astTypes": 768,
+    "visibility": "!b330 & b9500",
+    "message": -1,
+    "interference": 2,
+    "bkgndColor": 0,
+    "murk": 0,
+    "reinfFleet": 0,
+    "reinfTime": 0,
+    "reinfInterval": 0,
+    "visibleIf": [
+      "!b330 & b9500",
+      "b330 & b9500"
+    ]
   },
   {
     "id": 429,
@@ -14788,7 +15136,8 @@
     "murk": 17,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 430,
@@ -14829,7 +15178,8 @@
     "murk": 13,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 431,
@@ -14871,7 +15221,8 @@
     "murk": 13,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 432,
@@ -14912,7 +15263,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 433,
@@ -14955,7 +15307,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 434,
@@ -14996,7 +15349,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 435,
@@ -15037,7 +15391,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 436,
@@ -15081,7 +15436,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 437,
@@ -15124,7 +15480,8 @@
     "murk": 20,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 438,
@@ -15165,7 +15522,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 439,
@@ -15208,7 +15566,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 440,
@@ -15217,6 +15576,7 @@
     "y": -158,
     "links": [
       452,
+      443,
       434,
       438
     ],
@@ -15250,7 +15610,55 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
+  },
+  {
+    "id": 441,
+    "name": "Willon",
+    "x": -111,
+    "y": -118,
+    "links": [
+      443,
+      428
+    ],
+    "spobs": [
+      412
+    ],
+    "dudes": [
+      {
+        "id": 146,
+        "prob": 10
+      },
+      {
+        "id": 134,
+        "prob": 20
+      },
+      {
+        "id": 134,
+        "prob": 30
+      },
+      {
+        "id": 134,
+        "prob": 40
+      }
+    ],
+    "avgShips": 2,
+    "govt": -1,
+    "asteroids": 2,
+    "astTypes": 768,
+    "visibility": "!b330 & b9500",
+    "message": -1,
+    "interference": 2,
+    "bkgndColor": 0,
+    "murk": 0,
+    "reinfFleet": 0,
+    "reinfTime": 0,
+    "reinfInterval": 0,
+    "visibleIf": [
+      "!b330 & b9500",
+      "b330 & b9500"
+    ]
   },
   {
     "id": 442,
@@ -15291,7 +15699,56 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
+  },
+  {
+    "id": 443,
+    "name": "Chicea",
+    "x": -82,
+    "y": -146,
+    "links": [
+      448,
+      441,
+      440
+    ],
+    "spobs": [
+      413
+    ],
+    "dudes": [
+      {
+        "id": 146,
+        "prob": 10
+      },
+      {
+        "id": 134,
+        "prob": 20
+      },
+      {
+        "id": 134,
+        "prob": 30
+      },
+      {
+        "id": 134,
+        "prob": 40
+      }
+    ],
+    "avgShips": 3,
+    "govt": -1,
+    "asteroids": 3,
+    "astTypes": 1809,
+    "visibility": "!b330 & b9500",
+    "message": -1,
+    "interference": 2,
+    "bkgndColor": 0,
+    "murk": 0,
+    "reinfFleet": 0,
+    "reinfTime": 0,
+    "reinfInterval": 0,
+    "visibleIf": [
+      "!b330 & b9500",
+      "b330 & b9500"
+    ]
   },
   {
     "id": 444,
@@ -15332,7 +15789,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 445,
@@ -15375,7 +15833,8 @@
     "murk": 11,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 446,
@@ -15416,7 +15875,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 447,
@@ -15457,7 +15917,55 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
+  },
+  {
+    "id": 448,
+    "name": "Varden",
+    "x": -48,
+    "y": -136,
+    "links": [
+      450,
+      443
+    ],
+    "spobs": [
+      414
+    ],
+    "dudes": [
+      {
+        "id": 146,
+        "prob": 10
+      },
+      {
+        "id": 134,
+        "prob": 20
+      },
+      {
+        "id": 134,
+        "prob": 30
+      },
+      {
+        "id": 134,
+        "prob": 40
+      }
+    ],
+    "avgShips": 2,
+    "govt": -1,
+    "asteroids": 2,
+    "astTypes": 768,
+    "visibility": "!b330 & b9500",
+    "message": -1,
+    "interference": 5,
+    "bkgndColor": 0,
+    "murk": 5,
+    "reinfFleet": 0,
+    "reinfTime": 0,
+    "reinfInterval": 0,
+    "visibleIf": [
+      "!b330 & b9500",
+      "b330 & b9500"
+    ]
   },
   {
     "id": 449,
@@ -15497,7 +16005,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 450,
@@ -15507,7 +16016,8 @@
     "links": [
       456,
       449,
-      172
+      172,
+      448
     ],
     "spobs": [],
     "dudes": [
@@ -15539,7 +16049,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 451,
@@ -15581,7 +16092,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 452,
@@ -15631,7 +16143,8 @@
     "murk": 33,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 453,
@@ -15673,7 +16186,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 454,
@@ -15714,7 +16228,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 455,
@@ -15756,7 +16271,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 456,
@@ -15799,7 +16315,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 457,
@@ -15840,7 +16357,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 458,
@@ -15883,7 +16401,8 @@
     "murk": 10,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 459,
@@ -15925,7 +16444,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 460,
@@ -15971,7 +16491,8 @@
     "murk": 5,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 461,
@@ -16017,7 +16538,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 462,
@@ -16063,7 +16585,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 463,
@@ -16113,7 +16636,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 464,
@@ -16162,7 +16686,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 465,
@@ -16212,7 +16737,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 466,
@@ -16258,7 +16784,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 467,
@@ -16316,7 +16843,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 468,
@@ -16379,7 +16907,8 @@
     "murk": 0,
     "reinfFleet": 150,
     "reinfTime": 300,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 469,
@@ -16425,7 +16954,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 470,
@@ -16473,7 +17003,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 471,
@@ -16497,7 +17028,35 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
+  },
+  {
+    "id": 472,
+    "name": "S7evyn",
+    "x": 78,
+    "y": -304,
+    "links": [],
+    "spobs": [
+      420,
+      514
+    ],
+    "dudes": [],
+    "avgShips": 6,
+    "govt": 161,
+    "asteroids": 10,
+    "astTypes": 32767,
+    "visibility": "b9995",
+    "message": 18,
+    "interference": 0,
+    "bkgndColor": 0,
+    "murk": 17,
+    "reinfFleet": 0,
+    "reinfTime": 0,
+    "reinfInterval": 0,
+    "visibleIf": [
+      "b9995"
+    ]
   },
   {
     "id": 473,
@@ -16539,7 +17098,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 474,
@@ -16580,7 +17140,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 475,
@@ -16625,7 +17186,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 476,
@@ -16672,7 +17234,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 477,
@@ -16717,7 +17280,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 478,
@@ -16776,7 +17340,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 479,
@@ -16827,7 +17392,8 @@
     "murk": 0,
     "reinfFleet": 135,
     "reinfTime": 900,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 480,
@@ -16886,7 +17452,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 481,
@@ -16943,7 +17510,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 482,
@@ -17002,11 +17570,12 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 483,
-    "name": "Koria;Rebs !assim",
+    "name": "Koria",
     "x": 94,
     "y": -125,
     "links": [
@@ -17063,7 +17632,8 @@
     "murk": 0,
     "reinfFleet": 150,
     "reinfTime": 270,
-    "reinfInterval": 1
+    "reinfInterval": 1,
+    "visibleIf": []
   },
   {
     "id": 484,
@@ -17120,7 +17690,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 485,
@@ -17177,7 +17748,8 @@
     "murk": 0,
     "reinfFleet": 149,
     "reinfTime": 390,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 486,
@@ -17236,7 +17808,8 @@
     "murk": 0,
     "reinfFleet": 135,
     "reinfTime": 900,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 487,
@@ -17290,7 +17863,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 488,
@@ -17348,7 +17922,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 489,
@@ -17402,7 +17977,8 @@
     "murk": 0,
     "reinfFleet": 135,
     "reinfTime": 900,
-    "reinfInterval": 20
+    "reinfInterval": 20,
+    "visibleIf": []
   },
   {
     "id": 490,
@@ -17447,7 +18023,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 491,
@@ -17498,7 +18075,8 @@
     "murk": 13,
     "reinfFleet": 134,
     "reinfTime": 600,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 492,
@@ -17544,7 +18122,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 493,
@@ -17588,7 +18167,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 494,
@@ -17631,7 +18211,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 495,
@@ -17673,7 +18254,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 496,
@@ -17719,7 +18301,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 497,
@@ -17762,7 +18345,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 498,
@@ -17805,7 +18389,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 499,
@@ -17853,7 +18438,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 500,
@@ -17904,7 +18490,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 501,
@@ -17947,7 +18534,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 502,
@@ -17991,7 +18579,8 @@
     "murk": 0,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 503,
@@ -18038,7 +18627,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 504,
@@ -18083,7 +18673,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 505,
@@ -18128,7 +18719,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 506,
@@ -18172,7 +18764,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 507,
@@ -18214,7 +18807,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 508,
@@ -18259,7 +18853,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 509,
@@ -18304,7 +18899,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 510,
@@ -18351,7 +18947,8 @@
     "murk": 7,
     "reinfFleet": 143,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 511,
@@ -18394,7 +18991,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 512,
@@ -18437,7 +19035,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 513,
@@ -18481,7 +19080,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 514,
@@ -18527,7 +19127,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 515,
@@ -18571,7 +19172,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 516,
@@ -18613,7 +19215,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 517,
@@ -18656,7 +19259,8 @@
     "murk": 3,
     "reinfFleet": 0,
     "reinfTime": 0,
-    "reinfInterval": 0
+    "reinfInterval": 0,
+    "visibleIf": []
   },
   {
     "id": 518,
@@ -18701,7 +19305,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 519,
@@ -18745,7 +19350,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 520,
@@ -18790,7 +19396,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 521,
@@ -18838,7 +19445,8 @@
     "murk": 8,
     "reinfFleet": 143,
     "reinfTime": 390,
-    "reinfInterval": 2
+    "reinfInterval": 2,
+    "visibleIf": []
   },
   {
     "id": 522,
@@ -18883,7 +19491,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 523,
@@ -18926,7 +19535,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 524,
@@ -18968,7 +19578,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 525,
@@ -19016,7 +19627,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 526,
@@ -19060,7 +19672,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 527,
@@ -19105,7 +19718,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 528,
@@ -19153,7 +19767,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 450,
-    "reinfInterval": 3
+    "reinfInterval": 3,
+    "visibleIf": []
   },
   {
     "id": 529,
@@ -19197,7 +19812,8 @@
     "murk": 5,
     "reinfFleet": 143,
     "reinfTime": 750,
-    "reinfInterval": 6
+    "reinfInterval": 6,
+    "visibleIf": []
   },
   {
     "id": 530,
@@ -19244,6 +19860,7 @@
     "murk": 3,
     "reinfFleet": 143,
     "reinfTime": 600,
-    "reinfInterval": 4
+    "reinfInterval": 4,
+    "visibleIf": []
   }
 ]

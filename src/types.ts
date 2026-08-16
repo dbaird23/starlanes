@@ -113,6 +113,20 @@ export interface SystemDef {
   reinfDelay: number;
   /** days before the same system can call again */
   reinfInterval: number;
+  /**
+   * sÿst Visibility, for the six systems that have no version live at game
+   * start: the system is on the chart only once one of these expressions is
+   * true. Empty — every other system — means "always there".
+   *
+   * Nova ships several sÿst resources per system, each gated by its own
+   * Visibility, and the extractor keeps the lowest-id variant of each name.
+   * Where at least one variant is live at the start the system is permanent,
+   * so a bit that merely switches variants (b147 swaps Sol 130 for 531) can
+   * never make it disappear. Where none is, the system is genuinely absent
+   * until the story opens it: the Krypt worlds behind b9500 and **S7evyn
+   * behind b9995, which every storyline's last mission moves you to.**
+   */
+  visibleIf: string[];
 }
 
 export interface PlayerState {

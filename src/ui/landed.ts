@@ -190,6 +190,8 @@ export class LandedUi {
   private barOffered = new Set<number>();
   /** Where to go when the events queue drains (default: spaceport). */
   private afterEventsView: View = "spaceport";
+  /** the landing's own events moved the player elsewhere (ncb M/N) */
+  private movedAway = false;
   private spaceportOffers: MissionType[] = [];
   /**
    * mïsn AvailLoc 4/5/6 — jobs handed over at the trade, shipyard and outfit
@@ -895,6 +897,26 @@ export class LandedUi {
 
     // mission processing happens the moment you land
     this.events = this.game.collectLandingEvents(planet.id);
+    /*
+     * Those events can take the player off this pad before the screen is even
+     * drawn: the ncb move operators M/N reposition you outright, and **every
+     * storyline's last mission uses M472** to put you in S7evyn once the
+     * ending text has played. `moveToSystem` already drops the game back into
+     * flight and hides this panel, so all that is left is to show the ending
+     * and then close, rather than fall through to the spaceport of a world
+     * that is no longer under the ship.
+     */
+    this.movedAway = this.game.player.landedOn !== planet.id;
+    if (this.movedAway) {
+      // `moveToSystem` called hide(), which nulls `planet` and so makes
+      // render() a no-op — put it back so the ending text can be drawn
+      this.planet = planet;
+      this.system = system;
+      this.view = "events";
+      this.root.classList.remove("hidden");
+      this.render();
+      return;
+    }
     this.offers.clear();
     this.bbsMissions = planet.uninhabited
       ? []
@@ -1056,6 +1078,14 @@ export class LandedUi {
   private renderEvents(): void {
     const ev = this.events[0];
     if (!ev) {
+      // moved off the pad by the landing itself — the ending has been read, so
+      // close the panel and leave the player flying where they were put
+      if (this.movedAway) {
+        this.movedAway = false;
+        this.hide();
+        playMenuClose();
+        return;
+      }
       const target = this.afterEventsView;
       this.afterEventsView = "spaceport";
       this.setView(target);

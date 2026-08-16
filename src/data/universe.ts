@@ -1,4 +1,5 @@
 import { asset } from "../asset";
+import { type Bits, evalTest } from "../game/bits";
 import { setCalendar } from "../game/calendar";
 import type {
   SheetSprite,
@@ -116,6 +117,8 @@ interface RawSystem {
   reinfFleet: number;
   reinfTime: number;
   reinfInterval: number;
+  /** sÿst Visibility for the story-gated systems; empty means always present */
+  visibleIf?: string[];
 }
 
 interface RawColr {
@@ -330,6 +333,8 @@ export interface RawGovt {
 
 interface RawGalaxy {
   systems: RawSystem[];
+  /** dropped story-variant sÿst id -> canonical id */
+  systemAlias?: Record<string, number>;
   spobs: RawSpob[];
   govts: RawGovt[];
   descs: Record<string, string>;
@@ -564,6 +569,8 @@ export let GOVTS: Record<string, RawGovt> = {};
 /** gövt VoiceType, by govt id — which bank of escort speech its ships use. */
 export let GOVT_VOICES: Record<string, number> = {};
 let systemsById = new Map<string, SystemDef>();
+/** dropped story-variant sÿst id -> the canonical id that replaced it */
+let SYSTEM_ALIAS = new Map<string, string>();
 
 /**
  * The ship type whose picture stands for this one. Nova keeps one shipyard and
@@ -1125,9 +1132,18 @@ export async function loadUniverse(): Promise<void> {
     reinfInterval: Math.max(0, sys.reinfInterval ?? 0),
     govtId: sys.govt,
     govtName: govtById.get(sys.govt) ?? null,
+    visibleIf: sys.visibleIf ?? [],
   }));
 
   systemsById = new Map(SYSTEMS.map((s) => [s.id, s]));
+  // Dropped story-variant ids still named elsewhere in the scenario — mïsn
+  // 676's ShipSyst is 765, SPC-1421's b995 version of the kept 308.
+  SYSTEM_ALIAS = new Map(
+    Object.entries(raw.systemAlias ?? {}).map(([from, to]) => [
+      from,
+      String(to),
+    ]),
+  );
 
   SPOB_INDEX = new Map();
   SPOB_GOVT = new Map();
@@ -1306,9 +1322,37 @@ export function escortClassName(shipId: string): string {
 }
 
 export function getSystem(id: string): SystemDef {
-  const s = systemsById.get(id);
+  const s = systemsById.get(id) ?? systemsById.get(SYSTEM_ALIAS.get(id) ?? "");
   if (!s) throw new Error(`unknown system: ${id}`);
   return s;
+}
+
+/**
+ * The live pilot's control bits, so system visibility can be asked anywhere
+ * without threading them through. `player.bits` is mutated in place, so
+ * holding the reference keeps the answer current; `Game.startPilot` re-points
+ * it because loading a pilot builds a fresh object.
+ */
+let visibilityBits: Bits = {};
+export function setVisibilityBits(bits: Bits): void {
+  visibilityBits = bits;
+}
+
+/**
+ * Is this system off the chart right now? Only the five story-gated groups can
+ * answer yes — see SystemDef.visibleIf. A hidden system is left out of the map,
+ * of route finding, of bulk charting and of random destination draws, but it
+ * still exists: the ncb move operator can put you in it (which is the whole
+ * point of S7evyn), and it simply appears the moment its bits turn true.
+ */
+export function systemHidden(sys: SystemDef): boolean {
+  if (sys.visibleIf.length === 0) return false;
+  return !sys.visibleIf.some((expr) => evalTest(expr, visibilityBits));
+}
+
+/** Every system currently on the chart. */
+export function chartedSystems(): SystemDef[] {
+  return SYSTEMS.filter((s) => !systemHidden(s));
 }
 
 /** A random one of the scenario's starting systems, as EV Nova does. */
@@ -1330,6 +1374,9 @@ export function findRoute(fromId: string, toId: string): string[] | null {
     const cur = queue.shift()!;
     for (const next of getSystem(cur).links) {
       if (seen.has(next)) continue;
+      // a story-gated system is not on the chart yet, so no lane runs to it —
+      // not as a waypoint and not as a destination
+      if (systemHidden(getSystem(next))) continue;
       seen.add(next);
       prev.set(next, cur);
       if (next === toId) {

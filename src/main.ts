@@ -1,4 +1,11 @@
-import { GLOW_SPRITES, loadUniverse, MISSIONS, SHIPS } from "./data/universe";
+import {
+  GLOW_SPRITES,
+  loadUniverse,
+  MISSIONS,
+  SHIPS,
+  SPOB_INDEX,
+  SYSTEMS,
+} from "./data/universe";
 import { Game } from "./game/game";
 import {
   availableMissions,
@@ -54,6 +61,11 @@ async function boot(): Promise<void> {
   (
     window as unknown as { substituteTags: typeof substituteTags }
   ).substituteTags = substituteTags;
+  // where every placed stellar lives, and the system table behind it, so a
+  // walkthrough can jump to a mission's AvailStel without hunting for it
+  (window as unknown as { SPOB_INDEX: typeof SPOB_INDEX }).SPOB_INDEX =
+    SPOB_INDEX;
+  (window as unknown as { SYSTEMS: typeof SYSTEMS }).SYSTEMS = SYSTEMS;
 
   let last = performance.now();
   function frame(now: number): void {

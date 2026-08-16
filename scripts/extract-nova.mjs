@@ -1382,43 +1382,63 @@ function visibleAtStart(expr) {
 
 /*
  * Deduplicate story-state variants. Nova ships several sÿst resources per
- * system name, each gated by a Visibility control-bit expression, and picks
- * whichever one is currently true. Taking the lowest ID outright picked
- * story-state variants that should still be dormant: Pentori, Willon, Chicea
- * and Varden all read "!b330 & b9500", the post-invasion version, which is
- * why Krypt Pods were flying around four systems that should have none.
+ * system name — 545 resources for 403 systems — each gated by a Visibility
+ * control-bit expression, and picks whichever one is currently true. Taking
+ * the lowest ID outright picked variants that should still be dormant:
+ * Pentori, Willon, Chicea and Varden all read "!b330 & b9500", the
+ * post-invasion version, which is why Krypt Pods were flying around four
+ * systems that should have none.
  *
- * So: prefer the variants that are live at game start, lowest ID among those,
- * and only fall back to the lowest ID overall if a name has nothing active
- * (S7evyn is gated on b9995 and has no ungated version at all).
+ * Group by the name **before any ';'**, the same comment convention mïsn and
+ * shïp names use. Only one pair differs on it — 483 "Koria;Rebs !assim"
+ * against 533 "Koria; Rebs assim", same coordinates and same links, gated
+ * "!b148 & !b305" against "b148 | b305" — and they are plainly the two states
+ * of one system rather than two systems. It also stops the annotation being
+ * printed to the player as the system's name.
+ *
+ * Within a group the **lowest ID is canonical**, which for every group that
+ * has a variant live at game start is the same resource this pass already
+ * kept (verified across all 404 groups), so no saved pilot's explored list or
+ * per-system ledger moves.
+ *
+ * A group with *no* variant live at game start is **kept and marked gated**
+ * rather than deleted. Six groups are in that state and they are precisely
+ * the post-storyline galaxy: Pentori/Willon/Chicea/Varden behind b9500,
+ * "Koria; Rebs assim" behind b148, and **S7evyn behind b9995 — the system
+ * every storyline's last mission moves the player to with M472**. Deleting
+ * them made that move a no-op in all seven finales. `visibleIf` carries the
+ * group's expressions so the runtime can keep them off the chart until their
+ * bits turn true; an empty list means "always there", which is every other
+ * group and so leaves current behaviour untouched.
  */
 systs.sort((a, b) => a.id - b.id);
-const keptByName = new Map();
-const alias = new Map(); // dropped id -> kept id
-const hidden = [];
+const baseName = (n) => n.split(";")[0].trim();
+const groups = new Map();
 for (const s of systs) {
-  if (!keptByName.has(s.name)) keptByName.set(s.name, []);
-  keptByName.get(s.name).push(s);
+  const key = baseName(s.name);
+  if (!groups.has(key)) groups.set(key, []);
+  groups.get(key).push(s);
 }
-for (const [name, variants] of keptByName) {
+const alias = new Map(); // dropped variant id -> canonical id
+const gated = [];
+const systems = [];
+for (const [name, variants] of groups) {
   const live = variants.filter((s) => visibleAtStart(s.visibility));
-  if (live.length === 0) {
-    // Every version of this system is gated behind story bits, so at the start
-    // of a new game it simply isn't there. Pentori, Willon, Chicea and Varden
-    // all read b9500 either way round — they are Krypt space that appears once
-    // that thread opens, not systems a new pilot should be able to fly into.
-    hidden.push(`${name} (${variants.map((v) => v.id).join(",")})`);
-    keptByName.delete(name);
-    continue;
-  }
-  keptByName.set(name, live[0]);
-  for (const s of variants)
-    if (s.id !== live[0].id) alias.set(s.id, live[0].id);
+  const canonical = (live.length ? live : variants)[0];
+  canonical.name = name;
+  // Only a group that is dormant at game start may ever be hidden. Every other
+  // group stays permanently on the chart, so a bit that flips one variant off
+  // (b147 turns Sol 130 off in favour of 531) can never make a system vanish.
+  canonical.visibleIf = live.length
+    ? []
+    : variants.map((s) => s.visibility).filter(Boolean);
+  if (!live.length) gated.push(`${name} (${variants.map((v) => v.id).join(",")})`);
+  for (const s of variants) if (s.id !== canonical.id) alias.set(s.id, canonical.id);
+  systems.push(canonical);
 }
-const systems = [...keptByName.values()];
 const systemIds = new Set(systems.map((s) => s.id));
-if (hidden.length)
-  console.log(`Hidden at game start (story-gated): ${hidden.join("; ")}`);
+if (gated.length)
+  console.log(`Story-gated systems (hidden until their bits set): ${gated.join("; ")}`);
 for (const s of systems) {
   s.links = [...new Set(s.links.map((l) => alias.get(l) ?? l))].filter((l) =>
     systemIds.has(l),
@@ -1428,6 +1448,12 @@ for (const s of systems) {
 const galaxy = {
   colr,
   systems,
+  /*
+   * Variant id -> canonical id. The rest of the scenario still names dropped
+   * variants: mïsn 676's ShipSyst is 765, which is SPC-1421's b995 version of
+   * the kept 308. Without this those references resolve to nothing.
+   */
+  systemAlias: Object.fromEntries([...alias].map(([from, to]) => [from, to])),
   spobs,
   govts,
   descs,

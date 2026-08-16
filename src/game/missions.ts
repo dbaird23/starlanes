@@ -13,7 +13,8 @@ import {
   SPOB_INDEX,
   SPOBS_BY_ID,
   STR_LISTS,
-  SYSTEMS,
+  chartedSystems,
+  systemHidden,
 } from "../data/universe";
 import { freeHoldSpace } from "./cargo";
 import { playerContribute, requireMet } from "./contribute";
@@ -177,6 +178,10 @@ function resolveStel(
    * draws from. A cargo run to HG-Kania is not a delivery.
    */
   const all = [...SPOB_INDEX.values()]
+    // A story-gated system is not on the chart yet, so its worlds are not
+    // somewhere a freight broker can send you: the Krypt space behind b9500
+    // and S7evyn behind b9995 hold landable stellars like anywhere else.
+    .filter((e) => !systemHidden(getSystem(e.systemId)))
     .map((e) => e.planet)
     .filter((p) => p.landable && !p.isHypergate && !p.isWormhole);
   let candidates: PlanetDef[] = [];
@@ -454,7 +459,7 @@ function resolveShipSystem(
   }
   if (code >= 9999 && code <= 10255) {
     const govt = code - 9872;
-    const matches = SYSTEMS.filter((s) => s.govtId === govt);
+    const matches = chartedSystems().filter((s) => s.govtId === govt);
     if (matches.length)
       return matches[Math.floor(Math.random() * matches.length)].id;
   }

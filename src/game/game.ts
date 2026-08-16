@@ -52,6 +52,8 @@ import {
   STR_LISTS,
   systemGovtColor,
   SYSTEMS,
+  chartedSystems,
+  setVisibilityBits,
   type PictInfo,
   UI_PICTS,
   WEAPON_SPRITES,
@@ -649,6 +651,7 @@ export class Game {
     this.ctx = canvas.getContext("2d")!;
     // menu-backdrop state until a pilot is chosen
     this.player = defaultPlayer();
+    setVisibilityBits(this.player.bits);
     this.landedUi = new LandedUi(this);
     this.hailUi = new HailUi(this);
     this.applyShipType(this.player.shipId);
@@ -782,6 +785,9 @@ export class Game {
       listPilots().find((p) => p.id === pilotId)?.name ?? "Captain";
     const saved = loadPilot(pilotId);
     this.player = { ...defaultPlayer(), ...(saved ?? {}) };
+    // system visibility reads the live bits object; loading a pilot makes a
+    // new one, so re-point it before anything asks what is on the chart
+    setVisibilityBits(this.player.bits);
     setPlayerIdentity(this.player);
     if (strict !== undefined) this.player.strict = strict;
     if (difficulty !== undefined) this.player.difficulty = difficulty;
@@ -1444,7 +1450,7 @@ export class Game {
       return;
     }
     if (range === -1) {
-      for (const sys of SYSTEMS) {
+      for (const sys of chartedSystems()) {
         if (sys.planets.some((p) => p.landable && !p.uninhabited))
           this.markExplored(sys.id);
       }
@@ -1452,7 +1458,7 @@ export class Game {
     }
     if (range <= -1000) {
       const cls = -1000 - range;
-      for (const sys of SYSTEMS) {
+      for (const sys of chartedSystems()) {
         if (govtClassmate(sys.govtId, cls)) this.markExplored(sys.id);
       }
     }
@@ -10295,8 +10301,13 @@ export class Game {
     ctx.textAlign = "left";
   }
 
+  /**
+   * The galaxy as the chart shows it. Story-gated systems are left out until
+   * their bits set, which is the single choke point for every map pass —
+   * nodes, lanes, the government haze and the unexplored-neighbour dots.
+   */
   private allSystems(): SystemDef[] {
-    return SYSTEMS;
+    return chartedSystems();
   }
 }
 
