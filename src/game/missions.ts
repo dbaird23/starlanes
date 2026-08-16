@@ -25,6 +25,8 @@ import type {
   PlayerState,
 } from "../types";
 import { evalTest } from "./bits";
+import { formatDate } from "./calendar";
+import { ui } from "../data/strings";
 
 /** Result texts queued for display when landing. */
 export interface MissionEvent {
@@ -451,12 +453,50 @@ export function setPlayerIdentity(id: {
   };
 }
 
+/**
+ * The player-side halves of the desc tags: everything that depends on who the
+ * pilot is now rather than on the mission. Assembled by `Game.descTags` so the
+ * eighteen call sites keep passing one argument.
+ */
+export interface DescTags {
+  /** <PRK> / <SRK>: ConvName and ShortName of your highest-weighted rank */
+  conv: string;
+  short: string;
+  /** <RRK>: the full name of the most recently granted rank */
+  recent?: string;
+  /** <PST>: the hull you are flying, by its shïp resource name */
+  hull?: string;
+  /** <PRKnnn> / <SRKnnn>: the same pair, scoped to one government */
+  byGovt?: (govtId: number) => { conv: string; short: string } | null;
+}
+
+/**
+ * Tags in text that belongs to no mission — a përs radio broadcast, a
+ * government's chatter, an ncb Q-operator message. The Bible says those are
+ * "parsed for mission text tags ... but not text-selection tags", and STR#
+ * 7101 proves it: 41 of its 42 lines open with `<OSN>: `.
+ */
+export function substituteText(
+  text: string,
+  playerName: string,
+  tags?: DescTags,
+  ctx?: { offeringShip?: string },
+): string {
+  return substituteTags(
+    text,
+    null,
+    { offeredByShipName: ctx?.offeringShip },
+    playerName,
+    tags,
+  );
+}
+
 export function substituteTags(
   text: string,
-  _m: MissionType,
+  _m: MissionType | null,
   active: Partial<ActiveMission>,
   playerName: string,
-  ranks?: { conv: string; short: string },
+  ranks?: DescTags,
 ): string {
   const spobName = (id: string | null | undefined) =>
     id
@@ -485,12 +525,55 @@ export function substituteTags(
       .replace(/<RSY>/g, sysName(active.returnSpobId))
       // <SN> is the special ships' own name, rolled when the mission is built
       .replace(/<SN>/g, active.shipName ?? "ship")
+      /*
+       * <DL> is the deadline, i.e. the day the mission was taken plus its
+       * TimeLimit, written out by the chär template's own calendar. All 57
+       * missions whose text uses it carry a limit, so the "N/A" arm — STR#
+       * 2002's own wording for a value that isn't there — is for plug-ins.
+       */
+      .replace(/<DL>/g, () =>
+        active.timeLimit && active.timeLimit > 0
+          ? formatDate((active.acceptedDay ?? 0) + active.timeLimit)
+          : ui(396, "N/A"),
+      )
+      // <PAY> is the Bible's "absolute value of mission pay"
+      .replace(/<PAY>/g, () =>
+        active.pay ? Math.abs(active.pay).toLocaleString() : "",
+      )
+      // <OSN>, the offering ship — a captain hailing you with a job, or the
+      // speaker STR# 7101's radio lines name before their own text
+      .replace(/<OSN>/g, active.offeredByShipName || "an unidentified ship")
       .replace(/<PN>/g, playerName)
       // <PNN> is the nickname, and the Bible is explicit that it falls back
       // to the full name; <PSN> is the ship's name, not the pilot's — an
       // earlier pass had it echoing the player name.
       .replace(/<PNN>/g, PLAYER_IDENTITY.nickname || playerName)
       .replace(/<PSN>/g, PLAYER_IDENTITY.shipName || "my ship")
+      // <PST> is the hull you fly, by its shïp resource name
+      .replace(/<PST>/g, ranks?.hull || "ship")
+      /*
+       * <REG> is "who Nova is registered to, or UNREGISTERED". This engine is
+       * not a registered copy of Nova — it reads your own data files — so the
+       * Bible's own alternative is the honest answer. Nothing in the stock
+       * scenario prints it outside dësc 32767, Nova's About box, which we do
+       * not show (ours is a clean-room notice of its own).
+       */
+      .replace(/<REG>/g, "UNREGISTERED")
+      // <RRK>: the commission you were most recently granted, in full
+      .replace(/<RRK>/g, ranks?.recent || ranks?.conv || "captain")
+      /*
+       * <PRKnnn>/<SRKnnn> are <PRK>/<SRK> narrowed to one government, so a
+       * Federation dësc names your Federation commission and not the Auroran
+       * one you happen to outrank it with. Done before the bare tags, which
+       * would otherwise never see them (they can't — the regexes are exact —
+       * but the ordering says the intent).
+       */
+      .replace(/<PRK(\d+)>/g, (_all, g: string) =>
+        ranks?.byGovt?.(parseInt(g, 10))?.conv || ranks?.conv || "captain",
+      )
+      .replace(/<SRK(\d+)>/g, (_all, g: string) =>
+        ranks?.byGovt?.(parseInt(g, 10))?.short || ranks?.short || "captain",
+      )
       // <PRK>/<SRK>/<PSR>: your commission, or plain "captain" if you hold none
       .replace(/<PRK>/g, ranks?.conv || "captain")
       .replace(/<SRK>/g, ranks?.short || "captain")

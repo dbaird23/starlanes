@@ -1,6 +1,10 @@
 import { GLOW_SPRITES, loadUniverse, MISSIONS, SHIPS } from "./data/universe";
 import { Game } from "./game/game";
-import { availableMissions, instantiateMission } from "./game/missions";
+import {
+  availableMissions,
+  instantiateMission,
+  substituteTags,
+} from "./game/missions";
 import { migrateLegacySave } from "./game/pilots";
 import { MainMenu } from "./ui/menu";
 
@@ -41,11 +45,15 @@ async function boot(): Promise<void> {
   (
     window as unknown as { availableMissions: typeof availableMissions }
   ).availableMissions = availableMissions;
-  // and the roll that turns a posting into an accepted mission, so a briefing
-  // can be read (and its <SN>/<DST> tags checked) without walking to the bar
+  // the roll that turns a posting into an accepted mission, so a briefing can
+  // be read without walking to the bar, and the tag substituter beside it, so
+  // a probe string can exercise every <TAG> at once
   (
     window as unknown as { instantiateMission: typeof instantiateMission }
   ).instantiateMission = instantiateMission;
+  (
+    window as unknown as { substituteTags: typeof substituteTags }
+  ).substituteTags = substituteTags;
 
   let last = performance.now();
   function frame(now: number): void {

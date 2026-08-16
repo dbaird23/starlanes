@@ -150,11 +150,21 @@ export class HailUi {
         t!.govtId >= 128 ? (GOVT_COMM_NAMES[String(t!.govtId)] ?? "") : "";
       const govt = comm || this.game.govtLabel(t!.govtId);
       className = govt ? `${hull} (${govt})` : hull;
-      // a named captain's ship answers under its own name — the Night-Master
-      // rather than "Lightning" — with the hull kept as the class line. A
-      // mission ship's name is already the panel's title (there is no captain
-      // above it), so prefixing it here would print it twice.
-      if (t!.shipName && t!.personId !== null)
+      /*
+       * A named captain's ship answers under its own name — the Night-Master
+       * rather than "Lightning" — with the hull kept as the class line. But
+       * përs @314 is a class line as often as a name: 142 of the 195 captains
+       * who set it simply repeat their hull's own shïp Subtitle ("Standard",
+       * "Class I", "12b Model"), and only the other 53 are names
+       * ("Night-Master", "el Presidente", "w00tWare"). Printing the class as
+       * a name gave "Standard — Terrapin (Trader)". A mission ship's name is
+       * already the panel's title, so prefixing it there would say it twice.
+       */
+      if (
+        t!.shipName &&
+        t!.personId !== null &&
+        t!.shipName !== (type?.subtitle ?? "")
+      )
         className = `${t!.shipName} — ${className}`;
       status = this.game.hailStatus(t!);
       // a named captain with a portrait answers with their face, not their hull

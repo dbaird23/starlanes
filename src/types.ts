@@ -311,6 +311,11 @@ export interface ActiveMission {
    */
   shipName?: string;
   shipSubtitle?: string;
+  /**
+   * <OSN>: the ship that offered the job, when a captain handed it over the
+   * radio rather than a spaceport posting it.
+   */
+  offeredByShipName?: string;
 }
 
 export interface StockWeapon {

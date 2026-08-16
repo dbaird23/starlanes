@@ -107,7 +107,9 @@ import {
   missionDisplayName,
   setPlayerIdentity,
   substituteTags,
+  substituteText,
   testContext,
+  type DescTags,
   type MissionEvent,
 } from "./missions";
 import {
@@ -2481,10 +2483,25 @@ export class Game {
     playSnd(152, 0.5);
   }
 
-  /** Rank names for mission-text substitution. */
-  rankTags(): { conv: string; short: string } {
+  /**
+   * The player-side halves of the desc tags. `player.ranks` is appended to as
+   * commissions are granted, so its last entry is the Bible's "most recently
+   * activated rank resource" for <RRK> — ours survives a reload, where Nova
+   * warns that its own pointer "isn't cached between game sessions".
+   */
+  descTags(): DescTags {
     const rank = this.topRank();
-    return { conv: rank?.convName ?? "", short: rank?.shortName ?? "" };
+    const recentId = this.player.ranks[this.player.ranks.length - 1];
+    return {
+      conv: rank?.convName ?? "",
+      short: rank?.shortName ?? "",
+      recent: RANKS[String(recentId)]?.name,
+      hull: SHIPS[this.player.shipId]?.name.split(";")[0],
+      byGovt: (govtId: number) => {
+        const r = this.topRank(govtId);
+        return r ? { conv: r.convName, short: r.shortName } : null;
+      },
+    };
   }
 
   /** Highest-weighted rank the player holds, optionally for one government. */
@@ -3035,7 +3052,7 @@ export class Game {
               m,
               active,
               this.pilotName,
-              this.rankTags(),
+              this.descTags(),
             ),
           });
         }
@@ -3282,7 +3299,10 @@ export class Game {
       const quote = person
         ? STR_LISTS["7100"]?.[person.commQuote - 1]
         : undefined;
-      if (quote) return `"${quote}"`;
+      if (quote)
+        return `"${substituteText(quote, this.pilotName, this.descTags(), {
+          offeringShip: this.shipLabel(t),
+        })}"`;
       if (person) return `"${person.name} here. What do you want?"`;
     }
     if (t.disabled) return `"We're dead in the water. Do what you like."`;
@@ -3353,13 +3373,22 @@ export class Game {
           return `"Word is there's trouble out at ${type.name}. Steer clear if you can."`;
       }
     }
+    /*
+     * Both quote bands are authored text and carry desc tags — STR# 7022, the
+     * Prodigal Son's replies, addresses you as "Captain <PN>" — so they go
+     * through the same substitution the mission dëscs do.
+     */
+    const spoken = (line: string): string =>
+      `"${substituteText(line, this.pilotName, this.descTags(), {
+        offeringShip: this.shipLabel(t),
+      })}"`;
     if ((info & 0xf000) === 0x4000) {
       const line = pick(STR_LISTS[String(7500 + (info & 0x0fff))] ?? []);
-      if (line) return `"${line}"`;
+      if (line) return spoken(line);
     }
     if ((info & 0x8000) !== 0 && t.govtId >= 128) {
       const line = pick(STR_LISTS[String(7000 + t.govtId - 128)] ?? []);
-      if (line) return `"${line}"`;
+      if (line) return spoken(line);
     }
     return `"${shipComm(SHIP_COMM.greeting, "Nothing to report, Captain. Safe flying.")}"`;
   }
@@ -5564,7 +5593,7 @@ export class Game {
               m,
               active,
               this.pilotName,
-              this.rankTags(),
+              this.descTags(),
             ),
           });
         }
@@ -5619,7 +5648,7 @@ export class Game {
                 m,
                 active,
                 this.pilotName,
-                this.rankTags(),
+                this.descTags(),
               ),
             });
           }
@@ -5680,7 +5709,7 @@ export class Game {
                   m,
                   active,
                   this.pilotName,
-                  this.rankTags(),
+                  this.descTags(),
                 ),
               });
             }
@@ -5807,7 +5836,7 @@ export class Game {
                   m,
                   active,
                   this.pilotName,
-                  this.rankTags(),
+                  this.descTags(),
                 ),
               });
             }
@@ -6338,8 +6367,20 @@ export class Game {
     if (((GOVT_FLAGS[String(person.govt)] ?? 0) & 0x0800) !== 0)
       npc.disabled = true;
 
-    const radio = STR_LISTS["7101"]?.[person.hailQuote - 1]; // 1-based, as above
-    if (radio) this.message(`${person.name}: "${radio}"`);
+    /*
+     * The radio broadcast, 1-based as above. STR# 7101's lines carry their own
+     * speaker: 41 of its 42 entries open with "<OSN>: " and the last names the
+     * hailer outright ("Derelict vessel: ..."), so Nova prints the line as it
+     * stands. Wrapping it in `${person.name}: "..."` said the name twice and
+     * printed the raw tag with it.
+     */
+    const radio = STR_LISTS["7101"]?.[person.hailQuote - 1];
+    if (radio)
+      this.message(
+        substituteText(radio, this.pilotName, this.descTags(), {
+          offeringShip: this.shipLabel(npc),
+        }),
+      );
   }
 
   /**
@@ -7067,7 +7108,7 @@ export class Game {
       ? (descText(m.briefText) ?? descText(m.quickBrief) ?? "")
       : "";
     const body = raw
-      ? substituteTags(raw, m!, a, this.pilotName, this.rankTags())
+      ? substituteTags(raw, m!, a, this.pilotName, this.descTags())
       : "";
     return {
       id: this.missionPickId(a),
@@ -8070,7 +8111,7 @@ export class Game {
               m,
               active,
               this.pilotName,
-              this.rankTags(),
+              this.descTags(),
             ),
           });
         }
@@ -8093,7 +8134,7 @@ export class Game {
                   m,
                   active,
                   this.pilotName,
-                  this.rankTags(),
+                  this.descTags(),
                 ),
               });
             } else {
@@ -8118,7 +8159,7 @@ export class Game {
                   m,
                   active,
                   this.pilotName,
-                  this.rankTags(),
+                  this.descTags(),
                 ),
               });
             }
@@ -8145,7 +8186,7 @@ export class Game {
                   m,
                   active,
                   this.pilotName,
-                  this.rankTags(),
+                  this.descTags(),
                 ),
               });
             }
@@ -8184,7 +8225,7 @@ export class Game {
                   m,
                   active,
                   this.pilotName,
-                  this.rankTags(),
+                  this.descTags(),
                 ),
               });
             }
@@ -8209,7 +8250,7 @@ export class Game {
                 m,
                 active,
                 this.pilotName,
-                this.rankTags(),
+                this.descTags(),
               ) ||
               (active.pay > 0
                 ? `You are paid ${active.pay.toLocaleString()} credits.`

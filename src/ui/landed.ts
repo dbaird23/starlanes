@@ -963,6 +963,9 @@ export class LandedUi {
     const g = this.game;
     const here = g.player.landedOn ?? g.system.planets[0]?.id ?? "128";
     const active = instantiateMission(m, here, g.player);
+    // <OSN>, "the offering ship name (only works when offering a mission from
+    // a ship)" — kept on the mission, so its later texts can name them too
+    active.offeredByShipName = fromName;
     this.planet = this.planet ?? g.system.planets[0] ?? null;
     this.system = g.system;
     this.shipOfferFrom = fromName;
@@ -1190,7 +1193,7 @@ export class LandedUi {
       m,
       active,
       this.game.pilotName,
-      this.game.rankTags(),
+      this.game.descTags(),
     );
     const cantRefuse = (m.flags & 0x0004) !== 0;
     // mission freight rides in your own hull, so escort holds don't count
@@ -1258,7 +1261,7 @@ export class LandedUi {
             m,
             active,
             this.game.pilotName,
-            this.game.rankTags(),
+            this.game.descTags(),
           ),
         });
         this.pendingOffer = null;
@@ -1360,7 +1363,7 @@ export class LandedUi {
         sel,
         active,
         g.pilotName,
-        g.rankTags(),
+        g.descTags(),
       );
       const freeSpace = g.holdSpace(); // own hull only — escorts can't take it
       const fits = !active.cargoLoaded || active.cargoQty <= freeSpace;
@@ -1442,7 +1445,7 @@ export class LandedUi {
           m,
           active,
           this.game.pilotName,
-          this.game.rankTags(),
+          this.game.descTags(),
         ),
       });
       this.pendingOffer = null;

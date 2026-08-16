@@ -535,10 +535,58 @@ Three things worth knowing:
   briefing reads "an Auroran ship named the Talons of Integrity" and the
   target well reads *Talons of Integrity / Abomination Va Themgiir Class*.
 
-Still unimplemented desc tags, for whoever picks this up next: **`<DL>`** (the
-deadline date, 69 dëscs), **`<PST>`** (the player's hull), **`<PAY>`**,
-**`<REG>`**, **`<RRK>`**, **`<OSN>`** and the govt-scoped **`<PRKnnn>` /
-`<SRKnnn>`** (one dësc each).
+**Every desc tag the Bible lists is implemented now — and two of them were
+never mission tags at all.** A census of all 791 dëscs and every STR# bank
+settles where each one is actually used, which is not where you would guess:
+
+- **`<DL>`**, the deadline, is the big one — 69 dëscs ("It has to be there by
+  `<DL>`"). It is `acceptedDay + TimeLimit` written out by the chär template's
+  own calendar ("July 23rd, 1177 NC"), and all **57** missions whose text uses
+  it carry a TimeLimit, so the empty arm — STR# 2002 entry 396, Nova's own
+  "N/A" — is for plug-ins only.
+- **`<OSN>`**, "the offering ship name", appears in **no dësc**: it is in
+  **STR# 7101 "Hail Quotes"**, where **41 of the 42 lines open with
+  `<OSN>: `** — the bank carries its own speaker, and the 42nd names one
+  outright ("Derelict vessel: ..."). So Nova prints those lines as they
+  stand. We wrapped them in `${person.name}: "…"`, which said the name twice
+  *and* printed two raw tags: **`Jack Folstam: "<OSN>: <PN>, I have recently
+  been given information on a bounty."`** It now reads *Jack Folstam: Cade
+  Connelly, I have recently been given information on a bounty.*
+- **`<PRKnnn>` / `<SRKnnn>`** (dësc 5066, Fed37) narrow `<PRK>`/`<SRK>` to one
+  government, so a Federation briefing names your Federation commission and
+  not the Auroran one you outrank it with. `topRank(govtId)` already existed.
+- **`<RRK>`** is the *full resource name* of the most recently granted rank
+  ("Federation Naval Rank of Commander"), not its ConvName. `player.ranks` is
+  appended to as commissions are granted, so its last entry is Nova's "most
+  recently activated rank" — and ours survives a reload, where the Bible warns
+  its own pointer "isn't cached between game sessions".
+- **`<PST>`** (your hull), **`<PAY>`** (`abs(pay)`) and **`<REG>`** are used
+  nowhere in the stock scenario. `<REG>` is "who Nova is registered to, or
+  UNREGISTERED"; this engine reads your own data files and is not a registered
+  copy, so it answers with the Bible's own alternative. Its one use is dësc
+  32767, Nova's About box, which we deliberately do not show — ours is a
+  clean-room notice of its own.
+
+Two structural notes. `Game.rankTags()` is now **`descTags()`** and returns the
+whole player side of the substitution (ranks, the per-govt lookup, the recent
+rank, the hull) — the eighteen call sites still pass one argument. And
+**`substituteText()`** runs the same pass over text that belongs to no mission:
+the Bible says ncb Q-operator messages are "parsed for mission text tags ...
+but not text-selection tags", and it is now wired to the përs comm quote (STR#
+7100), the përs radio broadcast (7101) and both government chatter bands (7000+
+and 7500+) — STR# 7022, the Prodigal Son's replies, addresses you as "Captain
+`<PN>`" and had been printing the tag.
+
+**përs @314 is a class line as often as a ship's name.** Deciding what `<OSN>`
+should say forced the question, and the data answers it: of the 195 captains
+that set the field, **142 repeat their own hull's shïp Subtitle exactly** —
+"Standard", "Class I", "Class A", "12b Model" — and only the other 53 are
+names ("Night-Master", "el Presidente", "w00tWare", "31337"). The comms panel
+was printing all of them as names, so hailing Terrapin gave *"Standard —
+Terrapin (Trader)"*. It now prefixes the name only when it differs from the
+hull's subtitle: Terrapin reads *Terrapin (Trader)* and Jack Folstam still
+reads *Night-Master — Valkyrie (Guild)*. `<OSN>` itself uses `shipLabel` — the
+captain's name where there is one — for the same reason.
 
 **Duplicate stellars: 26 missions pointed at a world that isn't in any
 system.** The Bible states the rule under TravelStel — "the mission travel
