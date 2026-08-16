@@ -672,14 +672,68 @@ same fog of war, gold link lines only to that gate's HyperLink systems, arrow
 Transit is **instant** (no fuel, no calendar day) after a short hull bleach:
 ships fade to white on enter and recolour from white on exit (`gateFlash` on
 `Ship`; ~0.38s in / ~0.55s out). You emerge at the **centre** of the far gate
-moving outward slightly faster than landing speed, so you must brake to dock
-again; the far ring is open and immediately closes (L re-opens). Wormholes have
-no chooser: land → random far end (unlinked pool or HyperLinks). CustPicID
+moving outward at **half the hull's maximum speed** — the beta history's
+"player and escorts emerge from hypergates/wormholes at half speed", which
+replaced a flat guess of landing-speed-plus-20 — so most hulls must brake to
+dock again; the far ring is open and immediately closes (L re-opens). Wormholes
+have no chooser: land → random far end (unlinked pool or HyperLinks). CustPicID
 drives the open/working frame split; CustSndID is emerge angle in Nova degrees
 (0 = up, clockwise). Stock rings share one orientation, so a missing/invalid
 CustSndID exits at ~4:00 (120°) rather than a random bearing. gövt Flags2
 0x0020/0x0040/0x0080 steer NPC leave-via-gate/wormhole vs edge jump. NPCs
 leaving via a gate get the same enter bleach before they leave the board.
+
+**A wormhole is not a hypergate, and the hypergate lock is not an engine
+rule.** `tryLand` tested `isHypergate || isWormhole` and then demanded ränk
+147, so **every wormhole in the game was shut to every pilot who had not
+finished Sigma4** — including the one in **Sol**, which is the first system
+most players ever see one in. The data says both halves of that are wrong:
+
+- All 19 working hypergates belong to **gövt 183 "Hypergate"** and read
+  **MinStatus 32767**, the value the beta history says was added "for
+  unavailable hypergates". **ränk 147 "Have Access to Hypergate System" is
+  affiliated with gövt 183 and carries Flags 0x0200** — "all planets of the
+  affiliated government will let the player land ... regardless of their
+  MinStatus field". So Nova opens the network through machinery we already
+  had: `clearedToLand` honours that rank flag, and `hasHypergateAccess` is
+  **deleted** rather than reimplemented. (The migration that grants rank 147
+  to old Sigma4 saves stays — it is still the key, just not a special case.)
+- All 24 wormholes are **gövt -1, MinStatus 0, spöb Flags Uninhabited**, so
+  they clear for anybody. They are a natural phenomenon, not Federation
+  infrastructure.
+
+The remaining 16 "HG-" stellars are **decorative**: gövt -1, no HyperLinks,
+and spöb Flags without the can-land bit, which is what `gateIsWorking` reads.
+
+**STR# 2002 84/85/86 are the proof that the engine keeps them apart**, and
+they are wired now: 84 "Your ship is unable to" pairs with **85 "enter this
+hypergate - it is offline."** or **86 "enter this wormhole - the radiation
+levels are too extreme."** — the same kind-pairing as 22/23 and 87/88 — while
+**81 "Hypergate usage denied."** is its own string for the network refusing
+you, which is the MinStatus path above. We had one hand-written "the ring is
+dark and will not answer" for all of it.
+
+Two more from the beta history, both about gates of either kind:
+
+- **"random mission destinations can no longer be hypergates".** A working
+  hypergate is landable and *not* flagged uninhabited, so all 19 sat in the
+  pool `resolveStel` draws a -2 or govt-coded TravelStel from — a cargo run to
+  HG-Kania. Wormholes were already excluded by the uninhabited test. Missions
+  that name a gate outright still work; only the random draw is filtered.
+- **"hypergates and wormholes can't be hailed".** Targeting one and hailing
+  opened traffic control, greeting and all.
+
+Verified in play from a rankless pilot: the Sol wormhole transits to Chirt and
+the Shuttle emerges at 120 of its 240 top speed, HG-Kania answers "Hypergate
+usage denied." until rank 147 is granted and then powers up, HG-Vega reads
+"…enter this hypergate - it is offline.", hailing the wormhole is refused, and
+621 random destination rolls across every mission produced no gate.
+
+One piece of dead code left in place: `LandedUi.showGate` / `renderGate` (the
+`"gate"` view) is the **old HTML destination chooser**, replaced by the canvas
+map chooser and now called from nowhere. It still contains wormhole branches
+("Somewhere far away", an Enter button) that describe behaviour the game no
+longer has — read the canvas chooser and `tryLand`, not that.
 
 **Hyperspace jump sequence is Nova's full entry, not a charge timer.**
 `JumpSequence` in `game.ts` runs three phases: **braking** (face retro and burn

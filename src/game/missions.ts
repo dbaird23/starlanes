@@ -169,9 +169,16 @@ function resolveStel(
 ): string | null {
   if (code === -1) return null;
   if (code === -4) return currentSpobId;
+  /*
+   * Nova beta history: "random mission destinations can no longer be
+   * hypergates". A working hypergate is landable and — unlike a wormhole,
+   * which the Uninhabited flag already excluded — is not marked uninhabited,
+   * so all 19 of them were in the pool that a -2 or a govt-coded TravelStel
+   * draws from. A cargo run to HG-Kania is not a delivery.
+   */
   const all = [...SPOB_INDEX.values()]
     .map((e) => e.planet)
-    .filter((p) => p.landable);
+    .filter((p) => p.landable && !p.isHypergate && !p.isWormhole);
   let candidates: PlanetDef[] = [];
   if (code === -2) candidates = all.filter((p) => !p.uninhabited);
   else if (code === -3) candidates = all.filter((p) => p.uninhabited);

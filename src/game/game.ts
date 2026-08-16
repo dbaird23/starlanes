@@ -316,8 +316,13 @@ const LAND_DIST = 2.4; // multiples of planet radius (from surface-ish)
 const LAND_SPEED = 130;
 /** How long a ship takes to forgive a full tolerance band of stray fire. */
 const STRAY_FORGIVE_SECONDS = 8;
-/** Leave a gate slightly too fast to re-dock without braking. */
-const GATE_EMERGE_SPEED = LAND_SPEED + 20;
+/**
+ * Nova beta history: "player and escorts emerge from hypergates/wormholes at
+ * half speed". Half of the hull's own maximum, so a Leviathan comes out of the
+ * ring under way and a Shuttle does not — this used to be a flat LAND_SPEED+20
+ * for everybody, which was a guess at the same idea.
+ */
+const GATE_EMERGE_SPEED_FRAC = 0.5;
 /**
  * Default exit bearing when CustSndID does not pin one (Bible: "any other
  * value" → random). Stock rings all share the same art, open at ~4:00 on
@@ -1166,9 +1171,10 @@ export class Game {
     // centre of the far gate, already under way outward
     this.ship.pos = { x: dest.pos.x, y: dest.pos.y };
     this.ship.angle = ang;
+    const emergeSpeed = this.ship.stats.maxSpeed * GATE_EMERGE_SPEED_FRAC;
     this.ship.vel = {
-      x: Math.cos(ang) * GATE_EMERGE_SPEED,
-      y: Math.sin(ang) * GATE_EMERGE_SPEED,
+      x: Math.cos(ang) * emergeSpeed,
+      y: Math.sin(ang) * emergeSpeed,
     };
     // solid white on arrival; decays over GATE_EXIT_FLASH
     this.ship.gateFlash = 1;
@@ -1259,10 +1265,13 @@ export class Game {
   get hasIff(): boolean {
     return this.gear.iff;
   }
-  /** Rank 147 "Have Access to Hypergate System" — granted by Sigma4 and the Rebel sideline. */
-  get hasHypergateAccess(): boolean {
-    return this.player.ranks.includes(147);
-  }
+  /*
+   * There is deliberately no `hasHypergateAccess` here any more. ränk 147
+   * "Have Access to Hypergate System" is govt 183, the hypergates' own
+   * government, and its Flags 0x0200 waive MinStatus for that government's
+   * stellars — so `clearedToLand` opens the network on the documented rule
+   * and a hardcoded rank test only got in the way of the wormholes.
+   */
   get cloakBits(): number {
     return this.cloakFlags;
   }
@@ -3074,6 +3083,14 @@ export class Game {
   /** Open comms with the current target. */
   private hailTarget(): void {
     if (this.targetPlanet && !this.targetNpc) {
+      // Nova beta history: "hypergates and wormholes can't be hailed". Neither
+      // has a traffic control to answer — one is a machine, the other a hole.
+      if (this.targetPlanet.isHypergate || this.targetPlanet.isWormhole) {
+        this.message(
+          `${this.targetPlanet.name} does not answer. There is nobody aboard to hail.`,
+        );
+        return;
+      }
       this.hailPlanet(this.targetPlanet);
       return;
     }
@@ -7278,7 +7295,11 @@ export class Game {
       this.closeGate(prev.id);
     }
     if (!planet) return;
-    if (planet.isHypergate && this.gateIsWorking(planet) && this.hasHypergateAccess) {
+    if (
+      planet.isHypergate &&
+      this.gateIsWorking(planet) &&
+      this.clearedToLand(planet, this.player.systemId)
+    ) {
       this.beginOpenGate(planet);
     }
     const dist = Math.round(
@@ -7303,7 +7324,6 @@ export class Game {
     if (isGate)
       return (
         this.gateIsWorking(planet) &&
-        this.hasHypergateAccess &&
         this.clearedToLand(planet, this.player.systemId)
       );
     if (!planet.landable) return false;
@@ -7349,16 +7369,20 @@ export class Game {
       playSnd(SND.LANDING_DENIED, 0.55);
       return;
     }
+    /*
+     * A ring that will not answer. STR# 2002 gives the two objects separate
+     * refusals — 84 "Your ship is unable to" plus 85 "enter this hypergate -
+     * it is offline." or 86 "enter this wormhole - the radiation levels are
+     * too extreme." — the same kind-pairing as 22/23 and 87/88, and proof in
+     * the engine's own strings that these are not one thing with a flag.
+     */
     if (isGate && !this.gateIsWorking(planet)) {
-      // a dead gate: its ring stays dark however long you sit in front of it
       this.message(
-        `${planet.name} is derelict. The ring is dark and will not answer.`,
-      );
-      return;
-    }
-    if (isGate && !this.hasHypergateAccess) {
-      this.message(
-        `${planet.name}: ${ui(81, "hypergate usage denied.")}`,
+        `${ui(84, "Your ship is unable to")} ${
+          planet.isWormhole
+            ? ui(86, "enter this wormhole - the radiation levels are too extreme.")
+            : ui(85, "enter this hypergate - it is offline.")
+        }`,
       );
       playSnd(SND.LANDING_DENIED, 0.55);
       return;
@@ -7392,12 +7416,32 @@ export class Game {
      *
      * Exception: if you have an active mission whose current destination
      * (travelSpobId or returnSpobId) is this planet, you may land anyway.
+     *
+     * **Gates go through this too, and that is the whole hypergate lock.**
+     * All 19 working hypergates belong to gövt 183 "Hypergate" and read
+     * MinStatus 32767 — the value the beta history says was introduced "for
+     * unavailable hypergates" — while ränk 147 "Have Access to Hypergate
+     * System" is affiliated with that same government and carries Flags
+     * 0x0200, "all planets of the affiliated government will let the player
+     * land ... regardless of their MinStatus field". So the network opens
+     * through documented, general machinery and needs no engine special case;
+     * `clearedToLand` already honours that rank flag. The wormholes are gövt
+     * -1, MinStatus 0 and uninhabited, so they clear for anybody — which is
+     * the point: they are a natural phenomenon, not Federation infrastructure,
+     * and a hardcoded rank check here refused all 17 of them, including the
+     * one in Sol, to every pilot who had not finished Sigma4.
      */
     if (
-      !isGate &&
       !this.hasActiveMissionToPlanet(planet.id) &&
       !this.clearedToLand(planet, this.player.systemId)
     ) {
+      // 81 "Hypergate usage denied." — the network's own wording, and the
+      // reason the bank carries it separately from the landing refusals.
+      if (isGate) {
+        this.message(`${planet.name}: ${ui(81, "Hypergate usage denied.")}`);
+        playSnd(SND.LANDING_DENIED, 0.55);
+        return;
+      }
       /*
        * gövt Flags 0x4000/0x8000: a bribable world doesn't just hang up — the
        * refusal opens traffic control, where the Offer Bribe flow already
