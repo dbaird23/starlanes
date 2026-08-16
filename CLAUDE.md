@@ -729,11 +729,14 @@ usage denied." until rank 147 is granted and then powers up, HG-Vega reads
 "…enter this hypergate - it is offline.", hailing the wormhole is refused, and
 621 random destination rolls across every mission produced no gate.
 
-One piece of dead code left in place: `LandedUi.showGate` / `renderGate` (the
-`"gate"` view) is the **old HTML destination chooser**, replaced by the canvas
-map chooser and now called from nowhere. It still contains wormhole branches
-("Somewhere far away", an Enter button) that describe behaviour the game no
-longer has — read the canvas chooser and `tryLand`, not that.
+**The destination chooser is the canvas map, and there is no other.**
+`LandedUi`'s old HTML chooser — the `"gate"` view, `showGate`/`renderGate`, the
+`gateMap` SVG mini-chart and its `.gatemap`/`.gm-*` stylesheet — has been
+deleted (~140 lines). It had been unreachable since the canvas chooser landed,
+and it still described behaviour the game no longer has: a wormhole listed as
+a row reading "Somewhere far away" with an Enter button, where a wormhole now
+transits on contact and never opens a panel at all. `Game.gateDestinations`
+and `GateDestination` stay — the canvas chooser is their only caller now.
 
 **Hyperspace jump sequence is Nova's full entry, not a charge timer.**
 `JumpSequence` in `game.ts` runs three phases: **braking** (face retro and burn

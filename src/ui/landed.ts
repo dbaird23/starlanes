@@ -25,7 +25,7 @@ import {
   UI_PICTS,
   WEAPONS,
 } from "../data/universe";
-import type { Game, GateDestination } from "../game/game";
+import type { Game } from "../game/game";
 import {
   MAX_ESCORTS,
   escortHireFee,
@@ -76,8 +76,8 @@ const PORT_KEYS: Record<string, View> = {
  * Screens Esc backs out of. Each one already carries its own Back button, so
  * Esc presses that rather than setting the view itself — hire escorts / holovid
  * / gamble return to the bar, and the bar returns to the spaceport. The
- * spaceport and a gate are not in here: Esc leaves the planet from those,
- * which is Nova's own behaviour and predates this.
+ * spaceport is not in here: Esc leaves the planet from it, which is Nova's
+ * own behaviour and predates this.
  */
 const ESC_CLOSES = new Set<View>([
   "bar",
@@ -118,7 +118,6 @@ type View =
   | "bbs"
   | "offer"
   | "events"
-  | "gate"
   | "shipOffer"
   | "escorts"
   | "holovid"
@@ -206,8 +205,6 @@ export class LandedUi {
   private shipOfferFrom: string | null = null;
   /** focused spaceport service button id (e.g. "btn-bar") for arrow-key nav */
   private selectedPort: string | null = null;
-  /** focused hypergate destination index */
-  private selectedGate = 0;
   /** focused bar action button id */
   private selectedBar: string | null = null;
 
@@ -364,7 +361,7 @@ export class LandedUi {
       if (
         this.planet &&
         (e.code === "KeyL" || e.code === "Escape") &&
-        (this.view === "spaceport" || this.view === "gate")
+        this.view === "spaceport"
       ) {
         handled();
         this.game.depart();
@@ -677,16 +674,6 @@ export class LandedUi {
         }
         return false;
       }
-      case "gate": {
-        if (dx !== 0) return false;
-        const n = this.root.querySelectorAll(".ship-card[data-row]").length;
-        if (n === 0) return false;
-        const next = (((this.selectedGate + dy) % n) + n) % n;
-        if (next === this.selectedGate) return true;
-        this.selectedGate = next;
-        this.render();
-        return true;
-      }
       case "gamble": {
         if (this.gambleResult || dy !== 0) return false;
         const cur = this.gamblePick ?? 0;
@@ -720,7 +707,7 @@ export class LandedUi {
   }
 
   /**
-   * Enter on the focused item. Spaceport / bar / gate act on the selection.
+   * Enter on the focused item. Spaceport and bar act on the selection.
    * Shop counters do not buy on Enter (B / S); the mission BBS does not
    * accept on Enter (A does).
    */
@@ -747,16 +734,6 @@ export class LandedUi {
           `#${this.selectedPort}`,
         );
         if (btn && !btn.disabled) {
-          btn.click();
-          return true;
-        }
-        return false;
-      }
-      case "gate": {
-        const btn = this.root.querySelector<HTMLButtonElement>(
-          `button[data-gate="${this.selectedGate}"]`,
-        );
-        if (btn) {
           btn.click();
           return true;
         }
@@ -976,102 +953,6 @@ export class LandedUi {
     this.render();
   }
 
-  /** Hypergate / wormhole: a destination chooser, not a spaceport. */
-  showGate(planet: PlanetDef, system: SystemDef): void {
-    this.planet = planet;
-    this.system = system;
-    this.events = [];
-    this.offers.clear();
-    this.bbsMissions = [];
-    this.barMissions = [];
-    this.spaceportOffers = [];
-    this.counterOffers.clear();
-    this.selectedGate = 0;
-    this.view = "gate";
-    this.root.classList.remove("hidden");
-    playMenuOpen();
-    this.render();
-  }
-
-  private renderGate(): void {
-    const p = this.planet!;
-    const g = this.game;
-    const dests = g.gateDestinations(p);
-    const kind = p.isWormhole ? "Wormhole" : "Hypergate";
-    const blurb = p.isWormhole
-      ? "Space folds in on itself here. There is no telling exactly where you will surface — only that it will be a long way from here."
-      : "The gate ring powers up as you approach, waiting for a destination lock. Transit is instantaneous and costs no fuel.";
-    if (this.selectedGate >= dests.length)
-      this.selectedGate = Math.max(0, dests.length - 1);
-    const rows = dests
-      .map(
-        (
-          d,
-          i,
-        ) => `<div class="ship-card${i === this.selectedGate ? " hot" : ""}" data-row="${i}">
-          <div class="ship-info">
-            <div class="ship-name">${p.isWormhole ? "Somewhere far away" : escapeHtml(d.name)}</div>
-            <div class="ship-stats">${p.isWormhole ? "Destination unknown" : `${escapeHtml(d.systemName)} system`}</div>
-          </div>
-          <div class="ship-buy"><button class="evbtn primary" data-gate="${i}">${p.isWormhole ? "Enter" : "Travel"}</button></div>
-        </div>`,
-      )
-      .join("");
-
-    this.root.innerHTML = `
-      <div class="panel">
-        <h1>${escapeHtml(p.name)}<span class="sys">${escapeHtml(this.system!.name)} system · ${kind}</span></h1>
-        ${this.statusBar()}
-        <p class="desc">${blurb}</p>
-        ${gateMap(this.system!, dests, p.isWormhole)}
-        <div class="ship-list">${rows || '<p class="menu-empty">This gate has no active connections.</p>'}</div>
-        <div class="btnrow">
-          <button class="evbtn" id="btn-leave-gate">Leave (L)</button>
-        </div>
-      </div>`;
-
-    // keyboard selection and hover light the matching star on the mini-map
-    const rowEls = [
-      ...this.root.querySelectorAll<HTMLElement>(".ship-card[data-row]"),
-    ];
-    const starEls = [...this.root.querySelectorAll<SVGElement>("[data-star]")];
-    const highlight = (i: number) => {
-      rowEls.forEach((el, n) => el.classList.toggle("hot", n === i));
-      starEls.forEach((el) =>
-        el.classList.toggle("hot", el.dataset.star === String(i)),
-      );
-    };
-    highlight(this.selectedGate);
-    rowEls.forEach((el, i) => {
-      el.addEventListener("mouseenter", () => {
-        this.selectedGate = i;
-        highlight(i);
-      });
-    });
-    starEls.forEach((el) => {
-      const i = parseInt(el.dataset.star!, 10);
-      el.addEventListener("mouseenter", () => {
-        this.selectedGate = i;
-        highlight(i);
-      });
-      el.addEventListener("click", () => {
-        const dest = dests[i];
-        if (dest) this.game.useGate(dest.spobId);
-      });
-    });
-
-    this.root
-      .querySelector("#btn-leave-gate")!
-      .addEventListener("click", () => this.game.depart());
-    this.root.querySelectorAll("button[data-gate]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt((btn as HTMLButtonElement).dataset.gate!, 10);
-        const dest = dests[idx];
-        if (dest) this.game.useGate(dest.spobId);
-      });
-    });
-  }
-
   /**
    * Bar missions (AvailLoc 1) pop up automatically when entering the bar,
    * one at a time, rather than appearing as a list to click through.
@@ -1146,7 +1027,6 @@ export class LandedUi {
     else if (this.view === "bar") this.renderBar();
     else if (this.view === "bbs") this.renderBbs();
     else if (this.view === "offer") this.renderOffer();
-    else if (this.view === "gate") this.renderGate();
     else if (this.view === "escorts") this.renderEscorts();
     else if (this.view === "holovid") this.renderHolovid();
     else if (this.view === "gamble") this.renderGamble();
@@ -2771,80 +2651,6 @@ function mountRow(g: Game): string {
   return `
     <div class="gap"><span>Gun mounts:</span><b>${cell(m.guns, m.maxGuns)}</b></div>
     <div><span>Turret mounts:</span><b>${cell(m.turrets, m.maxTurrets)}</b></div>`;
-}
-
-/**
- * The gate network, drawn rather than listed. Nova ships no artwork for a gate
- * dialog — the interface pictures name a Spaceport, a Bar, a Map and so on, but
- * nothing for a gate — so this plots the destinations on their real galaxy-map
- * positions and draws a line to each. A wormhole gets a blank chart instead:
- * you are not told where it goes until you have been.
- */
-function gateMap(
-  here: SystemDef,
-  dests: GateDestination[],
-  wormhole: boolean,
-): string {
-  const points = dests.filter((d) => d.mapPos !== null);
-  if (wormhole || points.length === 0) {
-    return `<div class="gatemap empty">${
-      wormhole
-        ? "No destination lock. The far end is anyone's guess."
-        : "No charted connections."
-    }</div>`;
-  }
-
-  const W = 620;
-  const H = 200;
-  const PAD = 26;
-  const xs = [here.mapPos.x, ...points.map((d) => d.mapPos!.x)];
-  const ys = [here.mapPos.y, ...points.map((d) => d.mapPos!.y)];
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  // keep the galaxy's aspect ratio so the network isn't stretched into nonsense
-  const scale = Math.min(
-    (W - PAD * 2) / Math.max(1, maxX - minX),
-    (H - PAD * 2) / Math.max(1, maxY - minY),
-  );
-  const cx = (x: number) => W / 2 + (x - (minX + maxX) / 2) * scale;
-  const cy = (y: number) => H / 2 + (y - (minY + maxY) / 2) * scale;
-
-  const hx = cx(here.mapPos.x);
-  const hy = cy(here.mapPos.y);
-  const lines = points
-    .map(
-      (d) =>
-        `<line x1="${hx}" y1="${hy}" x2="${cx(d.mapPos!.x)}" y2="${cy(d.mapPos!.y)}" class="gm-link"/>`,
-    )
-    .join("");
-  const stars = points
-    .map((d) => {
-      const i = dests.indexOf(d);
-      const x = cx(d.mapPos!.x);
-      const y = cy(d.mapPos!.y);
-      // A hypergate posts its own network, so every end is named here even if
-      // you have never flown there — the list below says the same. Ends you
-      // haven't visited are simply drawn dimmer.
-      return `<g class="gm-star${d.explored ? "" : " unvisited"}" data-star="${i}">
-        <circle cx="${x}" cy="${y}" r="11" class="gm-hit"/>
-        <circle cx="${x}" cy="${y}" r="4" class="gm-dot"/>
-        <text x="${x}" y="${y - 11}" class="gm-label">${escapeHtml(d.systemName)}</text>
-      </g>`;
-    })
-    .join("");
-
-  return `<div class="gatemap">
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-      ${lines}
-      <g class="gm-here">
-        <circle cx="${hx}" cy="${hy}" r="5" class="gm-dot"/>
-        <text x="${hx}" y="${hy + 20}" class="gm-label">${escapeHtml(here.name)}</text>
-      </g>
-      ${stars}
-    </svg>
-  </div>`;
 }
 
 /** Mission and world names come from the data files; never trust them as markup. */
