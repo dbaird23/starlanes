@@ -302,8 +302,14 @@ export class NpcShip extends Ship {
    * ship type's stock weapons.
    */
   weapons: StockWeapon[] | null = null;
-  /** the ship's own name, for named captains */
+  /** the ship's own name, for named captains and named mission ships */
   shipName: string | null = null;
+  /**
+   * mïsn ShipSubtitle: the class line a mission gives its special ships,
+   * shown in place of the hull's own shïp Subtitle ("Prodigal Son" for the
+   * Rebel leaders' transports).
+   */
+  shipSubtitle: string | null = null;
   /** mïsn id if this is a mission special ship */
   missionMisnId: number | null = null;
   /** a fighter launched from the player's bays */

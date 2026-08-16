@@ -3004,6 +3004,8 @@ export class Game {
       const p = PERSONS[String(t.personId)];
       if (p) return p.name;
     }
+    // a mission's special ships answer to the name their briefing gave them
+    if (t.shipName) return t.shipName;
     return t.typeId
       ? (SHIPS[t.typeId]?.name.split(";")[0] ?? "The ship")
       : "The ship";
@@ -5749,6 +5751,15 @@ export class Game {
         if (goal === 5) npc.disabled = true;
         if (goal === 3) npc.escorting = true;
         npc.missionMisnId = active.misnId;
+        /*
+         * The ship the briefing named. ShipNameID/ShipSubtitle exist so the
+         * target you were sent after answers to the name in its dësc: hunting
+         * "the Doomblade" and finding an anonymous Thunderhead is the same
+         * bug as printing the raw <SN> tag. Only ships whose mission actually
+         * names them get one — a normal düde spawn stays anonymous.
+         */
+        if (mDef && mDef.shipNameId >= 128) npc.shipName = active.shipName ?? null;
+        npc.shipSubtitle = active.shipSubtitle ?? null;
         npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
         npc.sprite = SHIP_SPRITES[typeId] ?? null;
         const ang = Math.random() * Math.PI * 2;

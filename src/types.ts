@@ -249,6 +249,13 @@ export interface MissionType {
   shipSyst: number;
   shipDude: number;
   shipGoal: number;
+  /**
+   * ShipNameID / ShipSubtitle: -1 or 0 for normal names, else the STR# bank
+   * (25000-25047 in stock Nova) the special ships' name and subtitle are
+   * drawn from. This is what the `<SN>` desc tag reads.
+   */
+  shipNameId: number;
+  shipSubtitle: number;
   briefText: number;
   quickBrief: number;
   loadCargText: number;
@@ -297,6 +304,13 @@ export interface ActiveMission {
   shipDude: number;
   /** system where the mission ships appear */
   shipSystemId: string | null;
+  /**
+   * The special ships' name and subtitle, rolled from the mission's
+   * ShipNameID / ShipSubtitle banks. `<SN>` reads shipName, and the ships
+   * themselves carry both into the HUD's target well.
+   */
+  shipName?: string;
+  shipSubtitle?: string;
 }
 
 export interface StockWeapon {

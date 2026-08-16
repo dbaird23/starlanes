@@ -1,6 +1,7 @@
 import {
   COMMODITIES,
   DESCS,
+  DUDES,
   getSystem,
   govtAllied,
   govtClassmate,
@@ -295,6 +296,57 @@ export function descText(descId: number): string | null {
   return DESCS[String(descId)] ?? null;
 }
 
+/**
+ * A random entry from a mïsn ShipNameID / ShipSubtitle bank. Both fields read
+ * "-1 ignored, 128 and up pick a name from this STR# resource", and the banks
+ * hold ten entries apiece — ten Auroran warship names for 25000, ten
+ * identical "Prodigal Son"s for 25006 where the mission means one named ship.
+ */
+function pickFromBank(bankId: number): string | undefined {
+  if (bankId < 128) return undefined;
+  const list = (STR_LISTS[String(bankId)] ?? []).filter((s) => s.length > 0);
+  if (!list.length) return undefined;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+/**
+ * The `<SN>` tag — "special ship name". Nova rolls it at accept time, which is
+ * why the Bible warns it "will screw up" in an offer description; none of the
+ * 43 shipped dëscs that use it is an offer text, so rolling it here (where the
+ * offer is built) is indistinguishable in play and cannot leak a raw tag.
+ *
+ * Falling back to the **subtitle** bank is the reading Nova's own prose
+ * demands: all three missions that use `<SN>` without a ShipNameID carry a
+ * ShipSubtitle instead, and it is the subtitle that completes the sentence —
+ * Rebel I21's "most of them have been named <SN>" against bank 25006
+ * "Prodigal Son", and Auroran 028's "as she flies through the Wolf 359 system
+ * in the <SN>" against 25024 "Krane". The hull name behind that is ours, so a
+ * plug-in that names neither still reads as English rather than as markup.
+ */
+function specialShipName(m: MissionType): string | undefined {
+  const named = pickFromBank(m.shipNameId) ?? pickFromBank(m.shipSubtitle);
+  if (named) return named;
+  const dude = DUDES[String(m.shipDude)];
+  const best = dude?.ships.reduce(
+    (a, b) => (b.prob > a.prob ? b : a),
+    dude.ships[0],
+  );
+  return best ? SHIPS[String(best.id)]?.name.split(";")[0] : undefined;
+}
+
+/**
+ * Missions accepted before the special ships had names: roll one now rather
+ * than leave a live briefing reading "destroy the ship".
+ */
+export function backfillMissionShipNames(list: ActiveMission[]): void {
+  for (const active of list) {
+    const m = MISSIONS[String(active.misnId)];
+    if (!m) continue;
+    active.shipName ??= specialShipName(m);
+    active.shipSubtitle ??= pickFromBank(m.shipSubtitle);
+  }
+}
+
 /** Build the ActiveMission record (resolving random destinations). */
 export function instantiateMission(
   m: MissionType,
@@ -336,6 +388,8 @@ export function instantiateMission(
       shipsTotal > 0
         ? resolveShipSystem(m, currentSpobId, travelSpobId, returnSpobId)
         : null,
+    shipName: specialShipName(m),
+    shipSubtitle: pickFromBank(m.shipSubtitle),
   };
   // the title carries <DST>/<RST> too, and only now do we know what they are
   active.name = substituteTags(active.name, m, active, "");
@@ -429,6 +483,8 @@ export function substituteTags(
       .replace(/<DSY>/g, sysName(active.travelSpobId))
       .replace(/<RST>/g, spobName(active.returnSpobId))
       .replace(/<RSY>/g, sysName(active.returnSpobId))
+      // <SN> is the special ships' own name, rolled when the mission is built
+      .replace(/<SN>/g, active.shipName ?? "ship")
       .replace(/<PN>/g, playerName)
       // <PNN> is the nickname, and the Bible is explicit that it falls back
       // to the full name; <PSN> is the ship's name, not the pilot's — an

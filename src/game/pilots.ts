@@ -1,5 +1,6 @@
 import { getSystem, SHIPS } from "../data/universe";
 import { grantHullOutfits } from "./combat";
+import { backfillMissionShipNames } from "./missions";
 import { migrateGovtRecords } from "./reputation";
 import type { PlayerState } from "../types";
 
@@ -107,6 +108,7 @@ function backfill(p: PlayerState): PlayerState {
   // its owning government's old number where it differed from the seed.
   p.systemRecords ??= migrateGovtRecords(p.records);
   p.activeMissions ??= [];
+  backfillMissionShipNames(p.activeMissions);
   p.personsKilled ??= [];
   p.dominated ??= [];
   p.explored ??= [];

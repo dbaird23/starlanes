@@ -499,6 +499,47 @@ are ours; the Bible sets none) and marks the raider. **Mission cargo is
 deliberately untouched**: it is not theirs to sell, and losing it would
 silently fail storylines out of a fight you had already lost.
 
+**`<SN>` — the special ships have names, and they come from mïsn ShipNameID /
+ShipSubtitle.** The Bounty Hunters Guild intro asks you to "destroy an Auroran
+ship named the `<SN>`" and printed the tag, because neither field was
+extracted. Both read "-1 ignored, 128 and up pick from this STR# resource",
+they sit at **@42** and **@50** either side of the already verified
+ShipStart/CompGovt/CompReward run, and they name themselves: every value ≥ 128
+lands in **25000-25047**, a band of STR# banks that exists for nothing else and
+whose resource names are the ships in question — 25000 "Auroran Warships"
+(Dechanik, Blood Honor, Doomblade…), 25001 "Pirate Raiders", 25006 "'Prodigal
+Son'". 78 missions carry a name bank and 43 dëscs use the tag.
+
+Three things worth knowing:
+
+- **The roll happens where the offer is built** (`instantiateMission`), not on
+  Accept. Nova picks at accept time, which is why the Bible warns `<SN>` "will
+  screw up" in an offer description — and indeed **not one** of the 43 dëscs
+  that use it is an offer text (26 BriefText, 26 QuickBrief, a couple of cargo
+  and completion texts). So rolling it a moment earlier is invisible in play
+  and cannot leak a raw tag. One roll per mission, so a briefing that names the
+  ship twice names it the same twice.
+- **`<SN>` falls back to the subtitle bank**, which is what Nova's own prose
+  demands: all three missions that use the tag without a ShipNameID carry a
+  ShipSubtitle instead, and it is the subtitle that completes the sentence —
+  Rebel I21's "most of them have been named `<SN>`" against 25006 "Prodigal
+  Son", Auroran 028's "as she flies through the Wolf 359 system in the `<SN>`"
+  against 25024 "Krane". The hull-name last resort behind that is ours, so a
+  plug-in naming neither still reads as English rather than as markup.
+- **The ships carry the name too.** Hunting "the Doomblade" and finding an
+  anonymous Thunderhead is the same bug as printing the tag, so a named
+  mission ship answers to it in the HUD target well, the comms panel and every
+  kill message (`shipLabel`), and ShipSubtitle overrides the hull's own shïp
+  Subtitle on the class line. Only missions that actually name their ships
+  hand one out; a plain düde spawn stays anonymous. Verified in play: the
+  briefing reads "an Auroran ship named the Talons of Integrity" and the
+  target well reads *Talons of Integrity / Abomination Va Themgiir Class*.
+
+Still unimplemented desc tags, for whoever picks this up next: **`<DL>`** (the
+deadline date, 69 dëscs), **`<PST>`** (the player's hull), **`<PAY>`**,
+**`<REG>`**, **`<RRK>`**, **`<OSN>`** and the govt-scoped **`<PRKnnn>` /
+`<SRKnnn>`** (one dësc each).
+
 **Duplicate stellars: 26 missions pointed at a world that isn't in any
 system.** The Bible states the rule under TravelStel — "the mission travel
 objectives will also be fulfilled when landing on a duplicate stellar that

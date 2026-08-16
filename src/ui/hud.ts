@@ -535,11 +535,15 @@ export class HudUi {
     this.target.classList.remove("empty");
     const type = t.typeId ? SHIPS[t.typeId] : undefined;
     const typeName = (type?.name ?? "").split(";")[0];
-    const isNamed = t.personId !== null;
+    // A named captain, or a mission ship the briefing named — either way the
+    // head shows a proper name rather than the hull class.
+    const isNamed = t.personId !== null || !!t.shipName;
     // Named captains: head shows their personal name, so show the hull type +
     // subtitle below (e.g. "Pirate Starbridge Class B"). Unnamed contacts: head
     // already shows the hull class, so show only the subtitle (e.g. "Class B").
-    const hullVariant = type?.subtitle?.trim() || undefined;
+    // mïsn ShipSubtitle overrides the hull's own, which is what it is for.
+    const hullVariant =
+      t.shipSubtitle?.trim() || type?.subtitle?.trim() || undefined;
     const variant: string | undefined = isNamed
       ? [typeName, hullVariant].filter(Boolean).join(" ") || undefined
       : hullVariant;

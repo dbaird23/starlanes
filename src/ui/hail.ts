@@ -151,8 +151,11 @@ export class HailUi {
       const govt = comm || this.game.govtLabel(t!.govtId);
       className = govt ? `${hull} (${govt})` : hull;
       // a named captain's ship answers under its own name — the Night-Master
-      // rather than "Lightning" — with the hull kept as the class line
-      if (t!.shipName) className = `${t!.shipName} — ${className}`;
+      // rather than "Lightning" — with the hull kept as the class line. A
+      // mission ship's name is already the panel's title (there is no captain
+      // above it), so prefixing it here would print it twice.
+      if (t!.shipName && t!.personId !== null)
+        className = `${t!.shipName} — ${className}`;
       status = this.game.hailStatus(t!);
       // a named captain with a portrait answers with their face, not their hull
       pict = personPict(t!.personId);

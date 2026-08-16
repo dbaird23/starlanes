@@ -833,6 +833,24 @@ function decodeMisn(res) {
     shipDoneText: d.readInt16BE(68),
     shipBehav: d.readInt16BE(40),
     /*
+     * ShipNameID @42 and ShipSubtitle @50 — "tells Nova how to name the
+     * special ships" / "which subtitle to use", both "-1 ignored, 128 and up
+     * pick from this STR# resource". They sit either side of the already
+     * verified ShipStart/CompGovt/CompReward run and name themselves
+     * outright: every value ≥ 128 lands in 25000-25076, a band of STR#
+     * resources that exists for nothing else and whose resource names are
+     * the ships in question — 25000 "Auroran Warships" (Dechanik, Blood
+     * Honor, Doomblade…), 25001 "Pirate Raiders", 25006 "'Prodigal Son'".
+     * The remaining values are the documented -1 (494 missions) and 0 (219),
+     * both meaning "normal names".
+     *
+     * These are what the <SN> desc tag reads, and 43 of the shipped dëscs
+     * use it — including the Bounty Hunters Guild intro, which asks you to
+     * "destroy an Auroran ship named the <SN>".
+     */
+    shipNameId: d.readInt16BE(42),
+    shipSubtitle: d.readInt16BE(50),
+    /*
      * CompGovt @46 / CompReward @48 — "which government to use in determining
      * how your record changes on completing this mission", and by how much.
      *
@@ -1248,6 +1266,12 @@ const govtHailLists = Array.from({ length: 43 }, (_, i) => 7000 + i);
 const cronNewsLists = [
   ...new Set(crons.flatMap((c) => [c.indNewsStr, ...c.govtNewsStrs])),
 ].filter((id) => id > 0);
+// Special-ship name and subtitle banks: every STR# a mïsn ShipNameID or
+// ShipSubtitle points at (25000-25047 in stock Nova, out of a 25000-25076
+// band the Q/T ncb operators use the rest of).
+const shipNameLists = [
+  ...new Set(missions.flatMap((m) => [m.shipNameId, m.shipSubtitle])),
+].filter((id) => id >= 128);
 // 1000 is the message-buoy bank a sÿst's Message field indexes into.
 for (const id of [
   // 128 "Default Names": the suggestions the New Pilot dialog fills in, three
@@ -1287,6 +1311,7 @@ for (const id of [
   8101,
   ...govtHailLists,
   ...cronNewsLists,
+  ...shipNameLists,
 ]) {
   const res = byTypeId.get(`STR#:${id}`);
   if (res) strLists[id] = decodeStrList(res.data);
