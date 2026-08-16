@@ -193,6 +193,33 @@ function resolveStel(
   return candidates[Math.floor(Math.random() * candidates.length)].id;
 }
 
+/*
+ * AvailRandom is **not** rolled per query. The Bible says so outright:
+ * "Mission randomizing values are recalculated each time you warp into a
+ * system." So each mission holds one value for as long as you stay, which is
+ * what makes a world's offers stable across repeated landings — rolling per
+ * call turned a land / take-off / land cycle into a reroll machine for rare
+ * storyline intros, and let the same landing's bar and BBS disagree about
+ * what was on offer.
+ */
+let AVAIL_ROLLS = new Map<number, number>();
+
+/** Call on entering a system — Nova's "recalculated each time you warp in". */
+export function rollMissionAvailability(): void {
+  AVAIL_ROLLS = new Map();
+}
+
+function passesAvailRandom(m: MissionType): boolean {
+  if (m.availRandom <= 0) return false; // 0 = never (story-granted only)
+  if (m.availRandom >= 100) return true;
+  let roll = AVAIL_ROLLS.get(m.id);
+  if (roll === undefined) {
+    roll = Math.random() * 100;
+    AVAIL_ROLLS.set(m.id, roll);
+  }
+  return roll < m.availRandom;
+}
+
 /**
  * Missions offerable at a spob location right now.
  * Only offers missions our engine can complete (no special-ship goals yet).
@@ -275,9 +302,9 @@ export function availableMissions(
     if (!shipTypeAllowed(m.availShipType, player)) continue;
     if (!stelMatches(m.availStel, spob)) continue;
     if (!evalTest(m.availBits, player.bits, testContext(player))) continue;
-    // AvailRandom: 100 always, 1-99 that percentage of the time, 0 never
-    if (m.availRandom <= 0) continue;
-    if (m.availRandom < 100 && Math.random() * 100 > m.availRandom) continue;
+    // AvailRandom: 100 always, 1-99 that percentage of the time, 0 never —
+    // held for the length of the visit to this system, not rolled per query
+    if (!passesAvailRandom(m)) continue;
     if (!DESCS[String(4000 + m.id - 128)] && m.availLoc !== 0) continue; // need offer text for dialogs
     out.push(m);
   }

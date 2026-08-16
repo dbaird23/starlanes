@@ -186,7 +186,8 @@ export class LandedUi {
     stake: number;
     payout: number;
   } | null = null;
-  private barMissions: MissionType[] = [];
+  /** bar missions already shown this landing — each gets one showing */
+  private barOffered = new Set<number>();
   /** Where to go when the events queue drains (default: spaceport). */
   private afterEventsView: View = "spaceport";
   private spaceportOffers: MissionType[] = [];
@@ -898,9 +899,7 @@ export class LandedUi {
     this.bbsMissions = planet.uninhabited
       ? []
       : availableMissions(planet, 0, this.game.player);
-    this.barMissions = planet.bar
-      ? availableMissions(planet, 1, this.game.player)
-      : [];
+    this.barOffered.clear();
     this.spaceportOffers = planet.uninhabited
       ? []
       : availableMissions(planet, 3, this.game.player);
@@ -954,13 +953,31 @@ export class LandedUi {
   }
 
   /**
-   * Bar missions (AvailLoc 1) pop up automatically when entering the bar,
-   * one at a time, rather than appearing as a list to click through.
-   * Shifts from barMissions so each is offered exactly once per landing.
+   * Bar missions (AvailLoc 1) pop up automatically when entering the bar, one
+   * at a time, rather than appearing as a list to click through. The manual is
+   * clear that more than one is normal — "the quantity and difficulty of the
+   * missions you're offered in the bar tends to increase as you build your
+   * reputation" — so there is no cap here.
+   *
+   * What there is instead is Nova's own brake, and draining a list built on
+   * landing defeated it. **crön 221 is named "Generic misn delay cron"**:
+   * EnableOn `b6666`, OnEnd `!b6666`, so the bit lasts a day. Ten missions set
+   * b6666 when you **refuse** them and 35 test it in their AvailBits — nine of
+   * those in the bar (the Bounty Hunter, Wild Geese, Auroran, Polaris and
+   * Pirate intros among them). So in Nova, turning one storyline down clears
+   * the others off the board until tomorrow. Asking again here, rather than
+   * shifting a stale array, is what lets that fire. The AvailRandom roll is
+   * held for the whole system visit, so re-asking cannot conjure new offers.
    */
   private maybeBarOffer(): void {
-    const m = this.barMissions.shift();
-    if (m) this.openOffer(m, "bar");
+    if (!this.planet?.bar) return;
+    const m = availableMissions(this.planet, 1, this.game.player).find(
+      (x) => !this.barOffered.has(x.id),
+    );
+    if (!m) return;
+    // one showing each per landing, even for a job that stays available
+    this.barOffered.add(m.id);
+    this.openOffer(m, "bar");
   }
 
   /** Story missions offered right in the spaceport (AvailLoc 3) pop up on landing — one per visit. */
@@ -1130,7 +1147,6 @@ export class LandedUi {
         return;
       }
       this.bbsMissions = this.bbsMissions.filter((x) => x.id !== m.id);
-      this.barMissions = this.barMissions.filter((x) => x.id !== m.id);
       this.offers.delete(m.id);
       const brief = descText(m.briefText);
       if (brief) {
@@ -1313,7 +1329,6 @@ export class LandedUi {
       return;
     }
     this.bbsMissions = this.bbsMissions.filter((x) => x.id !== m.id);
-    this.barMissions = this.barMissions.filter((x) => x.id !== m.id);
     this.offers.delete(m.id);
     this.selectedMisn = null;
     const brief = descText(m.briefText);
@@ -1515,9 +1530,13 @@ export class LandedUi {
     const hero = p.landingPictFile
       ? `<div class="land-hero dim" style="background-image:url('${asset(`nova/picts/${p.landingPictFile}`)}')"></div>`
       : "";
-    const missionRows = this.barMissions
-      .map((m) => this.missionRow(m, "bar"))
-      .join("");
+    /*
+     * The patrons still looking for a captain. Asked live rather than held
+     * from the landing, so a job that refusing has taken off the board — see
+     * b6666 and crön 221 under maybeBarOffer — stops being listed too.
+     */
+    const barJobs = availableMissions(p, 1, this.game.player);
+    const missionRows = barJobs.map((m) => this.missionRow(m, "bar")).join("");
     const barBtns: [string, string][] = [
       ["btn-hire", btnLabel(12, "Hire Escort")],
       ["btn-gamble", btnLabel(10, "Gamble")],
@@ -1553,7 +1572,7 @@ export class LandedUi {
     go("#btn-gamble", "gamble");
     go("#btn-holovid", "holovid");
     go("#btn-back", "spaceport");
-    this.wireMissionRows("bar", this.barMissions);
+    this.wireMissionRows("bar", barJobs);
   }
 
   /**

@@ -221,6 +221,54 @@ Buy and Sell are gated on whether the world actually trades the item, with
 Flags **0x0800** ("can be sold anywhere, regardless of tech level") as the
 documented exception, and the status line says which it is.
 
+**The bar offers more than one job, and Nova's brake on that is a control
+bit.** Walking into a bar and being handed four storyline intros back to back
+looked like a bug. The manual says the plural is intended — "the quantity and
+difficulty of the missions you're offered in the bar tends to increase as you
+build your reputation" — so there is no cap. What was missing is the brake,
+and it is authored in the data: **crön 221 is named "Generic misn delay
+cron"**, EnableOn `b6666`, OnEnd `!b6666`, so the bit lasts a day. **Ten
+missions set b6666 when you refuse them and 35 test it in their AvailBits** —
+nine of those in the bar, including the Bounty Hunter, Wild Geese, Auroran,
+Polaris and Pirate intros. Turning one storyline down is meant to clear the
+others off the board until tomorrow.
+
+Two things stopped that firing:
+
+- **The bar drained a list built on landing.** `maybeBarOffer` shifted a
+  snapshot, so bits set by refusing offer #1 could not reach offers #2-4 —
+  they had already been chosen. It now re-asks `availableMissions` before each
+  offer and keeps a `barOffered` set so each job still gets one showing per
+  landing. The bar's own mission list is a live query for the same reason.
+- **AvailRandom was rolled per query.** The Bible: "Mission randomizing values
+  are recalculated each time you warp into a system." Ours called
+  `Math.random()` inside `availableMissions`, which meant the bar, the BBS,
+  the spaceport and each counter rolled separately in one landing, and a
+  land / take-off / land cycle was a reroll machine for a rare storyline
+  intro. `rollMissionAvailability()` now clears a per-mission roll table and
+  is called from `enterSystem` — all four arrival paths (opening a pilot, a
+  hyperspace jump, a gate transit, and the ncb move operator, which had never
+  charted the destination at all). Re-asking between offers is therefore free:
+  the bits move, the dice do not.
+
+Measured at Earth for a rating-200 pilot: seven bar jobs are eligible and the
+per-visit average is **2.16 offers**, with four or more about 13% of the time
+— so the run the player saw was the data, not a fault. Verified end to end:
+with the Auroran and Wild Geese intros both up, refusing the Auroran sets
+`b201` and drops only itself; refusing Wild Geese sets `b801 b6666` and empties
+the bar; one day later crön 221 clears the bit and the board refills.
+
+**Storylines are not mutually exclusive, and the engine has no opinion about
+it.** Being mid-Bounty-Hunter does not block the Auroran, United Shipping or
+Cunjo chains: 257 sets nothing on accept, and nothing in the shipped data
+tests its bits but itself. Where Nova does want exclusivity it says so by
+hand — **b424 is the Vell-os lock**, set on accepting "Return to Earth for
+Training" (Vellos3) and cleared at Vellos27, and **184 missions test it**,
+including the Bounty Hunter, United Shipping and Cunjo intros and most of the
+generic freight. b423 (Vellos11) locks 11 more. So a Vell-os trainee really
+does have the rest of the galaxy shut to them, and everyone else may run
+several storylines at once by design.
+
 **The storefront missions, and the three things that hid the Federation
 storyline.** mïsn **AvailLoc** has seven values and only 0 (mission BBS), 1
 (bar) and 3 (spaceport) were ever asked for, so the 22 missions posted at the

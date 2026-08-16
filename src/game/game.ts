@@ -104,6 +104,7 @@ import {
   descText,
   instantiateMission,
   isSilentMission,
+  rollMissionAvailability,
   missionDisplayName,
   setPlayerIdentity,
   substituteTags,
@@ -800,7 +801,7 @@ export class Game {
       const onStart = START_TEMPLATE?.onStart;
       if (onStart) applySet(onStart, this.player.bits, this.bitHandlers());
     }
-    this.markExplored(this.player.systemId);
+    this.enterSystem(this.player.systemId);
     for (const [outfId, owned] of Object.entries(this.player.outfits)) {
       if (owned > 0) this.chartFromOutfit(outfId, false);
     }
@@ -1156,7 +1157,7 @@ export class Game {
       return;
     }
     this.player.systemId = entry.systemId;
-    this.markExplored(entry.systemId);
+    this.enterSystem(entry.systemId);
     this.player.landedOn = null;
     const dest = entry.planet;
     // CustSndID is Nova degrees (0 = up, clockwise). Our ship angle is
@@ -1317,6 +1318,18 @@ export class Game {
   }
 
   /** Note the current system as charted. */
+  /**
+   * Arriving somewhere: chart it, and re-roll every mission's AvailRandom —
+   * the Bible's "mission randomizing values are recalculated each time you
+   * warp into a system". Called from all four entries (opening a pilot, a
+   * hyperspace jump, a gate transit and the ncb move operator), because a
+   * roll that survives the arrival is a world whose offers never change.
+   */
+  private enterSystem(systemId = this.player.systemId): void {
+    this.markExplored(systemId);
+    rollMissionAvailability();
+  }
+
   private markExplored(systemId = this.player.systemId): void {
     if (!this.player.explored.includes(systemId))
       this.player.explored.push(systemId);
@@ -7858,7 +7871,7 @@ export class Game {
       }
     }
     this.player.systemId = nextId;
-    this.markExplored(nextId);
+    this.enterSystem(nextId);
     if (this.routeDest === nextId) this.routeDest = null;
 
     // arrive at the edge of the new system, on the side we came from, moving inward
@@ -8020,6 +8033,7 @@ export class Game {
           return;
         }
         this.player.systemId = sys.id;
+        this.enterSystem(sys.id);
         this.player.landedOn = null;
         if (!keepPos) {
           const first = sys.planets[0];
