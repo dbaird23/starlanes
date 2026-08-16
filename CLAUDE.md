@@ -588,6 +588,18 @@ hull's subtitle: Terrapin reads *Terrapin (Trader)* and Jack Folstam still
 reads *Night-Master — Valkyrie (Guild)*. `<OSN>` itself uses `shipLabel` — the
 captain's name where there is one — for the same reason.
 
+The **HUD target well reads it as the class line**, which is the same rule
+from the other end: a përs's @314 overrides the hull's own shïp Subtitle
+there exactly as a mïsn ShipSubtitle does, because that is what it is. It had
+been ignored outright, so the well showed neither the 142 repeats nor the 53
+real names — Jack Folstam read *Jack Folstam / Valkyrie Class III* and never
+mentioned the ship at all, where he now reads *Jack Folstam / Valkyrie
+Night-Master*. Terrapin is unchanged (*Terrapin / Terrapin Standard*: the
+field and the hull's subtitle agree), and a Guild bounty hunter reads *Pirate
+Enterprise Guild-Member* rather than the hull's "Stolen Tech". Only a përs's
+field is taken this way — a mission ship's `shipName` is a proper name and
+stays in the head, where the `<SN>` work put it.
+
 **Duplicate stellars: 26 missions pointed at a world that isn't in any
 system.** The Bible states the rule under TravelStel — "the mission travel
 objectives will also be fulfilled when landing on a duplicate stellar that

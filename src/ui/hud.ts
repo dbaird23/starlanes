@@ -538,12 +538,25 @@ export class HudUi {
     // A named captain, or a mission ship the briefing named — either way the
     // head shows a proper name rather than the hull class.
     const isNamed = t.personId !== null || !!t.shipName;
-    // Named captains: head shows their personal name, so show the hull type +
-    // subtitle below (e.g. "Pirate Starbridge Class B"). Unnamed contacts: head
-    // already shows the hull class, so show only the subtitle (e.g. "Class B").
-    // mïsn ShipSubtitle overrides the hull's own, which is what it is for.
-    const hullVariant =
-      t.shipSubtitle?.trim() || type?.subtitle?.trim() || undefined;
+    /*
+     * Named captains: head shows their personal name, so show the hull type +
+     * subtitle below (e.g. "Pirate Starbridge Class B"). Unnamed contacts: head
+     * already shows the hull class, so show only the subtitle (e.g. "Class B").
+     *
+     * Two things override the hull's own shïp Subtitle here, and both are that
+     * ship's own class line: mïsn ShipSubtitle, which is what it is for, and a
+     * përs's @314 — 142 of the 195 captains who set that field simply repeat
+     * their hull's subtitle, so it is a class line first and a name second,
+     * and the well showed neither the repeats nor the 53 real names. Jack
+     * Folstam now reads *Jack Folstam / Valkyrie Night-Master* where he used
+     * to read "Valkyrie Class III" and never mention the ship at all. Only a
+     * përs's is taken: a mission ship's `shipName` is a proper name and
+     * belongs in the head, which is where it already is.
+     */
+    const ownClass =
+      t.shipSubtitle?.trim() ||
+      (t.personId !== null ? t.shipName?.trim() : undefined);
+    const hullVariant = ownClass || type?.subtitle?.trim() || undefined;
     const variant: string | undefined = isNamed
       ? [typeName, hullVariant].filter(Boolean).join(" ") || undefined
       : hullVariant;
