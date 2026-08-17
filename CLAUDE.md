@@ -813,6 +813,53 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**Flags 0x0400 is a log rule, not an offer rule.** The Bible: "Mission is
+invisible and won't appear in the **mission info dialog**." `availableMissions`
+was using it to drop the mission from the boards entirely — all 88 of them, of
+which **30 carry an AvailRandom above zero and so are meant to be handed out**:
+the whole "Avoid Federation Task-Force / Rebel Enforcement Squad / Nil'kemorya
+/ Auroran Warriors / Pirates / Wild Rovers / Bounty Hunters" family that fires
+once you have dominated a world (614-629), the Refuel Trader and Derelict Decoy
+radio offers, the four Rumourmill hints in the Auroran and Rebel chains,
+Vell-os "Renew darts" (649, which restocks outfit 226 and is gated `!O226`),
+and McGraw Family Revenge (727), the last leg of the Pirate Offshoot. The flag
+now hides them from `openMissionInfo` instead, which is where the doc puts it.
+
+**ränk Flags 0x0008 does not stop an Lxxx.** The Bible spells it out —
+"permanent and cannot be deactivated **except if explicitly done by a control
+bit eval string**" — and an Lxxx *is* that string. `revokeRank` refused anyway,
+and **nine of the ranks an L operator names carry the flag**, so the scenario's
+demotions silently did nothing. The Vell-os chain is the visible case: it steps
+you down the T-ranks with L132/L133/L134/L135 as it grants the next, and a
+pilot finished holding **all six of 131-136 at once**. The flag guards the
+*automatic* deactivations instead, which is what the Bible parenthesises on
+0x0004/0x0010/0x0020 as "excludes permanent ranks" — `grantRank`'s supersession
+filter already honours it and is unchanged. Measured after the fix: Vellos14
+grants T3, Vellos19's L133/K134 leaves T2 alone rather than both.
+
+**The side chains all run.** Walked in one pass:
+
+| chain | route | notes |
+| --- | --- | --- |
+| **Gli-tech** | 549-554 at GLi-Tech-nia's outfitter, plus **597** | 597 is a Fed crossover (`b80 & b32`) and carries Flags **0x2000**, so it refuses a freighter pilot — it needs a warship |
+| **Terraforming** | 539 → 547 | entirely crön-paced: seven 50-day holdoffs (cröns 130-136). **Ends unreachable — see below** |
+| **Sigma** | 555 → 897 → 898 | crön 214 and 215, 30 days each; Sigma4 grants **rank 147**, the hypergate key. Verified HG-Kania clears afterwards |
+| **Tutorial** | 251 → 757 | includes 754, the derelict leg |
+| **Special Klavs** | 828/829, 830, 831/832, 834/835 | four independent sub-chains |
+| **United Shipping** | 504 → 517 → 518 → 519 → 533 → 577 → 578 → 581 | 577 needs **b297**, a Polaris bit, so the late legs are a Polaris crossover |
+| **Auroran Off-shoot** | 734 → 748 | hangs off b213/b224; cröns 383 (90d) and 384 (180d). Ends flying the **Thunderforge**, named by T25044 |
+| **Pirate Offshoot** | 300 → 720 → 721 → 722 → 723 → 724 → 725/726 → 727, 728 → 729 → 730 | crön 379 (30d); 725's `l143 k144` is a lowercase demote-and-promote |
+
+Two data quirks found, both Nova's rather than ours:
+
+- **United Shipping 3a (mïsn 520) is unreachable.** Its AvailBits are
+  `b12 & !(b14 | b424)`, but **518's OnAccept sets b14** — the very bit that
+  excludes it — while b12 only arrives on 518's success. The b11 arm (519) is
+  the live one and the chain completes through it.
+- **mïsn 585 confirmed the AvailStel duplicate fix from the other side**: it is
+  posted at spöb 448 "Tre'ar Zalom", which is in no system, and is offered at
+  the placed twin 227.
+
 **An Axxx fired while landing put the mission straight back.**
 `collectLandingEvents` walked `activeMissions` building a local `remaining`
 array and assigned it back at the end — but the ncb operators fired from those
@@ -1741,6 +1788,26 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
+- **System *variants* switch their contents, and we only ship one.** The
+  extractor keeps the canonical (lowest-id) variant of each name; the runtime
+  hides start-dormant groups but never swaps a group's *content* when its bits
+  move. Measured across the 128 multi-variant groups: **37 differ in their spöb
+  list**, 82 in govt, 106 in links. Most of the stellar differences are the same
+  world under a second spöb id with different text, which `duplicateStelId`
+  resolves whenever a mission names one. The cases that genuinely lose content
+  are the ones where a *new* world appears: **Procyon 1127 holds spöb 1420
+  "Nirvana"** behind b25, **Za'iuso 656 holds "Ar'Za Ory'hara"** behind b335,
+  and **Glimmer 678/760 turn Brass into "Nova"** behind b6301.
+
+  It costs the **end of the Terraforming chain**: 547 Terraforming8 and 548
+  Terraforming8a deliver colonists to Nirvana, which exists in no system we
+  ship and has no name-and-coordinates twin, so neither can be completed. The
+  chain's whole arc is Procyon being rebuilt around you — UHP-1002 through
+  three intermediate spöbs and finally into Nirvana — and the intermediate
+  stages resolve only because they share a name with the placed original.
+  Fixing this means per-variant content selection re-evaluated on bit changes,
+  with SPOB_INDEX rebuilt behind it; the S7evyn pass deliberately stopped short
+  of that.
 - **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
   @110-124, 8 small values at @126-140, used together by ~65 systems). It is
   **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points

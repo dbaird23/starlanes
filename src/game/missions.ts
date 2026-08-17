@@ -50,6 +50,21 @@ export function isSilentMission(m: MissionType): boolean {
 }
 
 /**
+ * mïsn Flags **0x0400**: "Mission is invisible and won't appear in the mission
+ * info dialog." That is a *log* rule, and it was being applied as an *offer*
+ * filter — `availableMissions` dropped all 88 of them, of which **30 carry an
+ * AvailRandom above zero and so are meant to be handed out**: the whole "Avoid
+ * Federation Task-Force / Nil'kemorya / Pirates / Bounty Hunters" family that
+ * fires once you have dominated a world (614-629), the Refuel Trader and
+ * Derelict Decoy radio offers, the four Rumourmill hints in the Auroran and
+ * Rebel chains, Vell-os "Renew darts" (649, which restocks outfit 226), and
+ * McGraw Family Revenge (727) at the end of the Pirate Offshoot.
+ */
+export function isHiddenFromLog(m: MissionType): boolean {
+  return (m.flags & 0x0400) !== 0;
+}
+
+/**
  * CargoType indexes STR# 4000, Nova's own list of the eighty things a mission
  * can ask you to carry. Its first six entries are the standard commodities, so
  * 0-5 still line up with the trade goods; beyond that it names the cargo the
@@ -279,7 +294,6 @@ export function availableMissions(
     // carry special ships use it, completed by their cargo and destination
     // alone. Nothing is filtered here; the goal only decides what finishes it.
     // pay < 0 encodes an outfit grant: -(count * 10000 + outfitNovaId); handled at completion
-    if (m.flags & 0x0400) continue; // invisible missions
     if (!requireMet(m.require, contribPool)) continue;
     // Bible: "your legal record in this system" — literally the per-system
     // ledger now, which is what the original pilot file stores.

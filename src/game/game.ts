@@ -106,6 +106,7 @@ import { runOopses } from "./oops";
 import {
   descText,
   instantiateMission,
+  isHiddenFromLog,
   isSilentMission,
   rollMissionAvailability,
   missionDisplayName,
@@ -2627,10 +2628,22 @@ export class Game {
     playSnd(152, 0.4);
   }
 
+  /**
+   * The Lxxx operator, and its only caller. ränk Flags 0x0008 is "permanent and
+   * cannot be deactivated **except if explicitly done by a control bit eval
+   * string**" — an Lxxx is precisely that, so the flag must not be honoured
+   * here. It guards the *automatic* deactivations instead, which is what the
+   * Bible parenthesises on 0x0004/0x0010/0x0020 as "excludes permanent ranks";
+   * `grantRank`'s supersession filter already does that and is unchanged.
+   *
+   * Nine of the ranks an L operator names carry 0x0008, so the check silently
+   * refused most of what the scenario asks for. The Vell-os chain is the clear
+   * case: it steps you down the T-ranks with L132/L133/L134/L135 as it grants
+   * the next one, and a pilot finished holding all six of 131-136 at once.
+   */
   private revokeRank(rankId: number): void {
     const rank = RANKS[String(rankId)];
     if (!rank || !this.player.ranks.includes(rankId)) return;
-    if ((rank.flags & 0x0008) !== 0) return; // permanent ranks stay
     this.player.ranks = this.player.ranks.filter((id) => id !== rankId);
     this.message(`You have lost the rank of ${rank.convName || rank.name}.`);
   }
@@ -7110,7 +7123,7 @@ export class Game {
       sections: () =>
         this.player.activeMissions.some((a) => {
           const m = MISSIONS[String(a.misnId)];
-          return !m || !isSilentMission(m);
+          return !m || (!isSilentMission(m) && !isHiddenFromLog(m));
         })
           ? []
           : [
@@ -7124,7 +7137,7 @@ export class Game {
         this.player.activeMissions
           .filter((a) => {
             const m = MISSIONS[String(a.misnId)];
-            return !m || !isSilentMission(m);
+            return !m || (!isSilentMission(m) && !isHiddenFromLog(m));
           })
           .map((a) => this.missionPickItem(a)),
       onAbortPick: (id) => {
