@@ -119,7 +119,24 @@ function shipTypeAllowed(code: number, player: PlayerState): boolean {
 /** Does `spob` match a Nova stellar-availability code? */
 function stelMatches(code: number, spob: PlanetDef): boolean {
   if (code === -1) return !spob.uninhabited && spob.landable;
-  if (code >= 128 && code <= 2175) return spob.id === String(code);
+  /*
+   * A concrete stellar — and the duplicate rule applies here too, not only to
+   * the travel objectives the Bible states it under. Eleven missions are
+   * *posted* at a stellar that is in no system: mïsn 680/682/684 (and the
+   * three Wild Geese variants of Auroran 027) read spöb 439 "Aurora", an
+   * unplaced twin of the placed 338, and the four United Shipping 6a legs read
+   * 448 "Tre'ar Zalom" against the placed 227. On a strict id compare none of
+   * them can be offered anywhere, which dead-ends the Auroran chain at
+   * Auroran 023. Every one has a twin agreeing on name *and* coordinates.
+   */
+  if (code >= 128 && code <= 2175)
+    return (
+      spob.id === String(code) ||
+      // only when the named stellar is itself unplaced, the same guard
+      // resolveStel uses: two *placed* pairs share a name and coordinates
+      // (both are "Wormhole"), and those must never stand in for each other
+      (!SPOB_INDEX.has(String(code)) && duplicateStelId(code) === spob.id)
+    );
   const govt = SPOB_GOVT.get(spob.id) ?? -1;
   if (code >= 9999 && code <= 10255)
     return govt === code - 9872 || (code === 9999 && govt < 128);
@@ -147,8 +164,21 @@ function stelMatches(code: number, spob: PlanetDef): boolean {
  *
  * The match is name **and** coordinates, as documented; every duplicate in
  * the stock data agrees on both with its placed twin.
+ *
+ * Memoised: `stelMatches` asks for every concrete-AvailStel mission on every
+ * board query, and the answer is a property of the data, not of the save.
  */
+const DUPLICATE_STEL = new Map<number, string | null>();
+
 function duplicateStelId(code: number): string | null {
+  const cached = DUPLICATE_STEL.get(code);
+  if (cached !== undefined) return cached;
+  const found = findDuplicateStelId(code);
+  DUPLICATE_STEL.set(code, found);
+  return found;
+}
+
+function findDuplicateStelId(code: number): string | null {
   const orphan = SPOBS_BY_ID.get(String(code));
   if (!orphan) return null;
   for (const entry of SPOB_INDEX.values()) {

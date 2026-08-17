@@ -722,6 +722,39 @@ documented; every duplicate in the stock data agrees on both with its placed
 twin. `SPOBS_BY_ID` in `data/universe.ts` holds all stellars including the
 unplaced ones, since `SPOB_INDEX` deliberately holds only the placed.
 
+**The same rule governs AvailStel, where a mission is *posted*.** `stelMatches`
+compared ids outright, and **eleven missions are posted at a stellar that is in
+no system**, so they could not be offered anywhere: mïsn **680, 682 and 684**
+(plus 690/916/917/918, the Wild Geese variants of Auroran 027) read spöb **439
+"Aurora"**, an unplaced twin of the placed 338, and the four United Shipping 6a
+legs read 448 "Tre'ar Zalom" against the placed 227. That dead-ended the
+**Auroran chain at Auroran 023**. Every one has a twin agreeing on name and
+coordinates, so `stelMatches` now falls through to `duplicateStelId` — but
+**only when the named stellar is itself unplaced**, the same guard
+`resolveStel` uses, because two *placed* pairs share a name and coordinates
+(both are "Wormhole", spöbs 465/481 and 470/484) and must never stand in for
+each other. No mission names any of those four. `duplicateStelId` is memoised
+now: the offer filter asks it for every concrete-AvailStel mission on every
+board query, and the answer is a property of the data rather than the save.
+
+**The Auroran storyline runs end to end.** Walked leg by leg: 653 (any non-
+Family-Heraan bar) → 654 Codec → 655 Dominance → 656 Skye → 657 Heraan →
+658 → 659 → 660 → 661 → 664 → 665 → 666 → 667 Rimerta → 668 → 669 → 670 →
+671 → 672 → 673 → 674 → 675 → 676 → 677 → 678 Aurora → 679 → 680 → 681
+Goliath → 682 → 683 → 684 → 685 New England → **686 Auroran 029 LAST**, which
+lands you in S7evyn. Four ranks granted (139, 140, 141, 142). Two things it
+exercised for free: **mïsn 676's ShipSyst is 765**, the dropped SPC-1421
+variant, which resolves through `systemAlias`; and 679 sets **b323**, which
+flips Aurora/Heraan/Moash to their variant gates — all three stayed on the
+chart, which is the start-dormant-only rule doing its job.
+
+Two legs are AvailStel **-1** (673 Auroran 016, 683 Auroran 026) and follow a
+leg whose destination will not clear you a second time — Viking and Nil'ar
+Kemorya both refuse on the way back. They are meant to be taken on the landing
+that completes the previous leg, or at any other inhabited world; there is
+nothing to fix, but a walkthrough that departs and re-lands has to pick a
+friendlier pad.
+
 **The Wild Geese a-path runs end to end too — both branches.** Walked in the
 browser: 634 (Earth bar) → 635 → forcing the `R(b804 b805)` roll to b804 →
 636 at Earth's **spaceport** → 637 (Mairim) → 638 (Ryll) → 639 "Free Eiric",
