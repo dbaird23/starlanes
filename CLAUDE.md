@@ -813,6 +813,53 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**The Polaris storyline runs end to end.** Walked 150 (any Auroran-govt bar) →
+151 New Ireland → 152 Earth → 153 Goliath → 717 Port Kane → 154 Mu'ar Haro →
+155 → 156 → **843 → 844** → 157 → 158 Tre'ar Erma → 159 → 160 → 161 → 162
+Rebel II → 163 → 164 Port Kane → 165 → 166 → 167 → 168 New Ireland → 846 →
+847 Fallen → 169 → 170 → 171 → 172 → **179 → 180** → 173 → 174 → 175 → 176
+Cunjo → 177 Rimerta → 178 Heraan → 181 P'ar Aed → 182 → 183 → 184 → 185 →
+186 → 187 → 188 Aurora → 189 → 190 → 191 → 192 → 882 → 885 → **887 Polaris 46**,
+which lands you in S7evyn.
+
+Four things about it worth knowing:
+
+- **Polaris5 is a coin flip.** 154's OnSuccess is `R(b279 b316)` — b279 opens
+  the a-path (155-159, Take Sample / Explore Wraith Space / Broadcast /
+  Watch Talks / Return) and b316 the b-path (601-604, Observe Wraith / Take
+  P'Jeena to Ver'a Se / two Observe Cloak-Ship legs). This walk rolled b279;
+  the b-path is untested.
+- **The "ActionMan" missions are on the required path, not optional flavour.**
+  Polaris8a (157) wants `b281 & b5759`, and **b5759 exists nowhere but 844**
+  "Defend `<RST>`" — reached through 843, which wants b281. Likewise
+  Polaris20 (169) wants **b5761**, which only 847 sets, reached through 846
+  off b293. Skip the detours and the chain stops.
+- **Polaris24 (173) wants b348, which comes from a side branch off b296** —
+  179 Polaris30 → b349, then 180 Polaris31 → b348. Both hang off b296, set
+  back at Polaris22, so the branch can be run long before it is needed and is
+  easy to miss.
+- **192 is a branch and its buttons say so** — AcceptButton "Federation",
+  RefuseButton "Auroran". Accepting runs 43a (`S882 S883` → 882 → 885 → 887);
+  refusing sets b314 and starts 888, the 43b route (→ 889 → 893), which
+  converges on the same 887. Only the Federation arm was walked.
+
+It exercised three ShipGoal 6 missions (844, and 173/174 with seven and eleven
+ships), and **885's ReturnStel is 439**, the unplaced Aurora twin, which
+resolves to the placed 338 through the duplicate-stellar rule.
+
+Two notes for anyone repeating it. The Polaris worlds carry real MinStatus
+gates — P'ar Aed 5, Mu'ar Haro 10, Nil'a Mjolnir 5 — and the storyline's own
+CompRewards are what earn them, so a walkthrough that teleports needs standing
+seeded in systems 237/245/259/262/206. And the observe legs sit still among the
+mission's own hostiles: 186 "Observe Bureau" spawns eight and they crippled a
+50-ton Argosy while it watched.
+
+Loose end, not chased: **mïsn 862-866 "Krypt Mind Attack" are a self-restarting
+loop** — each aborts the other four and starts 867-871, which start 862-866
+again — and 181's OnAccept opens it while its OnSuccess tears it down. Ours
+re-armed and was still active at the end of the chain. All five carry Flags
+0x0400 (invisible), so nothing shows in the mission log and nothing blocked.
+
 **The Auroran storyline runs end to end.** Walked leg by leg: 653 (any non-
 Family-Heraan bar) → 654 Codec → 655 Dominance → 656 Skye → 657 Heraan →
 658 → 659 → 660 → 661 → 664 → 665 → 666 → 667 Rimerta → 668 → 669 → 670 →
