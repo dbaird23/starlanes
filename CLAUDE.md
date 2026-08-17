@@ -813,6 +813,53 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**ncb set operators are case-insensitive, and 34 of them were being dropped.**
+`evalTest` has always read `b/p/o/e/g` either way — the Bible's own example
+mixes them, `!(B42 | B53) & b103` — but `applySet` matched uppercase only, so
+every lowercase operator in the shipped data was silently ignored: **k**×13,
+**g**×15, **l**×1, **d**×5. No operator letter means two different things in
+the two cases, so folding them is unambiguous.
+
+What that cost, all confirmed in play afterwards:
+
+- **`k148` in thirteen missions** — Vellos4, Rebel1 (both entries), Fed13
+  (both), and the rest of the infiltration legs — never granted rank 148.
+- **`g252 g253` in Vellos14** — Physical Sense and Hostility Sense, two of the
+  Vell-os mind powers, sitting in the same set string as an uppercase `G221`
+  that did work. The mission handed you three of its five outfits.
+- **Cröns 288-292, the knock-off gear degradation, did nothing at all.** Buying
+  a Cheap Thorium Reactor sets b9011; crön 288 waits out a 120-day PreHoldoff
+  and then rolls 40% a day to fire `d358 R(g374 g261)` — take the cheap reactor
+  away and hand back one of two degraded replacements. The `enableOn` test
+  `b9011 & o358` was fine (that side was already case-blind); the whole payload
+  was lowercase and dropped, so the crön fired and did nothing, five times over
+  (the Fission Reactor and the three-stage Carbon Fiber decay chain too).
+  Measured after the fix: fires on day 122, reactor gone, outfit 261 granted,
+  `onEnd "!b9011"` clears the bit.
+
+**The Vell-os storyline runs end to end.** Walked 128 (any BBS, AvailRandom
+**8** — the rarest opening in the game) → 129 Earth → 130 New England → 131
+Earth → 142 → 144 → 146 → 147 → 148 → 149 → 193 Merrol/New England → 194 →
+**197** → 195 → 196 → 198 → 199 Moash → 318 → 319 → 320 → 321 → 322 → 360 →
+361 → 411 → 412 → 413 Cunjo → 414 Kel'ar Iy → 415 → 416 Goliath → **417
+Vellos31 LAST**, which lands you in S7evyn.
+
+Three things about it:
+
+- **Vellos2 cannot be taken on the same landing as Vellos1.** 128's OnSuccess
+  sets b6666 and 129's AvailBits demand `!b6666`, so the one-day brake crön 221
+  governs the storyline's own second leg, not just competing offers.
+- **b424, the Vell-os lock, is set on *accepting* Vellos3** (130's OnAccept is
+  `b424 b450`) and cleared by Vellos27 (413). While it is up, 184 missions test
+  it and no outfitter will sell to you — so buy any hull you want *before*
+  Vellos3, not after.
+- **The chain hands over three hulls and six ranks.** 197 Vellos14 gives the
+  Vell-os Dart (H381) with rank 133 and the mind powers, 320 Vellos19 the Arrow
+  (H382) with 134, 361 Vellos23 the Javelin (H383). Ranks run 131 T5 down to
+  136 T0. 197 is gated only on `b423 & !b422` rather than by the spine's bit
+  ladder, so it is easy to walk past — and it is where the storyline's whole
+  point arrives.
+
 **The Polaris storyline runs end to end.** Walked 150 (any Auroran-govt bar) →
 151 New Ireland → 152 Earth → 153 Goliath → 717 Port Kane → 154 Mu'ar Haro →
 155 → 156 → **843 → 844** → 157 → 158 Tre'ar Erma → 159 → 160 → 161 → 162
@@ -1602,6 +1649,19 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
+- **The Q and T ncb operators have no strings to read, and the banks do
+  exist.** `applySet` maps both to `showDesc`, on the note that their operands
+  name dëscs the data files don't carry. They don't — because they are **STR#
+  resources, not dëscs**, and the extractor only pulls the 25000-25047 band
+  that mïsn ShipNameID/ShipSubtitle points at. Probing the raw rez finds all of
+  25038-25076 present: **T25040 "Dart", T25041 "Arrow", T25042 "Javelin"** are
+  the names the Vell-os hulls are supposed to take (Bible: T "change the name
+  (Title) of the player's ship ... The previous ship name will be substituted
+  for any '*' characters"), and **Q25048 "Winning Qxxx text"** is the message
+  every storyline finale fires. Q is also documented to make the player
+  "immediately leave (absquatulate) whatever stellar he's landed on", which we
+  don't do. Extracting the Q/T operand banks would make all five T uses and the
+  61 Q uses real; nothing is blocked without it.
 - **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
   @110-124, 8 small values at @126-140, used together by ~65 systems). It is
   **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points

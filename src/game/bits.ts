@@ -181,10 +181,22 @@ export function applySet(expr: string, bits: Bits, handlers: SetOpHandlers = {})
       } else bits[num] = true;
       continue;
     }
-    const op = /^([SAFGDMNCEHPKLQTY])(\d+)$/.exec(token);
+    /*
+     * Case-insensitive, like every other letter in an ncb expression. The
+     * Bible's own test example mixes them — "!(B42 | B53) & b103" — and
+     * `evalTest` above has always read b/p/o/e/g either way, but this side
+     * matched uppercase only, so **34 operators in the shipped data were
+     * silently dropped**: k148 in the thirteen infiltration missions (Vellos4,
+     * Rebel1, Fed13 …), the g252/g253 mind powers Vellos14 grants, l143, and
+     * the d/g pairs that drive cröns 288-292 — the knock-off gear degradation,
+     * which never removed a Cheap Thorium Reactor nor handed back the degraded
+     * replacement. No operator letter means two different things in the two
+     * cases, so folding them is unambiguous.
+     */
+    const op = /^([SAFGDMNCEHPKLQTY])(\d+)$/i.exec(token);
     if (op) {
       const id = parseInt(op[2], 10);
-      switch (op[1]) {
+      switch (op[1].toUpperCase()) {
         case "S": handlers.startMission?.(id); break;
         case "A": handlers.abortMission?.(id); break;
         case "F": handlers.failMission?.(id); break;
