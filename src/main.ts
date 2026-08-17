@@ -1,4 +1,5 @@
 import {
+  ALT_SPRITES,
   GLOW_SPRITES,
   loadUniverse,
   MISSIONS,
@@ -46,6 +47,7 @@ async function boot(): Promise<void> {
   (window as unknown as { game: Game }).game = game;
   (window as unknown as { SHIPS: typeof SHIPS }).SHIPS = SHIPS;
   (window as unknown as { GLOWS: typeof GLOW_SPRITES }).GLOWS = GLOW_SPRITES;
+  (window as unknown as { ALTS: typeof ALT_SPRITES }).ALTS = ALT_SPRITES;
   // the mission table and the offer filter, so a storyline can be walked from
   // the console (a dynamic import would get a separate, empty module instance)
   (window as unknown as { MISSIONS: typeof MISSIONS }).MISSIONS = MISSIONS;

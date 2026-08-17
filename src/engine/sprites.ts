@@ -111,6 +111,12 @@ export interface SpriteManifest {
   glows: Record<string, SheetSprite>;
   lights: Record<string, SheetSprite>;
   weapGlows: Record<string, SheetSprite>;
+  /**
+   * shän AltImageID: sprites drawn on top of the hull, cycling through the
+   * alt sheet's own sets at AnimDelay. Keyed by shän id; `sets` is AltSetCount,
+   * not the hull's BaseSetCount.
+   */
+  alts: Record<string, SheetSprite>;
   roids: Record<string, SheetSprite>;
   ui: { cursor?: SheetSprite };
   menu: Record<string, SheetSprite>;

@@ -11,6 +11,7 @@ import {
   findRoute,
   FLEETS,
   getSystem,
+  ALT_SPRITES,
   GLOW_SPRITES,
   WEAP_GLOW_SPRITES,
   GOVT_FLAGS,
@@ -9611,6 +9612,37 @@ export class Game {
       ctx.restore();
       ctx.restore();
       return;
+    }
+
+    /*
+     * Alternating sprites (shän AltImageID). The Bible: "sprites from the alt
+     * sprite sets can be displayed on top of the basic sprite for the ship,
+     * cycling through each available sprite set at a rate defined in the Delay
+     * field". Unlike the glow, light and weapon-glow sheets this one carries
+     * its own AltSetCount and the cycle runs over *those* sets, at the hull's
+     * AnimDelay (in 30ths of a second).
+     *
+     * Exactly one hull uses it — shän 380, the Auroran Thunderforge — and its
+     * alt sheet is the ship's cannon assembly: a solid structure that composes
+     * onto the hull rather than a glow, so it is drawn plainly on top rather
+     * than additively. Both sheets are 130x130 and centred, so the two line up
+     * at the ship's own position. Drawn before the lights and glows so those
+     * still read over the finished silhouette.
+     */
+    const alt = shipTypeId ? ALT_SPRITES[shipTypeId] : undefined;
+    if (alt && sprite && flash < 0.85) {
+      const step = Math.max(1, sprite.animDelay || 1) / 30;
+      const altSets = Math.max(1, alt.sets ?? 1);
+      const altSet = Math.floor(this.time / step) % altSets;
+      ctx.globalAlpha = baseAlpha * (1 - flash);
+      drawSheetFrame(
+        ctx,
+        alt,
+        spriteFrame(alt.framesPer ?? 0, alt.frames, angle, altSet),
+        0,
+        0,
+      );
+      ctx.globalAlpha = baseAlpha;
     }
 
     // solid-white silhouette on top of the coloured hull (enter/exit gate flash)

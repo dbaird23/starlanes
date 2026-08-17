@@ -813,6 +813,37 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**shän AltImageID is drawn — the Thunderforge's cannon.** "Sprites from the
+alt sprite sets can be displayed on top of the basic sprite for the ship,
+cycling through each available sprite set at a rate defined in the Delay
+field." Exactly one hull uses it, shän 380 the **Auroran Thunderforge**, and
+its alt sheet turns out to be the ship's cannon assembly — a separate structure
+that composes onto the hull, which is why the hull alone always looked
+unfinished.
+
+Unlike the glow, light and weapon-glow sheets it does **not** match the hull
+frame for frame: it carries its own AltSetCount and the cycle runs over *those*
+sets. rlëD 1330 holds **384 frames = 6 alt sets × the hull's own 64 rotation
+frames**, which is what confirms the reading. Both sheets are 130x130 and
+centred, so the two line up at the ship's position with no offset.
+
+Drawn **plainly on top, not additively**. The alt frames are dark structure
+(mean RGB ~52,51,50 at full alpha over 6.9% of the frame, against the hull's
+12.8%), so "lighter" washes them out; the glow sheets are the additive ones.
+It goes on before the running lights and glows so those still read over the
+finished silhouette, and is suppressed under the gate-flash bleach like every
+other overlay.
+
+Verified in the browser: the hull renders **2756 more lit pixels** with the alt
+sheet than without, the difference disappears and returns cleanly when the
+sheet is pulled and restored, and all **6 sets render distinctly** as the cycle
+turns at AnimDelay 5 — 0.167s a set, about a second for a full turn. The sheet
+is `alt-1330.png`, and `ALTS` joins the window debug handles beside `GLOWS`.
+
+Note the shän's own AltXSize/AltYSize read 260x260 where the rlëD header says
+130x130; the rlëD is authoritative and is what the extractor uses, so those two
+offsets are recorded rather than trusted.
+
 **gövt MaxOdds gates the reinforcement call, and the Bible does define the
 unit.** The definition just lives under the gövt resource rather than beside
 sÿst ReinfFleet, which is where an earlier pass looked before giving up and
@@ -1914,8 +1945,10 @@ happened to live there.
   afterglow. Crafted test pilots for this kind of probe: the Windows .plt is
   unencrypted — ship type index @6, outf counts @4126, weap counts @9246,
   ammo @9758 (see also the per-system legal array @5148 and bits @0xb7c2).
-- **shän `ShieldImageID`** is `-1` on all 288 hulls and **`AltImageID`** is set
-  on exactly one, so both are recorded but nothing renders them.
+- **shän `ShieldImageID` is dead data, verified against the raw resources.**
+  It reads `-1` on all 288 hulls and no shield-bubble sprite exists anywhere in
+  the scenario, so there is nothing to draw for any ship, the Wraith included.
+  Drawing shield bubbles would mean inventing art Nova does not ship.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.

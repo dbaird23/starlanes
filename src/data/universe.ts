@@ -392,6 +392,12 @@ export let GLOW_SPRITES: Record<string, SheetSprite> = {};
 export let LIGHT_SPRITES: Record<string, SheetSprite> = {};
 /** weapon-glow overlays (shän WeapImageID), drawn while the ship fires */
 export let WEAP_GLOW_SPRITES: Record<string, SheetSprite> = {};
+/**
+ * shän AltImageID — sprites drawn on top of the hull, cycling through the alt
+ * sheet's own sets at AnimDelay. One hull in the shipped data uses it: the
+ * Auroran Thunderforge, whose alt sheet is its cannon assembly.
+ */
+export let ALT_SPRITES: Record<string, SheetSprite> = {};
 export let WEAPON_SPRITES: Record<string, SheetSprite> = {};
 export let BOOM_SPRITES: Record<string, SheetSprite> = {};
 export let SHIPS: Record<string, ShipType> = {};
@@ -986,6 +992,7 @@ export async function loadUniverse(): Promise<void> {
     GLOW_SPRITES = manifest.glows ?? {};
     LIGHT_SPRITES = manifest.lights ?? {};
     WEAP_GLOW_SPRITES = manifest.weapGlows ?? {};
+    ALT_SPRITES = manifest.alts ?? {};
     ROID_SPRITES = manifest.roids ?? {};
     CURSOR_SPRITE = manifest.ui?.cursor ?? null;
     MENU_SPRITES = manifest.menu ?? {};

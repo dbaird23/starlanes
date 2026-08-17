@@ -251,12 +251,13 @@ function writeOnce(file, decoded) {
 
 const manifest = {
   ships: {}, stellars: {}, weapons: {}, booms: {}, glows: {}, lights: {},
-  weapGlows: {}, roids: {}, ui: {}, menu: {},
+  weapGlows: {}, alts: {}, roids: {}, ui: {}, menu: {},
 };
 let shipCount = 0;
 let glowCount = 0;
 let lightCount = 0;
 let weapGlowCount = 0;
+let altCount = 0;
 let stellarCount = 0;
 let weaponCount = 0;
 let boomCount = 0;
@@ -334,6 +335,36 @@ for (const res of pool.values()) {
         counter();
       } catch (e) {
         console.warn(`${kind} for shän ${res.id}: ${e.message}`);
+      }
+    }
+
+    /*
+     * AltImageID: "sprites from the alt sprite sets can be displayed on top of
+     * the basic sprite for the ship, cycling through each available sprite set
+     * at a rate defined in the Delay field". Unlike the glow, light and weapon
+     * sheets it does **not** match the hull frame for frame — it carries its
+     * own AltSetCount, and the cycle runs over those sets rather than over the
+     * hull's. Exactly one hull in the shipped data uses it: shän 380, the
+     * Auroran Thunderforge, whose rlëD 1330 holds 384 frames = 6 alt sets of
+     * the hull's own 64 rotation frames.
+     */
+    const altId = d.readInt16BE(SHAN.altImage);
+    const altSrc = altId > 0 ? pool.get(`rlëD:${altId}`) : null;
+    if (altSrc) {
+      try {
+        const dec = decodeRled(altSrc.data);
+        const file = `alt-${altId}.png`;
+        manifest.alts[res.id] = {
+          file,
+          w: dec.width,
+          h: dec.height,
+          frames: writeOnce(file, dec),
+          framesPer: shan.framesPer,
+          sets: Math.max(1, shan.altSets),
+        };
+        altCount++;
+      } catch (e) {
+        console.warn(`alt for shän ${res.id}: ${e.message}`);
       }
     }
   } catch (e) {
