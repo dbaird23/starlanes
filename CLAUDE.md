@@ -722,6 +722,43 @@ documented; every duplicate in the stock data agrees on both with its placed
 twin. `SPOBS_BY_ID` in `data/universe.ts` holds all stellars including the
 unplaced ones, since `SPOB_INDEX` deliberately holds only the placed.
 
+**ShipGoal 6 is in, and it unblocked the Rebel II half of the Rebellion.**
+`availableMissions` dropped any mission with `shipCount > 0 && shipGoal > 5`,
+so the eleven chase-off missions could not be offered at all. Ten are optional
+defence flavour, but **391 "Defend Rebel II; Rebel II18"** is the only thing in
+the shipped data that sets **b188**, which 389 (Rebel II19) requires — so half
+the Rebellion dead-ended there. Nothing is filtered by goal now; the goal only
+decides what finishes the objective.
+
+The Bible gives both halves in one line: "chase them off (either kill them or
+scare them into jumping out of the system)". The killing half was already free
+— `destroyNpc` tallies any goal. `creditChasedOff` is the other half: a special
+ship that leaves the board *alive* counts too, and both exits are real flight
+rather than a special case, since `updateWarshipAi` retires a fleeing ship 2400px
+clear and `NpcShip.updateAi` retires one that finishes its leavingBurn past
+3200px. It is deliberately tied to ships going `done` **while you are still
+there** — leaving the system yourself empties `npcs` without marking anyone
+done, so running away can never complete the objective, and a ship you shot is
+`destroyed`, so it is credited once rather than twice. Measured: one ship fled
+gives 1/6 and does not respawn on re-entry, the player fleeing changes nothing,
+and killing the other five completes it.
+
+All eleven stock goal-6 missions carry **ShipBehav 0 warships** (aiType 3), so
+in play they stand and fight and the flee path is the tail case; it is there for
+a plug-in whose quarry runs. `wantHostile` now includes goal 6 for the same
+reason — you do not drive off a friend — though ShipBehav 0 already covers
+every shipped case.
+
+**The Rebel II branch runs end to end.** It is entered by *failing* Rebel7:
+339's OnSuccess is `b132` alone (→ Rebel I, which wants `b132 & !b199`) and its
+**OnFailure is `b199 b132`** (→ Rebel II, which wants `b199 & !b502`). Walked
+with the bits counting **down** from 199 to 180: 401 Rebel II8 at Kel'ar Iy →
+400 → 399 → 398 → 397 → 396 → 395 Moash → 394 (goal 5 rescue) → 393 → 392 New
+Ireland → **391 (goal 6)** → 389 → 388 Earth → 387 → 386 → 385 Ver'a Se → 384
+(goal 2 board) → 383 → 382 → **381 Rebel II27**, which lands you in S7evyn. 853
+"Defend Rebel II; Rebel ActionMan 001" now appears on the Rebel II bar too,
+having been unofferable for the same reason.
+
 **The same rule governs AvailStel, where a mission is *posted*.** `stelMatches`
 compared ids outright, and **eleven missions are posted at a stellar that is in
 no system**, so they could not be offered anywhere: mïsn **680, 682 and 684**
@@ -1518,16 +1555,6 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
-- **ShipGoal 6 (chase off) costs the Rebel II half of the Rebellion.**
-  `availableMissions` drops any mission with `shipCount > 0 && shipGoal > 5`,
-  and eleven missions carry goal 6. Ten are optional defence flavour, but
-  **391 "Defend Rebel II; Rebel II18"** is the only thing in the shipped data
-  that sets **b188**, which 389 (Rebel II19) requires — so the branch reached
-  by *failing* Rebel7 (339's OnFailure is `b199 b132`, against the accept path's
-  `b132` alone) dead-ends there. Verified standing on Rebel II with b189 set
-  and record 40: the spaceport board is empty, and the filter runs before the
-  AvailRandom roll so the mission is categorically absent. The Rebel I half is
-  unaffected and completes.
 - **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
   @110-124, 8 small values at @126-140, used together by ~65 systems). It is
   **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points

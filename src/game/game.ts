@@ -2228,6 +2228,7 @@ export class Game {
       }
     }
     this.updateDockedNpcs(dt);
+    this.creditChasedOff();
     this.npcs = this.npcs.filter((n) => !n.done);
     if (
       this.targetNpc &&
@@ -5759,6 +5760,60 @@ export class Game {
     }
   }
 
+  /**
+   * ShipGoal 6 — "chase them off (either kill them or scare them into jumping
+   * out of the system)". The killing half already runs through `destroyNpc`,
+   * which tallies any goal; this is the other half, a special ship that leaves
+   * the board alive. Both routes out are real flight: `updateWarshipAi` retires
+   * a fleeing ship once it is 2400px clear, and `NpcShip.updateAi` retires one
+   * that finishes its leavingBurn past 3200px — the Bible's "jumping out".
+   *
+   * It is deliberately tied to ships going `done` while you are still there.
+   * Leaving the system yourself empties `npcs` outright without marking anyone
+   * done, so running away can never complete the objective — and a ship you
+   * shot is `destroyed`, so it is credited once, by `destroyNpc`, not twice.
+   *
+   * All eleven stock goal-6 missions carry ShipBehav 0 warships, so in practice
+   * they stand and fight and this is the tail case; a plug-in whose quarry runs
+   * is what it is really for.
+   */
+  private creditChasedOff(): void {
+    for (const npc of this.npcs) {
+      if (!npc.done || npc.destroyed || npc.missionMisnId === null) continue;
+      const m = MISSIONS[String(npc.missionMisnId)];
+      if (!m || m.shipGoal !== 6) continue;
+      const active = this.player.activeMissions.find(
+        (a) => a.misnId === npc.missionMisnId,
+      );
+      if (!active || active.shipsDone) continue;
+      active.shipsKilled += 1;
+      if (active.shipsKilled >= active.shipsTotal) {
+        active.shipsDone = true;
+        applySet(m.onShipDone, this.player.bits, this.bitHandlers());
+        if (!isSilentMission(m)) {
+          this.message(`Objective complete: ${active.name}.`);
+          const doneText = descText(m.shipDoneText);
+          if (doneText) {
+            this.pendingMissionEvents.push({
+              title: active.name,
+              text: substituteTags(
+                doneText,
+                m,
+                active,
+                this.pilotName,
+                this.descTags(),
+              ),
+            });
+          }
+        }
+      } else if (!isSilentMission(m)) {
+        this.message(
+          `${active.name}: ${active.shipsKilled}/${active.shipsTotal} driven off.`,
+        );
+      }
+    }
+  }
+
   /** Spawn a mission's special ships if this is the system they were set in. */
   private spawnMissionShips(): void {
     for (const active of this.player.activeMissions) {
@@ -5797,8 +5852,8 @@ export class Game {
         // every special ship boarded empty.
         npc.dudeId = dude?.id ?? null;
         if (dude) this.assignBooty(npc, dude.booty, type);
-        // you only shoot the ones you were sent to kill or cripple
-        const wantHostile = goal === 0 || goal === 1;
+        // you only shoot the ones you were sent to kill, cripple or drive off
+        const wantHostile = goal === 0 || goal === 1 || goal === 6;
         /*
          * ShipBehav overrides that when the mission says so: 0 makes the
          * special ships always attack the player and 1 makes them protect

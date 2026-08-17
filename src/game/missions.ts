@@ -273,13 +273,11 @@ export function availableMissions(
   for (const m of Object.values(MISSIONS)) {
     if (m.availLoc !== loc) continue;
     if (activeIds.has(m.id)) continue;
-    // destroy(0), disable(1), board(2), escort(3), observe(4) and rescue(5)
-    // are all handled; chase-off(6) is the one goal we can't resolve.
-    // ShipGoal -1 is the Bible's "no specific goal for the special ships" —
-    // 243 of the 348 missions that carry special ships use it, and they are
-    // completed by their cargo and destination alone, so they must not be
-    // filtered out with goal 6.
-    if (m.shipCount > 0 && m.shipGoal > 5) continue;
+    // destroy(0), disable(1), board(2), escort(3), observe(4), rescue(5) and
+    // chase-off(6) are all handled now, and ShipGoal -1 is the Bible's "no
+    // specific goal for the special ships" — 243 of the 348 missions that
+    // carry special ships use it, completed by their cargo and destination
+    // alone. Nothing is filtered here; the goal only decides what finishes it.
     // pay < 0 encodes an outfit grant: -(count * 10000 + outfitNovaId); handled at completion
     if (m.flags & 0x0400) continue; // invisible missions
     if (!requireMet(m.require, contribPool)) continue;
@@ -433,13 +431,13 @@ export function instantiateMission(
   if (m.returnStel === -1) returnSpobId = null;
   const qty = rollCargoQty(m.cargoQty);
   /*
-   * ShipCount ships fly for any goal we can resolve, and for the Bible's
-   * "no specific goal" (-1) as well — those are the escorts and the ambushes,
+   * ShipCount ships fly for every documented goal, and for the Bible's "no
+   * specific goal" (-1) as well — those are the escorts and the ambushes,
    * placed by ShipBehav rather than by an objective. They are spawned exactly
    * like the rest and simply never gate completion, which is what shipsDone
    * being true from the outset says.
    */
-  const shipsTotal = m.shipCount > 0 && m.shipGoal <= 5 ? m.shipCount : 0;
+  const shipsTotal = m.shipCount > 0 && m.shipGoal <= 6 ? m.shipCount : 0;
   const active: ActiveMission = {
     misnId: m.id,
     name: missionDisplayName(m),
