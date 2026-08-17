@@ -813,6 +813,34 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**Nothing in the shipped scenario submunitions recursively, so wëap SubLimit
+is inert — and the Nanites are not the exception they look like.** The Bible
+gates the field outright: it "will allow you to limit the number of recursive
+splits that happen. This field is ignored if the weapon is not recursively
+submunitioning." Only three weapons carry submunitions at all, and every chain
+terminates:
+
+- **wëap 163 "Nanites"** (turreted, 0.5s life) splits into 1 × **wëap 229**,
+  also called "Nanites" — a homing 7.5s second stage with SubCount 0. It is a
+  two-stage weapon, not a dividing one, which is what made SubLimit 0 look
+  ambiguous when read as a recursion cap.
+- **wëap 182/185 "Polaron Multi-Torp."** split into 5 × wëap 148 "Polaron
+  Torp.", which is terminal.
+
+No weapon anywhere names itself, and no chain revisits a weapon. SubLimit reads
+0 on all 24 because it is ignored, not because zero means something.
+
+The guard is now computed by **walking the chain at load** (`recursiveSub`), so
+a plug-in's indirect cycle — A into B, B back into A — is caught as well as a
+weapon that names itself; the old test compared SubType against the weapon's
+own id and would have missed it. SubLimit still caps the depth when it applies,
+and an unset 0 means one split rather than an unbounded chain, since a
+recursive plug-in weapon that left it blank would otherwise divide forever.
+
+Verified in play: firing the Nanites gives `163 gen0` for half a second, then
+`229 gen1`, which persists and never splits again. Forcing 163 to be recursive
+stops at generation 1 with SubLimit 0 and at generation 3 with SubLimit 3.
+
 **shän AltImageID is drawn — the Thunderforge's cannon.** "Sprites from the
 alt sprite sets can be displayed on top of the basic sprite for the ship,
 cycling through each available sprite set at a rate defined in the Delay
@@ -1949,9 +1977,6 @@ happened to live there.
   It reads `-1` on all 288 hulls and no shield-bubble sprite exists anywhere in
   the scenario, so there is nothing to draw for any ship, the Wraith included.
   Drawing shield bubbles would mean inventing art Nova does not ship.
-- **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
-  read as neither "never split" nor "split forever"; an unstated limit is
-  currently treated as a single split.
 - **Escort upgrade and sale are live** — the escort hail offers Upgrade
   Escort (shïp `UpgradeTo`, priced by `EscUpgrdCost`) and, on captured
   escorts, Sell Escort (`EscSellValue` via `escortSellValue`); both settle at

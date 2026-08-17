@@ -441,8 +441,20 @@ export interface WeaponType {
   subCount: number;
   subType: number | null;
   subTheta: number;
-  /** recursion cap for a weapon that submunitions into itself */
+  /**
+   * wëap SubLimit: "this field will allow you to limit the number of recursive
+   * splits that happen. This field is ignored if the weapon is not recursively
+   * submunitioning." Nothing in the stock scenario is, so it reads 0 across all
+   * 24 weapons and the field is inert here — see `recursiveSub`.
+   */
   subLimit: number;
+  /**
+   * Does this weapon's submunition chain come back round to a weapon it has
+   * already spawned from? Computed at load by walking SubType, so it catches an
+   * indirect cycle (A splits into B, B back into A) and not just a weapon that
+   * names itself. Only such a weapon is capped by SubLimit.
+   */
+  recursiveSub: boolean;
   /** seconds before the proximity fuse arms */
   proxSafetySec: number;
   /** max ammo per instance of this weapon; 0 = governed by the outfit instead */

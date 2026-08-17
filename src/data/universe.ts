@@ -1101,6 +1101,7 @@ export async function loadUniverse(): Promise<void> {
       guidedTurnRate: (w.guidedTurn ?? 0) * 3 * (Math.PI / 180),
       burstCount: Math.max(0, w.burstCount ?? 0),
       burstReloadSec: Math.max(0, w.burstReload ?? 0) / 30,
+      recursiveSub: false, // filled in below, once every weapon exists
       subCount: Math.max(0, w.subCount ?? 0),
       subType: (w.subType ?? -1) >= 128 ? w.subType : null,
       subTheta: w.subTheta ?? 0,
@@ -1116,6 +1117,31 @@ export async function loadUniverse(): Promise<void> {
       beamColor: rgbHex(w.beamColor ?? 0xffffff),
       coronaColor: rgbHex(w.coronaColor ?? 0xffffff),
     };
+  }
+
+  /*
+   * wëap SubLimit only bites on "a recursively-submunitioning weapon (i.e. one
+   * which splits into more copies of itself)", and the Bible adds that the
+   * field "is ignored if the weapon is not recursively submunitioning".
+   * Nothing in the stock scenario is: the Nanites look like the exception but
+   * are a two-stage chain — wëap 163 splits into 1 of wëap 229, also called
+   * "Nanites", and 229 carries SubCount 0 and stops there. So SubLimit reads 0
+   * on all 24 weapons because it is inert, not because it means anything.
+   *
+   * Detect the real thing by walking the chain, which catches an indirect
+   * cycle (A into B, B back into A) as well as a weapon that names itself.
+   */
+  for (const w of Object.values(WEAPONS)) {
+    const seen = new Set<string>();
+    let cur: WeaponType | undefined = w;
+    while (cur && cur.subCount > 0 && cur.subType !== null) {
+      if (seen.has(cur.id)) {
+        w.recursiveSub = true;
+        break;
+      }
+      seen.add(cur.id);
+      cur = WEAPONS[String(cur.subType)];
+    }
   }
 
   OUTFITS = {};

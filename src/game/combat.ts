@@ -901,21 +901,25 @@ export function updateProjectile(p: Projectile, dt: number): void {
  * The shots a dying projectile breaks into. Nova spawns these both when a
  * shot reaches the end of its life and when its proximity fuse trips, which
  * is what turns the Polaron Multi-Torp into five Polaron Torps at 45 degrees
- * of spread. `subLimit` caps a weapon that submunitions into itself so the
- * Nanites cannot divide forever.
+ * of spread, and turns the Nanites into their second stage.
  */
 export function spawnSubmunitions(p: Projectile): Projectile[] {
   const sub = p.weap.subType !== null ? WEAPONS[String(p.weap.subType)] : null;
   if (!sub || p.weap.subCount <= 0) return [];
   /*
-   * A weapon that splits into copies of itself may only recurse SubLimit
-   * times. The Nanites are the only shipped example and they state a SubLimit
-   * of 0, which cannot be taken at face value in either direction: read as a
-   * hard zero the weapon would never split at all, and read as "no limit" it
-   * would recurse forever. So an unstated limit means a single split — enough
-   * for the weapon to behave as defined, without an unbounded chain.
+   * SubLimit caps "a recursively-submunitioning weapon (i.e. one which splits
+   * into more copies of itself)", and is "ignored if the weapon is not
+   * recursively submunitioning" — which is every weapon in the stock scenario.
+   * The Nanites read like the exception but are a two-stage chain: wëap 163
+   * splits into wëap 229, also named "Nanites", and 229 stops there. So the
+   * cap never applies to shipped data, and the flag is computed by walking the
+   * chain rather than by testing whether a weapon names itself, so a plug-in's
+   * indirect cycle (A into B, B back into A) is caught too.
+   *
+   * SubLimit is 0 wherever it appears, so a recursive plug-in weapon that left
+   * it unset would otherwise divide forever; one split is the safe reading.
    */
-  if (p.weap.subType === Number(p.weap.id)) {
+  if (p.weap.recursiveSub) {
     const limit = p.weap.subLimit > 0 ? p.weap.subLimit : 1;
     if (p.generation >= limit) return [];
   }
