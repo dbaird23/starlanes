@@ -1442,7 +1442,9 @@ export class LandedUi {
       const pic = shipyardPict(this.selectedHire);
       desc = `<div class="oi-desc">${
         pilot
-          ? resolveNovaText(pilot, g.player.bits)
+          ? resolveNovaText(pilot, g.player.bits, {
+              female: g.player.gender === "female",
+            })
           : escapeHtml(s.name.split(";")[0])
       }</div>`;
       side = `${
@@ -1552,7 +1554,9 @@ export class LandedUi {
     const spobId = Number(p.id);
     const barDesc = DESCS[String(10000 + spobId - 128)];
     const line = barDesc
-      ? resolveNovaText(barDesc, this.game.player.bits)
+      ? resolveNovaText(barDesc, this.game.player.bits, {
+          female: this.game.player.gender === "female",
+        })
       : BAR_LINES[Math.floor(Math.random() * BAR_LINES.length)];
     const govtLine = sys.govtName
       ? `Most of the patrons here fly under ${sys.govtName} colors.`
@@ -1839,7 +1843,7 @@ export class LandedUi {
         ${this.statusBar()}
         <div class="port-body">
           <div class="port-col">${left}</div>
-          <div class="port-desc">${resolveNovaText(p.desc, this.game.player.bits)}</div>
+          <div class="port-desc">${resolveNovaText(p.desc, this.game.player.bits, { female: this.game.player.gender === "female" })}</div>
           <div class="port-col">${right}</div>
         </div>
         ${this.rankLine()}
@@ -2289,7 +2293,7 @@ export class LandedUi {
           <div class="gap"><span>${ui(217, "You Have:")}</span><b>${g.player.credits.toLocaleString()} cr</b></div>
           ${shipUnlicensed ? '<div class="oi-status">You don&#39;t have the required licenses!</div>' : ""}
         </div>`;
-      desc = `<div class="oi-desc">${resolveNovaText(s.desc, g.player.bits)}</div>`;
+      desc = `<div class="oi-desc">${resolveNovaText(s.desc, g.player.bits, { female: g.player.gender === "female" })}</div>`;
       buy = `<button class="evbtn" id="btn-buy-ship" ${canBuy ? "" : "disabled"}>${
         isCurrent
           ? "Your ship"
@@ -2588,7 +2592,7 @@ export class LandedUi {
       const pict = outfitPict(id);
       const [name, subtitle] = o.name.split(";");
 
-      desc = `<div class="oi-desc">${resolveNovaText(o.desc, g.player.bits)}</div>`;
+      desc = `<div class="oi-desc">${resolveNovaText(o.desc, g.player.bits, { female: g.player.gender === "female" })}</div>`;
       hero = pict
         ? `<img class="oi-hero" src="${asset(`nova/picts/${pict.file}`)}" alt="${name}">`
         : `<div class="oi-hero placeholder">${name}</div>`;

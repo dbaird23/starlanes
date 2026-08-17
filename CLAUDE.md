@@ -737,6 +737,45 @@ each other. No mission names any of those four. `duplicateStelId` is memoised
 now: the offer filter asks it for every concrete-AvailStel mission on every
 board query, and the answer is a property of the data rather than the save.
 
+**Text-selection tags: one resolver, run at display time.** The Bible gives
+three, sharing one shape and all honouring a leading `!` —
+`{bXXX "if set" "if clear"}` on a control bit, `{G "male" "female"}` on the
+pilot's gender, `{P[days] "registered" "unregistered"}` on whether the game is
+paid for. No compound tests ("unlike the control bit test strings"), the
+second string is optional ("if there is no second string, nothing will be
+substituted"), and a quote inside an arm is C-escaped:
+`{b002 "Dave \"pipeline\" Williams"}`. The selector letter is matched
+**case-insensitively** because Nova's own data is inconsistent — 207 `{G`,
+7 `{g`, 114 `{bN`, 1 `{BN`. P is always true here, the same answer `evalTest`
+gives the ncb Pxxx test.
+
+Two things were wrong, in opposite directions:
+
+- **`{G}` and `{P}` were collapsed at load**, in a `cleanNovaText` pass over
+  every dësc, ship and outfit description, always taking the first arm. So
+  every description in the game was male, whatever the pilot answered at
+  creation — and `substituteTags`'s own `{G}` regex, which did read the real
+  gender, almost never saw a tag because the table had already been rewritten.
+  That pass is gone; `DESCS` is verbatim now.
+- **`{bNNN}` was never resolved on the mission path.** `resolveNovaText`
+  existed and was called for the landing, bar, hire, shipyard and outfitter
+  descriptions, but mission text goes through `substituteTags`, which did not
+  call it — so briefings printed their markup. Auroran 015's completion text
+  opens `{b809 "Your reunion with Eiric is a joyful one...`, which is the
+  Wild Geese arm; without a resolver you got the tag instead of either
+  reading. Selection now runs **first** in `substituteTags`, so a `<PN>` or
+  `<DST>` inside the winning arm still gets filled.
+
+`substituteText` — the ncb Q operator's message, përs comm quotes, government
+chatter — deliberately does **not** run the selection pass: the Bible says a Q
+message "is parsed for mission text tags ... but not text-selection tags". No
+shipped STR# entry carries one, so it is the documented rule rather than a
+visible difference. Verified: all 474 texts that carry a selection tag (316
+dëscs, 130 outfit, 28 ship) resolve with none left raw, `{G}` follows the
+pilot both ways, the one-arm form yields nothing when false, escaped quotes
+survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
+able to buy any of them ever again" — only once that bit is set.
+
 **The Auroran storyline runs end to end.** Walked leg by leg: 653 (any non-
 Family-Heraan bar) → 654 Codec → 655 Dominance → 656 Skye → 657 Heraan →
 658 → 659 → 660 → 661 → 664 → 665 → 666 → 667 Rimerta → 668 → 669 → 670 →

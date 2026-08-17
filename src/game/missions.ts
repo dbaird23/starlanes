@@ -14,6 +14,7 @@ import {
   SPOBS_BY_ID,
   STR_LISTS,
   chartedSystems,
+  resolveNovaText,
   systemHidden,
 } from "../data/universe";
 import { freeHoldSpace } from "./cargo";
@@ -509,17 +510,22 @@ let PLAYER_IDENTITY: {
   gender: "male" | "female";
   shipName: string;
 } = { nickname: "", gender: "male", shipName: "" };
+/** the live bits object, for the {bNNN "..." "..."} selection tags */
+let PLAYER_BITS: Record<string, boolean> = {};
 
 export function setPlayerIdentity(id: {
   nickname?: string;
   gender?: "male" | "female";
   shipName?: string;
+  bits?: Record<string, boolean>;
 }): void {
   PLAYER_IDENTITY = {
     nickname: id.nickname ?? "",
     gender: id.gender ?? "male",
     shipName: id.shipName ?? "",
   };
+  // held by reference: bits are mutated in place, so the answer stays current
+  PLAYER_BITS = id.bits ?? {};
 }
 
 /**
@@ -544,6 +550,10 @@ export interface DescTags {
  * government's chatter, an ncb Q-operator message. The Bible says those are
  * "parsed for mission text tags ... but not text-selection tags", and STR#
  * 7101 proves it: 41 of its 42 lines open with `<OSN>: `.
+ *
+ * So this runs the tag pass and skips the selection pass that `substituteTags`
+ * does. No shipped STR# entry carries a selection tag, so it is the documented
+ * rule rather than a visible difference.
  */
 export function substituteText(
   text: string,
@@ -551,9 +561,8 @@ export function substituteText(
   tags?: DescTags,
   ctx?: { offeringShip?: string },
 ): string {
-  return substituteTags(
+  return tagPass(
     text,
-    null,
     { offeredByShipName: ctx?.offeringShip },
     playerName,
     tags,
@@ -563,6 +572,29 @@ export function substituteText(
 export function substituteTags(
   text: string,
   _m: MissionType | null,
+  active: Partial<ActiveMission>,
+  playerName: string,
+  ranks?: DescTags,
+): string {
+  /*
+   * Selection first, so a <PN> or <DST> inside the arm that wins still gets
+   * filled. Mission text was the one dësc path that never ran this at all —
+   * the outfitter, shipyard and landing screens call resolveNovaText
+   * themselves — so briefings printed their markup: Auroran 015's completion
+   * text opens `{b809 "Your reunion with Eiric is a joyful one. ...`.
+   */
+  return tagPass(
+    resolveNovaText(text, PLAYER_BITS, {
+      female: PLAYER_IDENTITY.gender === "female",
+    }),
+    active,
+    playerName,
+    ranks,
+  );
+}
+
+function tagPass(
+  text: string,
   active: Partial<ActiveMission>,
   playerName: string,
   ranks?: DescTags,
@@ -578,14 +610,6 @@ export function substituteTags(
   };
   return (
     text
-      /*
-       * {G "male text" "female text"} — the Bible's gender substitution.
-       * This used to always take the first string; it now reads the pilot's
-       * own gender, which is asked for at creation.
-       */
-      .replace(/\{G\s*"([^"]*)"\s*"([^"]*)"\}/g, (_all, male, female) =>
-        PLAYER_IDENTITY.gender === "female" ? female : male,
-      )
       .replace(/<CT>/g, active.cargoName ?? "cargo")
       .replace(/<CQ>/g, String(active.cargoQty ?? ""))
       .replace(/<DST>/g, spobName(active.travelSpobId))

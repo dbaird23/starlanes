@@ -863,33 +863,49 @@ function makePlanet(sp: RawSpob, descs: Record<string, string>): PlanetDef {
 }
 
 /**
- * Strip Nova's inline conditional-text tags: {G"male" "female"} gender
- * variants and {P## "registered" "unregistered"} shareware nags — we always
- * take the first (male / registered) branch.
- */
-function cleanNovaText(s: string): string {
-  return s
-    .replace(/\{G\s*"([^"]*)"\s*"([^"]*)"\}/g, "$1")
-    .replace(/\{P\d*\s*"([^"]*)"(?:\s*"([^"]*)")?\}/g, "$1");
-}
-
-/**
- * Resolve a dësc's control-bit conditionals against the player's actual bits.
- * The Bible's form is {[!]bNNN "if set" "if clear"}, with the second string
- * optional — no compound tests allowed, unlike ncb expressions. This has to
- * happen at display time, since the same description reads differently once
- * the story moves on.
+ * Nova's inline text-selection tags, resolved at display time.
+ *
+ * The Bible gives three, all sharing one shape and all honouring a leading
+ * "!": `{bXXX "if set" "if clear"}` on a control bit, `{G "male" "female"}` on
+ * the pilot's gender, and `{P[days] "registered" "unregistered"}` on whether
+ * the game is paid for. "Unlike the control bit test strings, you cannot
+ * perform compound tests in a dësc resource", the second string is optional
+ * ("if there is no second string, nothing will be substituted"), and a quote
+ * inside an arm is C-escaped: `{b002 "Dave \"pipeline\" Williams"}`.
+ *
+ * The selector letter is matched case-insensitively because Nova's own data
+ * is inconsistent about it — 207 `{G`, 7 `{g`, 114 `{bN`, 1 `{BN`.
+ *
+ * P is always true here: this engine reads the player's own data files and is
+ * not a shareware build, the same answer `evalTest` gives the ncb Pxxx test.
+ *
+ * **This must happen at display time, not at load.** The same description
+ * reads differently once the story moves on, and gender is per-pilot while the
+ * dësc table is shared by every pilot. An earlier pass collapsed {G} and {P}
+ * as the galaxy was parsed, always taking the first arm, which made every
+ * description in the game male.
  */
 export function resolveNovaText(
   s: string,
   bits: Record<string, boolean>,
+  opts: { female?: boolean } = {},
 ): string {
   return s.replace(
-    /\{(!?)b(\d+)\s*"((?:[^"\\]|\\.)*)"(?:\s*"((?:[^"\\]|\\.)*)")?\}/g,
-    (_m, neg: string, num: string, yes: string, no: string | undefined) => {
-      const set = bits[String(parseInt(num, 10))] === true;
-      const take = neg === "!" ? !set : set;
-      return unescapeNova(take ? yes : (no ?? ""));
+    /\{(!?)([bB]\d+|[gG]|[pP]\d*)\s*"((?:[^"\\]|\\.)*)"(?:\s*"((?:[^"\\]|\\.)*)")?\}/g,
+    (
+      _m,
+      neg: string,
+      sel: string,
+      yes: string,
+      no: string | undefined,
+    ) => {
+      const kind = sel[0].toLowerCase();
+      let value: boolean;
+      if (kind === "b") value = bits[String(parseInt(sel.slice(1), 10))] === true;
+      else if (kind === "g") value = !opts.female;
+      else value = true;
+      if (neg === "!") value = !value;
+      return unescapeNova(value ? yes : (no ?? ""));
     },
   );
 }
@@ -956,7 +972,7 @@ export async function loadUniverse(): Promise<void> {
     SHIPS[String(s.id)] = {
       id: String(s.id),
       name: s.name,
-      desc: cleanNovaText(s.desc),
+      desc: s.desc,
       cost: s.cost,
       cargo: s.cargo,
       fuelJumps: Math.max(1, Math.floor(s.fuel / 100)),
@@ -1082,7 +1098,7 @@ export async function loadUniverse(): Promise<void> {
       requireGovt: o.requireGovt ?? -1,
       id: String(o.id),
       name: o.name,
-      desc: cleanNovaText(o.desc),
+      desc: o.desc,
       cost: o.cost,
       mass: o.mass,
       techLevel: o.techLevel,
@@ -1256,10 +1272,9 @@ export async function loadUniverse(): Promise<void> {
   for (const bm of raw.booms ?? []) BOOMS[String(bm.id)] = bm;
   OOPSES = raw.oopses ?? [];
   NEBULAE = raw.nebulae ?? [];
-  DESCS = {};
-  for (const [id, text] of Object.entries(raw.descs ?? {})) {
-    DESCS[id] = cleanNovaText(text);
-  }
+  // Kept verbatim: the {b}/{G}/{P} selection tags are resolved when the text
+  // is shown, against the pilot reading it. See resolveNovaText.
+  DESCS = { ...(raw.descs ?? {}) };
   JUNK_NAMES = {};
   JUNKS = {};
   for (const j of raw.junks ?? []) {
