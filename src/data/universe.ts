@@ -29,6 +29,7 @@ import type {
   StockItem,
   StockWeapon,
   SystemDef,
+  SystemVariant,
   WeaponType,
 } from "../types";
 
@@ -119,6 +120,27 @@ interface RawSystem {
   reinfInterval: number;
   /** sÿst Visibility for the story-gated systems; empty means always present */
   visibleIf?: string[];
+  /** every variant's mutable content, when the name has more than one */
+  variants?: RawSystemVariant[];
+}
+
+interface RawSystemVariant {
+  id: number;
+  visibility: string;
+  links: number[];
+  spobs: number[];
+  dudes: { id: number; prob: number }[];
+  avgShips: number;
+  govt: number;
+  asteroids: number;
+  astTypes: number;
+  interference: number;
+  bkgndColor: number;
+  murk: number;
+  message: number;
+  reinfFleet: number;
+  reinfTime: number;
+  reinfInterval: number;
 }
 
 interface RawColr {
@@ -1113,18 +1135,24 @@ export async function loadUniverse(): Promise<void> {
   }
   OUTFIT_ORDER = (raw.outfits ?? []).map((o) => String(o.id));
 
-  const spobById = new Map(raw.spobs.map((s) => [s.id, s]));
   const govtById = new Map(raw.govts.map((g) => [g.id, g.name]));
+  /*
+   * One PlanetDef per stellar, shared by SYSTEMS, SPOBS_BY_ID and every system
+   * variant — a variant swap then re-points at objects that already exist, and
+   * identity stays stable for anything holding a planet reference.
+   */
+  const planetById = new Map(
+    raw.spobs.map((sp) => [String(sp.id), makePlanet(sp, raw.descs)]),
+  );
+  const planetsOf = (ids: number[]): PlanetDef[] =>
+    ids.map((id) => planetById.get(String(id))).filter((p): p is PlanetDef => !!p);
 
   SYSTEMS = raw.systems.map((sys) => ({
     id: String(sys.id),
     name: sys.name,
     mapPos: { x: sys.x, y: sys.y },
     links: sys.links.map(String),
-    planets: sys.spobs
-      .map((pid) => spobById.get(pid))
-      .filter((sp): sp is RawSpob => sp !== undefined)
-      .map((sp) => makePlanet(sp, raw.descs)),
+    planets: planetsOf(sys.spobs),
     traffic: Math.max(1, Math.min(6, sys.avgShips ?? 2)),
     starColor: "#fff4d6",
     dudes: sys.dudes ?? [],
@@ -1149,6 +1177,26 @@ export async function loadUniverse(): Promise<void> {
     govtId: sys.govt,
     govtName: govtById.get(sys.govt) ?? null,
     visibleIf: sys.visibleIf ?? [],
+    variants: (sys.variants ?? []).map((v) => ({
+      id: String(v.id),
+      visibility: v.visibility,
+      links: v.links.map(String),
+      planets: planetsOf(v.spobs),
+      dudes: v.dudes ?? [],
+      avgShips: v.avgShips ?? 2,
+      traffic: Math.max(1, Math.min(6, v.avgShips ?? 2)),
+      govtId: v.govt,
+      govtName: govtById.get(v.govt) ?? null,
+      asteroids: v.asteroids ?? 0,
+      astTypes: v.astTypes ?? 0,
+      interference: Math.max(0, Math.min(100, v.interference ?? 0)),
+      bkgndColor: v.bkgndColor ? rgbHex(v.bkgndColor) : "",
+      murk: Math.max(0, Math.min(100, v.murk ?? 0)),
+      message: (v.message ?? -1) > 0 ? v.message : 0,
+      reinfFleet: (v.reinfFleet ?? -1) >= 128 ? v.reinfFleet : null,
+      reinfDelay: Math.max(0, v.reinfTime ?? 0) / 30,
+      reinfInterval: Math.max(0, v.reinfInterval ?? 0),
+    })),
   }));
 
   systemsById = new Map(SYSTEMS.map((s) => [s.id, s]));
@@ -1161,17 +1209,14 @@ export async function loadUniverse(): Promise<void> {
     ]),
   );
 
-  SPOB_INDEX = new Map();
   SPOB_GOVT = new Map();
-  for (const sys of SYSTEMS) {
-    for (const planet of sys.planets) {
-      SPOB_INDEX.set(planet.id, { planet, systemId: sys.id });
-    }
-  }
   for (const sp of raw.spobs) SPOB_GOVT.set(String(sp.id), sp.govt);
-  SPOBS_BY_ID = new Map(
-    raw.spobs.map((sp) => [String(sp.id), makePlanet(sp, raw.descs)]),
-  );
+  SPOBS_BY_ID = planetById;
+  // the top-level fields are the canonical variant, so record that as applied
+  activeVariant.clear();
+  for (const sys of SYSTEMS)
+    if (sys.variants.length > 0) activeVariant.set(sys.id, sys.id);
+  reindexSpobs();
 
   govtRelations = new Map();
   for (const g of raw.govts) {
@@ -1351,6 +1396,7 @@ export function getSystem(id: string): SystemDef {
 let visibilityBits: Bits = {};
 export function setVisibilityBits(bits: Bits): void {
   visibilityBits = bits;
+  syncSystemVariants();
 }
 
 /**
@@ -1363,6 +1409,89 @@ export function setVisibilityBits(bits: Bits): void {
 export function systemHidden(sys: SystemDef): boolean {
   if (sys.visibleIf.length === 0) return false;
   return !sys.visibleIf.some((expr) => evalTest(expr, visibilityBits));
+}
+
+/**
+ * SPOB_INDEX follows whichever variant of each system is live. Rebuilt **in
+ * place** rather than reassigned: a variant swap can happen at any arrival, and
+ * anything holding the map — including the debug handles — must not be left
+ * looking at a galaxy that has moved on.
+ */
+function reindexSpobs(): void {
+  SPOB_INDEX.clear();
+  for (const sys of SYSTEMS) {
+    for (const planet of sys.planets) {
+      SPOB_INDEX.set(planet.id, { planet, systemId: sys.id });
+    }
+  }
+}
+
+/**
+ * Put one of a system's states into effect. The fields are written **in place**
+ * so that SYSTEMS, systemsById and anything else holding the SystemDef keeps
+ * seeing the live galaxy; only `id`, `name` and `mapPos` are fixed, which is
+ * what keeps a saved pilot's explored list and per-system ledger valid.
+ */
+function applySystemVariant(sys: SystemDef, v: SystemVariant): void {
+  sys.links = v.links;
+  sys.planets = v.planets;
+  sys.dudes = v.dudes;
+  sys.avgShips = v.avgShips;
+  sys.traffic = v.traffic;
+  sys.govtId = v.govtId;
+  sys.govtName = v.govtName;
+  sys.asteroids = v.asteroids;
+  sys.astTypes = v.astTypes;
+  sys.interference = v.interference;
+  sys.bkgndColor = v.bkgndColor;
+  sys.murk = v.murk;
+  sys.message = v.message;
+  sys.reinfFleet = v.reinfFleet;
+  sys.reinfDelay = v.reinfDelay;
+  sys.reinfInterval = v.reinfInterval;
+}
+
+/** which variant id each multi-variant system is currently showing */
+const activeVariant = new Map<string, string>();
+
+/**
+ * Re-derive every multi-variant system from the live bits. Nova switches a
+ * system's *contents*, not just its name — Procyon's five states walk UHP-1002
+ * through three rebuilds and finally into **Nirvana**, which is where the last
+ * two Terraforming legs deliver their colonists, and 37 of the 128 groups
+ * differ in their stellars this way.
+ *
+ * Cheap enough to call on every arrival: 128 systems, one short expression
+ * each, and the work below only runs when something actually moved. A group
+ * with no true variant keeps whatever it is showing — `visibleIf` decides
+ * whether it is on the chart at all, and the two questions are separate.
+ */
+export function syncSystemVariants(): void {
+  let changed = false;
+  for (const sys of SYSTEMS) {
+    if (sys.variants.length === 0) continue;
+    /*
+     * **The last true variant wins.** At game start exactly one is ever true —
+     * measured across all 128 groups — so this only decides mid-game overlaps,
+     * and Nova's own data has them: Glimmer's default reads
+     * `!(b6300 | b6302)` and forgets to exclude b6301, so once the Sigma
+     * thread sets that bit both it and "b6301 & b130" are true at once. The
+     * variants are authored in ascending story order (677 then 678, 759 then
+     * 760 then 761), the canonical is first and so acts as the default, and
+     * taking the last match is what lets Brass actually become Nova. The Bible
+     * does not state a rule; the mutually-exclusive groups — Sol, Procyon and
+     * most of the rest — do not care either way.
+     */
+    let live: SystemVariant | undefined;
+    for (const v of sys.variants)
+      if (evalTest(v.visibility, visibilityBits)) live = v;
+    if (!live) continue;
+    if (activeVariant.get(sys.id) === live.id) continue;
+    activeVariant.set(sys.id, live.id);
+    applySystemVariant(sys, live);
+    changed = true;
+  }
+  if (changed) reindexSpobs();
 }
 
 /** Every system currently on the chart. */

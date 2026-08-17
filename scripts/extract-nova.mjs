@@ -1452,15 +1452,53 @@ for (const [name, variants] of groups) {
     : variants.map((s) => s.visibility).filter(Boolean);
   if (!live.length) gated.push(`${name} (${variants.map((v) => v.id).join(",")})`);
   for (const s of variants) if (s.id !== canonical.id) alias.set(s.id, canonical.id);
+  /*
+   * The variants are not just alternate *labels* for one system — they carry
+   * different contents, and the scenario switches between them as its bits
+   * move. Of the 128 multi-variant groups, 37 differ in their spöb list, 82 in
+   * govt and 106 in links. Terraforming is the clearest: Procyon is rebuilt
+   * around the player, UHP-1002 (spöb 174) becoming 515, then 516, then 517,
+   * and finally **spöb 1420 "Nirvana"** behind b25 — which is where the last
+   * two legs deliver their colonists. Shipping only the canonical variant left
+   * Nirvana in no system at all, so the chain could not finish.
+   *
+   * So every variant's mutable content rides along, each with its own
+   * Visibility, and the runtime applies whichever is currently true. The
+   * canonical's own top-level fields stay exactly as before (the start-live
+   * variant), so a save that never trips one of these bits sees no change.
+   */
+  if (variants.length > 1) {
+    canonical.variants = variants.map((v) => ({
+      id: v.id,
+      visibility: v.visibility,
+      links: v.links,
+      spobs: v.spobs,
+      dudes: v.dudes,
+      avgShips: v.avgShips,
+      govt: v.govt,
+      asteroids: v.asteroids,
+      astTypes: v.astTypes,
+      interference: v.interference,
+      bkgndColor: v.bkgndColor,
+      murk: v.murk,
+      message: v.message,
+      reinfFleet: v.reinfFleet,
+      reinfTime: v.reinfTime,
+      reinfInterval: v.reinfInterval,
+    }));
+  }
   systems.push(canonical);
 }
 const systemIds = new Set(systems.map((s) => s.id));
 if (gated.length)
   console.log(`Story-gated systems (hidden until their bits set): ${gated.join("; ")}`);
-for (const s of systems) {
-  s.links = [...new Set(s.links.map((l) => alias.get(l) ?? l))].filter((l) =>
+const fixLinks = (links) =>
+  [...new Set(links.map((l) => alias.get(l) ?? l))].filter((l) =>
     systemIds.has(l),
   );
+for (const s of systems) {
+  s.links = fixLinks(s.links);
+  for (const v of s.variants ?? []) v.links = fixLinks(v.links);
 }
 
 const galaxy = {

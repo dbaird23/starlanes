@@ -127,6 +127,37 @@ export interface SystemDef {
    * behind b9995, which every storyline's last mission moves you to.**
    */
   visibleIf: string[];
+  /**
+   * The other states this system can be in. Nova ships several sÿst resources
+   * per name and they carry different *contents*, not just different labels —
+   * Procyon's five turn UHP-1002 into Nirvana as the Terraforming chain runs,
+   * and 37 of the 128 multi-variant groups differ in their stellars. The live
+   * one is chosen by Visibility and written into this object in place, so
+   * anything holding a SystemDef keeps seeing the current galaxy.
+   */
+  variants: SystemVariant[];
+}
+
+/** One state of a system — see SystemDef.variants. */
+export interface SystemVariant {
+  id: string;
+  visibility: string;
+  links: string[];
+  planets: PlanetDef[];
+  dudes: { id: number; prob: number }[];
+  avgShips: number;
+  traffic: number;
+  govtId: number;
+  govtName: string | null;
+  asteroids: number;
+  astTypes: number;
+  interference: number;
+  bkgndColor: string;
+  murk: number;
+  message: number;
+  reinfFleet: number | null;
+  reinfDelay: number;
+  reinfInterval: number;
 }
 
 export interface PlayerState {

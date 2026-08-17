@@ -54,6 +54,7 @@ import {
   SYSTEMS,
   chartedSystems,
   setVisibilityBits,
+  syncSystemVariants,
   type PictInfo,
   UI_PICTS,
   WEAPON_SPRITES,
@@ -106,6 +107,7 @@ import { runOopses } from "./oops";
 import {
   descText,
   instantiateMission,
+  reresolveDestinations,
   isHiddenFromLog,
   isSilentMission,
   rollMissionAvailability,
@@ -1329,6 +1331,14 @@ export class Game {
    * roll that survives the arrival is a world whose offers never change.
    */
   private enterSystem(systemId = this.player.systemId): void {
+    /*
+     * Nova switches a system's *contents* between its sÿst variants as the
+     * story's bits move — Procyon walks UHP-1002 through three rebuilds and
+     * into Nirvana across the Terraforming chain. Re-derive on arrival, which
+     * is also the only safe moment: doing it under a landed player could pull
+     * the pad out from beneath them.
+     */
+    syncSystemVariants();
     this.markExplored(systemId);
     rollMissionAvailability();
   }
@@ -7636,6 +7646,8 @@ export class Game {
       this.ship.vel = { x: 0, y: 0 };
     }
     this.mode = "flight";
+    // the landing may have moved a variant on (see enterSystem)
+    syncSystemVariants();
     // Taking off puts a fresh system around you, the same way arriving from
     // hyperspace does: the traffic you left on the pad is gone and new ships
     // are flying. Without this the old NPCs sat frozen where you left them and
@@ -8225,6 +8237,13 @@ export class Game {
     }
     this.player.activeMissions.push(active);
     applySet(m.onAccept, this.player.bits, this.bitHandlers());
+    /*
+     * OnAccept can create the destination. Terraforming8 sets b25, which turns
+     * Procyon into the variant holding Nirvana — the world its colonists are
+     * bound for — so the stellar simply does not exist until the job is taken.
+     */
+    syncSystemVariants();
+    reresolveDestinations(m, active, this.player.landedOn ?? active.travelSpobId ?? "128");
     return { ok: true };
   }
 

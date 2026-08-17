@@ -813,6 +813,52 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**Systems change their contents, not just their names.** The variant pass that
+brought S7evyn back kept only the canonical sÿst of each name, so a group's
+*content* never moved when its bits did. Measured across the 128 multi-variant
+groups: **37 differ in their spöb list**, 82 in govt, 106 in links. Most of the
+stellar differences are one world under a second spöb id — post-war Sol swaps
+Earth 128 for 426 — and `duplicateStelId` already covered those, since the twin
+agrees on name and coordinates. The ones that genuinely lost content are where
+a *new* world appears:
+
+- **Procyon** walks UHP-1002 through 515, 516 and 517 and finally becomes
+  **spöb 1420 "Nirvana"** behind b25 — the whole arc of the Terraforming chain
+  is that system being rebuilt around you.
+- **Za'iuso** gains **"Ar'Za Ory'hara"** behind b335, which Polaris46 sets.
+- **Glimmer** turns Brass into **"Nova"** behind b6301.
+
+Every variant's mutable content now rides along in `galaxy.json`, each with its
+own Visibility, and `syncSystemVariants` writes the live one into the SystemDef
+**in place** — only `id`, `name` and `mapPos` are fixed, which is what keeps a
+saved pilot's explored list and per-system ledger valid. `SPOB_INDEX` is rebuilt
+in place beside it for the same reason. It runs on arrival (`enterSystem`) and
+on takeoff, never under a landed player, since a swap can pull the pad out from
+beneath them.
+
+Two things the fix rests on:
+
+- **The last true variant wins.** At game start exactly one is ever true, across
+  all 128 groups, so this only decides mid-game overlaps — and Nova's data has
+  them: Glimmer's default reads `!(b6300 | b6302)` and forgets to exclude
+  b6301, so once that bit sets, both it and "b6301 & b130" are true. The
+  variants are authored in ascending story order and the canonical is first, so
+  taking the last match is what lets Brass actually become Nova. The Bible
+  states no rule; the mutually-exclusive groups don't care either way.
+- **A mission's OnAccept can create its own destination.** mïsn 547
+  Terraforming8 sets **b25**, and b25 is what puts Nirvana in Procyon — so
+  resolving at offer time necessarily comes up empty. `acceptMission` now
+  re-syncs the variants and calls `reresolveDestinations` after applying
+  OnAccept, which is where Nova resolves too.
+
+Verified: a fresh pilot still charts 398 systems with 349 placed stellars and
+Sol/Procyon/Glimmer exactly as before; b6301 turns Brass into Nova, b25 puts
+Nirvana in Procyon, b335 adds Ar'Za Ory'hara, and b147 swaps Sol to its
+post-war stellars without Sol leaving the chart. A mission naming the old Earth
+128 resolves to 426 through the duplicate rule and lands. **Terraforming8 now
+completes** — Nirvana does not exist before you accept, appears when you do,
+and the colonists arrive.
+
 **Flags 0x0400 is a log rule, not an offer rule.** The Bible: "Mission is
 invisible and won't appear in the **mission info dialog**." `availableMissions`
 was using it to drop the mission from the boards entirely — all 88 of them, of
@@ -1788,26 +1834,6 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
-- **System *variants* switch their contents, and we only ship one.** The
-  extractor keeps the canonical (lowest-id) variant of each name; the runtime
-  hides start-dormant groups but never swaps a group's *content* when its bits
-  move. Measured across the 128 multi-variant groups: **37 differ in their spöb
-  list**, 82 in govt, 106 in links. Most of the stellar differences are the same
-  world under a second spöb id with different text, which `duplicateStelId`
-  resolves whenever a mission names one. The cases that genuinely lose content
-  are the ones where a *new* world appears: **Procyon 1127 holds spöb 1420
-  "Nirvana"** behind b25, **Za'iuso 656 holds "Ar'Za Ory'hara"** behind b335,
-  and **Glimmer 678/760 turn Brass into "Nova"** behind b6301.
-
-  It costs the **end of the Terraforming chain**: 547 Terraforming8 and 548
-  Terraforming8a deliver colonists to Nirvana, which exists in no system we
-  ship and has no name-and-coordinates twin, so neither can be completed. The
-  chain's whole arc is Procyon being rebuilt around you — UHP-1002 through
-  three intermediate spöbs and finally into Nirvana — and the intermediate
-  stages resolve only because they share a name with the placed original.
-  Fixing this means per-variant content selection re-evaluated on bit changes,
-  with SPOB_INDEX rebuilt behind it; the S7evyn pass deliberately stopped short
-  of that.
 - **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
   @110-124, 8 small values at @126-140, used together by ~65 systems). It is
   **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points

@@ -480,6 +480,31 @@ export function instantiateMission(
   return active;
 }
 
+/**
+ * Fill in a destination that could not be resolved when the offer was built.
+ *
+ * A mission's OnAccept can bring its own destination into existence: mïsn 547
+ * Terraforming8 sets **b25**, and b25 is what switches Procyon to the variant
+ * holding spöb 1420 "Nirvana" — the world the colonists are going to. Resolving
+ * at offer time therefore has to come up empty, and Nova resolves on accept.
+ * Called from `Game.acceptMission` once the OnAccept bits (and the system
+ * variants they move) have been applied.
+ */
+export function reresolveDestinations(
+  m: MissionType,
+  active: ActiveMission,
+  currentSpobId: string,
+): void {
+  if (active.travelSpobId === null && m.travelStel !== -1) {
+    active.travelSpobId = resolveStel(m.travelStel, currentSpobId);
+    if (active.travelSpobId !== null) active.travelDone = false;
+  }
+  if (active.returnSpobId === null && m.returnStel !== -1) {
+    active.returnSpobId =
+      m.returnStel === -4 ? currentSpobId : resolveStel(m.returnStel, currentSpobId);
+  }
+}
+
 /** Resolve a mission's ShipSyst code to a system id. */
 function resolveShipSystem(
   m: MissionType,
