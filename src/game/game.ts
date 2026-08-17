@@ -1301,27 +1301,22 @@ export class Game {
   private advanceDays(days: number): void {
     if (days <= 0) return;
     this.player.date += days;
-    runCrons(
-      this.player,
-      this.bitHandlers(),
-      {
-        outfits: this.player.outfits,
-        explored: this.player.explored,
-        male: true,
-      },
-      (cron, phase) => {
-        if (phase === "start") this.message(`News: ${cron.name}.`);
-      },
-    );
-    runOopses(
-      this.player,
-      {
-        outfits: this.player.outfits,
-        explored: this.player.explored,
-        male: true,
-      },
-      days,
-    );
+    /*
+     * A crön's resource name is the author's own label — "Pirate Storyline
+     * Penultimate missionbit change", "Thorium Reactor knock-off", "Pirate
+     * Off-Shoot outf availability" — and announcing it printed those straight
+     * at the player. 57 of the 125 cröns carry no news strings at all, so more
+     * than a third of them were leaking internal bookkeeping into the message
+     * line. What a crön has to say is its **IndNewsStr / GovtNewsStr** copy,
+     * and `newsFor` already serves exactly that to the bar's news screen.
+     */
+    const testCtx = () => ({
+      outfits: this.player.outfits,
+      explored: this.player.explored,
+      male: this.player.gender !== "female",
+    });
+    runCrons(this.player, this.bitHandlers(), testCtx());
+    runOopses(this.player, testCtx(), days);
   }
 
   /** Note the current system as charted. */

@@ -813,6 +813,38 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**Crön resource names are not news, and 57 of them were being read out.**
+`advanceDays` announced every starting crön as `News: ${cron.name}` — but that
+name is the author's own label, so the message line carried "Pirate Storyline
+Penultimate missionbit change", "Thorium Reactor knock-off" and "Pirate
+Off-Shoot outf availability" straight at the player. **57 of the 125 cröns
+carry no news strings at all**, so more than a third of them were leaking
+internal bookkeeping. What a crön has to say is its IndNewsStr / GovtNewsStr
+copy, and `newsFor` already serves exactly that to the bar's news screen — it
+was correct all along and is untouched. The announcement is simply gone. (The
+same pass stopped both crön and öops test evaluation hardcoding `male: true`;
+no shipped crön tests G, so nothing changes today.)
+
+**The Pirate storyline runs end to end.** Walked 693 Viking → 694 → 695 → 696 →
+697 → 698 Merrol → 700 → 702 → 704 → 706 Viking → 707 → 708 → **709** → 605
+Outcast → 710 → 842 → **712 Pirate 011 LAST**, which lands you in S7evyn. Two
+things it exercised:
+
+- **709 is posted at Viking's *shipyard* counter**, and its OnAccept is
+  `H374 T25043` — it takes your ship away and hands you the *Unrelenting*,
+  renaming it to match. Both halves of the Q/T work, in the one storyline that
+  shows them off.
+- **The finale is gated behind a crön, not a mission.** 712 wants b610, and
+  **nothing in all 791 missions sets it**: crön 375 "Pirate Storyline
+  Penultimate missionbit change" reads `b609 & !b610` with a 10-day PreHoldoff
+  and sets it on start. Measured: b609 on completing 842, b610 eleven days
+  later, and the last leg opens. Anyone tracing this chain through the mission
+  table alone will conclude it dead-ends at 842.
+
+Loose end, same class as the Krypt loop: **mïsn 711** is still active at the
+end. 712's OnSuccess aborts A711 A713 A714 A715, and 711 comes back anyway. It
+carries Flags 0x0400 (invisible), so nothing shows in the mission log.
+
 **Q and T read STR# banks, not dëscs — and they were pointed at the wrong
 resource type.** `applySet` mapped both operators to `showDesc`, on a note that
 their operands named dëscs the data files don't carry. The data carries them
