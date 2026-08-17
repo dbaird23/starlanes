@@ -6078,6 +6078,49 @@ export class Game {
   }
 
   /**
+   * shïp Strength, "modified from between 30% and 100% of that value depending
+   * on the ship's present shield stat" — the Bible's own weighting for combat
+   * odds. A ship at full shields counts for all of its Strength, one stripped
+   * to bare armour for less than a third.
+   */
+  private combatStrength(
+    hullId: string | null,
+    shield: number,
+    maxShield: number,
+  ): number {
+    const base = hullId ? (SHIPS[hullId]?.strength ?? 0) : 0;
+    const frac = maxShield > 0 ? Math.max(0, Math.min(1, shield / maxShield)) : 0;
+    return base * (0.3 + 0.7 * frac);
+  }
+
+  /**
+   * Are `govtId`'s ships here more outgunned than their government tolerates?
+   * Their side is everything allied with them; the other side is the player,
+   * the player's wing, and anything else hostile to them.
+   */
+  private losingBadly(govtId: number): boolean {
+    let friends = 0;
+    let enemies = this.combatStrength(
+      this.player.shipId,
+      this.ship.shield,
+      this.ship.maxShield,
+    );
+    for (const npc of this.npcs) {
+      if (npc.done) continue;
+      const str = this.combatStrength(npc.typeId, npc.shield, npc.maxShield);
+      if (str <= 0) continue;
+      const theirs =
+        npc.govtId === govtId ||
+        (npc.govtId >= 128 && govtAllied(npc.govtId, govtId));
+      if (theirs && !npc.ally) friends += str;
+      else if (npc.ally || npc.hostile) enemies += str;
+    }
+    if (friends <= 0) return true; // nobody left standing to hold the line
+    const maxOdds = GOVTS[String(govtId)]?.maxOdds ?? 100;
+    return (enemies / friends) * 100 > maxOdds;
+  }
+
+  /**
    * Ships you anger in their own space call for help — unless you carry a
    * reinforcement inhibitor covering that government's class.
    */
@@ -6086,17 +6129,37 @@ export class Game {
     if (govtId < 128) return;
     const provoked = this.npcs.some((n) => n.hostile && n.govtId === govtId);
     const wanted = getSystemRecord(this.player, this.player.systemId) < -30;
-    /*
-     * gövt MaxOdds (50-1000 across 65 governments) is documented as the
-     * threshold for this call — help arrives when "the combat odds against
-     * them exceed the MaxOdds field". What Nova counts as "combat odds" is
-     * not stated, though, and the obvious reading (attackers over defenders,
-     * as a percentage) never clears even the lowest threshold for a lone
-     * player, which would switch reinforcements off almost entirely. Left
-     * ungated until the unit is pinned down; the field is extracted.
-     */
     if (!provoked && !wanted) {
       this.reinforceTimer = 45;
+      return;
+    }
+    /*
+     * gövt MaxOdds gates the call, and the Bible does define the unit — the
+     * definition just lives under the gövt resource rather than beside
+     * ReinfFleet, which is why an earlier pass gave up and left this ungated.
+     *
+     * "Combat odds are calculated by summing the strengths of the ship's
+     * enemies (where a ship's strength is taken from the Strength field in the
+     * shïp resource, and modified from between 30% and 100% of that value
+     * depending on the ship's present shield stat) and comparing it to the sum
+     * of the strength of the ship's friends. A value of 100 in this field
+     * represents 1-to-1 combat odds ... A value of 200 represents 2-to-1
+     * combat odds, meaning that ships of this govt won't engage if they are
+     * outnumbered by more than 2-to-1."
+     *
+     * So it is enemies-over-friends as a percentage, and help comes when the
+     * defenders are *more* outgunned than their government is willing to
+     * stomach. A lone pilot in a weak hull therefore never triggers it, which
+     * is the point: reinforcements are for when the locals are losing. The
+     * shield term is what makes a long fight escalate — as their shields go
+     * down their side counts for less, the odds against them climb, and the
+     * call eventually goes out.
+     *
+     * Only gated when there is actually a fight. Being merely wanted keeps the
+     * older patrol response, which is ours rather than the Bible's.
+     */
+    if (provoked && !this.losingBadly(govtId)) {
+      this.reinforceTimer = 5;
       return;
     }
     if (

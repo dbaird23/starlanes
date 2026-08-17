@@ -813,6 +813,51 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**gövt MaxOdds gates the reinforcement call, and the Bible does define the
+unit.** The definition just lives under the gövt resource rather than beside
+sÿst ReinfFleet, which is where an earlier pass looked before giving up and
+leaving the call ungated on a flat 45-second timer:
+
+> "Combat odds are calculated by summing the strengths of the ship's enemies
+> (where a ship's strength is taken from the Strength field in the shïp
+> resource, and **modified from between 30% and 100% of that value depending on
+> the ship's present shield stat**) and comparing it to the sum of the strength
+> of the ship's friends. A value of 100 in this field represents 1-to-1 combat
+> odds ... A value of 200 represents 2-to-1 combat odds, meaning that ships of
+> this govt won't engage if they are outnumbered by more than 2-to-1."
+
+So it is enemies-over-friends as a percentage, and help comes when the
+defenders are *more* outgunned than their government will stomach — 200 for the
+Federation, 250 for the Auroran Empire, 50 to 1000 across the 68.
+
+The earlier reading was arithmetically right and read backwards. A lone pilot
+in a weak hull really does never trigger it, and that is the point:
+reinforcements are for when the **locals** are losing, not the player. What
+makes it fire in practice is the shield term — as their shields go down their
+side counts for less, so an even fight escalates into a call. Measured, against
+the Federation's 200:
+
+| | odds | calls |
+| --- | --- | --- |
+| Shuttle vs 3 Fed Destroyers | 0% | no |
+| Leviathan vs 3 Fed Destroyers | 10% | no |
+| Fed Destroyer vs 1 Fed Destroyer, full shields | 100% | no |
+| **same fight, their shields stripped** | **333%** | **yes** |
+| Fed Carrier vs 3 Shuttles | 8333% | yes |
+
+`combatStrength` and `losingBadly` hold the rule. Only a real fight is gated on
+it; being merely *wanted* keeps the older patrol response, which is ours rather
+than the Bible's. The same MaxOdds is also documented as governing whether an
+NPC engages at all — that is a broad change to combat feel and is **not** wired.
+
+The other three entries filed under "deliberate" were re-checked and are right
+as they stand. **ShootPenalty** the Bible itself annotates "(currently
+ignored)", so charging it would diverge from Nova. **përs GrantCount/GrantProb**
+stay swapped against the doc's order — settled by play, and the Bible's "the
+actual value given will be between GrantCount/2 and GrantCount" is already
+implemented. **cölr Button1-6** is a column-major mapping gotcha, already
+handled by explicit index.
+
 **sÿst @110-140 is Person1-8 and a chance for each — the last unread block in
 the resource.** The Bible puts the field "at the end of the syst resource",
 which is why an earlier pass looked at the zero-filled slots at @412 and gave
@@ -1910,13 +1955,6 @@ happened to live there.
   round, boarding him produced **39 copies of a one-off map**. Read as
   count @310 / prob @312 it is a single map at 50%, which is what a story
   item should do.
-- **gövt `MaxOdds` is extracted but deliberately not gating reinforcements.**
-  The Bible ties it to the call ("the combat odds against them exceed
-  MaxOdds") without saying what "combat odds" counts. The obvious reading —
-  attackers over defenders as a percentage — never clears even the lowest of
-  the shipped thresholds (50..1000 across 65 governments) for a lone player,
-  which switched reinforcements off almost entirely when tried. Reverted;
-  do not re-wire it without pinning the unit first.
 - **gövt `ShootPenalty` is extracted and deliberately never charged.** The
   Bible annotates the field itself "(currently ignored)", so the original
   costs you nothing on your record for merely opening fire — only disabling,
