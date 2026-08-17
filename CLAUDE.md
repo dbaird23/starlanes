@@ -813,6 +813,46 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**sÿst @110-140 is Person1-8 and a chance for each — the last unread block in
+the resource.** The Bible puts the field "at the end of the syst resource",
+which is why an earlier pass looked at the zero-filled slots at @412 and gave
+up; the struct has it straight after Interference, in exactly the shape
+DudeTypes/%Prob take at @68/@84 — eight ids at @110-124, eight percentages at
+@126-140, used by 61 systems across 224 entries.
+
+That pass rejected it on the wrong test — "does the listed përs's LinkSyst
+point back at the listing system", which only 3 do. That is not what the field
+is for. **225 of the 228 listed captains carry a *govt-coded* LinkSyst** (10000
+= any Federation system, 10006, …), so they roam by government, and the Person
+list is how one particular system also asks for them. The two mechanisms are
+independent and a few captains use both.
+
+What settles it:
+
+- **All 48 distinct ids are valid përs; only 22 are valid düde.** The ones out
+  of düde range decide it on their own — 296 "St Leibowitz", 299 "Galadriel",
+  510 "UFS Razorback", 642.
+- **Rautherion lists përs 642 at 100%** — the Pirate Viper "- marked for
+  demolition -" that Tutorial 006 sends you to shoot down, and whose own
+  LinkSyst is Rautherion. That is the Bible's own sentence made concrete:
+  "Want to make a përs type ship *always appear*? Put its ID into one of the
+  Person fields." Nesre Primus and Arcturus do the same for the two Drifting
+  Derelicts pinned to them.
+- **The pairing is exact**: 228 slots carry an id, 227 a chance of 1-100, and
+  no system anywhere carries a chance without an id. The one odd slot is
+  Nil'ikro naming përs 449 at 0%, i.e. never.
+
+`placeLinkedPersons` now does both passes — the 29 captains pinned by LinkSyst
+placed outright, then the system's own list rolled per entry — with a `placed`
+set so a captain named by both routes is still one ship. `maybeMakePerson`'s 5%
+wildcard roll skips any captain already flying here, which it previously did
+only for the pinned ones. Measured over 2000 arrivals in Sol: the Terrapin
+reads 12.6% against a stated 12, the Valkyrie 0.9% against 1, Galadriel 15.0%
+against 15 — and Drifting Derelict 156 reads 100% because its LinkSyst pins it
+to Sol outright, which is the documented behaviour and makes the system's own
+2% listing redundant. Rautherion's derelict turns up on 20 visits out of 20,
+never doubled.
+
 **Systems change their contents, not just their names.** The variant pass that
 brought S7evyn back kept only the canonical sÿst of each name, so a group's
 *content* never moved when its bits did. Measured across the 128 multi-variant
@@ -1834,20 +1874,6 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
-- **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
-  @110-124, 8 small values at @126-140, used together by ~65 systems). It is
-  **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points
-  back at the listing system, and read as düde only 18/192 have a matching
-  govt (against 900/2747 for the verified düde block at @68). The Bible's
-  Person(x8) is almost certainly the zero-filled 8-slot block at @412-426,
-  which is literally "at the end" as documented and unused in stock data.
-  Locating @110-140 no longer blocks anything — BkgndColor/Murk are resolved
-  and sit after it — but it remains ~32 bytes of unread syst data. A
-  membership test cannot settle it: of the 48 distinct ids used, 100% are
-  valid përs *and* valid mïsn ids and 96% valid spöb ids, because those ranges
-  overlap almost entirely. The paired values at @126-140 are percentages
-  (1..100) whose per-system sums do not reach 100, so they are independent
-  chances rather than a distribution.
 - **Escort upgrade and sale are live** — the escort hail offers Upgrade
   Escort (shïp `UpgradeTo`, priced by `EscUpgrdCost`) and, on captured
   escorts, Sell Escort (`EscSellValue` via `escortSellValue`); both settle at

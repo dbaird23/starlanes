@@ -95,6 +95,13 @@ export interface SystemDef {
   govtName: string | null;
   /** dude classes that spawn here, with weights */
   dudes: { id: number; prob: number }[];
+  /**
+   * sÿst Person1-8: named captains this system spawns, each with its own
+   * chance. Separate from përs LinkSyst — a captain can be pinned to one
+   * system by its own field, named by a system's list, or both. Rautherion
+   * does both for the tutorial's derelict.
+   */
+  persons: { id: number; prob: number }[];
   avgShips: number;
   /** how many asteroids drift here (0-16) and which röid types */
   asteroids: number;
@@ -145,6 +152,7 @@ export interface SystemVariant {
   links: string[];
   planets: PlanetDef[];
   dudes: { id: number; prob: number }[];
+  persons: { id: number; prob: number }[];
   avgShips: number;
   traffic: number;
   govtId: number;

@@ -107,6 +107,7 @@ interface RawSystem {
   links: number[];
   spobs: number[];
   dudes: { id: number; prob: number }[];
+  persons?: { id: number; prob: number }[];
   avgShips: number;
   govt: number;
   asteroids: number;
@@ -130,6 +131,7 @@ interface RawSystemVariant {
   links: number[];
   spobs: number[];
   dudes: { id: number; prob: number }[];
+  persons?: { id: number; prob: number }[];
   avgShips: number;
   govt: number;
   asteroids: number;
@@ -1156,6 +1158,7 @@ export async function loadUniverse(): Promise<void> {
     traffic: Math.max(1, Math.min(6, sys.avgShips ?? 2)),
     starColor: "#fff4d6",
     dudes: sys.dudes ?? [],
+    persons: sys.persons ?? [],
     avgShips: sys.avgShips ?? 2,
     asteroids: sys.asteroids ?? 0,
     astTypes: sys.astTypes ?? 0,
@@ -1183,6 +1186,7 @@ export async function loadUniverse(): Promise<void> {
       links: v.links.map(String),
       planets: planetsOf(v.spobs),
       dudes: v.dudes ?? [],
+      persons: v.persons ?? [],
       avgShips: v.avgShips ?? 2,
       traffic: Math.max(1, Math.min(6, v.avgShips ?? 2)),
       govtId: v.govt,
@@ -1436,6 +1440,7 @@ function applySystemVariant(sys: SystemDef, v: SystemVariant): void {
   sys.links = v.links;
   sys.planets = v.planets;
   sys.dudes = v.dudes;
+  sys.persons = v.persons;
   sys.avgShips = v.avgShips;
   sys.traffic = v.traffic;
   sys.govtId = v.govtId;

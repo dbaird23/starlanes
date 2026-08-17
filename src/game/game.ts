@@ -6397,22 +6397,52 @@ export class Game {
    */
   private placeLinkedPersons(): void {
     const sysId = parseInt(this.player.systemId, 10);
+    const placed = new Set<number>();
+    /*
+     * Two ways a named captain gets into a system, and a few use both.
+     *
+     * përs LinkSyst pins one to a single system — 29 of the 516 do that, and
+     * they are placed outright rather than rolled for (see the derelict note
+     * above). sÿst **Person1-8** is the other direction: the system names the
+     * captains it wants, each with its own chance, which is what puts the
+     * Terrapin and a Valkyrie in Sol at 12% and 1%, scatters the Drifting
+     * Derelicts around at 1-5%, and stations the UFS Razorback over Kania at
+     * 50%. Rautherion does both for përs 642, at 100% — belt and braces for
+     * the one derelict the tutorial has to find.
+     *
+     * `placed` keeps a captain who is both pinned here and listed here from
+     * being spawned twice.
+     */
     for (const person of Object.values(PERSONS)) {
       const link = person.linkSyst;
       if (link < 128 || link > 2175 || link !== sysId) continue;
       if (!this.personAvailable(person)) continue;
-      const npc = new NpcShip();
-      this.applyPerson(npc, person);
-      if (!npc.ally && this.hostileToPlayer(npc.govtId)) {
-        if (person.linkMission < 128) this.setNpcHostile(npc);
-      }
-      const ang = Math.random() * Math.PI * 2;
-      const r = 400 + Math.random() * 1200;
-      npc.pos = { x: Math.cos(ang) * r, y: Math.sin(ang) * r };
-      this.setNpcErrand(npc, this.system);
-      npc.angle = Math.atan2(npc.target.y - npc.pos.y, npc.target.x - npc.pos.x);
-      this.npcs.push(npc);
+      this.spawnPerson(person);
+      placed.add(person.id);
     }
+    for (const entry of this.system.persons) {
+      if (placed.has(entry.id)) continue;
+      if (Math.random() * 100 >= entry.prob) continue;
+      const person = PERSONS[String(entry.id)];
+      if (!person || !this.personAvailable(person)) continue;
+      this.spawnPerson(person);
+      placed.add(entry.id);
+    }
+  }
+
+  /** Put a named captain on the board, somewhere off the player's nose. */
+  private spawnPerson(person: PersonType): void {
+    const npc = new NpcShip();
+    this.applyPerson(npc, person);
+    if (!npc.ally && this.hostileToPlayer(npc.govtId)) {
+      if (person.linkMission < 128) this.setNpcHostile(npc);
+    }
+    const ang = Math.random() * Math.PI * 2;
+    const r = 400 + Math.random() * 1200;
+    npc.pos = { x: Math.cos(ang) * r, y: Math.sin(ang) * r };
+    this.setNpcErrand(npc, this.system);
+    npc.angle = Math.atan2(npc.target.y - npc.pos.y, npc.target.x - npc.pos.x);
+    this.npcs.push(npc);
   }
 
   /** 5% of ships are a named captain, per the Nova Bible. */
@@ -6422,6 +6452,10 @@ export class Game {
     const candidates = Object.values(PERSONS).filter((p) => {
       if (!this.personAvailable(p)) return false;
       const link = p.linkSyst;
+      // Already flying here — whether pinned by përs LinkSyst or named by the
+      // system's own Person1-8 list — so rolling them again would put two of
+      // the same captain on the board.
+      if (this.npcs.some((n) => n.personId === p.id)) return false;
       if (link === -1) return true;
       // an explicitly placed captain is already in the system; see
       // placeLinkedPersons — re-rolling one here would double them up

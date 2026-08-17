@@ -41,6 +41,12 @@ function decodeSyst(res) {
     const prob = d.readInt16BE(84 + i * 2);
     if (dude >= 128 && prob > 0) dudes.push({ id: dude, prob });
   }
+  const persons = [];
+  for (let i = 0; i < 8; i++) {
+    const id = d.readInt16BE(110 + i * 2);
+    const prob = d.readInt16BE(126 + i * 2);
+    if (id >= 128 && prob > 0) persons.push({ id, prob });
+  }
   return {
     id: res.id,
     name: res.name,
@@ -51,6 +57,28 @@ function decodeSyst(res) {
     dudes,
     avgShips: d.readInt16BE(100),
     govt: d.readInt16BE(102),
+    /*
+     * **Person1-8 @110-124, with a spawn chance each @126-140.** The Bible
+     * puts the field "at the end of the syst resource", which is why an
+     * earlier pass looked at the zero-filled block at @412 and gave up; the
+     * struct has it here, straight after Interference and in exactly the shape
+     * DudeTypes/%Prob take at @68/@84 — eight ids and eight percentages.
+     *
+     * It identifies itself. All 48 distinct ids across the 65 systems that use
+     * it are valid përs and only 22 are valid düde, so the ids out of düde
+     * range (296 "St Leibowitz", 299 "Galadriel", 510 "UFS Razorback", 642)
+     * rule the düde reading out on their own. And the decisive case is
+     * **Rautherion**, which lists përs 642 — the Pirate Viper "- marked for
+     * demolition -" that the tutorial sends you to shoot down — at **100%**,
+     * matching the Bible's own "Want to make a përs type ship *always appear*?
+     * Put its ID into one of the Person fields". Nesre Primus and Arcturus do
+     * the same for the two Drifting Derelicts pinned to them.
+     *
+     * The pairing is exact: 228 slots carry an id, 227 of them a chance of
+     * 1-100, and no system anywhere carries a chance without an id. The one
+     * odd slot is Nil'ikro naming përs 449 at 0%, i.e. never.
+     */
+    persons,
     // Asteroids @106 (0-16); AstTypes @148 is a 16-bit mask of röid types,
     // sitting just before the Visibility control-bit string at @150
     asteroids: d.readInt16BE(106),
@@ -1474,6 +1502,7 @@ for (const [name, variants] of groups) {
       links: v.links,
       spobs: v.spobs,
       dudes: v.dudes,
+      persons: v.persons,
       avgShips: v.avgShips,
       govt: v.govt,
       asteroids: v.asteroids,
