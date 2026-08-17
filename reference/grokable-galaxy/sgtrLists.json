@@ -1474,6 +1474,34 @@
     "<OSN>: Hey there gorgeous! *wink*",
     "<OSN>: Greetings, Mortal"
   ],
+  "7996": [
+    "Duellist: I am honored to have fought you, <PN>.",
+    "Duellist: It is an honor to be defeated at the hands of a worthy foe.",
+    "Duellist: Well done, <PN>!  You truly are an amazing warrior.",
+    "Duellist: Congratulations <PN>, you are indeed a worthy foe.",
+    "Duellist: The better captain has prevailed.  <PN>, I salute you."
+  ],
+  "7997": [
+    "Duellist: Thank you for agreeing to face me.",
+    "Duellist: I am surprised, I did not think I would best you.",
+    "Duellist: I am deeply honored to have defeated a warrior of your standing <PN>.",
+    "Duellist: Today I am the stronger warrior, but who knows what tomorrow holds?",
+    "Duellist: Well fought, <PN>.  This time you were unlucky, but you still fought well."
+  ],
+  "7998": [
+    "Duellist: I am defeated.",
+    "Duellist: You were lucky this time, <PN>.",
+    "Duellist: You must have cheated!",
+    "Duellist: This was not fair!  There must be something wrong with my ship!",
+    "Duellist: You had better watch your back, <PN>, I won't take this lying down."
+  ],
+  "7999": [
+    "Duellist: Unsurprisingly, it seems I have defeated you.",
+    "Duellist: You weren't even a challenge.",
+    "Duellist: You barely even hit me.",
+    "Duellist: You did well, for someone with no skill whatsoever.",
+    "Duellist: With skills like yours I would stick to being a merchant if I were you."
+  ],
   "8100": [
     "Local eatery has an offer of all you can eat for 2 credits for all off-worlders for your entire stay.",
     "Local entrepeneur is offering her unique brand of clothing extra-cheap.",
@@ -1500,6 +1528,9 @@
     "Environmental News:  Biologists estimate that there has been an increase of around 10% in biodiversity on Earth compared to 1000 years ago.",
     "Federation News:  Admiral Mahiney unveils plans to use recently developed cryogenic technology to freeze Federation troops to extend their useful lives.",
     "Auroran News:  Tekel Thurokiir publically shames warriors who claimed false kills.  Their penance will be working as laborers in the Gladius Shipyards."
+  ],
+  "12000": [
+    "Sensors record anomolous ship presence... ship identified as Zephyr."
   ],
   "15000": [
     "The Polaris have recently opened diplomatic discussions with the Wraith ending two centuries of hostility.",
@@ -2240,14 +2271,89 @@
     "Supply Fleet",
     "Supply Fleet"
   ],
+  "25040": [
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart",
+    "Dart"
+  ],
+  "25041": [
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow",
+    "Arrow"
+  ],
+  "25042": [
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin",
+    "Javelin"
+  ],
+  "25043": [
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting",
+    "Unrelenting"
+  ],
+  "25044": [
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge",
+    "Thunderforge"
+  ],
+  "25046": [
+    "<PN>, you are no longer allowed to land here.  Please move away."
+  ],
   "25047": [
     "Temmin Shard"
+  ],
+  "25048": [
+    "A mysterious force transports you to an unknown location..."
+  ],
+  "25049": [
+    "Moash Traffic Control: Stop that ship!"
   ],
   "25050": [
     "Dani Elite Corps"
   ],
   "25051": [
     "Karrod's Flagship"
+  ],
+  "25052": [
+    "Karrod's Flagship: All Dani Elite Corps Ships are destroyed."
+  ],
+  "25053": [
+    "Hune: Carry on the mission without me!"
   ],
   "25054": [
     "The Pack",
@@ -2273,8 +2379,35 @@
     "Federation Shipping",
     "Federation Shipping"
   ],
+  "25056": [
+    "Bur'Chee: The 'Federation Shipping' convoy is destroyed, KarHallarn."
+  ],
+  "25057": [
+    "<OSN>: Ready for docking, <PSN>."
+  ],
+  "25058": [
+    "Two Auroran vessels with Federation IFF detected."
+  ],
+  "25059": [
+    "Holographic recording complete.  Return to P'ar Aed."
+  ],
+  "25060": [
+    "Message broadcast complete.  Return to P'ar Aed."
+  ],
+  "25061": [
+    "Nil'kemorya Fleet Master: The Aurorans have been turned back.  Thank you, Ory'hara."
+  ],
+  "25062": [
+    "Holographic recording complete.  Return to Nil'a Mjolnir."
+  ],
+  "25063": [
+    "Nil'kemorya Fleet Master: The Federation ships have been turned back.  Thank you for your help."
+  ],
   "25064": [
     "Warrior's Pride"
+  ],
+  "25065": [
+    "Auroran Traffic Control: Destroy that ship!"
   ],
   "25066": [
     "Traitor"
@@ -2282,10 +2415,31 @@
   "25067": [
     "Veteran"
   ],
+  "25068": [
+    "You find yourself under attack by a curious Krypt-mind, and you are slowly drained of strength!"
+  ],
+  "25069": [
+    "Upon reaching the edge of Krypt space, the attacks upon your mind suddenly cease..."
+  ],
   "25070": [
     "Guild-Master"
   ],
+  "25071": [
+    "The upstart Guild-Master has been destroyed."
+  ],
+  "25072": [
+    "The Bureau traitors have been destroyed."
+  ],
   "25073": [
     "Shards"
+  ],
+  "25074": [
+    "The ships of the traitors have been destroyed."
+  ],
+  "25075": [
+    "A large enough sensor sample has been taken.  Return to P'aedt when ready."
+  ],
+  "25076": [
+    "Unfortunately Captain <PN>, for security reasons we cannot allow you to land.  Please move away."
   ]
 }

@@ -1267,10 +1267,27 @@ const cronNewsLists = [
   ...new Set(crons.flatMap((c) => [c.indNewsStr, ...c.govtNewsStrs])),
 ].filter((id) => id > 0);
 // Special-ship name and subtitle banks: every STR# a mïsn ShipNameID or
-// ShipSubtitle points at (25000-25047 in stock Nova, out of a 25000-25076
-// band the Q/T ncb operators use the rest of).
+// ShipSubtitle points at (25000-25047 in stock Nova).
 const shipNameLists = [
   ...new Set(missions.flatMap((m) => [m.shipNameId, m.shipSubtitle])),
+].filter((id) => id >= 128);
+/*
+ * The Q and T ncb operators name **STR# resources, not dëscs** — Q "show a
+ * message at the bottom of the screen ... randomly selected from the STR#
+ * resource with ID xxx", T "change the name (Title) of the player's ship to a
+ * string randomly selected from STR# resource ID xxx". Both were read as dësc
+ * ids and so resolved to nothing: T25040/25041/25042 are "Dart", "Arrow" and
+ * "Javelin", the names the three Vell-os hulls take, and Q25048 is the message
+ * every storyline finale fires. 66 operator sites, all in mïsn set strings.
+ */
+const qtOperandLists = [
+  ...new Set(
+    missions.flatMap((m) =>
+      [m.onAccept, m.onSuccess, m.onFailure, m.onAbort, m.onRefuse, m.onShipDone]
+        .flatMap((expr) => [...String(expr ?? "").matchAll(/\b[QT](\d+)\b/gi)])
+        .map((hit) => Number(hit[1])),
+    ),
+  ),
 ].filter((id) => id >= 128);
 // 1000 is the message-buoy bank a sÿst's Message field indexes into.
 for (const id of [
@@ -1312,6 +1329,7 @@ for (const id of [
   ...govtHailLists,
   ...cronNewsLists,
   ...shipNameLists,
+  ...qtOperandLists,
 ]) {
   const res = byTypeId.get(`STR#:${id}`);
   if (res) strLists[id] = decodeStrList(res.data);

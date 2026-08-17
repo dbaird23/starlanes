@@ -51,6 +51,16 @@ function pickGroup(bank: string, group: number, fallback: string): string {
     : fallback;
 }
 
+/**
+ * A random line from a whole STR# bank — what the Q and T ncb operators read.
+ * Unlike the comm banks these are not grouped in fives: the operand names the
+ * resource and Nova picks from all of it.
+ */
+export function pickStrLine(bank: number): string | null {
+  const opts = (STR_LISTS[String(bank)] ?? []).filter((t) => t && t.length > 0);
+  return opts.length ? opts[Math.floor(Math.random() * opts.length)] : null;
+}
+
 /** One of the five lines a ship uses for this situation. */
 export const shipComm = (group: number, fallback: string): string =>
   pickGroup("3000", group, fallback);

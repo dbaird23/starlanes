@@ -813,6 +813,41 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**Q and T read STR# banks, not dëscs — and they were pointed at the wrong
+resource type.** `applySet` mapped both operators to `showDesc`, on a note that
+their operands named dëscs the data files don't carry. The data carries them
+fine; they are **STR# resources**. The extractor only pulled the 25000-25047
+band that mïsn ShipNameID/ShipSubtitle points at, so the 26 Q banks and 5 T
+banks the ncb operators name — 66 sites, all in mïsn set strings — resolved to
+nothing. `qtOperandLists` now collects every Q/T operand out of the six set
+fields and extracts those banks too.
+
+- **T is "change the name (Title) of the player's ship"** to a random line from
+  the bank, "The previous ship name will be substituted for any '*' characters
+  which are encountered in the new string". The five stock banks each hold one
+  name ten times over, so the roll is a formality — but it is what names the
+  Vell-os hulls as the storyline hands them to you: **25040 "Dart", 25041
+  "Arrow", 25042 "Javelin"**, alongside the H381/H382/H383 that swap the hull.
+  Verified: a pilot's "Quiet Mind" becomes Dart, then Arrow, then Javelin.
+- **Q shows a message *and throws you off the pad*** — "make the player
+  immediately leave (absquatulate) whatever stellar he's landed on and return
+  to space, and show a message at the bottom of the screen ... parsed for
+  mission text tags but not text-selection tags". The bank names are the giveaway:
+  Q25046 is "Kicked Off Planet" and Q25076 "Kicked Off Rebel II". It is
+  `substituteText` for exactly the reason the Bible gives — tags yes, selection
+  no — and the ejection reuses `depart()`, so `LandedUi` sees the same
+  moved-off-the-pad case the M/N operators produce.
+
+This also explains a thing the Federation walk turned up and could not account
+for: **Fed38's OnAccept is Q25046**, so taking that leg on Nil'a Ca kicks you
+off the world immediately. The reason you cannot land there again is not a
+missing gate — being ejected is the mission.
+
+And **Q25048 is the line every storyline finale has been missing**: "A
+mysterious force transports you to an unknown location...", fired one operator
+after M472. Verified at Fed43: the message now closes the game out beside "You
+find yourself in the S7evyn system."
+
 **ncb set operators are case-insensitive, and 34 of them were being dropped.**
 `evalTest` has always read `b/p/o/e/g` either way — the Bible's own example
 mixes them, `!(B42 | B53) & b103` — but `applySet` matched uppercase only, so
@@ -1649,19 +1684,6 @@ happened to live there.
 - **wëap `SubLimit`** is 0 on the only recursive weapon (Nanites), which can be
   read as neither "never split" nor "split forever"; an unstated limit is
   currently treated as a single split.
-- **The Q and T ncb operators have no strings to read, and the banks do
-  exist.** `applySet` maps both to `showDesc`, on the note that their operands
-  name dëscs the data files don't carry. They don't — because they are **STR#
-  resources, not dëscs**, and the extractor only pulls the 25000-25047 band
-  that mïsn ShipNameID/ShipSubtitle points at. Probing the raw rez finds all of
-  25038-25076 present: **T25040 "Dart", T25041 "Arrow", T25042 "Javelin"** are
-  the names the Vell-os hulls are supposed to take (Bible: T "change the name
-  (Title) of the player's ship ... The previous ship name will be substituted
-  for any '*' characters"), and **Q25048 "Winning Qxxx text"** is the message
-  every storyline finale fires. Q is also documented to make the player
-  "immediately leave (absquatulate) whatever stellar he's landed on", which we
-  don't do. Extracting the Q/T operand banks would make all five T uses and the
-  61 Q uses real; nothing is blocked without it.
 - **sÿst @110-140 is still unidentified** — a 16-slot paired block (8 ids at
   @110-124, 8 small values at @126-140, used together by ~65 systems). It is
   **not** Person1-8: only 7 of 228 entries name a përs whose LinkSyst points

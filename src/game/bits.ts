@@ -34,8 +34,18 @@ export interface SetOpHandlers {
   playSound?: (sndId: number) => void;
   activateRank?: (rankId: number) => void;
   deactivateRank?: (rankId: number) => void;
-  /** Qxxx/Txxx: show a dësc resource to the player */
-  showDesc?: (descId: number) => void;
+  /**
+   * Qxxx: "make the player immediately leave (absquatulate) whatever stellar
+   * he's landed on and return to space, and show a message at the bottom of
+   * the screen", randomly chosen from **STR# xxx** — not a dësc.
+   */
+  showMessage?: (strListId: number) => void;
+  /**
+   * Txxx: "change the name (Title) of the player's ship to a string randomly
+   * selected from STR# resource ID xxx. The previous ship name will be
+   * substituted for any '*' characters."
+   */
+  renameShip?: (strListId: number) => void;
   /** Yxxx: wipe a stellar object off the map */
   destroyStellar?: (spobId: number) => void;
 }
@@ -211,10 +221,8 @@ export function applySet(expr: string, bits: Bits, handlers: SetOpHandlers = {})
         case "P": handlers.playSound?.(id); break;
         case "K": handlers.activateRank?.(id); break;
         case "L": handlers.deactivateRank?.(id); break;
-        // Q and T both pop a dësc up at the player. Every operand the stock
-        // scenario uses (25040-25076) names a dësc these data files don't
-        // carry, so in practice this is a no-op until a plug-in supplies them.
-        case "Q": case "T": handlers.showDesc?.(id); break;
+        case "Q": handlers.showMessage?.(id); break;
+        case "T": handlers.renameShip?.(id); break;
         case "Y": handlers.destroyStellar?.(id); break;
       }
     }

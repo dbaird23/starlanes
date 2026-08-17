@@ -70,6 +70,7 @@ import {
   UI,
   SHIP_COMM,
   STELLAR_COMM,
+  pickStrLine,
   shipComm,
   stellarComm,
   stellarCommByKind,
@@ -8143,9 +8144,43 @@ export class Game {
       playSound: (sndId: number) => playSnd(sndId, 0.5),
       activateRank: (rankId: number) => this.grantRank(rankId),
       deactivateRank: (rankId: number) => this.revokeRank(rankId),
-      showDesc: (descId: number) => {
-        const text = descText(descId);
-        if (text) this.pendingMissionEvents.push({ title: "", text });
+      /*
+       * Qxxx — the Bible: "make the player immediately leave (absquatulate)
+       * whatever stellar he's landed on and return to space, and show a
+       * message at the bottom of the screen. The message is randomly selected
+       * from the STR# resource with ID xxx, and is parsed for mission text
+       * tags (e.g. <PSN> and <PRK>) but not text-selection tags".
+       *
+       * The bank names say what the ejection is for: Q25046 is "Kicked Off
+       * Planet" and Q25076 "Kicked Off Rebel II". Q25048, the one every
+       * storyline finale fires, reads "A mysterious force transports you to an
+       * unknown location..." — the line that goes with M472.
+       */
+      showMessage: (strListId: number) => {
+        const line = pickStrLine(strListId);
+        if (line) {
+          this.message(
+            substituteText(line, this.pilotName, this.descTags()),
+          );
+        }
+        // Leaving the pad mid-landing is the M/N case: LandedUi notices it was
+        // moved off, plays whatever events are queued, then closes to flight.
+        if (this.player.landedOn) this.depart();
+      },
+      /*
+       * Txxx — "change the name (Title) of the player's ship to a string
+       * randomly selected from STR# resource ID xxx. The previous ship name
+       * will be substituted for any '*' characters which are encountered in
+       * the new string." All five stock banks hold one name ten times over
+       * (25040 "Dart", 25041 "Arrow", 25042 "Javelin" for the Vell-os hulls),
+       * so the roll is a formality, but a plug-in's needn't be.
+       */
+      renameShip: (strListId: number) => {
+        const line = pickStrLine(strListId);
+        if (!line) return;
+        const previous = this.player.shipName ?? "";
+        this.player.shipName = line.replace(/\*/g, previous);
+        setPlayerIdentity(this.player); // <PSN> reads it
       },
       destroyStellar: (spobId: number) => {
         const id = String(spobId);
