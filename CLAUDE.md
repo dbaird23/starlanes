@@ -813,6 +813,41 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**An Axxx fired while landing put the mission straight back.**
+`collectLandingEvents` walked `activeMissions` building a local `remaining`
+array and assigned it back at the end — but the ncb operators fired from those
+very completions edit the same list underneath the pass: `abortMission`
+reassigns it to a filtered copy, `startMission` pushes onto it. Rebuilding from
+the local array discarded the aborts. (Starts survived only by accident: the
+old loop iterated the live array, so a pushed mission was visited by the same
+`for…of` and pushed to `remaining` in turn.)
+
+It now tracks what *finished* in a `Set`, iterates a snapshot, skips anything
+aborted out from under the pass, and filters the **live** list by identity at
+the end. All three drop-paths — unknown mïsn id, time-limit failure, and
+completion — record into that set explicitly.
+
+Two loose ends closed by it, both previously written off as harmless because
+the missions carry Flags 0x0400:
+
+- **The Krypt Mind Attack loop.** mïsn 181 Polaris32 opens it on accept
+  (`S862…S866`) and its OnSuccess aborts all ten of 862-871. It never took, so
+  the five kept running for the rest of the Polaris chain. Verified: accept
+  181, fly Vellos → P'ar Aed, and the list is empty on completion.
+- **The Pirate finale's `A711 A713 A714 A715`**, which left 711 running.
+
+**The Polaris b-path runs too, and it is gated on cröns rather than missions.**
+Polaris5's `R(b279 b316)` is the only thing in the scenario that sets b316, and
+the arm behind it is short but slow: 601 Polaris6b → 602 → 603 → **crön 137
+"Polaris Cloaking Device v1.0"** (`b319 & !b320`, PreHoldoff 50) → the same
+843/844 ActionMan detour the a-path needs for b5759 → 604 Polaris9b → **crön
+139 "Polaris Recombination crön"** (`(b321 | b1300) & !b284`, PreHoldoff 15) →
+**b284**, which is exactly where the a-path's 159 Polaris10a lands. Measured: 51
+days for the first crön, 16 for the second, then 160 Polaris11a is on the board
+as normal. Note the b-path does **not** set b1300 the way 159 does — crön 128
+"Wraith Change" supplies it 200 days after b317 — so the Nil'kemorya system
+variants flip later on this arm.
+
 **Crön resource names are not news, and 57 of them were being read out.**
 `advanceDays` announced every starting crön as `News: ${cron.name}` — but that
 name is the author's own label, so the message line carried "Pirate Storyline
@@ -840,10 +875,6 @@ things it exercised:
   and sets it on start. Measured: b609 on completing 842, b610 eleven days
   later, and the last leg opens. Anyone tracing this chain through the mission
   table alone will conclude it dead-ends at 842.
-
-Loose end, same class as the Krypt loop: **mïsn 711** is still active at the
-end. 712's OnSuccess aborts A711 A713 A714 A715, and 711 comes back anyway. It
-carries Flags 0x0400 (invisible), so nothing shows in the mission log.
 
 **Q and T read STR# banks, not dëscs — and they were pointed at the wrong
 resource type.** `applySet` mapped both operators to `showDesc`, on a note that
@@ -967,12 +998,6 @@ CompRewards are what earn them, so a walkthrough that teleports needs standing
 seeded in systems 237/245/259/262/206. And the observe legs sit still among the
 mission's own hostiles: 186 "Observe Bureau" spawns eight and they crippled a
 50-ton Argosy while it watched.
-
-Loose end, not chased: **mïsn 862-866 "Krypt Mind Attack" are a self-restarting
-loop** — each aborts the other four and starts 867-871, which start 862-866
-again — and 181's OnAccept opens it while its OnSuccess tears it down. Ours
-re-armed and was still active at the end of the chain. All five carry Flags
-0x0400 (invisible), so nothing shows in the mission log and nothing blocked.
 
 **The Auroran storyline runs end to end.** Walked leg by leg: 653 (any non-
 Family-Heraan bar) → 654 Codec → 655 Dominance → 656 Skye → 657 Heraan →

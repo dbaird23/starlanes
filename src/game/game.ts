@@ -8237,10 +8237,27 @@ export class Game {
     this.collectTribute();
     this.collectSalary();
     this.payEscorts();
-    const remaining: typeof this.player.activeMissions = [];
-    for (const active of this.player.activeMissions) {
+    /*
+     * Track what *finished* rather than rebuilding the list, because the ncb
+     * operators fired from these very completions edit it underneath us:
+     * `abortMission` reassigns `activeMissions` to a filtered copy and
+     * `startMission` pushes onto it. Rebuilding from a local array threw both
+     * away — an Axxx during a landing put the aborted mission straight back.
+     * That is why mïsn 181 Polaris32, whose OnSuccess aborts the ten Krypt
+     * Mind Attack missions it opened, left all five of 862-866 running.
+     *
+     * So: iterate a snapshot, skip anything aborted out from under the pass,
+     * and filter the *live* list at the end by identity.
+     */
+    const finished = new Set<(typeof this.player.activeMissions)[number]>();
+    for (const active of [...this.player.activeMissions]) {
+      // aborted by an operator earlier in this same pass
+      if (!this.player.activeMissions.includes(active)) continue;
       const m = MISSIONS[String(active.misnId)];
-      if (!m) continue;
+      if (!m) {
+        finished.add(active);
+        continue;
+      }
 
       const silent = isSilentMission(m);
 
@@ -8264,6 +8281,7 @@ export class Game {
             ),
           });
         }
+        finished.add(active);
         continue;
       }
 
@@ -8406,11 +8424,13 @@ export class Game {
                 : "The job is done."),
           });
         }
+        finished.add(active);
         continue;
       }
-      remaining.push(active);
     }
-    this.player.activeMissions = remaining;
+    this.player.activeMissions = this.player.activeMissions.filter(
+      (a) => !finished.has(a),
+    );
     return events;
   }
 
