@@ -444,21 +444,21 @@ export class HudUi {
     rows.push(barRow("armor", "var(--hud-armor)", ar, pct(ar)));
 
     /*
-     * Fuel is one continuous bar. Nova counts it in whole jumps, so an earlier
-     * pass drew a segment per jump with the count printed beside it; 3a's plate
-     * has neither, and the ïntf's two fuel colours survive the change — FuelFull
-     * is the fill and FuelPartial the empty run behind it. Afterburning takes
-     * the bar gold, which is the one thing here that is not the resource's.
+     * Fuel bar: whole-jump amounts fill with the solid colour; any partial
+     * amount above the last whole jump renders at ~45% opacity so the player
+     * can see energy accumulating (or draining) without it looking like a full
+     * jump. color-mix() handles the translucency so this works for both
+     * var(--hud-fuel) and the afterburner gold without needing the hex value.
      */
-    const fuel = g.player.maxFuelJumps
-      ? g.player.fuelJumps / g.player.maxFuelJumps
-      : 0;
     rows.push(
-      barRow(
-        "fuel",
+      fuelBarRow(
         g.isAfterburning ? "var(--hud-gold)" : "var(--hud-fuel)",
-        fuel,
-        "",
+        g.player.maxFuelJumps
+          ? Math.floor(g.player.fuelJumps) / g.player.maxFuelJumps
+          : 0,
+        g.player.maxFuelJumps
+          ? g.player.fuelJumps / g.player.maxFuelJumps
+          : 0,
       ),
     );
 
@@ -693,6 +693,25 @@ function pct(f: number): string {
  * readout rides inside the trough where one is passed — the original prints no
  * number, but the panel has nowhere else 192px wide to put one.
  */
+/**
+ * Fuel bar with two colour zones: whole-jump amounts at full opacity, any
+ * partial amount above the last whole jump at ~45% (accumulating energy or
+ * a sub-jump drain from afterburner / energy weapons). Both zones share the
+ * same colour token so afterburner gold carries through automatically.
+ * color-mix() is used so the partial tint works against a CSS variable
+ * without needing a hardcoded hex colour.
+ */
+function fuelBarRow(color: string, fullFrac: number, totalFrac: number): string {
+  const fp = `${Math.max(0, Math.min(1, fullFrac)) * 100}%`;
+  const tp = `${Math.max(0, Math.min(1, totalFrac)) * 100}%`;
+  const dim = `color-mix(in srgb, ${color} 45%, transparent)`;
+  const grad = `linear-gradient(to right, ${color} ${fp}, ${dim} ${fp}, ${dim} ${tp}, transparent ${tp})`;
+  return `<div class="hud-gauge">
+    <span class="hud-gicon fuel"></span>
+    <span class="hud-trough hud-trough-fuel"><i style="width:100%;background:${grad}"></i></span>
+  </div>`;
+}
+
 function barRow(
   icon: string,
   color: string,
