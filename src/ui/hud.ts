@@ -302,7 +302,9 @@ export class HudUi {
       const pt = to(p.pos.x, p.pos.y);
       const isGate = p.isHypergate || p.isWormhole;
       let dotColor: string;
-      if (g.player.dominated.includes(p.id)) {
+      if (!g.hasIff) {
+        dotColor = "#ffffff"; // no IFF — all stellars the same
+      } else if (g.player.dominated.includes(p.id)) {
         dotColor = "#6fce8a"; // dominated — green
       } else if (isGate) {
         // A ring you may actually use: working, and clearing you to land. For
@@ -346,12 +348,17 @@ export class HudUi {
         pt.x += Math.sin(g.hudClock + npc.pos.y * 0.02) * murk * 6;
         pt.y += Math.cos(g.hudClock + npc.pos.x * 0.02) * murk * 6;
       }
-      // Escorts and allies green, hostile red, neutral blue, disabled dim.
-      let blipColor = npc.ally
-        ? "#6fce8a"
-        : npc.hostile
-          ? "#e06a5a"
-          : "#5aabe0";
+      // Without IFF all contacts are the same neutral blue.  With it, escorts
+      // and allies read green, hostiles red.  The selected target is always
+      // white — that is your targeting computer, not IFF.  Disabled ships are
+      // always dim; their lack of motion is observable without any decoder.
+      let blipColor = g.hasIff
+        ? npc.ally
+          ? "#6fce8a"
+          : npc.hostile
+            ? "#e06a5a"
+            : "#5aabe0"
+        : "#5aabe0";
       if (npc.disabled) blipColor = INTERFACE.dimRadar;
       if (npc === g.targetNpc) blipColor = "#ffffff";
       ctx.fillStyle = blipColor;

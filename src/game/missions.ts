@@ -46,7 +46,11 @@ export function missionDisplayName(m: MissionType): string {
  * completion or progress popups.
  */
 export function isSilentMission(m: MissionType): boolean {
-  return m.name.toLowerCase().startsWith("silent");
+  // Flags 0x0400: "Mission is invisible and won't appear in the mission info
+  // dialog." The Derelict Decoy and similar background jobs carry this, so
+  // their completion and progress popups are suppressed the same way Named
+  // Silent missions are.
+  return m.name.toLowerCase().startsWith("silent") || (m.flags & 0x0400) !== 0;
 }
 
 /**

@@ -1202,6 +1202,19 @@ const ships = all
 const weapons = all.filter((r) => r.type === "wëap").map(decodeWeap);
 
 const missions = all.filter((r) => r.type === "mïsn").map(decodeMisn);
+/*
+ * Vell-os ferry missions: the raw data has availShipType 0, but the offer
+ * desc says "experience travel on a Vell-os craft" — the passenger is paying
+ * a premium for a Vell-os ship. Gate these on inherent govt 136 (Vell-os).
+ * Confirmed: both the Mac and Wine rez files write 0 at @84 for these
+ * missions, so this is an authoring oversight rather than an extractor bug.
+ */
+for (const m of missions) {
+  if (m.availShipType !== 0) continue;
+  const offerDescId = 4000 + m.id - 128;
+  const text = descs[offerDescId] ?? "";
+  if (text.includes("Vell-os craft")) m.availShipType = 2136;
+}
 
 const dudes = all.filter((r) => r.type === "düde").map(decodeDude);
 

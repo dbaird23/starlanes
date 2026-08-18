@@ -508,6 +508,10 @@ export class Game {
   private npcSpawnTimer = 3;
   /** NPC flying to the player to transfer fuel; null when no transfer in progress */
   private fuelHelper: NpcShip | null = null;
+  /** NPC flying to the player to apply repairs; null when no repair in progress */
+  private repairHelper: NpcShip | null = null;
+  /** true = full seal (freeRepair), false = limp patch (crippled only) */
+  private repairFull = false;
   private observeTimer = 0.5;
   private secondaryIdx = 0;
   private reinforceTimer = 45;
@@ -1967,6 +1971,8 @@ export class Game {
 
     if (this.jump) {
       this.updateJumpSequence(dt);
+      if (actionConsume(this.input, "autopilot")) this.toggleAutopilot();
+      if (consumeCycleTargets(this.input)) this.cycleTarget();
     } else {
       // Hold aim-cursor: steer at the pointer each frame; left/right are ignored.
       const aimCursor = actionDown(this.input, "aimCursor");
@@ -2197,6 +2203,15 @@ export class Game {
       this.message("Fuel transfer aborted.");
       this.fuelHelper = null;
     }
+    if (
+      this.repairHelper &&
+      (this.repairHelper.done ||
+        this.repairHelper.hostile ||
+        !this.npcs.includes(this.repairHelper))
+    ) {
+      this.message("Repair assistance aborted.");
+      this.repairHelper = null;
+    }
     for (const npc of this.npcs) {
       npc.rechargeShields(dt);
       /*
@@ -2213,6 +2228,8 @@ export class Game {
         );
       if (npc === this.fuelHelper) {
         this.updateFuelHelperAi(npc, dt);
+      } else if (npc === this.repairHelper) {
+        this.updateRepairHelperAi(npc, dt);
       } else if (npc.escorting && !npc.disabled && !npc.hostile) {
         // the ship you're escorting flies with you
         this.updateEscorteeAi(npc, dt);
@@ -2737,8 +2754,14 @@ export class Game {
     if (t.personId !== null) {
       const person = PERSONS[String(t.personId)];
       if (person && person.linkMission >= 128) {
-        this.offerPersonMission(person);
-        return;
+        const m = MISSIONS[String(person.linkMission)];
+        const alreadyActive = m && this.player.activeMissions.some((a) => a.misnId === m.id);
+        if (!alreadyActive) {
+          this.offerPersonMission(person);
+          return;
+        }
+        // Mission already accepted from a prior derelict — fall through to
+        // normal boarding so the player can still capture any credits aboard.
       }
     }
 
@@ -3748,20 +3771,19 @@ export class Game {
           let patched = false;
           let fullSeal = false;
           if (freeRepair && (hurt || crippled)) {
-            this.ship.armor = this.ship.maxArmor;
-            this.ship.disabled = false;
+            if (this.repairHelper)
+              return `"${shipComm(SHIP_COMM.holdOnComing, "Just hold on, I'm coming.")}"`;
+            t.boardingTimer = 0;
+            this.repairHelper = t;
+            this.repairFull = true;
             patched = true;
             fullSeal = true;
           } else if (crippled) {
-            // ~5% above disableAt (typically 33% → ~38% of max armor)
-            const limp =
-              this.ship.maxArmor * this.ship.disableAt +
-              this.ship.maxArmor * 0.05;
-            this.ship.armor = Math.max(
-              this.ship.armor,
-              Math.min(this.ship.maxArmor, limp),
-            );
-            this.ship.disabled = false;
+            if (this.repairHelper)
+              return `"${shipComm(SHIP_COMM.holdOnComing, "Just hold on, I'm coming.")}"`;
+            t.boardingTimer = 0;
+            this.repairHelper = t;
+            this.repairFull = false;
             patched = true;
           }
           /*
@@ -4966,6 +4988,11 @@ export class Game {
       }
       npc.update(dt, 0, false);
       if (dist <= DOCK_RANGE) {
+        // If this ship is also the repair helper, apply repairs first.
+        if (npc === this.repairHelper) {
+          this.applyRepairFromHelper();
+          this.repairHelper = null;
+        }
         // Transfer fuel at FUEL_RATE jumps per second until one jump is full.
         this.player.fuelJumps = Math.min(
           this.player.maxFuelJumps,
@@ -4975,6 +5002,73 @@ export class Game {
           this.message("Fuel transfer complete. Safe travels, Captain.");
           this.fuelHelper = null;
         }
+      }
+    }
+  }
+
+  /** Apply the pending repair once a helper has docked alongside the player. */
+  private applyRepairFromHelper(): void {
+    if (this.repairFull) {
+      this.ship.armor = this.ship.maxArmor;
+      this.ship.disabled = false;
+      this.message("Hull sealed. You're free to fly, Captain.");
+    } else {
+      const limp =
+        this.ship.maxArmor * this.ship.disableAt + this.ship.maxArmor * 0.05;
+      this.ship.armor = Math.max(
+        this.ship.armor,
+        Math.min(this.ship.maxArmor, limp),
+      );
+      this.ship.disabled = false;
+      this.message(
+        "Hull patched — thrusters are back online. You're not pretty, but you can fly.",
+      );
+    }
+  }
+
+  /**
+   * Fly a repair NPC alongside the player and apply repairs once docked.
+   * Same three-phase approach as the fuel helper.
+   */
+  private updateRepairHelperAi(npc: NpcShip, dt: number): void {
+    const DOCK_RANGE = 25;
+    const DOCK_SPEED = 15;
+    const DRIFT_SPEED = 30;
+    const BRAKE_DIST = 350;
+
+    const dx = this.ship.pos.x - npc.pos.x;
+    const dy = this.ship.pos.y - npc.pos.y;
+    const dist = Math.hypot(dx, dy);
+
+    const braking = npc.boardingTimer === -1;
+    if (!braking && dist > BRAKE_DIST) {
+      const facing = npc.steerToward(dt, Math.atan2(dy, dx));
+      npc.update(dt, 0, facing);
+    } else if (braking || npc.speed > DOCK_SPEED) {
+      npc.boardingTimer = -1;
+      if (npc.speed > DOCK_SPEED) {
+        const brakeAngle = Math.atan2(-npc.vel.y, -npc.vel.x);
+        const facing = npc.steerToward(dt, brakeAngle);
+        npc.update(dt, 0, facing);
+      } else {
+        npc.vel.x = 0;
+        npc.vel.y = 0;
+        npc.boardingTimer = 0;
+        npc.update(dt, 0, false);
+      }
+    } else {
+      if (dist > DOCK_RANGE) {
+        const len = dist || 1;
+        npc.vel.x = (dx / len) * DRIFT_SPEED;
+        npc.vel.y = (dy / len) * DRIFT_SPEED;
+      } else {
+        npc.vel.x = 0;
+        npc.vel.y = 0;
+      }
+      npc.update(dt, 0, false);
+      if (dist <= DOCK_RANGE) {
+        this.applyRepairFromHelper();
+        this.repairHelper = null;
       }
     }
   }
@@ -5625,6 +5719,8 @@ export class Game {
   /** Provoke an NPC hit by the player, once its stray-fire tolerance is spent. */
   private maybeProvoke(npc: NpcShip, damage: number): void {
     if (npc.ally || npc.hostile) return;
+    // Derelicts are already dead — shooting at them should not anger anyone.
+    if (npc.disabled) return;
     npc.strayDamage += damage;
     if (npc.strayDamage >= this.strayTolerance(npc)) this.provoke(npc);
   }
@@ -8342,6 +8438,20 @@ export class Game {
      */
     syncSystemVariants();
     reresolveDestinations(m, active, this.player.landedOn ?? active.travelSpobId ?? "128");
+    /*
+     * mïsn Flags **0x0001**: auto-aborting. These missions spawn their special
+     * ships immediately on accept — the Derelict Decoy trap is the stock case:
+     * boarding the derelict accepts this mission, which drops pirates into the
+     * system right now, fires OnSuccess, then removes itself. The player never
+     * sees a "Mission complete" popup because isSilentMission checks 0x0400.
+     */
+    if ((m.flags & 0x0001) !== 0) {
+      this.spawnMissionShips();
+      applySet(m.onSuccess, this.player.bits, this.bitHandlers());
+      this.player.activeMissions = this.player.activeMissions.filter(
+        (a) => a !== active,
+      );
+    }
     return { ok: true };
   }
 
