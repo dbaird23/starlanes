@@ -264,7 +264,7 @@ export class Ship {
  * in orbit around a planet if he can't find any". So only 1 and 2 ever set
  * down; a warship leaves through hyperspace and an interceptor loiters.
  */
-export type NpcPhase = "toPlanet" | "orbit" | "leaving" | "leavingBurn";
+export type NpcPhase = "toPlanet" | "orbit" | "leaving" | "leavingBurn" | "berthed";
 
 /**
  * Standing orders for the ships flying with you. "defend" keeps them on your
@@ -359,12 +359,18 @@ export class NpcShip extends Ship {
   bootyFlags = 0;
   /** seconds spent docked on a disabled ship, for NPC boarding */
   boardingTimer = 0;
+  /** seconds remaining in a berthed visit over a planet */
+  dwellTimer = 0;
 
   constructor(stats: ShipStats = MULE) {
     super(stats);
   }
 
   updateAi(dt: number): void {
+    if (this.phase === "berthed") {
+      this.vel = { x: 0, y: 0 };
+      return;
+    }
     const dx = this.target.x - this.pos.x;
     const dy = this.target.y - this.pos.y;
     const dist = Math.hypot(dx, dy);

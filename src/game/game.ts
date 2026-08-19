@@ -854,7 +854,6 @@ export class Game {
       this.ship.pos = { x: 900, y: 600 };
     }
     this.npcs = [];
-    this.dockedNpcs = [];
     this.populateNpcs();
     this.populateAsteroids();
     this.spawnMissionShips();
@@ -1198,7 +1197,6 @@ export class Game {
     this.gateChooser = null;
     this.landedUi.hide();
     this.npcs = [];
-    this.dockedNpcs = [];
     this.projectiles = [];
     this.explosions = [];
     this.targetNpc = null;
@@ -2244,6 +2242,7 @@ export class Game {
         npc.update(dt, 0, false);
       } else if (npc.ally) this.updateAllyAi(npc, dt);
       else if (npc.hostile) this.updateHostileAi(npc, dt);
+      else if (npc.phase === "berthed") this.updateBerthedAi(npc, dt);
       else if (npc.aiType === 3 || npc.aiType === 4)
         this.updateWarshipAi(npc, dt);
       else npc.updateAi(dt);
@@ -2252,7 +2251,6 @@ export class Game {
         if (npc.landing) this.dockNpc(npc, dt);
       }
     }
-    this.updateDockedNpcs(dt);
     this.creditChasedOff();
     this.npcs = this.npcs.filter((n) => !n.done);
     if (
@@ -5092,6 +5090,53 @@ export class Game {
     this.attackAi(npc, dt, this.ship);
   }
 
+  /**
+   * A ship sitting over a planet. Holds position and ticks its dwell timer.
+   * Warships and interceptors stay alert: if enemies arrive they scramble
+   * immediately rather than waiting out the timer.
+   */
+  private updateBerthedAi(npc: NpcShip, dt: number): void {
+    npc.vel = { x: 0, y: 0 };
+    if (npc.aiType === 3 || npc.aiType === 4) {
+      // Check lastAttacker first (same priority as updateWarshipAi).
+      const a = npc.lastAttacker;
+      let prey: Ship | null = null;
+      if (a) {
+        const npcA = a as NpcShip;
+        const valid =
+          a === this.ship
+            ? !this.ship.disabled && !this.playerDeath
+            : this.npcs.includes(npcA) && !npcA.done;
+        if (valid) {
+          prey = a;
+        } else {
+          npc.lastAttacker = null;
+        }
+      }
+      if (!prey) {
+        let best = Infinity;
+        for (const other of this.npcs) {
+          if (!other.hostile || other === npc) continue;
+          if (!govtEnemy(npc.govtId, other.govtId)) continue;
+          const d = Math.hypot(other.pos.x - npc.pos.x, other.pos.y - npc.pos.y);
+          if (d < best) {
+            best = d;
+            prey = other;
+          }
+        }
+      }
+      if (prey) {
+        if (prey === this.ship) this.setNpcHostile(npc);
+        npc.unfolding = true;
+        npc.phase = "leaving";
+        this.attackAi(npc, dt, prey);
+        return;
+      }
+    }
+    npc.dwellTimer -= dt;
+    if (npc.dwellTimer <= 0) this.liftOffNpc(npc);
+  }
+
   /** System-govt warships hunt hostiles; otherwise they go about their business. */
   private updateWarshipAi(npc: NpcShip, dt: number): void {
     // Prefer whoever most recently hit us over raw proximity.
@@ -5110,7 +5155,7 @@ export class Game {
       npc.lastAttacker = null;
     }
     let prey: Ship | null = null;
-    let best = 1600;
+    let best = Infinity;
     for (const other of this.npcs) {
       if (!other.hostile || other === npc) continue;
       if (!govtEnemy(npc.govtId, other.govtId)) continue;
@@ -5124,13 +5169,7 @@ export class Game {
       this.attackAi(npc, dt, prey);
       return;
     }
-    /*
-     * Nothing to hunt. A warship (AIType 3) "jumps out if there aren't any";
-     * an interceptor (AIType 4) "parks in orbit around a planet". Neither
-     * lands, so a ship of either type still carrying a trader's approach — the
-     * old spawn gave one to 70% of everything — is put back on its own errand.
-     */
-    if (npc.phase === "toPlanet") this.setNpcErrand(npc, this.system);
+    // Nothing to hunt — continue the current errand (leave or patrol-land).
     npc.updateAi(dt);
   }
 
@@ -6509,11 +6548,8 @@ export class Game {
           Math.sin(ang + Math.PI / 2) * col * 70,
       };
       npc.angle = ang + Math.PI;
-      const dest = this.system.planets[0];
-      npc.phase = dest ? "toPlanet" : "leaving";
-      npc.target = dest
-        ? { x: dest.pos.x, y: dest.pos.y }
-        : { x: -originX, y: -originY };
+      // Fleet members never land — patrolChance 0 keeps them leaving or fighting.
+      this.setNpcErrand(npc, this.system, null, 0);
       return npc;
     };
 
@@ -7847,7 +7883,6 @@ export class Game {
     // are flying. Without this the old NPCs sat frozen where you left them and
     // spawnEscorts() stacked a second copy of your wing on every takeoff.
     this.npcs = [];
-    this.dockedNpcs = [];
     this.projectiles = [];
     this.beams = [];
     this.explosions = [];
@@ -8178,7 +8213,6 @@ export class Game {
     this.gateAnim.clear(); // rings belong to the system you just left
     this.gateDocking = null;
     this.npcs = [];
-    this.dockedNpcs = [];
     this.projectiles = [];
     this.beams = [];
     this.explosions = [];
@@ -8322,8 +8356,7 @@ export class Game {
         }
         this.ship.vel = { x: 0, y: 0 };
         this.npcs = [];
-        this.dockedNpcs = [];
-        this.projectiles = [];
+            this.projectiles = [];
         this.targetNpc = null;
         this.mode = "flight";
         this.landedUi.hide();
@@ -9040,7 +9073,11 @@ export class Game {
     } else {
       npc.pos = { x: Math.cos(ang) * 1900, y: Math.sin(ang) * 1900 };
     }
-    this.setNpcErrand(npc, sys);
+    // A warship spawning into an occupied system should usually land first rather
+    // than immediately leaving — it reads as if it just arrived on business.
+    // Initial population (anywhere=true) uses the neutral 50/50 split since
+    // those ships represent traffic already in progress when you arrive.
+    this.setNpcErrand(npc, sys, null, anywhere ? 0.5 : 0.75);
     npc.angle = Math.atan2(npc.target.y - npc.pos.y, npc.target.x - npc.pos.x);
     this.npcs.push(npc);
   }
@@ -9097,13 +9134,19 @@ export class Game {
     npc: NpcShip,
     sys: SystemDef,
     exclude?: string | null,
+    patrolChance = 0.5,
   ): void {
     const ports = this.portsOf(sys).filter((p) => p.id !== exclude);
     const pick =
       ports.length > 0 ? ports[Math.floor(Math.random() * ports.length)] : null;
     const visits = npc.aiType === 1 || npc.aiType === 2;
-    if (pick && (visits || npc.aiType === 4)) {
-      npc.phase = npc.aiType === 4 ? "orbit" : "toPlanet";
+    // Interceptors orbit a planet when idle.
+    const orbits = npc.aiType === 4;
+    // Solo warships patrol: roll against patrolChance to land before leaving.
+    // Fleet members pass 0 — they never land.
+    const patrols = npc.aiType === 3 && Math.random() < patrolChance;
+    if (pick && (visits || orbits || patrols)) {
+      npc.phase = orbits ? "orbit" : "toPlanet";
       npc.targetPlanetId = pick.id;
       npc.targetRadius = pick.radius;
       npc.target = { x: pick.pos.x, y: pick.pos.y };
@@ -9132,18 +9175,12 @@ export class Game {
   }
 
   /**
-   * Ships on the ground. A trader that touches down comes off the board for a
-   * while and then lifts off again — the Bible has traders *visiting* planets,
-   * which is a round trip, and has folding hulls cycling their parts "upon
-   * landing, taking off, and entering/exiting hyperspace", an animation a ship
-   * that never takes off can only ever play half of.
+   * Ships on the ground. A trader that touches down stays visible over the
+   * planet — the Bible has traders *visiting* planets, a round trip, and has
+   * folding hulls cycling their parts "upon landing, taking off, and
+   * entering/exiting hyperspace", an animation a ship that never takes off
+   * can only ever play half of.
    */
-  private dockedNpcs: {
-    npc: NpcShip;
-    planetId: string;
-    systemId: string;
-    wait: number;
-  }[] = [];
 
   /** Take a ship that has just set down off the board. */
   private dockNpc(npc: NpcShip, dt = 1 / 30): void {
@@ -9178,48 +9215,23 @@ export class Game {
       return;
     }
     npc.landing = false;
-    npc.done = true; // removed from this.npcs by the usual sweep
-    if (this.targetNpc === npc) this.targetNpc = null;
-    this.dockedNpcs.push({
-      npc,
-      planetId: npc.targetPlanetId ?? "",
-      systemId: this.system.id,
-      // long enough to read as business being done, short enough that a busy
-      // world keeps a trickle of traffic lifting off
-      wait: 6 + Math.random() * 14,
-    });
+    npc.unfolding = false; // folded up while berthed
+    npc.vel = { x: 0, y: 0 };
+    npc.phase = "berthed";
+    // long enough to read as business being done, short enough that a busy
+    // world keeps a trickle of traffic lifting off
+    npc.dwellTimer = 6 + Math.random() * 14;
   }
 
-  /** Count the pads down and send anyone whose business is finished back up. */
-  private updateDockedNpcs(dt: number): void {
-    if (this.dockedNpcs.length === 0) return;
-    const still: typeof this.dockedNpcs = [];
-    for (const berth of this.dockedNpcs) {
-      // a ship docked in another system stays there; you are not watching it
-      if (berth.systemId !== this.system.id) continue;
-      berth.wait -= dt;
-      const pad = this.system.planets.find((p) => p.id === berth.planetId);
-      if (berth.wait > 0 || !pad) {
-        if (pad) still.push(berth);
-        continue;
-      }
-      const npc = berth.npc;
-      npc.done = false;
-      // lift off from the pad and climb clear under its own power
-      const ang = Math.random() * Math.PI * 2;
-      npc.pos = {
-        x: pad.pos.x + Math.cos(ang) * (pad.radius + 8),
-        y: pad.pos.y + Math.sin(ang) * (pad.radius + 8),
-      };
-      npc.vel = { x: 0, y: 0 };
-      npc.angle = ang;
-      npc.shield = npc.maxShield;
-      // it left the pad folded up; the parts come back out on the way clear
-      npc.unfolding = true;
-      this.setNpcErrand(npc, this.system, pad.id);
-      this.npcs.push(npc);
-    }
-    this.dockedNpcs = still;
+  /**
+   * A berthed ship's dwell timer has expired — lift it off the planet and give
+   * it a new errand. Called from updateBerthedAi when dwellTimer reaches zero.
+   */
+  private liftOffNpc(npc: NpcShip): void {
+    npc.vel = { x: 0, y: 0 };
+    npc.shield = npc.maxShield;
+    npc.unfolding = true;
+    this.setNpcErrand(npc, this.system, npc.targetPlanetId);
   }
 
   // ---------------- flight targeting under cursor ----------------
