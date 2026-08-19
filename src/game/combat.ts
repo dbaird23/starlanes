@@ -329,10 +329,52 @@ export function hullOutfits(shipId: string): Record<string, number> {
  */
 export function hullOutfitMass(shipId: string): number {
   let mass = 0;
+  const hullMass = SHIPS[shipId]?.mass ?? 0;
   for (const [outfId, n] of Object.entries(hullOutfits(shipId))) {
-    mass += (OUTFITS[outfId]?.mass ?? 0) * n;
+    const outf = OUTFITS[outfId];
+    if (outf) mass += outfitMass(outf, hullMass) * n;
   }
   return mass;
+}
+
+/** oütf Flags 0x0200: total price is the hull's Mass times the Cost field. */
+export const OUTF_PRICE_BY_HULL_MASS = 0x0200;
+/** oütf Flags 0x0400: total mass is hull Mass x this item's Mass, over 100. */
+export const OUTF_MASS_BY_HULL_MASS = 0x0400;
+
+/**
+ * What one of this outfit actually costs on a given hull. oütf Flags 0x0200:
+ * "this item's total price is proportional to the player's ship's mass (ship
+ * class Mass field is multiplied by this item's Cost field)".
+ *
+ * All eight users are the armour line, and the flag is the whole of its
+ * balance: unscaled, a Manticore armoured up four times over for 1,000
+ * credits instead of 1,750,000.
+ */
+export function outfitCost(
+  outf: { cost: number; flags: number },
+  hullMass: number,
+): number {
+  if ((outf.flags & OUTF_PRICE_BY_HULL_MASS) === 0) return outf.cost;
+  return outf.cost * Math.max(0, hullMass);
+}
+
+/**
+ * What one of this outfit weighs on a given hull. oütf Flags 0x0400: "ship
+ * class Mass field is multiplied by this item's Mass field and then divided
+ * by 100. Only works for positive-mass items."
+ *
+ * The doc says "at purchase", i.e. Nova fixes it when you buy. Computing it
+ * live is equivalent here because none of the eight sets Flags 0x0004, so no
+ * mass-proportional item ever survives a change of hull to be re-weighed.
+ */
+export function outfitMass(
+  outf: { mass: number; flags: number },
+  hullMass: number,
+): number {
+  if ((outf.flags & OUTF_MASS_BY_HULL_MASS) === 0 || outf.mass <= 0)
+    return outf.mass;
+  return Math.floor((outf.mass * Math.max(0, hullMass)) / 100);
 }
 
 /** Add a hull's own outfits into an owned-outfit map, in place. */
@@ -371,7 +413,7 @@ export function mountLimits(
   outfits: Record<string, number>,
 ): { guns: number; turrets: number } {
   const type = SHIPS[shipId];
-  const bonus = outfitBonuses(outfits);
+  const bonus = outfitBonuses(outfits, type?.mass ?? 0);
   return {
     guns: (type?.maxGuns ?? 0) + bonus.maxGuns,
     turrets: (type?.maxTurrets ?? 0) + bonus.maxTurrets,
@@ -499,6 +541,38 @@ export interface OutfitBonuses {
   /** ModType 45/46: extra gun and turret mounts (Sigma Mount Reinforcement) */
   maxGuns: number;
   maxTurrets: number;
+  /**
+   * ModType 24: "subtracts the value in ModVal from the current star system
+   * Interference value when calculating how [bad] to make the radar scanner".
+   * The four Sensor Boosts read 15-40 against a shipped maximum interference
+   * of 80, so the best of them halves the worst static in the galaxy.
+   */
+  interferenceMod: number;
+  /**
+   * ModType 28: "the amount by which to increase or decrease the current
+   * system's murkiness level". Every shipped user is negative (-3 to -25),
+   * i.e. it clears the haze; the sign is added, not subtracted, so a plug-in
+   * may thicken it.
+   */
+  murkMod: number;
+  /** ModType 32: extra jumps taken when the player enters hyperspace */
+  multiJump: number;
+  /**
+   * ModType 47: "destroys the player in flight", ModVal being the dësc to
+   * show afterwards (-1 for none). Held as the winning outfit's id so the
+   * message and the blame can both be read off it.
+   */
+  bomb: { outfId: string; descId: number } | null;
+  /**
+   * ModType 50: "randomly destroys itself and damages the player
+   * (nonfatally) in flight", ModVal being the dësc shown when it goes.
+   */
+  nonlethalBomb: { outfId: string; descId: number } | null;
+  /**
+   * ModType 48: govt class values that are "fooled into thinking the player
+   * is a friendly ship and will not attack without provocation".
+   */
+  iffScramble: number[];
 }
 
 /**
@@ -507,7 +581,10 @@ export interface OutfitBonuses {
  * point/frame), 7 accel, 8 speed, 9 turn (100 = 30°/sec), 12 fuel (100 = 1
  * jump), 15 afterburner (fuel per second), 29 armor recharge.
  */
-export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
+export function outfitBonuses(
+  outfits: Record<string, number>,
+  hullMass = 0,
+): OutfitBonuses {
   const b: OutfitBonuses = {
     cargo: 0,
     shield: 0,
@@ -541,11 +618,17 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
     ionCapacity: 0,
     maxGuns: 0,
     maxTurrets: 0,
+    interferenceMod: 0,
+    murkMod: 0,
+    multiJump: 0,
+    bomb: null,
+    nonlethalBomb: null,
+    iffScramble: [],
   };
   for (const [outfId, owned] of Object.entries(outfits)) {
     const outf = OUTFITS[outfId];
     if (!outf || owned <= 0) continue;
-    b.mass += outf.mass * owned;
+    b.mass += outfitMass(outf, hullMass) * owned;
     for (const mod of outf.mods) {
       const v = mod.val * owned;
       switch (mod.type) {
@@ -606,8 +689,10 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
         case 19:
           b.autoRefuel = true;
           break;
+        // Max 2 on the one shipped user (the Sutherland Alluvial Dampener),
+        // so this has to scale with the count like every other stat.
         case 22:
-          b.hyperSpeed += mod.val;
+          b.hyperSpeed += v;
           break;
         case 23:
           b.jumpDist += v;
@@ -644,6 +729,27 @@ export function outfitBonuses(outfits: Record<string, number>): OutfitBonuses {
           break;
         case 46:
           b.maxTurrets += v;
+          break;
+        case 24:
+          b.interferenceMod += v;
+          break;
+        case 28:
+          b.murkMod += v;
+          break;
+        case 32:
+          b.multiJump += v;
+          break;
+        // A ship carries at most one bomb of each kind in the stock data, and
+        // a second would be redundant anyway — the first to go off is the one
+        // that matters.
+        case 47:
+          b.bomb ??= { outfId, descId: mod.val };
+          break;
+        case 50:
+          b.nonlethalBomb ??= { outfId, descId: mod.val };
+          break;
+        case 48:
+          b.iffScramble.push(mod.val);
           break;
         case 37:
           b.fastJump = true;

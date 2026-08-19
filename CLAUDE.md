@@ -813,6 +813,136 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**The outfit audit: fifteen fixes, and two of them were the wrong constant.**
+A census of every ModType and Flag across the 242 oütfs, checked against the
+Bible and verified in the browser. Six ModTypes present in the data were
+never read at all, three more were computed and then discarded, and three
+Flags were unimplemented. All are in now. (ModType 14, the IFF decoder, was
+found by this audit and fixed independently in b51f30f; that implementation
+is the one that survived — see below.)
+
+Never read (six):
+
+- **24 interference mod** and **28 murk modifier** — the four Sensor Boosts
+  (203/212/213/214, 250k-600k), Physical Sense and Sigma Electrical Rewiring.
+  Fitting a Sensor Boost changed *no* game state whatsoever. `Game`'s
+  **`effectiveInterference`** / **`effectiveMurk`** are the read points now
+  and the three raw `system.interference` / `system.murk` sites go through
+  them: radar scatter, `interferenceBreaksLock`, and the haze overlay.
+  Measured against the galaxy's worst (interference 80, murk 50): Sensor
+  Boost 212 gives 40/40, Physical Sense 30/25.
+- **32 multi-jump** — the Multi-Jumping Organ's "10 extra jumps"; only its
+  companion ModType 37 was working. `executeJump` chains along the plotted
+  route, each leg charging its own fuel and days, guarded against re-entry.
+  Measured: one J press takes 1 leg without it and all 6 with.
+- **47 bomb** / **50 nonlethal bomb** — the Bureau Bomb (348) is granted by
+  the **OnRefuse of eighteen Bureau missions**, so saying no to the Bureau is
+  supposed to kill you, and cron 288 hands over 374 or 261 as a knock-off
+  reactor. 47 fires `BOMB_ARM_SECONDS` after the takeoff that follows (every
+  shipped grant happens while landed); 50 rolls `NONLETHAL_BOMB_CHANCE_PER_SEC`
+  and leaves you at 15% armour with shields down — outfit 261's own text
+  promises you "will probably be able to limp into port". Both timings are
+  ours. Nova shows the ModVal dësc in a dialog; ours wraps it onto the message
+  line, because a fatal one ends the run at the main menu and there is no
+  landing left to show a dialog on.
+- **48 IFF scrambler** — the Federation and Moash IFF Projectors, 50k each.
+
+Computed, then thrown away (three):
+
+- **ModType 49 repair system.** `recomputeLoadout` raised `armorRechPerSec` to
+  0.5 and then reassigned it from `bonus.armorRech` **six lines later**, so the
+  300,000-credit Repair Droids did nothing. The two statements are in the
+  right order now.
+- **ModType 14 IFF.** `gear.iff` and the `hasIff` getter existed with **zero
+  consumers** — the scanner coloured every contact ally-green / hostile-red /
+  neutral-blue for free, so the IFF Decoder bought nothing. Fixed in b51f30f
+  rather than by this audit, and that version is the one to keep: it gates the
+  **stellar dots** as well as the ship blips, leaves the selected target white
+  (that is the targeting computer, not IFF) and keeps a disabled ship dim —
+  its stillness is observable without any decoder. Without one every contact
+  reads the same neutral blue.
+- **ModType 18 in sucking mode.** Negative scoops were computed and then
+  dropped by a `> 0` guard. Five outfits are meant to *drain* fuel — the three
+  Vell-os weaves, the Capacitor Pulse Laser and the Krypt mind attack — so
+  carrying them was free. Measured: the Pulse Laser now costs 0.075 jumps in
+  5 seconds, and a Solar Panel still fills at the same rate it always did.
+
+Wrong constant, wrong stacking (three):
+
+- **`hud.ts` declared its own `CLOAK_VISIBLE_ON_RADAR = 0x0001`**, shadowing
+  the correct `0x0002` in `combat.ts`. 0x0001 is *faster fading*. With the Fed
+  Cloaking Device (flags 14) the test came out false where the Bible says
+  true, and the Polaris v1.1 organ (1033, which sets 0x1 and not 0x2) got it
+  backwards the other way — so your own blip vanished from your own scope
+  exactly when it should have shown, and showed when it should have vanished.
+  Imported from `combat.ts` now rather than declared twice. Measured: 207 lit
+  scanner pixels cloaked under the Fed device, 194 under the Polaris organ.
+- **The same line asked the *player's* ModType 17 flags whether an *NPC's*
+  cloak was visible.** Whose cloak you can see through is your scanner's
+  business: it reads **`cloakScannerBits & 0x0001`** now, the radar twin of
+  the 0x0002 on-screen bit `renderShips` already used.
+- **ModType 22 did not stack** — `+= mod.val` ignored the count, and the
+  Sutherland Alluvial Dampener has Max 2, so the second 300,000-credit copy
+  was inert. Measured -1 then, -2 now.
+
+**`govtClassmate` takes two govt ids, and two ModVals are govt *classes*.**
+ModType 44's reinforcement inhibitor and ModType 48's IFF scrambler are both
+documented as "a govt class value. any govt with this value in its Class1-4
+fields will be…", and class values are small (1, 3, 8) where govt ids start at
+128 — so `govtClassmate(govtId, cls)` answered false for every government in
+the game and the Transmission Jammer never inhibited anything. **`govtHasClass`**
+in `data/universe.ts` is the right test and both sites use it. Verified: the
+Federation IFF Projector (class 1) silences govts 128, 146 and the Vell-os
+(classes [8,1] — genuinely class 1) and leaves the Auroran hostile; the Moash
+projector (class 3) touches none of them.
+
+Flags never read (three):
+
+- **0x0200 (price ∝ hull mass) and 0x0400 (mass ∝ hull mass)** — eight outfits
+  each, the whole armour line, and the biggest balance divergence in the
+  audit. **`outfitCost` / `outfitMass`** in `combat.ts` hold the two rules
+  ("ship class Mass field is multiplied by this item's Cost field"; the same
+  times Mass, over 100, positive-mass items only) and everything that prices
+  or weighs an outfit goes through them — `buyOutfit`, `sellOutfit`,
+  `outfitBonuses` (which now takes the hull's mass), `hullOutfitMass`, and the
+  outfitter's own price and mass lines. Computing live rather than fixing the
+  mass "at purchase" as the doc says is equivalent here: **none of the eight
+  sets Flags 0x0004**, so no mass-proportional item ever survives a change of
+  hull to be re-weighed. Measured, four Carbon Fibers: Shuttle 15,000 credits
+  and 0 tons, Starbridge 98,000/0, Rebel Destroyer 800,000/32, Manticore
+  **1,750,000 and 68 tons** where it used to be 1,000 and 4 — and the
+  Leviathan (100 tons apiece against 20 free mass) can no longer fit one at
+  all, which is what the flag is for.
+- **0x0010 remove after purchase** — seven outfits whose OnPurchase *is* the
+  product: the five hull upgrades run an H operator to swap your ship, Fuel
+  Transfer moves a jump's worth of fuel. They stayed in the hold forever.
+  Verified: buying the Rebel Valkyrie Upgrade turns hull 398 into 179 and
+  leaves nothing behind.
+- **0x0020 persistent through a mission ship change** — eleven outfits, of
+  which the Vell-os weaves handed over one hull at a time are the visible
+  case. `keepPilotOutfits(alsoKeep)` takes the **union** of 0x0004 and 0x0020,
+  not 0x0020 alone: seventeen outfits carry 0x0004 *without* 0x0020 — every
+  license and all six ";Tn Strength" items — and the Vell-os chain swaps your
+  hull three times (H381/H382/H383) while those are in play, so reading the
+  Bible's two sentences as mutually exclusive would strip exactly what the
+  storyline is handing you. Verified: the Flower Of Spring survives H179 and
+  a Light Blaster does not.
+
+Everything else checked out, including every unit conversion re-derived
+against the doc: 5/29 recharge (`v/1000 × 30`), 9 turn (`v/10`, the outfit
+unit being a tenth of the hull's Maneuver), 12 fuel (`v/100`), 15 afterburner
+(units/sec, and it really does apply speed ×1.5 / accel ×3), 18 positive
+scoops (`30/val`), 25 marines (both the crew arm and the negative
+capture-odds arm), 39 ion dissipation (`v/100 × 30`). The extractor reads all
+four ModType slots (@6/@18/@22/@26). ModTypes 30 and 38 are implemented and
+unused by any shipped outfit; 10, 21, 26, 27, 41, 42, 43 appear in no outfit
+at all.
+
+One data slip found: **outfit 261's ModType 50 ModVal is 135**, and dësc 135
+is a stellar description about UHP-0474 — nothing to do with a failing
+reactor. Treated the way sÿst Message 20003 is: the outfit still blows, it
+just falls back to a written line rather than reading out the wrong text.
+
 **Nothing in the shipped scenario submunitions recursively, so wëap SubLimit
 is inert — and the Nanites are not the exception they look like.** The Bible
 gates the field outright: it "will allow you to limit the number of recursive

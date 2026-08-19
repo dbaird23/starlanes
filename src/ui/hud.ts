@@ -11,7 +11,7 @@ import {
 } from "../data/universe";
 import { asset } from "../asset";
 import { ui } from "../data/strings";
-import { isSecondary } from "../game/combat";
+import { CLOAK_VISIBLE_ON_RADAR, isSecondary } from "../game/combat";
 import { getPict, tintedShipSilhouette } from "../engine/sprites";
 import type { Game } from "../game/game";
 
@@ -126,7 +126,14 @@ function boxStyle([y0, y1]: readonly [number, number]): string {
 }
 
 const RADAR_RANGE = 2400;
-const CLOAK_VISIBLE_ON_RADAR = 0x0001;
+/*
+ * ModType 17's radar bit is 0x0002. This file used to declare its own
+ * `0x0001`, which is "faster fading" — so with the Fed Cloaking Device
+ * (flags 14 = 0x2|0x4|0x8) the test came out false where the Bible says
+ * true, and the Polaris v1.1 organ (1033, which sets 0x1 and not 0x2) got it
+ * backwards the other way. Imported from combat.ts now so there is one
+ * definition rather than two that disagree.
+ */
 
 /** One row of the ledger, reused so the DOM isn't rebuilt every frame. */
 interface LedgerRow {
@@ -336,9 +343,16 @@ export class HudUi {
      * the contact so a blip wobbles in place rather than strobing across the
      * scope every frame.
      */
-    const murk = g.system.interference / 100;
+    const murk = g.effectiveInterference / 100;
     for (const npc of g.npcs) {
-      if (npc.cloaked && (g.cloakBits & CLOAK_VISIBLE_ON_RADAR) === 0) continue;
+      /*
+       * Whether someone else's cloak hides them from your scope is your
+       * scanner's business, not your own cloaking device's: ModType 30's
+       * 0x0001 is "reveal cloaked ships on radar", the twin of the 0x0002
+       * on-screen bit `renderShips` reads. This used to test the *player's*
+       * ModType 17 flags, which is the wrong ship's field entirely.
+       */
+      if (npc.cloaked && (g.cloakScannerBits & 0x0001) === 0) continue;
       if (murk > 0) {
         const blink = Math.sin(g.hudClock * 3 + npc.pos.x * 0.01) * 0.5 + 0.5;
         if (blink < murk * 0.8) continue;

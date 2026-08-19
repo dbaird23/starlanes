@@ -733,6 +733,18 @@ export function govtEnemy(a: number, b: number): boolean {
   return rb.classes.some((c) => ra.enemies.includes(c));
 }
 
+/**
+ * Does this government carry `cls` in its Class1-4 fields? Several outfit
+ * ModVals are "a govt class value" rather than a govt id — ModType 44's
+ * reinforcement inhibitor and ModType 48's IFF scrambler — and those cannot
+ * go through `govtClassmate`, which compares two governments. Class values
+ * are small (1, 3, 8) where govt ids start at 128, so passing one to the
+ * other silently answered false for every government in the game.
+ */
+export function govtHasClass(govtId: number, cls: number): boolean {
+  return govtRelations.get(govtId)?.classes.includes(cls) ?? false;
+}
+
 /** Same govt, or sharing any class. */
 export function govtClassmate(a: number, b: number): boolean {
   if (a === b) return true;

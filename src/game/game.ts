@@ -20,6 +20,7 @@ import {
   GOVT_VOICES,
   govtAllied,
   govtClassmate,
+  govtHasClass,
   govtEnemy,
   govtHaze,
   GOVTS,
@@ -194,6 +195,8 @@ import {
   grantHullOutfits,
   hullOutfits,
   hullOutfitMass,
+  outfitCost,
+  outfitMass,
   updateProjectile,
   pathHitsCircle,
   spawnSubmunitions,
@@ -342,6 +345,25 @@ const GATE_EMERGE_DEG = 120;
 const GATE_ENTER_FLASH = 0.38;
 const GATE_EXIT_FLASH = 0.55;
 const REFUEL_COST_PER_JUMP = 150;
+/*
+ * oütf ModType 47 "destroys the player in flight". Every shipped user arrives
+ * while the player is landed — the Bureau plants one for refusing a mission,
+ * cron 288 swaps a knock-off reactor for one — so it goes off shortly after
+ * the next takeoff. The delay is ours: long enough to be airborne and read
+ * the explosion, short enough that it is plainly the bomb.
+ */
+const BOMB_ARM_SECONDS = 4;
+/** oütf Flags 0x0010: "remove any items of this type after purchase". */
+const OUTF_REMOVE_AFTER_PURCHASE = 0x0010;
+/** oütf Flags 0x0020: survives a mission set operator changing your ship. */
+const OUTF_MISSION_PERSISTENT = 0x0020;
+/*
+ * ModType 50 "randomly destroys itself and damages the player (nonfatally)".
+ * The Bible sets no rate; this is a mean of ~100 seconds of flight, which
+ * matches what outfit 261's own text promises — you "will probably be able to
+ * limp into port" — without the wait being the whole experience.
+ */
+const NONLETHAL_BOMB_CHANCE_PER_SEC = 0.01;
 /** gövt Flags2: ships of this govt don't use hypergates / prefer gates / prefer wormholes */
 const GOVT_NO_HYPERGATES = 0x0020;
 const GOVT_PREFER_HYPERGATES = 0x0040;
@@ -552,7 +574,15 @@ export class Game {
     jamming: [0, 0, 0, 0] as number[],
     cloakScanner: 0,
     reinfInhibit: [] as number[],
+    interferenceMod: 0,
+    murkMod: 0,
+    multiJump: 0,
+    iffScramble: [] as number[],
   };
+  /** oütf ModType 47/50: a bomb aboard, and how long until it goes off. */
+  private bomb: { outfId: string; descId: number } | null = null;
+  private nonlethalBomb: { outfId: string; descId: number } | null = null;
+  private bombTimer = 0;
   projectiles: Projectile[] = [];
   beams: BeamFx[] = [];
   explosions: ExplosionFx[] = [];
@@ -1286,6 +1316,10 @@ export class Game {
    * stellars — so `clearedToLand` opens the network on the documented rule
    * and a hardcoded rank test only got in the way of the wormholes.
    */
+  /** oütf ModType 30 flag bits — what this ship's scanner can see through. */
+  get cloakScannerBits(): number {
+    return this.gear.cloakScanner;
+  }
   get cloakBits(): number {
     return this.cloakFlags;
   }
@@ -1486,6 +1520,93 @@ export class Game {
     if (this.messages.length > 5) this.messages.shift();
   }
 
+  /**
+   * Put a paragraph on the message line. `renderMessages` draws one line per
+   * entry and does no wrapping, so a dësc has to be broken up before it goes
+   * in; the ticker holds five lines, which is what a bomb's two sentences fit
+   * into.
+   */
+  private messageParagraph(text: string, perLine = 64): void {
+    const words = text.replace(/\s+/g, " ").trim().split(" ");
+    let line = "";
+    const lines: string[] = [];
+    for (const w of words) {
+      if (line && line.length + 1 + w.length > perLine) {
+        lines.push(line);
+        line = w;
+      } else line = line ? `${line} ${w}` : w;
+    }
+    if (line) lines.push(line);
+    for (const l of lines.slice(0, 5)) this.message(l);
+  }
+
+  /**
+   * The system's sensor static as this ship sees it. oütf ModType 24
+   * "subtracts the value in ModVal from the current star system Interference
+   * value when calculating how [bad] to make the radar scanner" — the four
+   * Sensor Boosts and Physical Sense — so it is read here rather than off the
+   * SystemDef, and never below zero.
+   */
+  get effectiveInterference(): number {
+    return Math.max(0, this.system.interference - this.gear.interferenceMod);
+  }
+
+  /**
+   * The system's haze as this ship sees it. oütf ModType 28 is signed and
+   * added ("increase or decrease the current system's murkiness level");
+   * every shipped user is negative, so a Sensor Boost thins the murk.
+   */
+  get effectiveMurk(): number {
+    return Math.max(0, Math.min(100, this.system.murk + this.gear.murkMod));
+  }
+
+  /**
+   * oütf ModType 47 and 50, the two bombs. 47 "destroys the player in flight"
+   * — the Bureau plants one for refusing their work, and cron 288 hands one
+   * over as a knock-off reactor — and it goes off a few seconds after the
+   * takeoff that follows. 50 "randomly destroys itself and damages the player
+   * (nonfatally)", takes the outfit with it, and leaves you limping.
+   *
+   * Nova shows the ModVal dësc in a dialog. Ours goes to the message line,
+   * because a fatal one ends the run at the main menu and there is no landing
+   * left to show a dialog on.
+   */
+  private updateBombs(dt: number): void {
+    if (this.playerDeath || this.jump) return;
+    if (this.bomb) {
+      this.bombTimer -= dt;
+      if (this.bombTimer <= 0) {
+        const text = DESCS[String(this.bomb.descId)];
+        if (text) this.messageParagraph(text);
+        // the bomb is spent either way, so a pod survivor is not blown up again
+        delete this.player.outfits[this.bomb.outfId];
+        this.bomb = null;
+        this.recomputeLoadout();
+        this.playerDestroyed();
+        return;
+      }
+    }
+    if (this.nonlethalBomb && Math.random() < NONLETHAL_BOMB_CHANCE_PER_SEC * dt) {
+      const { outfId, descId } = this.nonlethalBomb;
+      /*
+       * dësc 135 is what outfit 261 points at and it is a stellar description
+       * about UHP-0474 — unrelated to a failing reactor. Treated as a slip in
+       * Nova's data (the same call sÿst Message 20003 gets): the outfit still
+       * blows, it just says nothing. Its own shop text carries the warning.
+       */
+      const text = DESCS[String(descId)];
+      if (text && /reactor|explo|fail|blow/i.test(text)) this.messageParagraph(text);
+      else this.message("Something aboard detonates — your ship is crippled.");
+      delete this.player.outfits[outfId];
+      this.nonlethalBomb = null;
+      this.recomputeLoadout();
+      // nonfatal by definition: shields gone, armour down to a limp, never zero
+      this.ship.shield = 0;
+      this.ship.armor = Math.max(1, this.ship.maxArmor * 0.15);
+      this.spawnExplosion(this.ship.pos.x, this.ship.pos.y, 1.2, 132, true);
+    }
+  }
+
   // ---------------- persistence ----------------
 
   /**
@@ -1500,10 +1621,11 @@ export class Game {
    * Call this before switching to a new ship so the old loadout doesn't
    * transfer.
    */
-  private keepPilotOutfits(): void {
+  private keepPilotOutfits(alsoKeep = 0): void {
+    const mask = 0x0004 | alsoKeep;
     const kept: Record<string, number> = {};
     for (const [id, n] of Object.entries(this.player.outfits)) {
-      if (((OUTFITS[id]?.flags ?? 0) & 0x0004) !== 0) kept[id] = n;
+      if (((OUTFITS[id]?.flags ?? 0) & mask) !== 0) kept[id] = n;
     }
     this.player.outfits = kept;
   }
@@ -1548,7 +1670,7 @@ export class Game {
      */
     const inherent = SHIPS[shipId]?.inherentGovt ?? null;
     setInterfaceForGovt(inherent?.attributes ? inherent.govt : null);
-    const bonus = outfitBonuses(this.player.outfits);
+    const bonus = outfitBonuses(this.player.outfits, type.mass);
     this.ship.initDefense(
       type.shield + bonus.shield,
       type.armor + bonus.armor,
@@ -1566,7 +1688,7 @@ export class Game {
   recomputeLoadout(): void {
     const type = SHIPS[this.player.shipId];
     if (!type) return;
-    const bonus = outfitBonuses(this.player.outfits);
+    const bonus = outfitBonuses(this.player.outfits, type.mass);
     this.weaponSlots = buildLoadout(this.player.shipId, this.player.outfits);
     // warm the fire sounds now — decoding on the first trigger pull swallows it
     preloadSnds(this.weaponSlots.map((s) => s.weap.sndId));
@@ -1602,16 +1724,37 @@ export class Game {
       jamming: bonus.jamming,
       cloakScanner: bonus.cloakScanner,
       reinfInhibit: bonus.reinfInhibit,
+      interferenceMod: bonus.interferenceMod,
+      murkMod: bonus.murkMod,
+      multiJump: bonus.multiJump,
+      iffScramble: bonus.iffScramble,
     };
-    // a repair system slowly welds the hull back together
-    if (bonus.repairSystem)
-      this.ship.armorRechPerSec = Math.max(this.ship.armorRechPerSec, 0.5);
+    /*
+     * A newly-fitted bomb starts its clock; one already aboard keeps the one
+     * it has, so recomputing the loadout for any other reason (buying a gun,
+     * losing an escort) cannot keep resetting the fuse.
+     */
+    if (bonus.bomb?.outfId !== this.bomb?.outfId) {
+      this.bomb = bonus.bomb;
+      if (bonus.bomb) this.bombTimer = BOMB_ARM_SECONDS;
+    }
+    if (bonus.nonlethalBomb?.outfId !== this.nonlethalBomb?.outfId) {
+      this.nonlethalBomb = bonus.nonlethalBomb;
+    }
     if (bonus.cloak === 0) this.cloaked = false;
 
     this.ship.maxShield = type.shield + bonus.shield;
     this.ship.maxArmor = type.armor + bonus.armor;
     this.ship.shieldRechPerSec = type.shieldRechPerSec + bonus.shieldRech;
     this.ship.armorRechPerSec = bonus.armorRech;
+    /*
+     * A repair system slowly welds the hull back together. This has to come
+     * *after* armorRechPerSec is assigned from the ModType 29 total — it used
+     * to sit above and was overwritten one line later, which left the Repair
+     * Droids (ModType 49, 300,000 credits) doing nothing at all.
+     */
+    if (bonus.repairSystem)
+      this.ship.armorRechPerSec = Math.max(this.ship.armorRechPerSec, 0.5);
     this.ship.shield = Math.min(this.ship.shield, this.ship.maxShield);
     this.ship.armor = Math.min(this.ship.armor, this.ship.maxArmor);
   }
@@ -1665,7 +1808,7 @@ export class Game {
     return (
       type.freeMass +
       hullOutfitMass(this.player.shipId) -
-      outfitBonuses(this.player.outfits).mass
+      outfitBonuses(this.player.outfits, type.mass).mass
     );
   }
 
@@ -2184,16 +2327,26 @@ export class Game {
     this.updateReinforcements(dt);
     this.updatePendingReinforcement();
     this.updateCloak(dt);
-    // fuel scoops top the tanks back up over time
-    if (
-      this.fuelScoopRate > 0 &&
-      this.player.fuelJumps < this.player.maxFuelJumps
-    ) {
-      this.player.fuelJumps = Math.min(
-        this.player.maxFuelJumps,
+    /*
+     * Fuel scoops top the tanks back up over time. A negative rate is the
+     * Bible's "same function in reverse (sucking mode)" — five shipped outfits
+     * use it, the three Vell-os weaves, the Capacitor Pulse Laser and the
+     * Krypt mind attack — and it used to be computed and then dropped by a
+     * `> 0` guard, so carrying them was free.
+     */
+    if (this.fuelScoopRate > 0) {
+      if (this.player.fuelJumps < this.player.maxFuelJumps)
+        this.player.fuelJumps = Math.min(
+          this.player.maxFuelJumps,
+          this.player.fuelJumps + (this.fuelScoopRate / 100) * dt,
+        );
+    } else if (this.fuelScoopRate < 0) {
+      this.player.fuelJumps = Math.max(
+        0,
         this.player.fuelJumps + (this.fuelScoopRate / 100) * dt,
       );
     }
+    this.updateBombs(dt);
     if (this.jumpFlash > 0) this.jumpFlash -= dt;
 
     // NPCs
@@ -5513,9 +5666,10 @@ export class Game {
         p.target &&
         p.weap.guidance === 1 &&
         Math.random() <
-          interferenceBreaksLock(p.weap, this.system.interference) * dt
+          interferenceBreaksLock(p.weap, this.effectiveInterference) * dt
       ) {
-        // the system's own static does the jammers' work for them
+        // the system's own static does the jammers' work for them, less
+        // whatever a Sensor Boost (ModType 24) is subtracting from it
         p.target = null;
       }
       for (const npc of this.npcs) {
@@ -6315,7 +6469,10 @@ export class Game {
       return;
     }
     if (
-      this.gear.reinfInhibit.some((v) => v === -1 || govtClassmate(govtId, v))
+      // ModType 44's ModVal is a govt *class*, not a govt id — this used to
+      // ask govtClassmate, which compares two governments, so the Transmission
+      // Jammer never inhibited anyone.
+      this.gear.reinfInhibit.some((v) => v === -1 || govtHasClass(govtId, v))
     )
       return;
     this.reinforceTimer -= dt;
@@ -8174,6 +8331,15 @@ export class Game {
     if (j.burnLeft <= 0) this.executeJump();
   }
 
+  /**
+   * oütf ModType 32: "number of extra jumps to perform when the user
+   * initiates a hyperspace jump". One press of J carries you that many
+   * systems further along the plotted route, each leg charging its own fuel
+   * and its own days — the Multi-Jumping Organ's 10 is most of a crossing.
+   * Guarded against re-entry so the chained legs don't each start a chain.
+   */
+  private jumpChaining = false;
+
   private executeJump(): void {
     const fromSys = this.system;
     const nextId = this.route.shift()!;
@@ -8242,6 +8408,18 @@ export class Game {
     this.message(
       `Arrived in the ${next.name} system. Fuel: ${this.player.fuelJumps}/${this.player.maxFuelJumps} jumps.`,
     );
+    if (this.gear.multiJump > 0 && !this.jumpChaining) {
+      this.jumpChaining = true;
+      try {
+        for (let i = 0; i < this.gear.multiJump; i++) {
+          if (this.route.length === 0 || this.player.fuelJumps < 1) break;
+          this.executeJump();
+        }
+      } finally {
+        this.jumpChaining = false;
+      }
+      return;
+    }
     if (this.route.length > 0) {
       // Held J re-engages on the next flight frame; the hint is for a lifted key.
       const cont = getSystem(
@@ -8388,7 +8566,19 @@ export class Game {
       ) => {
         const key = String(shipId);
         if (!SHIPS[key]) return;
-        if (!keepOutfits) this.keepPilotOutfits();
+        /*
+         * oütf Flags 0x0020: "this item is persistent in the case where the
+         * player's ship is changed by a mission set operator. The item's
+         * normal persistence for when the player buys or captures a new ship
+         * is still controlled by the 0x0004 bit."
+         *
+         * Both bits are kept here, not just 0x0020. Seventeen outfits carry
+         * 0x0004 without 0x0020 — every license, and the six Vell-os
+         * ";Tn Strength" items — and the Vell-os chain swaps your hull three
+         * times (H381/H382/H383) while those are in play, so honouring 0x0020
+         * alone would strip exactly the things the storyline is handing you.
+         */
+        if (!keepOutfits) this.keepPilotOutfits(OUTF_MISSION_PERSISTENT);
         if (grantDefaults) grantHullOutfits(key, this.player.outfits);
         this.applyShipType(key);
         if (grantDefaults) {
@@ -8819,10 +9009,18 @@ export class Game {
         reason: "You already have the maximum number of these.",
       };
     }
-    if (this.player.credits < outf.cost) {
+    /*
+     * oütf Flags 0x0200/0x0400 price and weigh the item against the hull it is
+     * going on — the whole armour line does — so neither figure can be read
+     * straight off the resource.
+     */
+    const hullMass = SHIPS[this.player.shipId]?.mass ?? 0;
+    const price = outfitCost(outf, hullMass);
+    const itemMass = outfitMass(outf, hullMass);
+    if (this.player.credits < price) {
       return { ok: false, reason: "You cannot afford this outfit." };
     }
-    if (outf.mass > 0 && this.freeMassLeft() < outf.mass) {
+    if (itemMass > 0 && this.freeMassLeft() < itemMass) {
       return { ok: false, reason: "Your ship has no room for this outfit." };
     }
     const mount = this.mountBlock(outfId);
@@ -8835,7 +9033,7 @@ export class Game {
             : "Your ship has no free turret mounts.",
       };
     }
-    this.player.credits -= outf.cost;
+    this.player.credits -= price;
     // oütf OnPurchase: buying can set bits, and for the shipyard upgrades it
     // is how a Chrome Valkyrie actually becomes one (its string reads "H165")
     if (outf.onPurchase)
@@ -8852,6 +9050,16 @@ export class Game {
     } else if (isMap) {
       // maps are consumed on purchase — chart the area, don't track in outfits
       this.chartFromOutfit(outfId);
+    } else if ((outf.flags & OUTF_REMOVE_AFTER_PURCHASE) !== 0) {
+      /*
+       * oütf Flags 0x0010: "remove any items of this type after purchase
+       * (useful for permits and other intangible purchases)". Seven outfits
+       * use it, and their OnPurchase is the whole point — the five hull
+       * upgrades run an H operator to swap your ship, Fuel Transfer moves a
+       * jump's worth of fuel. Keeping them turned a one-shot service into a
+       * permanent inventory line. The set string above has already run.
+       */
+      delete this.player.outfits[outfId];
     } else {
       this.player.outfits[outfId] = owned + 1;
       this.chartFromOutfit(outfId);
@@ -8885,7 +9093,10 @@ export class Game {
       return { ok: false, reason: "You do not own this outfit." };
     this.player.outfits[outfId] = owned - 1;
     if (this.player.outfits[outfId] === 0) delete this.player.outfits[outfId];
-    this.player.credits += Math.floor(outf.cost * 0.75);
+    // a mass-proportional item sells back against the hull it came off
+    this.player.credits += Math.floor(
+      outfitCost(outf, SHIPS[this.player.shipId]?.mass ?? 0) * 0.75,
+    );
     // OnSell runs the other way — the cheap reactors clear the bit that marks
     // you as carrying one
     if (outf.onSell)
@@ -8974,6 +9185,15 @@ export class Game {
    */
   private hostileToPlayer(govtId: number): boolean {
     if (govtId < 128) return false;
+    /*
+     * oütf ModType 48: "any govt with this value in its Class1-4 fields will
+     * [be] fooled into thinking the player is a friendly ship and will not
+     * attack without provocation." Provocation still works — this only decides
+     * whether they open fire unprompted — so it sits ahead of the record test
+     * but leaves `provoke()` alone. Only the player carries one.
+     */
+    if (this.gear.iffScramble.some((cls) => govtHasClass(govtId, cls)))
+      return false;
     const flags = GOVT_FLAGS[String(govtId)] ?? 0;
     if ((flags & 0x0040) !== 0) return false; // never attacks the player
     // a commission with them means their ships don't come after you
@@ -9415,7 +9635,7 @@ export class Game {
      * question their current glasses prescription". Capped well short of that
      * so the murkiest systems stay playable: Nova's worst is 50.
      */
-    const murk = this.system.murk;
+    const murk = this.effectiveMurk;
     if (murk > 0) {
       const tint = this.system.bkgndColor || "#000008";
       ctx.globalAlpha = Math.min(0.55, murk / 100);

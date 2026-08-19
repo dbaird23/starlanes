@@ -32,6 +32,7 @@ import {
   escortWage,
 } from "../game/game";
 import { escortCargoCap } from "../game/cargo";
+import { outfitCost, outfitMass } from "../game/combat";
 import { JUNKS, junkCargoKey } from "../data/universe";
 import {
   availableMissions,
@@ -2570,10 +2571,17 @@ export class LandedUi {
       const owned = ownedCount(id);
       const isAmmo = o.mods.some((m) => m.type === 3);
       const isMap = o.mods.some((m) => m.type === 16);
-      const price = this.shopPrice(o.cost);
+      /*
+       * oütf Flags 0x0200/0x0400: the armour line is priced and weighed
+       * against the hull it is going on, so both figures come from the
+       * helpers rather than straight off the resource.
+       */
+      const hullMass = SHIPS[g.player.shipId]?.mass ?? 0;
+      const price = this.shopPrice(outfitCost(o, hullMass));
+      const itemMass = outfitMass(o, hullMass);
       const free = g.freeMassLeft();
       const atMax = o.max > 0 && owned >= o.max && !isAmmo && !isMap;
-      const tooHeavy = o.mass > 0 && free < o.mass;
+      const tooHeavy = itemMass > 0 && free < itemMass;
       const tooPoor = g.player.credits < price;
       const noMount = g.mountBlock(id);
       const stocked = tradedHere(id);
@@ -2622,7 +2630,7 @@ export class LandedUi {
         <div class="oi-info">
           <div><span>${ui(215, "Item Price:")}</span><b>${price.toLocaleString()} cr</b></div>
           <div><span>${ui(217, "You Have:")}</span><b>${g.player.credits.toLocaleString()} cr</b></div>
-          <div class="gap"><span>${ui(216, "Item Mass:")}</span><b>${o.mass} tons</b></div>
+          <div class="gap"><span>${ui(216, "Item Mass:")}</span><b>${itemMass} tons</b></div>
           <div><span>${ui(218, "Available:")}</span><b>${free} tons</b></div>
           ${mountRow(g)}
           <div class="oi-status">${status}</div>
