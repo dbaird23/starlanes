@@ -2187,7 +2187,7 @@ export class LandedUi {
     const p = this.planet!;
     const g = this.game;
     const current = SHIPS[g.player.shipId];
-    const tradeIn = current ? Math.floor(current.cost * 0.25) : 0;
+    const tradeIn = current ? g.tradeInValue : 0;
     /*
      * Trading down pays out. A hull worth less than a quarter of the one you
      * are flying would read a flat "0 cr", which looks like broken data when
@@ -2213,7 +2213,7 @@ export class LandedUi {
       const techOk =
         s.techLevel > 0 &&
         (s.techLevel <= p.techLevel || p.specialTechs.includes(s.techLevel));
-      if (!techOk || s.cost <= 0 || s.buyRandom <= 0) return false;
+      if (!techOk || s.buyRandom <= 0) return false;
       if (!evalTest(s.avail, g.player.bits, testContext(g.player)))
         return false;
       // shïp Flags3 0x0200: don't show the hull at all until the player holds

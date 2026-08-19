@@ -1508,6 +1508,22 @@ export class Game {
     this.player.outfits = kept;
   }
 
+  /**
+   * Trade-in value of the current ship: 25% of (hull cost + ship-bound outfit
+   * costs). Ship-bound outfits are those without the 0x0004 persistent flag —
+   * the ones keepPilotOutfits() discards when switching hulls.
+   */
+  get tradeInValue(): number {
+    const hull = SHIPS[this.player.shipId];
+    if (!hull) return 0;
+    let outfitCost = 0;
+    for (const [id, n] of Object.entries(this.player.outfits)) {
+      const o = OUTFITS[id];
+      if (o && (o.flags & 0x0004) === 0) outfitCost += o.cost * n;
+    }
+    return Math.floor((hull.cost + outfitCost) * 0.25);
+  }
+
   private commitPilot(): void {
     if (this.pilotId) {
       this.player.routeDest = this.routeDest;
@@ -1667,7 +1683,7 @@ export class Game {
     const type = SHIPS[shipId];
     const current = SHIPS[this.player.shipId];
     if (!type) return { ok: false, reason: "Unknown ship class." };
-    const tradeIn = current ? Math.floor(current.cost * 0.25) : 0;
+    const tradeIn = current ? this.tradeInValue : 0;
     const price = type.cost - tradeIn;
     if (this.player.credits < price) {
       return { ok: false, reason: "You cannot afford this ship." };
@@ -8372,7 +8388,7 @@ export class Game {
       ) => {
         const key = String(shipId);
         if (!SHIPS[key]) return;
-        if (!keepOutfits) this.player.outfits = {};
+        if (!keepOutfits) this.keepPilotOutfits();
         if (grantDefaults) grantHullOutfits(key, this.player.outfits);
         this.applyShipType(key);
         if (grantDefaults) {
