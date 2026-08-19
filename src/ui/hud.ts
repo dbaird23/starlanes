@@ -314,12 +314,16 @@ export class HudUi {
       } else if (g.player.dominated.includes(p.id)) {
         dotColor = "#6fce8a"; // dominated — green
       } else if (isGate) {
-        // A ring you may actually use: working, and clearing you to land. For
-        // a hypergate that is gövt 183's MinStatus 32767 against ränk 147's
-        // always-let-land flag; a wormhole asks nothing of anybody.
-        const accessible =
-          g.gateIsWorking(p) && g.clearedToLand(p, g.player.systemId);
-        dotColor = accessible ? "#e8d060" : "#e06a5a";
+        // Working gate you're cleared to use: yellow.
+        // Working gate you're not cleared for (no hypergate rank): red.
+        // Offline/broken gate: grey — it's dark, not hostile.
+        if (!g.gateIsWorking(p)) {
+          dotColor = "#8fb4d4";
+        } else if (g.clearedToLand(p, g.player.systemId)) {
+          dotColor = "#e8d060";
+        } else {
+          dotColor = "#e06a5a";
+        }
       } else if (p.landable && g.clearedToLand(p, g.player.systemId)) {
         dotColor = "#e8d060"; // friendly — yellow
       } else if (p.landable) {

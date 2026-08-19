@@ -1246,6 +1246,7 @@ export class Game {
     }
     this.populateNpcs();
     this.spawnMissionShips();
+    this.spawnEscorts(true); // your wing transits with you, fading from white
     playSnd(130, 0.5);
     this.message(
       dest.isWormhole
@@ -2323,6 +2324,8 @@ export class Game {
         if (wd > 0) npc.weapGlowAlpha = Math.max(0, npc.weapGlowAlpha - (wd / 255) * 10 * dt);
         else npc.weapGlowAlpha = 0;
       }
+      if (npc.gateFlash > 0 && !npc.landing)
+        npc.gateFlash = Math.max(0, npc.gateFlash - dt / GATE_EXIT_FLASH);
     }
     this.updateReinforcements(dt);
     this.updatePendingReinforcement();
@@ -4752,7 +4755,7 @@ export class Game {
    * takeoff and arrival, since escorts live on the pilot rather than in the
    * system's ship list.
    */
-  private spawnEscorts(): void {
+  private spawnEscorts(gateTransit = false): void {
     for (let i = 0; i < this.player.escorts.length; i++) {
       const hire = this.player.escorts[i];
       const type = SHIPS[hire.shipId];
@@ -4770,18 +4773,39 @@ export class Game {
       npc.order = "defend";
       npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
       npc.sprite = SHIP_SPRITES[hire.shipId] ?? null;
-      // fan them out behind the player so they don't spawn on top of each other
       const side = i % 2 === 0 ? 1 : -1;
       const rank = Math.floor(i / 2) + 1;
-      const off = this.ship.radius + 40 * rank;
-      npc.pos = {
-        x:
-          this.ship.pos.x +
-          Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
-        y:
-          this.ship.pos.y +
-          Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
-      };
+      if (gateTransit) {
+        // Escorts trail through the ring behind the player: each rank is 50px
+        // further back (toward the gate centre) with a narrow side stagger so
+        // they don't stack. All start fully white and fade to normal, the same
+        // as the player.
+        const back = this.ship.angle + Math.PI;
+        const backOff = rank * 50;
+        const sideOff = 30;
+        npc.pos = {
+          x:
+            this.ship.pos.x +
+            Math.cos(back) * backOff +
+            Math.cos(this.ship.angle + (Math.PI / 2) * side) * sideOff,
+          y:
+            this.ship.pos.y +
+            Math.sin(back) * backOff +
+            Math.sin(this.ship.angle + (Math.PI / 2) * side) * sideOff,
+        };
+        npc.gateFlash = 1;
+      } else {
+        // Fan them out beside the player on takeoff / hyperspace arrival.
+        const off = this.ship.radius + 40 * rank;
+        npc.pos = {
+          x:
+            this.ship.pos.x +
+            Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
+          y:
+            this.ship.pos.y +
+            Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
+        };
+      }
       npc.angle = this.ship.angle;
       npc.vel = { ...this.ship.vel };
       this.npcs.push(npc);
@@ -5562,11 +5586,21 @@ export class Game {
       }
     }
 
-    // Secondary weapons (missiles, rockets) fire independently on their own cooldown.
-    if (!fleeing && npc.missileCooldown <= 0 && dist < reach) {
+    // Secondary weapons fire independently on their own cooldown. Missiles and
+    // rockets are only used when the target is within that weapon's own range
+    // (speed × duration); fighter bays have no range cap because fighters fly
+    // to the target themselves. This lets NPCs switch to a longer-range missile
+    // or deploy fighters when the target is outside their primary reach.
+    if (!fleeing && npc.missileCooldown <= 0) {
       const missileStock = armament?.find((sw) => {
         const w = WEAPONS[String(sw.id)];
-        return w && isSecondary(w) && sw.count > 0 && sw.ammo !== 0;
+        return (
+          w &&
+          isSecondary(w) &&
+          sw.count > 0 &&
+          sw.ammo !== 0 &&
+          dist <= w.speed * w.durationSec
+        );
       });
       if (missileStock) {
         const missileWeap = WEAPONS[String(missileStock.id)]!;
