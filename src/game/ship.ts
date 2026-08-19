@@ -267,11 +267,14 @@ export class Ship {
 export type NpcPhase = "toPlanet" | "orbit" | "leaving" | "leavingBurn" | "berthed";
 
 /**
- * Standing orders for the ships flying with you. "defend" keeps them on your
- * wing and lets them engage whatever threatens you; "attack" sends them at your
- * current target; "hold" pins them to a spot they will defend but not leave.
+ * Standing orders for the ships flying with you.
+ * "formup"  — hold strict formation; fire primaries only from formation angle;
+ *             stop when a target is disabled; never break off.
+ * "defend"  — hold formation but break to disable nearby threats, then return.
+ * "attack"  — leave formation and full-out attack your current target.
+ * "hold"    — stay pinned at one spot and defend it; never leave.
  */
-export type EscortOrder = "defend" | "attack" | "hold";
+export type EscortOrder = "formup" | "defend" | "attack" | "hold";
 
 export class NpcShip extends Ship {
   phase: NpcPhase = "toPlanet";
@@ -332,7 +335,12 @@ export class NpcShip extends Ship {
   escorting = false;
   /** hired to fly with the player, and its standing order */
   hired = false;
-  order: EscortOrder = "defend";
+  order: EscortOrder = "formup";
+  /**
+   * In "defend" stance: the hostile this escort broke formation to disable.
+   * Cleared when the target is disabled or destroyed so the escort returns.
+   */
+  defenseTarget: Ship | null = null;
   /** where a "hold position" order pinned it */
   holdAt: Vec2 | null = null;
   /** përs id if this is a named captain */

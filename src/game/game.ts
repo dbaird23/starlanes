@@ -887,6 +887,7 @@ export class Game {
     this.populateNpcs();
     this.populateAsteroids();
     this.spawnMissionShips();
+    this.spawnEscorts();
 
     /*
      * A brand-new pilot gets the scenario's opening sequence — chär
@@ -2255,7 +2256,8 @@ export class Game {
       if (actionConsume(this.input, "selectSecondary")) this.cycleSecondary();
       if (actionConsume(this.input, "escortAttack"))
         this.orderEscorts("attack");
-      if (actionConsume(this.input, "escortForm")) this.orderEscorts("defend");
+      if (actionConsume(this.input, "escortForm")) this.orderEscorts("formup");
+      if (actionConsume(this.input, "escortDefend")) this.orderEscorts("defend");
       if (actionConsume(this.input, "escortHold")) this.orderEscorts("hold");
       if (actionConsume(this.input, "recallFighters")) this.recallFighters();
       if (actionConsume(this.input, "selfDestruct")) this.selfDestruct();
@@ -3226,7 +3228,7 @@ export class Game {
     npc.hired = true;
     npc.hostile = false;
     npc.govtId = -1;
-    npc.order = "defend";
+    npc.order = "formup";
     npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
     npc.sprite = SHIP_SPRITES[shipId] ?? null;
     const side = this.player.escorts.length % 2 === 0 ? 1 : -1;
@@ -4455,7 +4457,7 @@ export class Game {
 
   /** Call every launched fighter home. */
   private recallFighters(): void {
-    const out = this.npcs.filter((n) => n.ally);
+    const out = this.npcs.filter((n) => n.ally && n.bayWeapId !== null);
     if (out.length === 0) {
       this.message("No fighters to recall.");
       return;
@@ -4756,6 +4758,13 @@ export class Game {
    * system's ship list.
    */
   private spawnEscorts(gateTransit = false): void {
+    // Pre-compute the fleet's max radius so all slots use the same grid.
+    const maxR = this.player.escorts.reduce((m, hire) => {
+      const sp = SHIP_SPRITES[hire.shipId];
+      const r = sp ? Math.max(sp.w, sp.h) / 2 : 12;
+      return Math.max(m, r);
+    }, this.ship.radius);
+
     for (let i = 0; i < this.player.escorts.length; i++) {
       const hire = this.player.escorts[i];
       const type = SHIPS[hire.shipId];
@@ -4770,41 +4779,28 @@ export class Game {
       npc.hired = true;
       npc.hostile = false;
       npc.govtId = -1;
-      npc.order = "defend";
+      npc.order = hire.order ?? "formup";
       npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
       npc.sprite = SHIP_SPRITES[hire.shipId] ?? null;
-      const side = i % 2 === 0 ? 1 : -1;
-      const rank = Math.floor(i / 2) + 1;
+
       if (gateTransit) {
         // Escorts trail through the ring behind the player: each rank is 50px
         // further back (toward the gate centre) with a narrow side stagger so
         // they don't stack. All start fully white and fade to normal, the same
         // as the player.
+        const side = i % 2 === 0 ? 1 : -1;
+        const rank = Math.floor(i / 2) + 1;
         const back = this.ship.angle + Math.PI;
-        const backOff = rank * 50;
-        const sideOff = 30;
         npc.pos = {
-          x:
-            this.ship.pos.x +
-            Math.cos(back) * backOff +
-            Math.cos(this.ship.angle + (Math.PI / 2) * side) * sideOff,
-          y:
-            this.ship.pos.y +
-            Math.sin(back) * backOff +
-            Math.sin(this.ship.angle + (Math.PI / 2) * side) * sideOff,
+          x: this.ship.pos.x + Math.cos(back) * rank * 50 +
+             Math.cos(this.ship.angle + (Math.PI / 2) * side) * 30,
+          y: this.ship.pos.y + Math.sin(back) * rank * 50 +
+             Math.sin(this.ship.angle + (Math.PI / 2) * side) * 30,
         };
         npc.gateFlash = 1;
       } else {
-        // Fan them out beside the player on takeoff / hyperspace arrival.
-        const off = this.ship.radius + 40 * rank;
-        npc.pos = {
-          x:
-            this.ship.pos.x +
-            Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
-          y:
-            this.ship.pos.y +
-            Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
-        };
+        // Place directly at the formation slot so there is no fly-in delay.
+        npc.pos = this.formationSlotPos(i, maxR);
       }
       npc.angle = this.ship.angle;
       npc.vel = { ...this.ship.vel };
@@ -4947,14 +4943,28 @@ export class Game {
     for (const npc of wing) {
       npc.order = order;
       npc.holdAt = order === "hold" ? { ...npc.pos } : null;
+      npc.defenseTarget = null; // clear any in-progress defend chase on re-order
       if (order !== "hold") npc.recalling = false;
+      // Persist so the order survives jumps and landings.
+      // "hold" pins a world-space position that won't survive a transit anyway,
+      // so we store the order but it will be read back correctly (escorts just
+      // respawn near the player and then hold that new spot).
+      const hire = this.player.escorts.find(e => e.shipId === npc.typeId);
+      if (hire) hire.order = order;
     }
+    // On an attack order the target becomes aware of being hunted immediately.
+    if (order === "attack" && this.targetNpc) this.provoke(this.targetNpc);
+    const targetName = this.targetNpc?.typeId
+      ? (SHIPS[this.targetNpc.typeId]?.name.split(";")[0] ?? "target")
+      : "target";
     const what =
       order === "attack"
-        ? `attack ${this.targetNpc?.typeId ? (SHIPS[this.targetNpc.typeId]?.name.split(";")[0] ?? "target") : "target"}`
+        ? `attack ${targetName}`
         : order === "hold"
           ? "hold position"
-          : "form up";
+          : order === "defend"
+            ? "defend me"
+            : "hold formation";
     this.message(`Escorts: ${what}.`);
     // One of the wing answers — sending you six overlapping voices would be a
     // mess. An attack order gets the targeting line, anything else the ack.
@@ -4988,7 +4998,7 @@ export class Game {
     }
   }
 
-  /** Fighters escort the player and dive on whatever is hostile. */
+  /** Escorts/fighters escort the player under one of four standing orders. */
   private updateAllyAi(npc: NpcShip, dt: number): void {
     if (npc.recalling) {
       const dx = this.ship.pos.x - npc.pos.x;
@@ -5002,31 +5012,239 @@ export class Game {
       npc.update(dt, 0, facing);
       return;
     }
-    // "attack" sends the wing at whatever you have targeted, wherever it is
+
+    // "attack" — leave formation, full engagement on player's current target
     if (npc.order === "attack" && this.targetNpc && !this.targetNpc.done) {
       this.attackAi(npc, dt, this.targetNpc);
       return;
     }
-    // a ship holding position only engages what comes to it
-    const anchor =
-      npc.order === "hold" && npc.holdAt ? npc.holdAt : this.ship.pos;
-    const reach = npc.order === "hold" ? 700 : 1400;
-    let prey: Ship | null = null;
-    let best = reach;
-    for (const other of this.npcs) {
-      if (!other.hostile || other.disabled || other === npc) continue;
-      const d = Math.hypot(other.pos.x - anchor.x, other.pos.y - anchor.y);
-      if (d < best) {
-        best = d;
-        prey = other;
+
+    // "hold" — stay pinned; engage anything that approaches; never leave
+    if (npc.order === "hold") {
+      const anchor = npc.holdAt ?? npc.pos;
+      let prey: Ship | null = null;
+      let best = 700;
+      for (const other of this.npcs) {
+        if (!other.hostile || other.disabled || other === npc) continue;
+        const d = Math.hypot(other.pos.x - anchor.x, other.pos.y - anchor.y);
+        if (d < best) { best = d; prey = other; }
       }
-    }
-    if (prey) {
-      this.attackAi(npc, dt, prey);
+      if (prey) { this.attackAi(npc, dt, prey); return; }
+      this.stationKeep(npc, dt, anchor, 60);
       return;
     }
-    // nothing to fight: sit on the anchor — your wing, or the spot you pinned
-    this.stationKeep(npc, dt, anchor, npc.order === "hold" ? 60 : 140);
+
+    // "formup" — strict formation; primaries only from formation angle; disable-only
+    if (npc.order === "formup") {
+      this.formationFollow(npc, dt);
+      this.fireFormationPrimaries(npc, dt);
+      return;
+    }
+
+    // "defend" — hold formation; break to disable nearby threats; return when done
+    // npc.defenseTarget tracks what the escort is currently chasing
+    if (npc.defenseTarget) {
+      const t = npc.defenseTarget as NpcShip;
+      if (t.done || t.disabled) {
+        npc.defenseTarget = null; // threat neutralised — fall through to formation
+      } else {
+        // Continue chasing — stop secondary fire (disable-only intent)
+        this.attackAiDisableOnly(npc, dt, t);
+        return;
+      }
+    }
+    // Look for a new nearby threat
+    const DEFEND_REACH = 800;
+    let threat: NpcShip | null = null;
+    let bestThreat = DEFEND_REACH;
+    for (const other of this.npcs) {
+      if (!other.hostile || other.disabled || other.done || other === npc) continue;
+      const d = Math.hypot(other.pos.x - this.ship.pos.x, other.pos.y - this.ship.pos.y);
+      if (d < bestThreat) { bestThreat = d; threat = other; }
+    }
+    if (threat) {
+      npc.defenseTarget = threat;
+      this.attackAiDisableOnly(npc, dt, threat);
+      return;
+    }
+    // No threats: hold formation
+    this.formationFollow(npc, dt);
+  }
+
+  /**
+   * Hold an escort in formation with the player.
+   *
+   * Heading: set to the player's heading every frame — no turn physics, the
+   * escort just faces where you face.
+   *
+   * Velocity: set to the player's velocity plus a small correction term that
+   * nudges the escort toward its slot. The escort does NOT orbit the player as
+   * you turn; it stays where it is in world space and gently drifts to the new
+   * slot position that results from the angle change. The correction is
+   * proportional to the offset from the slot, capped at 200 px/s so it reads
+   * as a drift rather than a snap. Large initial gaps (just hired, or returning
+   * from an attack order) close at the same capped rate.
+   */
+  /**
+   * World-space position of formation slot `idx` given a fleet whose largest
+   * ship has radius `maxR` and using the player's current position and angle.
+   */
+  private formationSlotPos(idx: number, maxR: number): { x: number; y: number } {
+    const s = maxR * 2 + 5;
+    const SLOTS = [
+      { x: -s,     y:  s / 2 },
+      { x: -s,     y: -s / 2 },
+      { x: -2 * s, y:  0     },
+      { x: -2 * s, y:  s     },
+      { x: -2 * s, y: -s     },
+      { x: -3 * s, y:  s / 2 },
+      { x: -3 * s, y: -s / 2 },
+      { x: -3 * s, y:  0     },
+    ];
+    const sl = SLOTS[Math.min(idx, SLOTS.length - 1)];
+    const cosA = Math.cos(this.ship.angle);
+    const sinA = Math.sin(this.ship.angle);
+    return {
+      x: this.ship.pos.x + sl.x * cosA - sl.y * sinA,
+      y: this.ship.pos.y + sl.x * sinA + sl.y * cosA,
+    };
+  }
+
+  private formationFollow(npc: NpcShip, dt: number): void {
+    const allies = this.npcs.filter(n => (n.ally || n.escorting) && !n.done);
+    const slotIdx = Math.max(0, allies.indexOf(npc));
+    const maxR = allies.reduce((m, n) => Math.max(m, n.radius), this.ship.radius);
+    const { x: wx, y: wy } = this.formationSlotPos(slotIdx, maxR);
+    // Raw offset from current position — used for rejoin distance check only.
+    const dxRaw = wx - npc.pos.x;
+    const dyRaw = wy - npc.pos.y;
+    const distRaw = Math.hypot(dxRaw, dyRaw);
+
+    // When far out of position (returning from a fight, just given the order,
+    // etc.) fly back under the escort's own power so slow hulls actually have
+    // to earn their way home rather than teleporting.  Once close enough, snap
+    // into formation mode: inherit the player's velocity plus a tiny correction.
+    const REJOIN_DIST = 250; // px — beyond this, fly independently
+    if (distRaw > REJOIN_DIST) {
+      const facing = npc.steerToward(dt, Math.atan2(dyRaw, dxRaw));
+      npc.update(dt, 0, facing);
+      return;
+    }
+
+    // During a hyperspace burn escorts accelerate at the same rate as the
+    // player but with a short delay — they lerp toward the player's velocity
+    // so the player gets a headstart and escorts gradually catch up.
+    if (this.jump?.phase === "burning") {
+      const LAG = 0.5; // seconds — tune for feel
+      const alpha = Math.min(1, dt / LAG);
+      npc.vel.x += (this.ship.vel.x - npc.vel.x) * alpha;
+      npc.vel.y += (this.ship.vel.y - npc.vel.y) * alpha;
+      npc.steerToward(dt, this.ship.angle);
+      npc.thrusting = false;
+      npc.pos.x += npc.vel.x * dt;
+      npc.pos.y += npc.vel.y * dt;
+      return;
+    }
+
+    // Formation mode. The correction must be computed against where the escort
+    // *will be* after inheriting the player velocity, not its current position.
+    // ship.pos is already advanced this frame (ship updates before escorts), so
+    // using npc.pos directly inflates dx by one frame of player movement and
+    // adds a spurious forward push that makes escorts gain on the player.
+    const futureX = npc.pos.x + this.ship.vel.x * dt;
+    const futureY = npc.pos.y + this.ship.vel.y * dt;
+    const dx = wx - futureX;
+    const dy = wy - futureY;
+    const dist = Math.hypot(dx, dy);
+    const MAX_DRIFT = 60; // px/s — nudge, not a snap
+    const corrSpeed = dist > 0 ? Math.min(dist * 1.5, MAX_DRIFT) : 0;
+    npc.vel.x = this.ship.vel.x + (dist > 0 ? (dx / dist) * corrSpeed : 0);
+    npc.vel.y = this.ship.vel.y + (dist > 0 ? (dy / dist) * corrSpeed : 0);
+    // Heading: turn toward the player's heading at the escort's own turn rate
+    // until aligned, then steerToward locks it frame-to-frame (diff = 0 → snap).
+    npc.steerToward(dt, this.ship.angle);
+    npc.thrusting = false;
+    npc.pos.x += npc.vel.x * dt;
+    npc.pos.y += npc.vel.y * dt;
+  }
+
+  /**
+   * Fire primary weapons at hostiles that fall within the weapon's natural arc
+   * from the escort's current formation heading — the ship does NOT turn toward
+   * the target. Stops firing at disabled ships (disable-only policy).
+   */
+  private fireFormationPrimaries(npc: NpcShip, dt: number): void {
+    const type = npc.typeId ? SHIPS[npc.typeId] : null;
+    if (!npc.weapons && type) {
+      npc.weapons = type.stockWeapons.map(w => ({
+        ...w,
+        ammo: w.ammo === 0 ? -1 : w.ammo,
+        cooldown: 0,
+      }));
+    }
+    const armament = npc.weapons ?? type?.stockWeapons;
+    if (!armament) return;
+    npc.missileCooldown = Math.max(0, npc.missileCooldown - dt);
+    for (const sw of armament) {
+      const w = WEAPONS[String(sw.id)];
+      if (!w || !isPrimary(w)) continue;
+      if (sw.ammo === 0) continue;
+      sw.cooldown = Math.max(0, (sw.cooldown ?? 0) - dt);
+      if (sw.cooldown > 0) continue;
+      // Find a non-disabled hostile in this weapon's arc from formation heading
+      let tgt: NpcShip | null = null;
+      let bestDist = 700;
+      for (const other of this.npcs) {
+        if (!other.hostile || other.disabled || other.done || other === npc) continue;
+        const d = Math.hypot(other.pos.x - npc.pos.x, other.pos.y - npc.pos.y);
+        if (d >= bestDist) continue;
+        const wDesired = Math.atan2(other.pos.y - npc.pos.y, other.pos.x - npc.pos.x);
+        let wDiff = wDesired - npc.angle;
+        while (wDiff > Math.PI) wDiff -= Math.PI * 2;
+        while (wDiff < -Math.PI) wDiff += Math.PI * 2;
+        const arcCentre = w.guidance === 8 ? npc.angle + Math.PI : npc.angle;
+        let qDiff = wDesired - arcCentre;
+        while (qDiff > Math.PI) qDiff -= Math.PI * 2;
+        while (qDiff < -Math.PI) qDiff += Math.PI * 2;
+        const inArc =
+          isTurret(w) ||
+          (isQuadrantGun(w) && Math.abs(qDiff) <= Math.PI / 4) ||
+          Math.abs(wDiff) < 0.2;
+        if (!inArc) continue;
+        bestDist = d;
+        tgt = other;
+      }
+      if (!tgt) continue;
+      sw.cooldown = reloadInterval(w, sw.count);
+      const volley = volleyCount(w, sw.count);
+      if (sw.ammo > 0) sw.ammo -= volley;
+      if (w.sndId) playSndAt(w.sndId, 0.35, npc.pos.x - this.ship.pos.x, npc.pos.y - this.ship.pos.y);
+      npc.weapGlowAlpha = 1;
+      if (isBeam(w)) {
+        const aim = Math.atan2(tgt.pos.y - npc.pos.y, tgt.pos.x - npc.pos.x);
+        this.fireBeamFromNpc(npc, w, volley, tgt, aim);
+      } else {
+        const aimAngle =
+          isTurret(w) || isQuadrantGun(w)
+            ? Math.atan2(tgt.pos.y - npc.pos.y, tgt.pos.x - npc.pos.x)
+            : undefined;
+        this.projectiles.push(...fireWeapon(npc, w, volley, false, tgt, aimAngle));
+      }
+    }
+  }
+
+  /**
+   * Attack a target but stop the moment it is disabled — used by "defend" stance
+   * escorts who want to neutralise a threat without destroying it. Secondary
+   * weapons are skipped (primaries alone are gentler).
+   */
+  private attackAiDisableOnly(npc: NpcShip, dt: number, target: Ship): void {
+    if ((target as NpcShip).disabled) {
+      npc.defenseTarget = null;
+      return;
+    }
+    // Full attack AI minus secondary weapons — clear defenseTarget on completion.
+    this.attackAi(npc, dt, target, true);
   }
 
   /**
@@ -5366,10 +5584,15 @@ export class Game {
     npc.updateAi(dt);
   }
 
-  private attackAi(npc: NpcShip, dt: number, target: Ship): void {
+  private attackAi(npc: NpcShip, dt: number, target: Ship, disableOnly = false): void {
     // a disabled ship cannot chase or fire — only drift
     if (npc.disabled) {
       npc.update(dt, 0, false);
+      return;
+    }
+    // disable-only escorts stop the moment the target goes down
+    if (disableOnly && (target as NpcShip).disabled) {
+      npc.defenseTarget = null;
       return;
     }
     if ((target as NpcShip).disabled) {
@@ -5591,7 +5814,8 @@ export class Game {
     // (speed × duration); fighter bays have no range cap because fighters fly
     // to the target themselves. This lets NPCs switch to a longer-range missile
     // or deploy fighters when the target is outside their primary reach.
-    if (!fleeing && npc.missileCooldown <= 0) {
+    // disableOnly escorts skip secondaries — primaries alone are gentler.
+    if (!fleeing && !disableOnly && npc.missileCooldown <= 0) {
       const missileStock = armament?.find((sw) => {
         const w = WEAPONS[String(sw.id)];
         return (
@@ -7530,7 +7754,8 @@ export class Game {
               rows: [
                 { label: "Hail", value: kb("hail") },
                 { label: "Escorts: attack target", value: kb("escortAttack") },
-                { label: "Escorts: form up", value: kb("escortForm") },
+                { label: "Escorts: hold formation", value: kb("escortForm") },
+                { label: "Escorts: defend me", value: kb("escortDefend") },
                 { label: "Escorts: hold position", value: kb("escortHold") },
                 { label: "Recall fighters", value: kb("recallFighters") },
               ],
@@ -8922,20 +9147,15 @@ export class Game {
         applyCompReward(this.player, m.compGovt, m.compReward, false);
         if (!silent) {
           const comp = descText(m.compText);
-          events.push({
-            title: `Mission complete: ${active.name}`,
-            text:
-              substituteTags(
-                comp ?? "",
-                m,
-                active,
-                this.pilotName,
-                this.descTags(),
-              ) ||
-              (active.pay > 0
-                ? `You are paid ${active.pay.toLocaleString()} credits.`
-                : "The job is done."),
-          });
+          const compBody =
+            substituteTags(comp ?? "", m, active, this.pilotName, this.descTags());
+          // Only show a popup when the mission authored a completion text.
+          if (compBody) {
+            events.push({
+              title: `Mission complete: ${active.name}`,
+              text: compBody,
+            });
+          }
         }
         finished.add(active);
         continue;

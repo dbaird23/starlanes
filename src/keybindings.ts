@@ -49,6 +49,7 @@ export type ActionId =
   | "navOff"
   | "escortAttack"
   | "escortForm"
+  | "escortDefend"
   | "escortHold"
   | "playerInfo"
   | "missionInfo"
@@ -111,7 +112,8 @@ export const ACTION_GROUPS: ActionGroup[] = [
     actions: [
       { id: "hail", label: "Communicate" },
       { id: "escortAttack", label: "Escorts: attack my target" },
-      { id: "escortForm", label: "Escorts: form up" },
+      { id: "escortForm", label: "Escorts: hold formation" },
+      { id: "escortDefend", label: "Escorts: defend me" },
       { id: "escortHold", label: "Escorts: hold position" },
       { id: "recallFighters", label: "Recall fighters" },
     ],
@@ -181,6 +183,7 @@ const CLASSIC_BINDINGS: Record<ActionId, Chord> = {
   navOff: { code: "KeyN" },
   escortAttack: { code: "KeyF" },
   escortForm: { code: "KeyC" },
+  escortDefend: { code: "KeyT" },
   escortHold: { code: "KeyV" },
   playerInfo: { code: "KeyP" },
   missionInfo: { code: "KeyI" },
@@ -221,6 +224,7 @@ const STARSECTOR_BINDINGS: Record<ActionId, Chord> = {
   navOff: { code: "KeyN" },
   escortAttack: { code: "KeyF" },
   escortForm: { code: "KeyC" },
+  escortDefend: { code: "KeyT" },
   escortHold: { code: "KeyV" },
   playerInfo: { code: "KeyP" },
   missionInfo: { code: "KeyI" },

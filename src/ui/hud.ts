@@ -539,12 +539,13 @@ export class HudUi {
       !pri.length,
       pri.some((s) => s.cooldown > 0),
     );
+    const activeSec = g.selectedSecondary();
     weapLine(
       this.weapSec,
-      sec.length
-        ? label(sec[0], sec.length - 1, true)
+      activeSec
+        ? label(activeSec, sec.length - 1, true)
         : ui(350, "No Secondary Weapon"),
-      !sec.length,
+      !activeSec,
       sec.some((s) => s.cooldown > 0),
     );
   }

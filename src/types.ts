@@ -265,6 +265,8 @@ export interface HiredEscort {
   pendingSell?: boolean;
   /** Upgrade this escort's hull at the next shipyard landing. */
   pendingUpgrade?: boolean;
+  /** Standing order persisted across jumps and landings; defaults to "formup". */
+  order?: import("./game/ship").EscortOrder;
 }
 
 /** A mission decoded from a mïsn resource. */
