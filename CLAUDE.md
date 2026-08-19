@@ -2170,8 +2170,7 @@ Still open or only half-landed:
 2. **Mass → days/jump is done** — shïp Mass bands set 1/2/3 days per jump and
    the two density-scanner blip sizes; ModType 22 still shifts the total with
    a floor of 1.
-3. **sÿst @110-140** — still unidentified (~32 bytes); does not block play.
-7. **Status-bar plate revisions.** All seven governments are covered — six
+3. **Status-bar plate revisions.** All seven governments are covered — six
    JPEGs and the drawn Vell-os skin — so this is only open if the artwork is
    revised. Two cut-outs would be worth resizing across all seven: the
    **cargo** hole is three lines, so a loaded hold's per-commodity manifest is
