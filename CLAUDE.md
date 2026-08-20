@@ -417,6 +417,22 @@ required license!", buying the Heavy Weapons License unlocks it but not the
 missile launcher, and holding rank 128 unlocks everything with no license
 owned.
 
+**Papers are checked in the model, not just in the view.** Both shop gates
+used to live only in `landed.ts`, disabling the Buy button while `buyOutfit`
+and `buyShip` sold to anybody — the one Require rule in the scenario enforced
+by the UI rather than by the thing it guards, and the one that would break
+first if anything ever bought outside that button. `Game.outfitLicensed`
+answers the outfit half, reading the landed stellar's own govtId through
+`outfitRequireApplies` so a pirate outfitter still sells to anybody, and is
+consulted by `buyOutfit` and by `maxBuyable` — which had been offering a full
+rack of 200 missiles to an unlicensed pilot. `buyShip` checks shïp Require
+directly; hulls carry no RequireGovt, so every yard enforces. Verified against
+the shipyard's own button state at Earth: the IDA Frigate (Require 195) and
+the Starbridge (11) refuse in both model and view, both clear once the Exotic
+Ships & Weapons License is held, and the Viper (0) is free in both. Of the 15
+governments with a landable world in the survey, only the Federation's check
+the IR Missile's papers.
+
 The same offset hunt found two more mïsn fields past Require: **ScanMask
 @1630** (five missions; "Steal Hypergate Codes" reads 0xFFFF — contraband to
 every government, and the low-bit values decode via the minor factions'
@@ -2117,7 +2133,7 @@ happened to live there.
   building on it**: the seeded pattern is a free oracle, and a near-miss base
   looks plausible enough to fool a spot check.
 
-- **Legal records are per-system now — Nova's own model.**- **Legal records are per-system now — Nova's own model.** `reputation.ts`
+- **Legal records are per-system now — Nova's own model.** `reputation.ts`
   keeps a sparse ledger keyed by sÿst id: an untouched system reads its owning
   govt's InitialRec (the original .plt seeds exactly so — Nil'kemorya -5,
   Family Dani +2, Krypt +10), and `applyGovtRecord` lands every crime, comp

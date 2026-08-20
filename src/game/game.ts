@@ -128,7 +128,11 @@ import {
   markPilotDead,
   savePilot,
 } from "./pilots";
-import { playerContribute, requireMet } from "./contribute";
+import {
+  outfitRequireApplies,
+  playerContribute,
+  requireMet,
+} from "./contribute";
 import {
   applyCompReward,
   applyCrime,
@@ -1828,6 +1832,15 @@ export class Game {
     const type = SHIPS[shipId];
     const current = SHIPS[this.player.shipId];
     if (!type) return { ok: false, reason: "Unknown ship class." };
+    /*
+     * shïp Require: the Fed Carrier wants five licenses (0xCF), the Leviathan
+     * just the Capital Ships License (0x40). Hulls carry no RequireGovt, so
+     * unlike an outfit this is checked at every yard. Enforced here as well as
+     * in the showroom's Buy button, for the same reason as `outfitLicensed`.
+     */
+    if (!requireMet(type.require, playerContribute(this.player))) {
+      return { ok: false, reason: "You don't have the required licenses!" };
+    }
     const tradeIn = current ? this.tradeInValue : 0;
     const price = type.cost - tradeIn;
     if (this.player.credits < price) {
@@ -9248,6 +9261,38 @@ export class Game {
   }
 
   /**
+   * The stellar the pilot is standing on, or null in flight. Trading happens
+   * at a counter, and two of the Require rules — which shops check papers,
+   * and which do not — are properties of the world it sits on.
+   */
+  private get landedPlanet(): PlanetDef | null {
+    if (!this.player.landedOn) return null;
+    return (
+      this.system.planets.find((p) => p.id === this.player.landedOn) ?? null
+    );
+  }
+
+  /**
+   * oütf Require: does this shop have papers to check, and does the pilot have
+   * them? RequireGovt decides which stellars enforce an item's Require bits —
+   * 128 on the licensed weapons means the Federation checks and a pirate
+   * outfitter does not — so the answer depends on where you are standing.
+   *
+   * This used to live only in the outfitter's own render, gating the Buy
+   * button while `buyOutfit` itself sold to anybody. Every other Require gate
+   * in the scenario is enforced in the model (crön activation, mission
+   * availability, the gövt travel permit); this one now is too, so the rule
+   * cannot be bypassed by any path that does not go through that one button.
+   */
+  outfitLicensed(outfId: string): boolean {
+    const outf = OUTFITS[outfId];
+    if (!outf) return false;
+    const govtId = this.landedPlanet?.govtId ?? -1;
+    if (!outfitRequireApplies(outf.requireGovt, govtId)) return true;
+    return requireMet(outf.require, playerContribute(this.player));
+  }
+
+  /**
    * How many of an outfit the pilot holds. Ammunition is kept in
    * `player.ammo` keyed by the weapon it feeds, everything else in
    * `player.outfits`, so "how many do I have" has to ask the right map —
@@ -9276,6 +9321,7 @@ export class Game {
     if (!outf) return 0;
     if (!evalTest(outf.avail, this.player.bits, testContext(this.player)))
       return 0;
+    if (!this.outfitLicensed(outfId)) return 0;
     if (outf.mods.some((m) => m.type === 16)) return 1;
     const hullMass = SHIPS[this.player.shipId]?.mass ?? 0;
     const price = outfitCost(outf, hullMass);
@@ -9359,6 +9405,9 @@ export class Game {
     // rather than hiding it — but it still won't sell you one.
     if (!evalTest(outf.avail, this.player.bits, testContext(this.player))) {
       return { ok: false, reason: "That is not for sale here." };
+    }
+    if (!this.outfitLicensed(outfId)) {
+      return { ok: false, reason: "You don't have the required license!" };
     }
     const isMap = outf.mods.some((m) => m.type === 16);
     /*
