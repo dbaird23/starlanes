@@ -48,6 +48,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 50,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 171,
@@ -55,7 +57,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 252,
+        "count": 1
+      },
+      {
+        "id": 253,
+        "count": 1
+      }
+    ],
     "desc": "When a Vell-os has completed his or her basic training in the psi arts, one of the first things they attempt to construct is the delicate Dart.  Like all Vell-os 'ships', she is actually a pure psychic barrier that protects the Vell-os pilot within.  It is perfectly formed for hyperspace travel (nearly matching the beautiful Wraith), and will remain intact as long as enough of the mental energy of the Vell-os remains."
   },
   {
@@ -107,6 +118,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 172,
@@ -119,7 +132,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 249,
+        "count": 1
+      },
+      {
+        "id": 252,
+        "count": 1
+      },
+      {
+        "id": 253,
+        "count": 1
+      }
+    ],
     "desc": "The Arrow is an undertaking that has been known to be completed by a very skilled T3, but is more usually the in the purview of a T2.  It is a mental barrier of enormous proportions that affords the Vell-os pilot excellent physical protection.  The Arrow differs visibly from the Dart, in that it is significantly longer and more streamlined.  This is certainly a powerful vessel, but it is rarely seen in these dark times."
   },
   {
@@ -171,6 +197,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 70,
+    "ionizeMax": 500,
     "stockWeapons": [
       {
         "id": 173,
@@ -193,7 +221,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 249,
+        "count": 1
+      },
+      {
+        "id": 252,
+        "count": 1
+      },
+      {
+        "id": 253,
+        "count": 1
+      }
+    ],
     "desc": "The Javelin embodies the hopes and desires of all the Vell-os people.  A Javelin has been known to be created by very powerful T2's, but as a general rule, only T1's are capable of constructing one of these glorious works of art.  A completed Javelin pulsates with the enormous mental energy of the Vell-os pilot as it travels.  This mental construct is most often created by a Vell-os who is also capable of launching the devastating Autumn Petal attack and of disassociating their mind to create subsidiary vessels, making the Javelin one of the most powerful objects known to man.  Only a few Javelins exist now, as it is rare for a Vell-os to be allowed to construct one."
   },
   {
@@ -245,6 +286,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 75,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 133,
@@ -265,15 +308,38 @@
         "id": 158,
         "count": 4,
         "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 3,
+        "ammo": 21
+      },
+      {
+        "id": 132,
+        "count": 4,
+        "ammo": 0
+      },
+      {
+        "id": 176,
+        "count": 2,
+        "ammo": 2
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 21
+        "id": 248,
+        "count": 1
       },
       {
-        "id": 176,
+        "id": 265,
+        "count": 1
+      },
+      {
+        "id": 228,
+        "count": 2
+      },
+      {
+        "id": 227,
         "count": 2
       }
     ],
@@ -328,6 +394,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 50,
+    "ionizeMax": 200,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "When a Vellosian has completed his or her basic training in the psi arts, one of the first things they attempt to construct is the delicate Dart.  Like all Vellosian ships, she is actually a pure psychic barrier that protects the Vell-os pilot within.  It is perfectly formed for hyperspace travel (nearly matching the beautiful Wraith), and will remain intact as long as enough of the mental energy of the Vell-os remains."
@@ -381,6 +449,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 350,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "The Arrow is an undertaking that has been known to be completed by a very skilled T3, but is more usually the in the purview of a T2.  It is a mental barrier of enormous proportions that affords the Vell-os pilot excellent physical protection.  The Arrow differs visibly from the Dart, in that it is significantly longer and more streamlined.  This is certainly a powerful vessel, but it is rarely seen in these dark times."
@@ -434,6 +504,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 70,
+    "ionizeMax": 500,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "The Javelin embodies the hopes and desires of all the Vell-os people.  A Javelin has been known to be created by very powerful T2's, but as a general rule, only T1's are capable of constructing one of these glorious works of art.  A completed Javelin pulsates with the enormous mental energy of the Vell-os pilot as it travels.  This mental construct is most often created by Vellosians who are also capable of launching the devastating Autumn Petal attack and of disassociating their minds to create subsidiary vessels, making the Javelin one of the most powerful objects known to man.  Only a few Javelins exist now, as it is rare for enough Vellosians to be allowed to construct one."
@@ -483,6 +555,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 5,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": ""
@@ -536,6 +610,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 165,
@@ -543,7 +619,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 266,
+        "count": 1
+      },
+      {
+        "id": 267,
+        "count": 1
+      }
+    ],
     "desc": "In the final stage of Wraith growth, the shiny carapace goes completely black, and the mature Wraith takes its place in the clan as a respected elder.  The elder Wraith discuss many topics during their gathering trips into space and their time on their homeworld.  They are truly a race of philosophers, though some of their conclusions are quite alien to humans.  The adult Wraith will mate when they reach 200 years of age, and they live for up to 1000 years."
   },
   {
@@ -595,6 +680,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 45,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 167,
@@ -602,7 +689,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 266,
+        "count": 1
+      }
+    ],
     "desc": "When Wraith children are a little more grown, they are capable of running with the pack.  Young Wraith will serve as outliers for a convoy, and take great delight in 'buzzing' incoming ships with their younger brothers and sisters.  The adults can always keep them in line, though, and the youngsters quickly mature as they get better and better at gliding through the harshness of space, as opposed to their native Hot'A'Tanius."
   },
   {
@@ -654,6 +746,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 30,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 168,
@@ -713,6 +807,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 10,
+    "ionizeMax": 450,
     "stockWeapons": [
       {
         "id": 164,
@@ -772,6 +868,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 500,
+    "ionizeMax": 3000,
     "stockWeapons": [
       {
         "id": 163,
@@ -831,6 +929,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 65,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 165,
@@ -890,6 +990,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 3,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "The Cargo Drone is an inter-ship and in-system cargo transportation droid.  It has a very simple Lebowickz-Huffman neural net, little turning ability and absolutely no shields.  In war-torn systems these inoffensive craft are usually the first to be scrapped in a big firefight... not because they are deliberately targeted, but because one stray shot will total them."
@@ -943,6 +1045,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 3,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": ""
@@ -992,6 +1096,8 @@
     "escUpgrdCost": 6000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 5,
     "stockWeapons": [
       {
         "id": 128,
@@ -1047,6 +1153,8 @@
     "escUpgrdCost": 10000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 2,
+    "ionizeMax": 7,
     "stockWeapons": [
       {
         "id": 128,
@@ -1102,6 +1210,8 @@
     "escUpgrdCost": 5000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 5,
     "stockWeapons": [
       {
         "id": 128,
@@ -1157,6 +1267,8 @@
     "escUpgrdCost": 5000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 5,
     "stockWeapons": [
       {
         "id": 128,
@@ -1212,6 +1324,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 2,
+    "ionizeMax": 5,
     "stockWeapons": [
       {
         "id": 128,
@@ -1272,6 +1386,8 @@
     "escUpgrdCost": 10000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 2,
+    "ionizeMax": 7,
     "stockWeapons": [
       {
         "id": 128,
@@ -1327,6 +1443,8 @@
     "escUpgrdCost": 10000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 2,
+    "ionizeMax": 7,
     "stockWeapons": [
       {
         "id": 128,
@@ -1382,6 +1500,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 3,
+    "ionizeMax": 7,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": ""
@@ -1431,6 +1551,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 1,
+    "ionizeMax": 5,
     "stockWeapons": [
       {
         "id": 128,
@@ -1438,7 +1560,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 184,
+        "count": 1
+      },
+      {
+        "id": 185,
+        "count": 1
+      },
+      {
+        "id": 186,
+        "count": 1
+      }
+    ],
     "desc": "While this shuttle looks like it has been around the traps for a while, it looks well cared for and in very good condition.  The former owner assures you that he made sure that every time something broke down he got it fixed by the finest Federation outfitters so as to ensure that his ship remained at least as reliable as the day it rolled off the production line.  Add in all the minor upgrades it has, this little ship is very definitely a bargain.\r\rIncluded outfits: Gravimetric Sensors, IFF Decoder, Auto-recharger"
   },
   {
@@ -1486,6 +1621,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 2,
+    "ionizeMax": 7,
     "stockWeapons": [
       {
         "id": 231,
@@ -1493,7 +1630,24 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 184,
+        "count": 1
+      },
+      {
+        "id": 185,
+        "count": 1
+      },
+      {
+        "id": 186,
+        "count": 1
+      },
+      {
+        "id": 256,
+        "count": 1
+      }
+    ],
     "desc": "This particular heavy shuttle looks like it has been through more than its fair share of scrapes and its owner looks like he knows his way around his ship.  He nods politely as you start looking over his ship, and you can see just how much care he has taken of it.  It is clean and well-kept, and with all the minor upgrades it is very much a good buy for its price.  As far as heavy shuttles go, this one would be a bargain buy.\r\rIncluded outfits: Gravimetric Sensors, IFF Decoder, Auto-recharger, Battery Pack."
   },
   {
@@ -1541,6 +1695,8 @@
     "escUpgrdCost": 30000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 35,
     "stockWeapons": [
       {
         "id": 128,
@@ -1600,6 +1756,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 7,
+    "ionizeMax": 40,
     "stockWeapons": [
       {
         "id": 128,
@@ -1607,7 +1765,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": "With the rapid development of space flight, it was inevitable that sports (particularly racing) would come to fruition sooner rather than later.  Power Sled Racing stood up to the challenge.  A few intrepid hot-rodders noticed that one particular sled, the Viper, took very well to a bit of extra weight in the form of armor and armament.  With a little engine tweaking, these modified Vipers, designated F-23, were selected by the Federation as the mainstay of their fighter wings.\r\rRequires: Naval Approval"
   },
   {
@@ -1659,6 +1822,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 7,
+    "ionizeMax": 40,
     "stockWeapons": [
       {
         "id": 155,
@@ -1666,7 +1831,12 @@
         "ammo": 65
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -1718,6 +1888,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 44,
     "stockWeapons": [
       {
         "id": 128,
@@ -1773,6 +1945,8 @@
     "escUpgrdCost": 40000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 10,
+    "ionizeMax": 40,
     "stockWeapons": [
       {
         "id": 128,
@@ -1833,6 +2007,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "While all Terrapins are remarkably ugly, this one takes the cake.  You can see why its captain is trying to sell her; he looks even less capable than his ship.  Having said that, his price is cheap, and the cargo carrying capacity of his ship is as great as that of any other Terrapin.  Still, you cannot help but wonder if this ship will suddenly fall apart on you at some stage."
@@ -1886,6 +2062,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 11,
+    "ionizeMax": 44,
     "stockWeapons": [
       {
         "id": 128,
@@ -1945,6 +2123,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 231,
@@ -2005,6 +2185,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 129,
@@ -2064,6 +2246,8 @@
     "escUpgrdCost": 70000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 128,
@@ -2076,7 +2260,12 @@
         "ammo": 6
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": "The main problem with the Viper as a fighter craft is a complete lack of any form of explosive projectile.  A new variant that has the 'long distance kill' capacity, based on the Viper chassis, has been the Federation's choice of Space Superiority Fighter ever since.  Although this ship, named the Anaconda, suffers from a slightly slower acceleration and top speed than the Viper, its ability to destroy enemy fighters before that fighter can get within gun range more than compensates.\r\rRequires: Missile Weapons License, Naval Approval"
   },
   {
@@ -2128,6 +2317,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 3,
+    "ionizeMax": 55,
     "stockWeapons": [
       {
         "id": 155,
@@ -2187,6 +2378,8 @@
     "escUpgrdCost": 45000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 4,
+    "ionizeMax": 75,
     "stockWeapons": [
       {
         "id": 143,
@@ -2199,7 +2392,12 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": "The Phoenix is yet another example of the Auroran will to survive.  The Phoenix is slow and turns badly.  One would think that it would be target practice for enemy pilots.  It is, but it has one redeeming feature: it has almost as good armor plating as a Thunderhead.  They plough through fire corridors with impunity, and attack in groups to maximize firepower.  The Phoenix can wear a missile from an Anaconda, but a Viper will stay on its tail and pound it mercilessly.  Suffice to say that Phoenix pilots suffer the greatest rate of attrition of any group in the Auroran armed forces."
   },
   {
@@ -2247,6 +2445,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 129,
@@ -2311,6 +2511,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 10,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 231,
@@ -2323,7 +2525,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -2375,6 +2582,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 143,
@@ -2387,7 +2596,12 @@
         "ammo": 12
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -2439,6 +2653,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 30,
+    "ionizeMax": 120,
     "stockWeapons": [
       {
         "id": 147,
@@ -2446,7 +2662,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -2494,6 +2715,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 14,
+    "ionizeMax": 45,
     "stockWeapons": [
       {
         "id": 155,
@@ -2554,6 +2777,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 6,
+    "ionizeMax": 35,
     "stockWeapons": [
       {
         "id": 181,
@@ -2561,7 +2786,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 271,
+        "count": 1
+      }
+    ],
     "desc": "Asteroid mining has been the staple method of gathering materials since the time of the construction of the Kane band.  Dr. Harbhajan Singh of the University of Mumbai first came up with a basic robotic craft designed to latch onto an asteroid and maneuver it close to a planet for processing. Today's Asteroid Miners are manned by a crew of six and are the backbone of the resource gathering efforts of the Federation and the Auroran Empire."
   },
   {
@@ -2613,6 +2843,8 @@
     "escUpgrdCost": 45000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 4,
+    "ionizeMax": 75,
     "stockWeapons": [
       {
         "id": 233,
@@ -2625,7 +2857,12 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -2677,6 +2914,8 @@
     "escUpgrdCost": 45000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 25,
+    "ionizeMax": 60,
     "stockWeapons": [
       {
         "id": 231,
@@ -2746,6 +2985,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 10,
+    "ionizeMax": 60,
     "stockWeapons": [
       {
         "id": 155,
@@ -2753,7 +2994,12 @@
         "ammo": 75
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -2805,6 +3051,8 @@
     "escUpgrdCost": 60000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 90,
     "stockWeapons": [
       {
         "id": 143,
@@ -2817,7 +3065,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -2869,6 +3122,8 @@
     "escUpgrdCost": 20000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 15,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 155,
@@ -2881,7 +3136,12 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": "The Heraan house have always held scientists and scholars in much higher regard than the rest of the Empire.  The fertile environment in which Heraan technicians work has produced this surprisingly trim vessel.  Built more along the lines of early Federation efforts, the Argosy packs many improvements on even the latest Federation efforts, and is a spritely performer.  It sports twin hyperdrive 'nacelles' that allow for more accurate FTL travel, and those selfsame nacelles can fold outward for excellent maneuverability in atmospheric flight."
   },
   {
@@ -2929,6 +3189,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 128,
@@ -2993,6 +3255,8 @@
     "escUpgrdCost": 60000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 231,
@@ -3058,6 +3322,8 @@
     "escUpgrdCost": 175000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 128,
@@ -3117,6 +3383,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 44,
     "stockWeapons": [
       {
         "id": 128,
@@ -3176,6 +3444,8 @@
     "escUpgrdCost": 25000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 15,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 155,
@@ -3193,7 +3463,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -3245,6 +3520,8 @@
     "escUpgrdCost": 25000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 15,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 155,
@@ -3257,7 +3534,12 @@
         "ammo": 40
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -3309,6 +3591,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 55,
     "stockWeapons": [
       {
         "id": 231,
@@ -3321,7 +3605,12 @@
         "ammo": 18
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -3373,6 +3662,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 5,
+    "ionizeMax": 60,
     "stockWeapons": [
       {
         "id": 155,
@@ -3385,7 +3676,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -3433,6 +3729,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 10,
+    "ionizeMax": 60,
     "stockWeapons": [
       {
         "id": 231,
@@ -3497,6 +3795,8 @@
     "escUpgrdCost": 55000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 235,
     "stockWeapons": [
       {
         "id": 155,
@@ -3566,6 +3866,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 45,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 147,
@@ -3625,6 +3927,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 15,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 157,
@@ -3642,7 +3946,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -3694,6 +4003,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 15,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 155,
@@ -3701,7 +4012,12 @@
         "ammo": 75
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -3749,6 +4065,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 75,
     "stockWeapons": [
       {
         "id": 231,
@@ -3809,6 +4127,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 60,
     "stockWeapons": [
       {
         "id": 231,
@@ -3878,6 +4198,8 @@
     "escUpgrdCost": 75000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 155,
@@ -3952,6 +4274,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 120,
     "stockWeapons": [
       {
         "id": 155,
@@ -3969,7 +4293,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -4021,6 +4350,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 25,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 166,
@@ -4085,6 +4416,8 @@
     "escUpgrdCost": 55000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 235,
     "stockWeapons": [
       {
         "id": 155,
@@ -4154,6 +4487,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 40,
+    "ionizeMax": 80,
     "stockWeapons": [
       {
         "id": 129,
@@ -4219,6 +4554,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 129,
@@ -4236,7 +4573,12 @@
         "ammo": 50
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -4284,6 +4626,8 @@
     "escUpgrdCost": 15000,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 10,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 166,
@@ -4344,6 +4688,8 @@
     "escUpgrdCost": 20000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 166,
@@ -4408,6 +4754,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 15,
+    "ionizeMax": 75,
     "stockWeapons": [
       {
         "id": 231,
@@ -4472,6 +4820,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 231,
@@ -4541,6 +4891,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 155,
@@ -4611,6 +4963,8 @@
     "escUpgrdCost": 30000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 166,
@@ -4680,6 +5034,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 157,
@@ -4750,6 +5106,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 129,
@@ -4767,7 +5125,12 @@
         "ammo": 50
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": "Those in the know (particularly \"Hypergate Monthly\") have described the Valkyrie as 'the last of the great gas guzzlers.'  This trim ship employs ancient liquid-fuelled reaction rockets instead of Thorium-based nuclear engines.  For all her ancient design, however, the Valkyrie still looks and moves like a top-of-the-line in-system sports racer.  Like the evergreen Porsche Starscreamer before her, the Valkyrie never quite seems to go out of style.\r\rRequires: Heavy Weapons License, Missile Weapons License"
   },
   {
@@ -4819,6 +5182,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 231,
@@ -4888,6 +5253,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 155,
@@ -4905,7 +5272,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -4953,6 +5325,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 142,
@@ -5022,6 +5396,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 45,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 147,
@@ -5034,7 +5410,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5086,6 +5467,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 50,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 231,
@@ -5155,6 +5538,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 75,
+    "ionizeMax": 375,
     "stockWeapons": [
       {
         "id": 183,
@@ -5167,7 +5552,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 244,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5219,6 +5617,8 @@
     "escUpgrdCost": 30000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 120,
     "stockWeapons": [
       {
         "id": 129,
@@ -5231,7 +5631,20 @@
         "ammo": 80
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": "Another of Donald Chick's efforts in starship redesign.  In his younger days, Sir Donald had an old T7 model Valkyrie that he hotrodded in his spare time.  Much of what went into that now legendary craft (the 'Lucalia' is still his personal ship) now provides the punch behind the next generation of Rebellion starships.  The updated Valkyrie breathes new life into the design, adapting some of the micro-furnace technology from the Starbridge for its engines.  Truly a triumph for Sir Donald and his crew."
   },
   {
@@ -5279,6 +5692,8 @@
     "escUpgrdCost": 45000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 155,
@@ -5296,7 +5711,12 @@
         "ammo": 50
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5344,6 +5764,8 @@
     "escUpgrdCost": 45000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 128,
@@ -5356,7 +5778,12 @@
         "ammo": 40
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5408,6 +5835,8 @@
     "escUpgrdCost": 75000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -5420,7 +5849,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": "Abomination by name, abomination by nature.  The Auroran technicians created this monstrous gunship in response to the threat of the Federation Patrol Boat.  The Abomination mounts twin Fusion Pulse Batteries as its armament, which are more than sufficient to rip through the light hull of the Patrol Boat.  A severe lack of maneuverability makes it vulnerable to attack from capital ship sized weapons, though, which make short work of its armor.  Auroran pilots find the idea of honorable victory against huge odds very enticing, so the Abomination is very popular."
   },
   {
@@ -5472,6 +5906,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 8,
+    "ionizeMax": 70,
     "stockWeapons": [
       {
         "id": 231,
@@ -5484,7 +5920,16 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": "Every successful military force in history has relied on accurate intelligence for their success.  So the Federation Navy has created the Scout Ship, capable of operating for long periods behind enemy lines without resupply so that if war does break out, they will be able to send these vessels far behind enemy lines to help with information gathering.  High-ranking strategists believe that this vessel may well prove invaluable in enabling the Federation Navy to defeat any all-out assault by the Auroran Empire.\r\rRequires: Missile Weapons License, Naval Approval"
   },
   {
@@ -5536,6 +5981,8 @@
     "escUpgrdCost": 10000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -5548,7 +5995,12 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5600,6 +6052,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 70,
     "stockWeapons": [
       {
         "id": 231,
@@ -5612,7 +6066,16 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5660,6 +6123,8 @@
     "escUpgrdCost": 250000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 190,
     "stockWeapons": [
       {
         "id": 129,
@@ -5720,6 +6185,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 8,
+    "ionizeMax": 50,
     "stockWeapons": [
       {
         "id": 129,
@@ -5727,7 +6194,24 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 180,
+        "count": 3
+      },
+      {
+        "id": 184,
+        "count": 1
+      },
+      {
+        "id": 185,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      }
+    ],
     "desc": "As far as Terrapins go, this one seems to be about the best you could hope for.  Well-kept and nicely upgraded, it is certainly worth looking at.  While the price is higher than you would expect for a Terrapin, you do get a more capable ship than normal, so it is definitely worth considering...\r\rIncluded outfits: Gravimetric Sensors, IFF Decoder, Afterburner, 2 Solar Panels, 3 Battery Packs."
   },
   {
@@ -5779,6 +6263,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 233,
@@ -5791,7 +6277,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5843,6 +6334,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 233,
@@ -5855,7 +6348,12 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5907,6 +6405,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 233,
@@ -5919,7 +6419,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -5971,6 +6476,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 233,
@@ -5983,7 +6490,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6035,6 +6547,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 233,
@@ -6047,7 +6561,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6099,6 +6618,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 233,
@@ -6111,7 +6632,12 @@
         "ammo": 40
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6163,6 +6689,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -6185,7 +6713,12 @@
         "ammo": 500
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6237,6 +6770,8 @@
     "escUpgrdCost": 15000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -6249,7 +6784,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6301,6 +6841,8 @@
     "escUpgrdCost": 25000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -6313,7 +6855,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6365,6 +6912,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 12,
+    "ionizeMax": 55,
     "stockWeapons": [
       {
         "id": 166,
@@ -6434,6 +6983,8 @@
     "escUpgrdCost": 40000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 40,
+    "ionizeMax": 130,
     "stockWeapons": [
       {
         "id": 129,
@@ -6451,7 +7002,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6503,6 +7067,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 125,
     "stockWeapons": [
       {
         "id": 129,
@@ -6572,6 +7138,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 144,
@@ -6579,7 +7147,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": "The Enterprise is the backbone of all Auroran freight movement.  About half as wide as a Leviathan is long, the Enterprise carries a fraction of the cargo, and at much higher cost.  Nevertheless, the Enterprise has several advantages over the Leviathan and Pegasus, including integrated FPC weaponry (with room for much more), a higher sublight speed, and the ability (in time of strife) to be converted to a passable military ship{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -6631,6 +7204,8 @@
     "escUpgrdCost": 30000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -6643,7 +7218,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6691,6 +7271,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 129,
@@ -6711,12 +7293,17 @@
         "id": 133,
         "count": 1,
         "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 1,
+        "ammo": 10
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 10
+        "id": 238,
+        "count": 1
       }
     ],
     "desc": ""
@@ -6770,6 +7357,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 143,
@@ -6787,7 +7376,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6839,6 +7433,8 @@
     "escUpgrdCost": 55000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 50,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 156,
@@ -6856,7 +7452,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -6904,6 +7513,8 @@
     "escUpgrdCost": 45000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 10,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 129,
@@ -6963,6 +7574,8 @@
     "escUpgrdCost": 70000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 8,
+    "ionizeMax": 90,
     "stockWeapons": [
       {
         "id": 129,
@@ -6975,7 +7588,16 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": "The concept of a fast boat with more firepower than a fighter and more speed than a capital ship has been around for the last millennium.  The latest incarnation of this ideal is the Federation Patrol Boat.  Named for the patrol boats that guarded Australia and the Pacific islands during World War II and beyond, the patrol boat is packed with anti-fighter weaponry.  It's often used as a picket ship in fleet duty, or in its primary role as a patrol vessel in the outer territories.\r\rRequires: Missile Weapons License, Naval Approval"
   },
   {
@@ -7027,6 +7649,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 125,
     "stockWeapons": [
       {
         "id": 129,
@@ -7096,6 +7720,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 150,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "One of the Tre'pira's greatest achievements was the exquisite timing and scheduling control required for efficient use of the giant Cambrian.  There are times, however, when it's simply not feasible to divert a Cambrian from its course to pick up a rush job, or a small load of goods.  Thus the Sprite takes up the shortfall; going in where the Cambrian can't fit, getting the smaller loads of cargo, ferrying cargo from the huge freighters to stations and planets, and all the other little tasks that the Cambrians simply aren't suited to."
@@ -7149,6 +7775,8 @@
     "escUpgrdCost": 60000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 144,
@@ -7156,7 +7784,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7208,6 +7841,8 @@
     "escUpgrdCost": 60000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 159,
@@ -7220,7 +7855,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7272,6 +7912,8 @@
     "escUpgrdCost": 70000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 8,
+    "ionizeMax": 90,
     "stockWeapons": [
       {
         "id": 143,
@@ -7284,7 +7926,16 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7336,6 +7987,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 162,
@@ -7353,7 +8006,12 @@
         "ammo": 200
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7405,8 +8063,15 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 150,
     "stockWeapons": [],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": "One of the Tre'pira's greatest achievements was the exquisite timing and scheduling control required for efficient use of the giant Cambrian.  There are times, however, when it's simply not feasible to divert a Cambrian from its course to pick up a rush job, or a small load of goods.  Thus the Sprite takes up the shortfall; going in where the Cambrian can't fit, getting the smaller loads of cargo, ferrying cargo from the huge freighters to stations and planets, and all the other little tasks that the Cambrians simply aren't suited to."
   },
   {
@@ -7458,6 +8123,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 80,
     "stockWeapons": [
       {
         "id": 166,
@@ -7527,6 +8194,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 150,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": ""
@@ -7576,6 +8245,8 @@
     "escUpgrdCost": 40000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 129,
@@ -7588,7 +8259,16 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7640,6 +8320,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 75,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -7660,16 +8342,30 @@
         "id": 133,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 219,
+        "count": 2,
+        "ammo": 30
+      },
+      {
+        "id": 230,
+        "count": 1,
+        "ammo": 10
       }
     ],
     "defaultItems": [
       {
-        "id": 219,
-        "count": 30
+        "id": 197,
+        "count": 1
       },
       {
-        "id": 230,
-        "count": 10
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
       }
     ],
     "desc": ""
@@ -7719,6 +8415,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 10,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 133,
@@ -7783,6 +8481,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -7800,7 +8500,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7852,6 +8557,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 156,
@@ -7869,7 +8576,12 @@
         "ammo": 400
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -7921,6 +8633,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 80,
     "stockWeapons": [
       {
         "id": 166,
@@ -7995,6 +8709,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 125,
     "stockWeapons": [
       {
         "id": 129,
@@ -8064,6 +8780,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 0,
+    "deionize": 8,
+    "ionizeMax": 90,
     "stockWeapons": [
       {
         "id": 131,
@@ -8076,7 +8794,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -8124,6 +8851,8 @@
     "escUpgrdCost": 40000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 129,
@@ -8136,7 +8865,16 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": "The Starbridge is a relatively new concept in ship design, in a Federation where ancient traditions are the rule.  This vessel channels power straight from a Thorium Nuclear Furnace into its large impulse drives, bypassing life-support and even jump engines.  Ancillary power is then provided by turbines mounted behind the engines.  This design provides very accurate control of thrust, and great power in normal space.  The single drawback is that the turbines must be very strong, pushing the price up by a large margin.\r\rRequires: Heavy Weapons License, Missile Weapons License, Protective Technologies {P30\"License\" \"License, REQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -8184,6 +8922,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 10,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 129,
@@ -8243,6 +8983,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 8,
+    "ionizeMax": 90,
     "stockWeapons": [
       {
         "id": 130,
@@ -8263,12 +9005,21 @@
         "id": 231,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 2,
+        "ammo": 10
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 10
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
       }
     ],
     "desc": ""
@@ -8322,6 +9073,8 @@
     "escUpgrdCost": 70000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 125,
     "stockWeapons": [
       {
         "id": 129,
@@ -8340,6 +9093,11 @@
       },
       {
         "id": 156,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 162,
         "count": 2,
         "ammo": 0
       }
@@ -8396,6 +9154,8 @@
     "escUpgrdCost": 70000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 50,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 129,
@@ -8461,6 +9221,8 @@
     "escUpgrdCost": 35000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 20,
+    "ionizeMax": 100,
     "stockWeapons": [
       {
         "id": 129,
@@ -8478,7 +9240,24 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      },
+      {
+        "id": 184,
+        "count": 1
+      },
+      {
+        "id": 185,
+        "count": 1
+      }
+    ],
     "desc": "Clearly this captain of this vessel knows his business.  This little 'gas-guzzler' is in as good a condition as it would have been the day it rolled off the production line.  Add in his offer to hand over all the outfits and the upgraded weapon systems that go with the ship, and even the slightly inflated price becomes very reasonable.  You find yourself to be more than a little tempted.\r\rIncluded outfits: Gravimetric Sensors, IFF Decoder, Afterburner, 3 layers of Carbon Fiber, Civilian IR Jammer, Civilian Radar Jammer\rRequires: Heavy Weapons License, Missile Weapons License, Protective Technologies License"
   },
   {
@@ -8526,6 +9305,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 128,
@@ -8538,7 +9319,16 @@
         "ammo": 25
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -8586,6 +9376,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 132,
@@ -8598,7 +9390,16 @@
         "ammo": 10
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -8650,6 +9451,8 @@
     "escUpgrdCost": 40000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 40,
+    "ionizeMax": 210,
     "stockWeapons": [
       {
         "id": 129,
@@ -8667,7 +9470,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      }
+    ],
     "desc": "As always, the controversial Starbridge finds service in areas other than its intended use in commerce.  The excellent (if expensive) Starbridge design has been adapted to the needs of the Rebellion by Donald Chick, ex-CEO of Sigma Shipyards.  It has been decades since Sir Donald has put his hand to a set of hydrospanners, but he has taken his small team of craftsmen and churned out the best variant of the Starbridge yet{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -8715,6 +9531,8 @@
     "escUpgrdCost": 40000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 129,
@@ -8737,7 +9555,24 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      },
+      {
+        "id": 184,
+        "count": 1
+      },
+      {
+        "id": 185,
+        "count": 1
+      }
+    ],
     "desc": "This starship captain strikes you as being both honest and competent.  And as you look over this vessel, you can see that he knows how to take care of a state-of-the-art ship like the Starbridge.  As you note how professionally his upgrades have been installed, you can tell that he has obviously taken a lot of care of his ship.  Admittedly, he is asking for a price well over what is normal for a Starbridge, but he is throwing in all his upgrades, so it is still a very good buy.\r\rIncluded outfits: Gravimetric Sensors, IFF Decoder, Auto-recharger, Civilian IR Jammer, Civilian Radar Jammer, 3 layers of Carbon Fiber, Afterburner, 2 Battery Packs.\rRequires: Heavy Weapons License, Missile Weapons License, Protective Technologies License"
   },
   {
@@ -8789,6 +9624,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 157,
@@ -8801,7 +9638,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": "The Enterprise has been a favorite of pirates for a hundred years or more.  With a modular framework based so closely along the lines of the IDA Frigate (note the drive-train), the Enterprise is a joy to hotrod.  This model sports several improvements, including both Federation-style shielding and Auroran railguns.  Truly a must-have for the privateer on the move{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -8849,6 +9691,8 @@
     "escUpgrdCost": 65000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 231,
@@ -8866,7 +9710,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -8914,6 +9767,8 @@
     "escUpgrdCost": 65000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 231,
@@ -8931,7 +9786,16 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -8983,6 +9847,8 @@
     "escUpgrdCost": 150000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 144,
@@ -9000,7 +9866,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9052,6 +9923,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 201,
@@ -9069,7 +9942,12 @@
         "ammo": 4
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9121,6 +9999,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 50,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 156,
@@ -9141,14 +10021,14 @@
         "id": 159,
         "count": 2,
         "ammo": 0
-      }
-    ],
-    "defaultItems": [
+      },
       {
         "id": 230,
-        "count": 10
+        "count": 1,
+        "ammo": 10
       }
     ],
+    "defaultItems": [],
     "desc": ""
   },
   {
@@ -9200,6 +10080,8 @@
     "escUpgrdCost": 400000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 147,
@@ -9212,7 +10094,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9264,6 +10151,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 157,
@@ -9276,7 +10165,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9328,6 +10222,8 @@
     "escUpgrdCost": 60000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 129,
@@ -9345,7 +10241,12 @@
         "ammo": 12
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": "The Starbridge commonly in pirate service is relatively unaltered from its base design.  There are a few reasons for this, but the primary one is that the Starbridge makes an excellent pirate ship as it is!  Also, a good many... <ahem> 'privateers' were consulted about the vessel's design during the planning stage, and they feel that their comments have in some way helped shape this graceful keel.  Most Starbridges used by pirates haven't had their engines tweaked much, but they do have more powerful guns than normal{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -9397,6 +10298,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 50,
+    "ionizeMax": 225,
     "stockWeapons": [
       {
         "id": 129,
@@ -9414,7 +10317,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9466,6 +10382,8 @@
     "escUpgrdCost": 50000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 40,
+    "ionizeMax": 210,
     "stockWeapons": [
       {
         "id": 156,
@@ -9483,7 +10401,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9535,6 +10466,8 @@
     "escUpgrdCost": 60000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 129,
@@ -9552,7 +10485,12 @@
         "ammo": 12
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9600,6 +10538,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 131,
@@ -9612,7 +10552,12 @@
         "ammo": 100
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": "The IDA Frigate was the mainstay of the Colonial Council line before the collapse of the Gate system, and instrumental in the defense of the core worlds against the Aurorans.  These ships were made to last; the spaceframe itself is compartmental and component-based, and, like the Leviathan, it is virtually indestructible.  Don't count on this protecting you on the bridge, though.  Bad shields, good armor and brutal Impact Drive Assemblies (hence IDA) are all trademarks of this keel.\r\rRequires: Capital Ships License, Capital Warships License, Heavy Weapons License, Missile Weapons {P30\"License\" \"License, REQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -9660,6 +10605,8 @@
     "escUpgrdCost": 70000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 40,
+    "ionizeMax": 230,
     "stockWeapons": [
       {
         "id": 129,
@@ -9677,7 +10624,16 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": "The Starbridge was the state of the art when it was first released nearly two decades ago, but the latest version leaves it for dead.  Improved engines and turning capabilities, as well as vastly increased offensive and defensive systems, ensure that this ship is on the wish-list of nearly every freighter captain in the galaxy\r\rRequires: Heavy Weapons License, Missile Weapons {P30\"License\" \"License, REQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -9725,6 +10681,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 200,
     "stockWeapons": [
       {
         "id": 128,
@@ -9747,7 +10705,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9799,6 +10766,8 @@
     "escUpgrdCost": 80000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 143,
@@ -9816,7 +10785,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -9868,6 +10842,8 @@
     "escUpgrdCost": 65000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 158,
@@ -9888,12 +10864,25 @@
         "id": 133,
         "count": 1,
         "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 1,
+        "ammo": 20
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 20
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
       }
     ],
     "desc": ""
@@ -9947,6 +10936,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -9959,7 +10950,20 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10011,6 +11015,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 90,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 147,
@@ -10028,7 +11034,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10076,6 +11095,8 @@
     "escUpgrdCost": 110000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 50,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 156,
@@ -10098,7 +11119,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10150,6 +11180,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 155,
@@ -10167,7 +11199,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10215,6 +11252,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 131,
@@ -10232,7 +11271,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10284,6 +11328,8 @@
     "escUpgrdCost": 80000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 129,
@@ -10301,7 +11347,12 @@
         "ammo": 50
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10353,6 +11404,8 @@
     "escUpgrdCost": 80000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 155,
@@ -10370,7 +11423,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10422,6 +11480,8 @@
     "escUpgrdCost": 80000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 143,
@@ -10439,7 +11499,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10491,6 +11556,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 90,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 158,
@@ -10511,12 +11578,25 @@
         "id": 219,
         "count": 1,
         "ammo": 20
+      },
+      {
+        "id": 230,
+        "count": 1,
+        "ammo": 30
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 30
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
       }
     ],
     "desc": ""
@@ -10570,6 +11650,8 @@
     "escUpgrdCost": 175000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 145,
@@ -10582,7 +11664,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 244,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10634,6 +11721,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 35,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 142,
@@ -10656,7 +11745,12 @@
         "ammo": 5
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10704,6 +11798,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 132,
@@ -10726,7 +11822,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10774,6 +11875,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 80,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 158,
@@ -10794,9 +11897,23 @@
         "id": 129,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 133,
+        "count": 1,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 238,
+        "count": 1
+      },
+      {
+        "id": 239,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10848,6 +11965,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -10860,7 +11979,20 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -10912,6 +12044,8 @@
     "escUpgrdCost": 400000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -10924,7 +12058,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": "When the Polaris first settled on Kel'ar Iy, they arrived in ancient Deimos-class spacehulks and a myriad of smaller ships.  They had no weapons, exhausted first-generation hyperdrives and generally little to recommend themselves.   As the Polaris' well-founded civilization granted them new technologies, they began building cybernetic ships which were a combination of mechanical and biological components.  The first ship to be built like this was the Striker.  It serves as a long range scout and as a first line of defense against intruders."
   },
   {
@@ -10976,6 +12115,8 @@
     "escUpgrdCost": 400000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -10988,7 +12129,16 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": "When the Polaris first settled on Kel'ar Iy, they arrived in ancient Deimos-class spacehulks and a myriad of smaller ships.  They had no weapons, exhausted first-generation hyperdrives and generally little to recommend themselves.   As the Polaris' well-founded civilization granted them new technologies, they began building cybernetic ships which were a combination of mechanical and biological components.  The first ship to be built like this was the Striker.  It serves as a long range scout and as a first line of defense against intruders."
   },
   {
@@ -11040,6 +12190,8 @@
     "escUpgrdCost": 400000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -11052,7 +12204,20 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": "When the Polaris first settled on Kel'ar Iy, they arrived in ancient Deimos-class spacehulks and a myriad of smaller ships.  They had no weapons, exhausted first-generation hyperdrives and generally little to recommend themselves.   As the Polaris' well-founded civilization granted them new technologies, they began building cybernetic ships which were a combination of mechanical and biological components.  The first ship to be built like this was the Striker.  It serves as a long range scout and as a first line of defense against intruders."
   },
   {
@@ -11104,6 +12269,8 @@
     "escUpgrdCost": 175000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 145,
@@ -11164,6 +12331,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 132,
@@ -11186,7 +12355,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11234,6 +12408,8 @@
     "escUpgrdCost": 800000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 131,
@@ -11293,6 +12469,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 75,
+    "ionizeMax": 375,
     "stockWeapons": [
       {
         "id": 145,
@@ -11305,7 +12483,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 244,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11357,6 +12540,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 90,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 147,
@@ -11374,7 +12559,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11426,6 +12616,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 90,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 147,
@@ -11443,7 +12635,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11495,6 +12696,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 90,
+    "ionizeMax": 400,
     "stockWeapons": [
       {
         "id": 147,
@@ -11512,7 +12715,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11564,6 +12780,8 @@
     "escUpgrdCost": 75000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -11584,9 +12802,19 @@
         "id": 134,
         "count": 3,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11638,6 +12866,8 @@
     "escUpgrdCost": 75000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 156,
@@ -11660,7 +12890,12 @@
         "ammo": 40
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11712,6 +12947,8 @@
     "escUpgrdCost": 75000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -11732,9 +12969,19 @@
         "id": 134,
         "count": 3,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11786,6 +13033,8 @@
     "escUpgrdCost": 100000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -11806,9 +13055,19 @@
         "id": 134,
         "count": 3,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 1,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11860,6 +13119,8 @@
     "escUpgrdCost": 175000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 145,
@@ -11872,7 +13133,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": "The Dragon is a strange ship by Polaris standards, but a much more conventional weapon than their other creations.  The Dragon's main biological component is the self-repairing skin that also acts as an etheric wave hyperdrive.  Apart from that, most of the ship is conventional, if somewhat high-tech.  It mounts twin wraithii cannon as its standard weapon, and has excellent speed and agility.  It is the only Polaris vessel sold to outsiders, and then only to trusted friends of the Polaris."
   },
   {
@@ -11924,6 +13190,8 @@
     "escUpgrdCost": 150000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -11946,7 +13214,12 @@
         "ammo": 40
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -11998,6 +13271,8 @@
     "escUpgrdCost": 150000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -12018,9 +13293,19 @@
         "id": 134,
         "count": 4,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 1,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -12068,6 +13353,8 @@
     "escUpgrdCost": 350000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 131,
@@ -12127,6 +13414,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 131,
@@ -12147,9 +13436,23 @@
         "id": 133,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 129,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": "The Federation Destroyer was developed to cope with the defense of an ever-changing frontier.  Capable of quickly responding to an incursion and equipped with versatile weapons to meet a wide range of foes, the E-41 was dubbed the 'guard-dog' of the Federation.  Effective as a peace-keeper during the time of expansion, the E-41 is now nearly obsolete as a primary weapons platform.\r\rRequires: Heavy Weapons License, Missile Weapons License, Protective Technologies License, Capital Ships License, Naval {P30\"Approval\" \"Approval, REQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -12201,6 +13504,8 @@
     "escUpgrdCost": 200000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -12221,9 +13526,19 @@
         "id": 134,
         "count": 4,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": "The Auroran people's first attempt to create a large war vessel is still their most successful.  The Aurora Cruiser mounts immense firepower in the form of 100mm and 200mm Railguns, a broadside of FPC batteries, and anti-fighter chainguns.  It does have somewhat weak artificial gravity, however, which is compensated for by a rotating living section.  It also has the most basic of thrust engines, which produce abysmal top speed and acceleration, even for a capital ship{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -12275,6 +13590,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 75,
+    "ionizeMax": 450,
     "stockWeapons": [
       {
         "id": 146,
@@ -12287,7 +13604,16 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": "Like all Polaris vessels, the Arachnid starts out as a metal frame with internal components.  It is then suspended in a vat of amniotic fluid which begins to grow an organic shell around those components.  Eventually the two intermesh so well that it is difficult to pick the mechanical from the biological.  In battle, the Arachnid's main weapon is an organic-based Capacitor Pulse Laser that is grown during this phase and which runs from a fusion generator.  The generator itself is installed after other construction is complete, and Arachnids do not leave the shipyard without one{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -12339,6 +13665,8 @@
     "escUpgrdCost": 500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 35,
+    "ionizeMax": 190,
     "stockWeapons": [
       {
         "id": 133,
@@ -12361,7 +13689,16 @@
         "ammo": 90
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": "General 'Sundown' Smart has been pulling his hair out over the Rebellion's desperate lack of ships and manpower.  He and Frandall recently had a breakthrough when they masterminded the theft of thirty E-41s from mothballs in orbit at the wreckers at Spacedock II.  The ancient craft have proved difficult to improve, as such a large task is beyond Donald Chick and his small but dedicated group of shipwrights.  They have had to be satisfied with gross tweaks to power output and shield strength, and have given the task of general refits to maintenance personnel{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -12413,6 +13750,8 @@
     "escUpgrdCost": 500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 35,
+    "ionizeMax": 190,
     "stockWeapons": [
       {
         "id": 133,
@@ -12435,7 +13774,16 @@
         "ammo": 90
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": "General 'Sundown' Smart has been pulling his hair out over the Rebellion's desperate lack of ships and manpower.  He and Frandall recently had a breakthrough when they masterminded the theft of thirty E-41s from mothballs in orbit at the wreckers at Spacedock II.  The ancient craft have proved difficult to improve, as such a large task is beyond Donald Chick and his small but dedicated group of shipwrights.  They have had to be satisfied with gross tweaks to power output and shield strength, and have given the task of general refits to maintenance personnel{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -12487,6 +13835,8 @@
     "escUpgrdCost": 200000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -12509,7 +13859,12 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -12561,6 +13916,8 @@
     "escUpgrdCost": 250000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -12581,9 +13938,19 @@
         "id": 134,
         "count": 4,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -12635,6 +14002,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -12647,7 +14016,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": "The Zephyr was originally designed specifically for use with the cloaking organ.  Naturally, such a design meshed well with the requirements of the Mu'hari to interact and fly amongst the peoples of other nations, so they added design specifications until the final version of the Zephyr was born.  It is a versatile little craft, falling somewhere between the categories of fighter, freighter and gunboat without falling short in any way."
   },
   {
@@ -12695,6 +14069,8 @@
     "escUpgrdCost": 350000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 129,
@@ -12764,6 +14140,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 100,
+    "ionizeMax": 525,
     "stockWeapons": [
       {
         "id": 146,
@@ -12776,7 +14154,24 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -12828,6 +14223,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -12840,7 +14237,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": "The Zephyr was originally designed specifically for use with the cloaking organ.  Naturally, such a design meshed well with the requirements of the Mu'hari to interact and fly amongst the peoples of other nations, so they added design specifications until the final version of the Zephyr was born.  It is a versatile little craft, falling somewhere between the categories of fighter, freighter and gunboat without falling short in any way."
   },
   {
@@ -12892,6 +14294,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -12904,7 +14308,12 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": "The Zephyr was originally designed specifically for use with the cloaking organ.  Naturally, such a design meshed well with the requirements of the Mu'hari to interact and fly amongst the peoples of other nations, so they added design specifications until the final version of the Zephyr was born.  It is a versatile little craft, falling somewhere between the categories of fighter, freighter and gunboat without falling short in any way."
   },
   {
@@ -12956,6 +14365,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -12968,7 +14379,16 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": "The Zephyr was originally designed specifically for use with the cloaking organ.  Naturally, such a design meshed well with the requirements of the Mu'hari to interact and fly amongst the peoples of other nations, so they added design specifications until the final version of the Zephyr was born.  It is a versatile little craft, falling somewhere between the categories of fighter, freighter and gunboat without falling short in any way."
   },
   {
@@ -13020,6 +14440,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -13042,7 +14464,12 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13094,6 +14521,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 158,
@@ -13114,9 +14543,19 @@
         "id": 134,
         "count": 5,
         "ammo": 40
+      },
+      {
+        "id": 162,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13168,6 +14607,8 @@
     "escUpgrdCost": 175000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 183,
@@ -13180,7 +14621,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": "The Dragon is a strange ship by Polaris standards, but a much more conventional weapon than their other creations.  The Dragon's main biological component is the self-repairing skin that also acts as an etheric wave hyperdrive.  Apart from that, most of the ship is conventional, if somewhat high-tech.  It mounts twin wraithii cannon as its standard weapon, and has excellent speed and agility.  It is the only Polaris vessel sold to outsiders, and then only to trusted friends of the Polaris."
   },
   {
@@ -13228,6 +14678,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 131,
@@ -13283,6 +14735,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 131,
@@ -13342,6 +14796,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 75,
+    "ionizeMax": 375,
     "stockWeapons": [
       {
         "id": 183,
@@ -13354,7 +14810,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 244,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13406,6 +14875,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "This immense vessel is the Polaris counterpart to the Leviathan.  Plying its way through hyperspace via massive Etheric Wave hyper-engines (mounted as part of its bio-organic skin in its nose and tail), the Cambrian transfers huge amounts of raw materials for the construction of new worlds and the upkeep of old ones.  These ships are usually assigned to a particular caste for a period of twenty years or so before rotation, but these timetables are quite flexible, and reflect the Polaran distaste for inefficient bureaucracy."
@@ -13459,6 +14930,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 143,
@@ -13476,7 +14949,20 @@
         "ammo": 5
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
+      }
+    ],
     "desc": "In an attempt to combat the Abomination and the Striker, Federation Scientists have developed the Reactive Armor General Equipment (RAGE) Gunboat.  The hyperbolic 'General Equipment' refers to the fact that the Gunboat mounts Auroran FPC technology, and stolen Polaris wraithii material.  The reactive armor plating is nearly impenetrable to lesser weapons, and the ship has outstanding speed and maneuverability for a vessel its size.  Only time will tell if it is enough to stand up to the might of the Aurora, or the technology of the Polaris.\r\rRequires: Heavy Weapons License, Missile Weapons License, Naval Approval"
   },
   {
@@ -13528,8 +15014,15 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": "This immense vessel is the Polaris counterpart to the Leviathan.  Plying its way through hyperspace via massive Etheric Wave hyper-engines (mounted as part of its bio-organic skin in its nose and tail), the Cambrian transfers huge amounts of raw materials for the construction of new worlds and the upkeep of old ones.  These ships are usually assigned to a particular caste for a period of twenty years or so before rotation, but these timetables are quite flexible, and reflect the Polaran distaste for inefficient bureaucracy."
   },
   {
@@ -13581,6 +15074,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 75,
+    "ionizeMax": 375,
     "stockWeapons": [
       {
         "id": 145,
@@ -13593,7 +15088,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 244,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13645,6 +15149,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 133,
@@ -13665,12 +15171,31 @@
         "id": 139,
         "count": 2,
         "ammo": 60
+      },
+      {
+        "id": 132,
+        "count": 1,
+        "ammo": 0
+      },
+      {
+        "id": 158,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 2,
+        "ammo": 30
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 30
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
       }
     ],
     "desc": ""
@@ -13724,6 +15249,8 @@
     "escUpgrdCost": 500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 35,
+    "ionizeMax": 190,
     "stockWeapons": [
       {
         "id": 133,
@@ -13746,7 +15273,16 @@
         "ammo": 90
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13798,6 +15334,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 35,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 144,
@@ -13815,7 +15353,20 @@
         "ammo": 5
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13867,6 +15418,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 132,
@@ -13887,9 +15440,23 @@
         "id": 133,
         "count": 1,
         "ammo": 0
+      },
+      {
+        "id": 129,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -13937,6 +15504,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 20,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 131,
@@ -13949,7 +15518,24 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 184,
+        "count": 1
+      },
+      {
+        "id": 185,
+        "count": 1
+      },
+      {
+        "id": 186,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      }
+    ],
     "desc": "This looks to be one of the more recently manufactured versions of the Pegasus.  A few well-repaired panels tell you that the ship and its captain have been through one or two hairy moments and performed capably.  Nearly every aspect of the ship has been upgraded at least slightly, and the price given the upgrades and the included licenses is hardly unreasonable.\r\rIncluded outfits: Gravimetric Sensors, IFF Decoder, Auto-recharger, Afterburner, Shield Recharger, Carbon Fiber, Protective Technologies License, Heavy Weapons License.\rRequires: Capital Ships License"
   },
   {
@@ -14001,6 +15587,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 55,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 219,
@@ -14013,7 +15601,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      }
+    ],
     "desc": "The Polaris have long been sympathetic to the Rebel cause, recognizing the essential rightness of their struggle.  Thus the Nil'kemorya have made the Dragon design available to the Rebellion ship technicians for adaptation to their purposes.  Many dangerous freight runs are required to haul the sludge tanks full of etheric wake biotech skin material through the frontier between Polaris and Rebel space, but the efforts of many fine free-trader captains have given the Rebellion a technical edge on the Federation... for now{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -14065,6 +15666,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 55,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 219,
@@ -14077,7 +15680,20 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      }
+    ],
     "desc": "The Polaris have long been sympathetic to the Rebel cause, recognizing the essential rightness of their struggle.  Thus the Nil'kemorya have made the Dragon design available to the Rebellion ship technicians for adaptation to their purposes.  Many dangerous freight runs are required to haul the sludge tanks full of etheric wake biotech skin material through the frontier between Polaris and Rebel space, but the efforts of many fine free-trader captains have given the Rebellion a technical edge on the Federation... for now{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -14129,6 +15745,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 100,
+    "ionizeMax": 525,
     "stockWeapons": [
       {
         "id": 146,
@@ -14141,7 +15759,16 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -14193,6 +15820,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 133,
@@ -14213,12 +15842,35 @@
         "id": 139,
         "count": 2,
         "ammo": 60
+      },
+      {
+        "id": 132,
+        "count": 1,
+        "ammo": 0
+      },
+      {
+        "id": 158,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 2,
+        "ammo": 30
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 30
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 234,
+        "count": 1
       }
     ],
     "desc": ""
@@ -14272,6 +15924,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 65,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 219,
@@ -14292,19 +15946,38 @@
         "id": 192,
         "count": 1,
         "ammo": 1
+      },
+      {
+        "id": 193,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 194,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 195,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 193,
+        "id": 246,
         "count": 1
       },
       {
-        "id": 194,
+        "id": 247,
         "count": 1
       },
       {
-        "id": 195,
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 234,
         "count": 1
       }
     ],
@@ -14359,6 +16032,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 133,
@@ -14379,12 +16054,36 @@
         "id": 139,
         "count": 2,
         "ammo": 90
+      },
+      {
+        "id": 147,
+        "count": 1,
+        "ammo": 0
+      },
+      {
+        "id": 158,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 128,
+        "count": 1,
+        "ammo": 0
+      },
+      {
+        "id": 219,
+        "count": 1,
+        "ammo": 20
       }
     ],
     "defaultItems": [
       {
-        "id": 219,
-        "count": 20
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
       }
     ],
     "desc": ""
@@ -14438,6 +16137,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 130,
@@ -14460,7 +16161,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -14512,6 +16222,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 132,
@@ -14532,12 +16244,21 @@
         "id": 133,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 2,
+        "ammo": 20
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 20
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 238,
+        "count": 1
       }
     ],
     "desc": ""
@@ -14591,6 +16312,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 75,
+    "ionizeMax": 450,
     "stockWeapons": [
       {
         "id": 146,
@@ -14603,7 +16326,20 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": "Like all Polaris vessels, the Arachnid starts out as a metal frame with internal components.  It is then suspended in a vat of amniotic fluid which begins to grow an organic shell around those components.  Eventually the two intermesh so well that it is difficult to pick the mechanical from the biological.  In battle, the Arachnid's main weapon is an organic-based Capacitor Pulse Laser that is grown during this phase and which runs from a fusion generator.  The generator itself is installed after other construction is complete, and Arachnids do not leave the shipyard without one{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -14655,6 +16391,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 75,
+    "ionizeMax": 450,
     "stockWeapons": [
       {
         "id": 146,
@@ -14667,7 +16405,24 @@
         "ammo": 15
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": "Like all Polaris vessels, the Arachnid starts out as a metal frame with internal components.  It is then suspended in a vat of amniotic fluid which begins to grow an organic shell around those components.  Eventually the two intermesh so well that it is difficult to pick the mechanical from the biological.  In battle, the Arachnid's main weapon is an organic-based Capacitor Pulse Laser that is grown during this phase and which runs from a fusion generator.  The generator itself is installed after other construction is complete, and Arachnids do not leave the shipyard without one{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -14719,6 +16474,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 60,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 133,
@@ -14739,12 +16496,40 @@
         "id": 139,
         "count": 2,
         "ammo": 90
+      },
+      {
+        "id": 147,
+        "count": 1,
+        "ammo": 0
+      },
+      {
+        "id": 158,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 231,
+        "count": 1,
+        "ammo": 0
+      },
+      {
+        "id": 219,
+        "count": 1,
+        "ammo": 20
       }
     ],
     "defaultItems": [
       {
-        "id": 219,
-        "count": 20
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 234,
+        "count": 1
       }
     ],
     "desc": ""
@@ -14798,6 +16583,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 65,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 219,
@@ -14818,19 +16605,34 @@
         "id": 192,
         "count": 1,
         "ammo": 1
+      },
+      {
+        "id": 193,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 194,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 195,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 193,
+        "id": 246,
         "count": 1
       },
       {
-        "id": 194,
+        "id": 247,
         "count": 1
       },
       {
-        "id": 195,
+        "id": 197,
         "count": 1
       }
     ],
@@ -14885,6 +16687,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 45,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 133,
@@ -14905,23 +16709,35 @@
         "id": 139,
         "count": 2,
         "ammo": 90
+      },
+      {
+        "id": 192,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 193,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 194,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 195,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 192,
-        "count": 2
-      },
-      {
-        "id": 193,
+        "id": 246,
         "count": 1
       },
       {
-        "id": 194,
-        "count": 1
-      },
-      {
-        "id": 195,
+        "id": 247,
         "count": 1
       }
     ],
@@ -14976,6 +16792,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 55,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 219,
@@ -14993,7 +16811,24 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 246,
+        "count": 1
+      },
+      {
+        "id": 247,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 234,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15045,6 +16880,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 175,
     "stockWeapons": [
       {
         "id": 132,
@@ -15067,7 +16904,16 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 238,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15119,6 +16965,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 100,
+    "ionizeMax": 525,
     "stockWeapons": [
       {
         "id": 146,
@@ -15131,7 +16979,20 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15183,6 +17044,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 100,
+    "ionizeMax": 525,
     "stockWeapons": [
       {
         "id": 146,
@@ -15195,7 +17058,24 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15247,6 +17127,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 45,
+    "ionizeMax": 220,
     "stockWeapons": [
       {
         "id": 133,
@@ -15267,23 +17149,39 @@
         "id": 139,
         "count": 2,
         "ammo": 90
+      },
+      {
+        "id": 192,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 193,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 194,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 195,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 192,
-        "count": 2
-      },
-      {
-        "id": 193,
+        "id": 246,
         "count": 1
       },
       {
-        "id": 194,
+        "id": 247,
         "count": 1
       },
       {
-        "id": 195,
+        "id": 234,
         "count": 1
       }
     ],
@@ -15338,6 +17236,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 65,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 219,
@@ -15358,19 +17258,38 @@
         "id": 192,
         "count": 1,
         "ammo": 1
+      },
+      {
+        "id": 193,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 194,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 195,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 193,
+        "id": 246,
         "count": 1
       },
       {
-        "id": 194,
+        "id": 247,
         "count": 1
       },
       {
-        "id": 195,
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 234,
         "count": 1
       }
     ],
@@ -15425,6 +17344,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 120,
+    "ionizeMax": 700,
     "stockWeapons": [
       {
         "id": 146,
@@ -15442,7 +17363,24 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15494,6 +17432,8 @@
     "escUpgrdCost": 250000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 133,
@@ -15514,9 +17454,24 @@
         "id": 132,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 129,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 231,
+        "count": 4,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": "The IDA Frigate was the mainstay of the Colonial Council line before the collapse of the Gate system, and instrumental in the defense of the core worlds against the Aurorans.  These ships were made to last; the spaceframe itself is compartmental and component-based, and, like the Leviathan, it is virtually indestructible.  Once Donald Chick got his hands on it, he retrofitted it to be a fairly lethal weapons platform capable of projecting a fair amount of firepower deep into enemy {P30\"territory.\" \"territory.\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -15568,6 +17523,8 @@
     "escUpgrdCost": 250000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 133,
@@ -15588,9 +17545,29 @@
         "id": 132,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 129,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 231,
+        "count": 4,
+        "ammo": 0
+      },
+      {
+        "id": 156,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15642,6 +17619,8 @@
     "escUpgrdCost": 2500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 90,
+    "ionizeMax": 600,
     "stockWeapons": [
       {
         "id": 146,
@@ -15659,7 +17638,16 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": "The mighty Scarab is the last line of defense for the Polaris people.  Only a handful of the vessels have ever been constructed, and they mount the most devastating ordinance that the Polaris can produce.  Two pulse lasers provide short-range firepower, while a polaron emitter in the front mandibles fires a packet of coherent energy dubbed the Polaron Torpedo.  This ship is capable of taking on entire fleets by itself, and has done so on occasion.  However, there are pitifully few of these proud ships, and the defense of Polaris Space is a heavy burden on their shoulders{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -15711,6 +17699,8 @@
     "escUpgrdCost": 2500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 90,
+    "ionizeMax": 600,
     "stockWeapons": [
       {
         "id": 146,
@@ -15728,7 +17718,20 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": "The mighty Scarab is the last line of defense for the Polaris people.  Only a handful of the vessels have ever been constructed, and they mount the most devastating ordinance that the Polaris can produce.  Two pulse lasers provide short-range firepower, while a polaron emitter in the front mandibles fires a packet of coherent energy dubbed the Polaron Torpedo.  This ship is capable of taking on entire fleets by itself, and has done so on occasion.  However, there are pitifully few of these proud ships, and the defense of Polaris Space is a heavy burden on their shoulders{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -15780,6 +17783,8 @@
     "escUpgrdCost": 2500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 90,
+    "ionizeMax": 600,
     "stockWeapons": [
       {
         "id": 146,
@@ -15797,7 +17802,24 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": "The mighty Scarab is the last line of defense for the Polaris people.  Only a handful of the vessels have ever been constructed, and they mount the most devastating ordinance that the Polaris can produce.  Two pulse lasers provide short-range firepower, while a polaron emitter in the front mandibles fires a packet of coherent energy dubbed the Polaron Torpedo.  This ship is capable of taking on entire fleets by itself, and has done so on occasion.  However, there are pitifully few of these proud ships, and the defense of Polaris Space is a heavy burden on their shoulders{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -15849,6 +17871,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 15,
+    "ionizeMax": 150,
     "stockWeapons": [
       {
         "id": 133,
@@ -15869,9 +17893,34 @@
         "id": 132,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 129,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 231,
+        "count": 4,
+        "ammo": 0
+      },
+      {
+        "id": 156,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 147,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 240,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -15923,6 +17972,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 45,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 147,
@@ -15935,7 +17986,20 @@
         "ammo": 30
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 177,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": "The Zephyr was originally designed specifically for use with the cloaking organ.  Naturally, such a design meshed well with the requirements of the Mu'hari to interact and fly amongst the peoples of other nations, so they added design specifications until the final version of the Zephyr was born.  It is a versatile little craft, falling somewhere between the categories of fighter, freighter and gunboat without falling short in any way."
   },
   {
@@ -15987,6 +18051,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 120,
+    "ionizeMax": 700,
     "stockWeapons": [
       {
         "id": 146,
@@ -16004,7 +18070,16 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16056,6 +18131,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 120,
+    "ionizeMax": 700,
     "stockWeapons": [
       {
         "id": 146,
@@ -16073,7 +18150,16 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16125,6 +18211,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 120,
+    "ionizeMax": 700,
     "stockWeapons": [
       {
         "id": 146,
@@ -16142,7 +18230,24 @@
         "ammo": 60
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 235,
+        "count": 1
+      },
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16194,6 +18299,8 @@
     "escUpgrdCost": 5000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 105,
+    "ionizeMax": 800,
     "stockWeapons": [
       {
         "id": 146,
@@ -16211,7 +18318,16 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      }
+    ],
     "desc": "This ship is a behemoth.  Sliding through the ether with an ease that belies its enormous bulk, the Polaris Raven is a vision of glory and terror. It dwarfs the massive Scarab in both size and firepower; it is, simply put, the most powerful weapon humanity has ever constructed.  The Raven utilizes twin Etheric Induction engines for sublight travel.  These devices simply suck the fabric of space-time in the front, and squirt it out the back.  If one of these engines should ever stop suddenly, the graviton effects would cause the momentary formation of a black hole{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -16263,6 +18379,8 @@
     "escUpgrdCost": 5000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 105,
+    "ionizeMax": 800,
     "stockWeapons": [
       {
         "id": 146,
@@ -16280,7 +18398,20 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": "This ship is a behemoth.  Sliding through the ether with an ease that belies its enormous bulk, the Polaris Raven is a vision of glory and terror. It dwarfs the massive Scarab in both size and firepower; it is, simply put, the most powerful weapon humanity has ever constructed.  The Raven utilizes twin Etheric Induction engines for sublight travel.  These devices simply suck the fabric of space-time in the front, and squirt it out the back.  If one of these engines should ever stop suddenly, the graviton effects would cause the momentary formation of a black hole{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -16332,6 +18463,8 @@
     "escUpgrdCost": 5000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 105,
+    "ionizeMax": 800,
     "stockWeapons": [
       {
         "id": 146,
@@ -16349,7 +18482,16 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16401,6 +18543,8 @@
     "escUpgrdCost": 5000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 105,
+    "ionizeMax": 800,
     "stockWeapons": [
       {
         "id": 146,
@@ -16418,7 +18562,20 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16470,6 +18627,8 @@
     "escUpgrdCost": 5000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 105,
+    "ionizeMax": 800,
     "stockWeapons": [
       {
         "id": 146,
@@ -16487,7 +18646,24 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": "This ship is a behemoth.  Sliding through the ether with an ease that belies its enormous bulk, the Polaris Raven is a vision of glory and terror. It dwarfs the massive Scarab in both size and firepower; it is, simply put, the most powerful weapon humanity has ever constructed.  The Raven utilizes twin Etheric Induction engines for sublight travel.  These devices simply suck the fabric of space-time in the front, and squirt it out the back.  If one of these engines should ever stop suddenly, the graviton effects would cause the momentary formation of a black hole{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -16539,6 +18715,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -16556,7 +18734,20 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16608,6 +18799,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -16625,7 +18818,24 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16677,6 +18887,8 @@
     "escUpgrdCost": 400000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 159,
@@ -16697,11 +18909,25 @@
         "id": 157,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 158,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 189,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 189,
+        "id": 242,
+        "count": 1
+      },
+      {
+        "id": 243,
         "count": 1
       }
     ],
@@ -16756,6 +18982,8 @@
     "escUpgrdCost": 200000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 10,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 156,
@@ -16776,9 +19004,23 @@
         "id": 152,
         "count": 1,
         "ammo": 2
+      },
+      {
+        "id": 144,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      },
+      {
+        "id": 243,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16830,6 +19072,8 @@
     "escUpgrdCost": 300000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 275,
     "stockWeapons": [
       {
         "id": 156,
@@ -16850,9 +19094,23 @@
         "id": 152,
         "count": 1,
         "ammo": 3
+      },
+      {
+        "id": 144,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      },
+      {
+        "id": 243,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -16900,6 +19158,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [],
     "defaultItems": [],
     "desc": "The Leviathan is probably the biggest ship you will ever see.  There are only a few hundred of these giant freighters in existence, for two reasons.  Firstly, only the biggest corporations could afford them, and secondly, the actual ship itself takes 20 years to build.  Most Leviathans are actually close to 600 years old.  Many were even active while the gate system was still operational, and have been handed down through the generations, from hereditary ship's master to ship's master.  Most were retrofitted with jump engines when the technology became available.\r\rRequires: Capital Ships {P30\"License\" \"License, REQUIRES YOU TO REGISTER EV NOVA\"}"
@@ -16953,6 +19213,8 @@
     "escUpgrdCost": 3000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 132,
@@ -16973,9 +19235,31 @@
         "id": 150,
         "count": 1,
         "ammo": 2
+      },
+      {
+        "id": 133,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 178,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
+      }
+    ],
     "desc": "The biggest war machine in Federation space, the Federation Carrier houses squadrons of fighters and can hold its own without its formidable escort.  Capable of long-range tactical power projection, the E-60 is effectively a mobile base, and is often used by Admirals and Commodores as a safe vantage point to gauge the ebb and flow of space battles.   It mounts heavy laser batteries along its top flight deck.\r\rRequires: Heavy Weapons License, Missile Weapons License, Fighter Bay License, Protective Technologies License, Capital Ships License, Naval {P30\"Approval\" \"Approval, REQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -17027,6 +19311,8 @@
     "escUpgrdCost": 1500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 225,
     "stockWeapons": [
       {
         "id": 142,
@@ -17044,7 +19330,12 @@
         "ammo": 20
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": "The Manticore is the most terrifying vessel that pirates have ever used.  Built from salvaged Leviathans (just don't ask where they got them from), the Manticore's primary offensive weapon is the 'Crown of Thorns', a ring of modified Rauther Ion Cannons.  This ring is fully independently targetable, and can easily disable large ships, while being accurate enough not to shred smaller vessels{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -17096,6 +19387,8 @@
     "escUpgrdCost": 500000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 159,
@@ -17116,9 +19409,23 @@
         "id": 152,
         "count": 1,
         "ammo": 3
+      },
+      {
+        "id": 144,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
+      }
+    ],
     "desc": "There is an Auroran legend about the creation of the first Carrier.  The Auroran lord who first conceived of such a mighty vessel gave these precepts to the shipwright for its creation:  \"Make me a hand with which I might strike mine enemies!\"  The keel for the vessel is so large that it has to be laid in a planet-based shipyard.  The ship itself is 1.2 km long, mounts deck-guns, and has bays for Firebirds and Phoenixes{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -17166,6 +19473,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 132,
@@ -17225,6 +19534,8 @@
     "escUpgrdCost": 3000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 132,
@@ -17245,19 +19556,43 @@
         "id": 150,
         "count": 1,
         "ammo": 1
+      },
+      {
+        "id": 133,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 177,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 178,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 179,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
-      {
-        "id": 177,
-        "count": 1
-      },
       {
         "id": 178,
         "count": 1
       },
       {
-        "id": 179,
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
         "count": 1
       }
     ],
@@ -17312,6 +19647,8 @@
     "escUpgrdCost": 2000000,
     "escSellValue": 0,
     "escortType": 1,
+    "deionize": 30,
+    "ionizeMax": 225,
     "stockWeapons": [
       {
         "id": 130,
@@ -17334,7 +19671,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -17386,6 +19728,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 159,
@@ -17406,19 +19750,35 @@
         "id": 152,
         "count": 2,
         "ammo": 2
+      },
+      {
+        "id": 158,
+        "count": 3,
+        "ammo": 0
+      },
+      {
+        "id": 151,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 186,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 187,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 151,
-        "count": 2
-      },
-      {
-        "id": 186,
+        "id": 242,
         "count": 1
       },
       {
-        "id": 187,
+        "id": 243,
         "count": 1
       }
     ],
@@ -17473,6 +19833,8 @@
     "escUpgrdCost": 450000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 159,
@@ -17493,9 +19855,23 @@
         "id": 152,
         "count": 1,
         "ammo": 3
+      },
+      {
+        "id": 144,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      },
+      {
+        "id": 243,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -17547,6 +19923,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 158,
@@ -17567,23 +19945,35 @@
         "id": 152,
         "count": 2,
         "ammo": 2
+      },
+      {
+        "id": 186,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 187,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 188,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 189,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 186,
-        "count": 2
-      },
-      {
-        "id": 187,
-        "count": 2
-      },
-      {
-        "id": 188,
+        "id": 242,
         "count": 1
       },
       {
-        "id": 189,
+        "id": 241,
         "count": 1
       }
     ],
@@ -17638,6 +20028,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 20,
+    "ionizeMax": 330,
     "stockWeapons": [
       {
         "id": 159,
@@ -17658,15 +20050,35 @@
         "id": 152,
         "count": 1,
         "ammo": 1
+      },
+      {
+        "id": 144,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 157,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 188,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 189,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 188,
+        "id": 242,
         "count": 1
       },
       {
-        "id": 189,
+        "id": 243,
         "count": 1
       }
     ],
@@ -17721,6 +20133,8 @@
     "escUpgrdCost": 650000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 20,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 159,
@@ -17741,9 +20155,28 @@
         "id": 152,
         "count": 1,
         "ammo": 3
+      },
+      {
+        "id": 144,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 157,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      },
+      {
+        "id": 243,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -17791,6 +20224,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 3,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 132,
@@ -17855,6 +20290,8 @@
     "escUpgrdCost": 2000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 225,
     "stockWeapons": [
       {
         "id": 142,
@@ -17872,7 +20309,12 @@
         "ammo": 400
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -17924,6 +20366,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 350,
     "stockWeapons": [
       {
         "id": 159,
@@ -17944,23 +20388,35 @@
         "id": 152,
         "count": 2,
         "ammo": 2
+      },
+      {
+        "id": 186,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 187,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 188,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 189,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 186,
-        "count": 2
-      },
-      {
-        "id": 187,
-        "count": 2
-      },
-      {
-        "id": 188,
+        "id": 242,
         "count": 1
       },
       {
-        "id": 189,
+        "id": 243,
         "count": 1
       }
     ],
@@ -18015,6 +20471,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 225,
     "stockWeapons": [
       {
         "id": 142,
@@ -18037,7 +20495,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18089,6 +20552,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 25,
+    "ionizeMax": 250,
     "stockWeapons": [
       {
         "id": 135,
@@ -18109,9 +20574,19 @@
         "id": 157,
         "count": 4,
         "ammo": 0
+      },
+      {
+        "id": 232,
+        "count": 4,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 242,
+        "count": 1
+      }
+    ],
     "desc": "The Auroran Battlecruiser represents the very latest thinking by the best minds of the Empire.  Prompted by Vell-os artisans, the shipwrights of the First Family have created a vehicle with which they hope the Auroran people will wreak their vengeance.  The Thunderforge class battlecruiser mounts four heavy FPC batteries, two Storm Chainguns, two radar missile launchers and four 150 mm railguns.  Yet even this incredible arsenal pales into insignificance when compared to the Thunderforge's primary weapon system, the TripHammer.  The TripHammer is a gattling pattern energy weapon of awesome power.  Inspired by the Vell-os, Auroran weaponsmiths attacked the creation of the guns with typical exuberance.  With all the Vell-os help, the Battlecruiser can hold its own against any ship in the known universe."
   },
   {
@@ -18163,6 +20638,8 @@
     "escUpgrdCost": 750000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 20,
+    "ionizeMax": 240,
     "stockWeapons": [
       {
         "id": 133,
@@ -18185,7 +20662,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": "Hrunyir Greyshoulders, father of Olaf, crafted the Pirate Carrier 60 years ago as a tool to aid in the suppression of worlds for ransom.  This terrifying weapon mounts tubes for EMP torpedos, the most devastating explosive known (and banned by all space treaties, even between the Aurorans and the Federation).  Olaf started work on a second carrier 20 years ago, and it is now reaching completion.  He is still hunting for a buyer with enough cash and few enough scruples to buy it{P30\".\" \".\r\rREQUIRES YOU TO REGISTER EV NOVA\"}"
   },
   {
@@ -18237,6 +20719,8 @@
     "escUpgrdCost": 2000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 132,
@@ -18257,9 +20741,31 @@
         "id": 150,
         "count": 1,
         "ammo": 2
+      },
+      {
+        "id": 133,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 178,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18311,6 +20817,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 132,
@@ -18331,20 +20839,44 @@
         "id": 178,
         "count": 1,
         "ammo": 1
+      },
+      {
+        "id": 133,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 177,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 180,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 230,
+        "count": 2,
+        "ammo": 20
       }
     ],
     "defaultItems": [
       {
-        "id": 177,
+        "id": 178,
         "count": 1
       },
       {
-        "id": 180,
+        "id": 197,
         "count": 1
       },
       {
-        "id": 230,
-        "count": 20
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
       }
     ],
     "desc": ""
@@ -18398,6 +20930,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -18415,7 +20949,16 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18467,6 +21010,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -18484,7 +21029,20 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 268,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18536,6 +21094,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -18553,7 +21113,16 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18605,6 +21174,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -18622,7 +21193,20 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18674,6 +21258,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 150,
+    "ionizeMax": 1000,
     "stockWeapons": [
       {
         "id": 146,
@@ -18691,7 +21277,24 @@
         "ammo": 8
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 245,
+        "count": 1
+      },
+      {
+        "id": 212,
+        "count": 1
+      },
+      {
+        "id": 274,
+        "count": 1
+      },
+      {
+        "id": 269,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18743,6 +21346,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 225,
     "stockWeapons": [
       {
         "id": 142,
@@ -18760,7 +21365,12 @@
         "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 248,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18812,6 +21422,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 20,
+    "ionizeMax": 240,
     "stockWeapons": [
       {
         "id": 133,
@@ -18832,19 +21444,31 @@
         "id": 132,
         "count": 2,
         "ammo": 0
+      },
+      {
+        "id": 129,
+        "count": 6,
+        "ammo": 0
+      },
+      {
+        "id": 135,
+        "count": 2,
+        "ammo": 30
+      },
+      {
+        "id": 190,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 191,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 135,
-        "count": 30
-      },
-      {
-        "id": 190,
-        "count": 1
-      },
-      {
-        "id": 191,
+        "id": 248,
         "count": 1
       }
     ],
@@ -18899,6 +21523,8 @@
     "escUpgrdCost": 3000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 132,
@@ -18919,9 +21545,31 @@
         "id": 150,
         "count": 2,
         "ammo": 2
+      },
+      {
+        "id": 133,
+        "count": 2,
+        "ammo": 0
       }
     ],
-    "defaultItems": [],
+    "defaultItems": [
+      {
+        "id": 178,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
+      }
+    ],
     "desc": ""
   },
   {
@@ -18973,6 +21621,8 @@
     "escUpgrdCost": 1000000,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 30,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 133,
@@ -18993,19 +21643,31 @@
         "id": 132,
         "count": 3,
         "ammo": 0
+      },
+      {
+        "id": 176,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 158,
+        "count": 4,
+        "ammo": 0
+      },
+      {
+        "id": 190,
+        "count": 1,
+        "ammo": 1
+      },
+      {
+        "id": 191,
+        "count": 1,
+        "ammo": 1
       }
     ],
     "defaultItems": [
       {
-        "id": 176,
-        "count": 2
-      },
-      {
-        "id": 190,
-        "count": 1
-      },
-      {
-        "id": 191,
+        "id": 248,
         "count": 1
       }
     ],
@@ -19060,6 +21722,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 20,
+    "ionizeMax": 240,
     "stockWeapons": [
       {
         "id": 133,
@@ -19080,20 +21744,32 @@
         "id": 132,
         "count": 3,
         "ammo": 0
+      },
+      {
+        "id": 158,
+        "count": 6,
+        "ammo": 0
+      },
+      {
+        "id": 176,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 190,
+        "count": 2,
+        "ammo": 2
+      },
+      {
+        "id": 191,
+        "count": 2,
+        "ammo": 2
       }
     ],
     "defaultItems": [
       {
-        "id": 176,
-        "count": 2
-      },
-      {
-        "id": 190,
-        "count": 2
-      },
-      {
-        "id": 191,
-        "count": 2
+        "id": 248,
+        "count": 1
       }
     ],
     "desc": ""
@@ -19147,6 +21823,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 15,
+    "ionizeMax": 300,
     "stockWeapons": [
       {
         "id": 132,
@@ -19167,12 +21845,34 @@
         "id": 150,
         "count": 1,
         "ammo": 2
+      },
+      {
+        "id": 133,
+        "count": 2,
+        "ammo": 0
+      },
+      {
+        "id": 230,
+        "count": 2,
+        "ammo": 40
       }
     ],
     "defaultItems": [
       {
-        "id": 230,
-        "count": 40
+        "id": 178,
+        "count": 1
+      },
+      {
+        "id": 197,
+        "count": 1
+      },
+      {
+        "id": 240,
+        "count": 1
+      },
+      {
+        "id": 241,
+        "count": 1
       }
     ],
     "desc": ""
@@ -19222,6 +21922,8 @@
     "escUpgrdCost": 0,
     "escSellValue": 0,
     "escortType": 2,
+    "deionize": 80,
+    "ionizeMax": 500,
     "stockWeapons": [
       {
         "id": 129,
@@ -19242,6 +21944,11 @@
         "id": 169,
         "count": 1,
         "ammo": 2
+      },
+      {
+        "id": 166,
+        "count": 1,
+        "ammo": 0
       }
     ],
     "defaultItems": [],

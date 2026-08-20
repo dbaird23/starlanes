@@ -353,6 +353,22 @@ function decodeSpob(res) {
 
 function decodeShip(res) {
   const d = res.data;
+  /*
+   * WeapType(x8) / WeapCount(x8) / WeapAmmo(x8): the shïp resource stores
+   * these in two separate blocks. Slots 1-4 are inline:
+   *   WeapType1-4  @18-24  (4 × int16)
+   *   WeapCount1-4 @26-32  (4 × int16)
+   *   WeapAmmo1-4  @34-40  (4 × int16, undocumented by the Bible but read by
+   *                         ResForge; -1 = no ammo / unlimited, > 0 = starting
+   *                         rounds loaded)
+   * Slots 5-8 are in the appended section near the end of the record:
+   *   WeapType5-8  @1742-1748
+   *   WeapCount5-8 @1750-1756
+   *   WeapAmmo5-8  @1758-1764
+   * Verified against ship 374 "Unrelenting" in ResForge: the six weapons
+   * (133×2, 169×4, 160×2, 158×4, 230×3 ammo21, 132×4, 176×2 ammo2) and
+   * their ammo values all land on these exact offsets.
+   */
   const stockWeapons = [];
   for (let i = 0; i < 4; i++) {
     const weapId = d.readInt16BE(18 + i * 2);
@@ -361,14 +377,24 @@ function decodeShip(res) {
     if (weapId >= 128 && count > 0)
       stockWeapons.push({ id: weapId, count, ammo: Math.max(0, ammo) });
   }
-  // DefaultItems @1734 / ItemCount @1750: the oütf items a hull comes with when
-  // you buy or capture one — reactors, expansions, escape pods and the like.
-  // 28 of Nova's hulls carry them; the Aurora Carrier arrives with an escape
-  // pod and a cargo expansion already fitted.
-  const defaultItems = [];
-  for (let i = 0; i < 8; i++) {
-    const itemId = d.readInt16BE(1734 + i * 2);
+  for (let i = 0; i < 4; i++) {
+    const weapId = d.readInt16BE(1742 + i * 2);
     const count = d.readInt16BE(1750 + i * 2);
+    const ammo = d.readInt16BE(1758 + i * 2);
+    if (weapId >= 128 && count > 0)
+      stockWeapons.push({ id: weapId, count, ammo: Math.max(0, ammo) });
+  }
+  /*
+   * DefaultItems @78 / ItemCount @86: the oütf items a hull comes with when
+   * you buy or capture one — reactors, expansions, escape pods and the like.
+   * Four slots inline (IDs @78-84, counts @86-92). The Bible says "up to
+   * eight" but no stock hull uses more than four, and the appended section
+   * (@1734-@1740) is zero on all 288 hulls.
+   */
+  const defaultItems = [];
+  for (let i = 0; i < 4; i++) {
+    const itemId = d.readInt16BE(78 + i * 2);
+    const count = d.readInt16BE(86 + i * 2);
     if (itemId >= 128 && count > 0) defaultItems.push({ id: itemId, count });
   }
   return {
@@ -491,6 +517,16 @@ function decodeShip(res) {
     escUpgrdCost: d.readInt32BE(1834),
     escSellValue: d.readInt32BE(1838),
     escortType: d.readInt16BE(1842),
+    /*
+     * Deionize @874 / IonizeMax @876 — both verified empirically: ship 374
+     * reads 75/400, ship 128 (Shuttle) reads 1/5, ship 164 (Raven) 105/800.
+     * Bible: "A value of 100 [for Deionize] equals 1 point of ion energy per
+     * 1/30th of a second" — same unit as oütf ModType 39 ModVal, so the
+     * per-second rate is deionize × 0.3.  IonizeMax is the charge level at
+     * which the ship is considered fully ionized.
+     */
+    deionize: d.readInt16BE(874),
+    ionizeMax: d.readInt16BE(876),
     stockWeapons,
     defaultItems,
   };

@@ -8,6 +8,7 @@ import {
   SYSTEMS,
 } from "./data/universe";
 import { Game } from "./game/game";
+import { grantHullOutfits, stockAmmo } from "./game/combat";
 import {
   availableMissions,
   instantiateMission,
@@ -68,6 +69,26 @@ async function boot(): Promise<void> {
   (window as unknown as { SPOB_INDEX: typeof SPOB_INDEX }).SPOB_INDEX =
     SPOB_INDEX;
   (window as unknown as { SYSTEMS: typeof SYSTEMS }).SYSTEMS = SYSTEMS;
+
+  // TEMPORARY: reset player to stock Unrelenting (ship 374) — remove once
+  // the ionization loadout fix has been verified on a live save.
+  (window as unknown as { resetToUnrelenting: () => void }).resetToUnrelenting =
+    () => {
+      const shipId = "374";
+      const g = game as unknown as {
+        keepPilotOutfits(): void;
+        applyShipType(id: string): void;
+      };
+      g.keepPilotOutfits();
+      grantHullOutfits(shipId, game.player.outfits);
+      g.applyShipType(shipId);
+      game.player.fuelJumps = game.player.maxFuelJumps;
+      const ammo = stockAmmo(shipId);
+      for (const [weapId, count] of Object.entries(ammo)) {
+        game.player.ammo[weapId] = count;
+      }
+      console.log("Reset to stock Unrelenting (ship 374).");
+    };
 
   let last = performance.now();
   function frame(now: number): void {

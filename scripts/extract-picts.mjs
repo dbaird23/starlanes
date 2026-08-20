@@ -205,7 +205,7 @@ const kindOf = (id) => {
    * per distinct hull, matching the 5000 and 3000 series entry for entry.
    */
   if (id >= 20000 && id <= 20999) return "shipinfo";
-  if (id >= 6000 && id <= 6299) return "outfit";
+  if (id >= 6000 && id <= 6315) return "outfit";
   if (id === 131 || (id >= 700 && id <= 706)) return "ui";
   if (id >= 7500 && id <= 9008) return "ui";
   if (id >= 9500 && id <= 9724) return "nebu";

@@ -592,6 +592,14 @@ export interface ShipType {
   escSellValue: number;
   /** 0 Fighter, 1 Medium Ship, 2 Warship, 3 Freighter */
   escortType: number;
+  /**
+   * Per-ship ionization parameters from @874-@876 in the shïp struct.
+   * deionize: Bible "100 = 1 point per 1/30 second", same unit as oütf
+   * ModType 39 — dissipation rate = deionize × 0.3 pts/sec.
+   * ionizeMax: charge level at which the ship is considered fully ionized.
+   */
+  deionize: number;
+  ionizeMax: number;
 }
 
 /** A düde class: govt + AI + weighted ship types. */

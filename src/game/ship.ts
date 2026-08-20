@@ -75,11 +75,15 @@ export class Ship {
     armor: number,
     rechPerSec: number,
     disableAt = 0.33,
+    ionizeMax = 100,
+    deionizePerSec = 15,
   ): void {
     this.shield = this.maxShield = shield;
     this.armor = this.maxArmor = armor;
     this.shieldRechPerSec = rechPerSec;
     this.disableAt = disableAt;
+    this.maxIon = ionizeMax;
+    this.ionDissipatePerSec = deionizePerSec;
     this.disabled = false;
   }
 

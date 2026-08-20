@@ -227,6 +227,8 @@ interface RawShip {
   escUpgrdCost: number;
   escSellValue: number;
   escortType: number;
+  deionize?: number;
+  ionizeMax?: number;
   shortName: string;
   longName: string;
   inherentAi: number;
@@ -1055,6 +1057,8 @@ export async function loadUniverse(): Promise<void> {
       escortType: s.escortType ?? -1,
       contribute: (s.contribute ?? [0, 0]) as [number, number],
       require: (s.require ?? [0, 0]) as [number, number],
+      deionize: s.deionize ?? 50,
+      ionizeMax: s.ionizeMax ?? 100,
       ...convertShipStats(s),
     };
   }

@@ -1711,8 +1711,8 @@ export class Game {
     this.cloakFlags = bonus.cloak;
     this.fuelScoopRate = bonus.fuelScoop;
     this.hasMiningScoop = bonus.miningScoop;
-    this.ship.maxIon = 100 + bonus.ionCapacity;
-    this.ship.ionDissipatePerSec = 15 + bonus.ionDissipate;
+    this.ship.maxIon = type.ionizeMax + bonus.ionCapacity;
+    this.ship.ionDissipatePerSec = type.deionize * 0.3 + bonus.ionDissipate;
     this.inertialess =
       bonus.inertialDamper ||
       (SHIPS[this.player.shipId]?.flags2 & 0x0040) !== 0;
@@ -2686,6 +2686,8 @@ export class Game {
         type.armor,
         type.shieldRechPerSec,
         (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
+        type.ionizeMax,
+        type.deionize * 0.3,
       );
       npc.sprite = SHIP_SPRITES[typeId] ?? null;
       const ang = Math.random() * Math.PI * 2;
@@ -3242,7 +3244,7 @@ export class Game {
     npc.hostile = false;
     npc.govtId = -1;
     npc.order = "formup";
-    npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
+    npc.initDefense(type.shield, type.armor, type.shieldRechPerSec, 0.33, type.ionizeMax, type.deionize * 0.3);
     npc.sprite = SHIP_SPRITES[shipId] ?? null;
     const side = this.player.escorts.length % 2 === 0 ? 1 : -1;
     const off = this.ship.radius + 60;
@@ -4743,7 +4745,7 @@ export class Game {
     fighter.ally = true;
     fighter.hostile = false;
     fighter.govtId = -1;
-    fighter.initDefense(type.shield, type.armor, type.shieldRechPerSec);
+    fighter.initDefense(type.shield, type.armor, type.shieldRechPerSec, 0.33, type.ionizeMax, type.deionize * 0.3);
     fighter.sprite = SHIP_SPRITES[typeId] ?? null;
     const side = Math.random() < 0.5 ? 1 : -1;
     const off = this.ship.radius + 20;
@@ -4793,7 +4795,7 @@ export class Game {
       npc.hostile = false;
       npc.govtId = -1;
       npc.order = hire.order ?? "formup";
-      npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
+      npc.initDefense(type.shield, type.armor, type.shieldRechPerSec, 0.33, type.ionizeMax, type.deionize * 0.3);
       npc.sprite = SHIP_SPRITES[hire.shipId] ?? null;
 
       if (gateTransit) {
@@ -5875,7 +5877,7 @@ export class Game {
             });
             fighter.typeId = typeId;
             fighter.govtId = npc.govtId;
-            fighter.initDefense(fType.shield, fType.armor, fType.shieldRechPerSec);
+            fighter.initDefense(fType.shield, fType.armor, fType.shieldRechPerSec, 0.33, fType.ionizeMax, fType.deionize * 0.3);
             fighter.sprite = SHIP_SPRITES[typeId] ?? null;
             const side = Math.random() < 0.5 ? 1 : -1;
             const off = npc.radius + 20;
@@ -6463,8 +6465,6 @@ export class Game {
           this.setNpcHostile(npc);
           hostileSpawned = true;
         }
-        // rescue targets start dead in space
-        if (goal === 5) npc.disabled = true;
         if (goal === 3) npc.escorting = true;
         npc.missionMisnId = active.misnId;
         /*
@@ -6476,7 +6476,22 @@ export class Game {
          */
         if (mDef && mDef.shipNameId >= 128) npc.shipName = active.shipName ?? null;
         npc.shipSubtitle = active.shipSubtitle ?? null;
-        npc.initDefense(type.shield, type.armor, type.shieldRechPerSec);
+        npc.initDefense(type.shield, type.armor, type.shieldRechPerSec, 0.33, type.ionizeMax, type.deionize * 0.3);
+        // Disabled states must come after initDefense, which resets disabled=false.
+        // rescue targets start dead in space
+        if (goal === 5) npc.disabled = true;
+        // gövt Flags 0x0800: "ships of this govt start out disabled (derelicts)".
+        // Applied here for mission ships just as applyPerson does for captains.
+        // Düde 227 "Association - disabled" (gövt 177) is the stock case:
+        // mïsn 709 "Investigate Incidents" sends you to observe their burnt-out
+        // hulks, and without this they spawned alive and well.
+        // Mark as already boarded so the player cannot loot them — they are
+        // burnt-out hulks that have already been plundered.
+        if ((GOVT_FLAGS[String(npc.govtId)] ?? 0) & 0x0800) {
+          npc.disabled = true;
+          npc.boarded = true;
+          npc.booty = 0;
+        }
         npc.sprite = SHIP_SPRITES[typeId] ?? null;
         const ang = Math.random() * Math.PI * 2;
         const r = 900 + Math.random() * 900;
@@ -6975,6 +6990,8 @@ export class Game {
         type.armor,
         type.shieldRechPerSec,
         (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
+        type.ionizeMax,
+        type.deionize * 0.3,
       );
       if (hostile) this.setNpcHostile(npc);
       npc.sprite = SHIP_SPRITES[typeId] ?? null;
@@ -7133,6 +7150,8 @@ export class Game {
       type.armor,
       type.shieldRechPerSec,
       (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
+      type.ionizeMax,
+      type.deionize * 0.3,
     );
     if (person.credits > 0) {
       npc.booty = Math.round(person.credits * (0.75 + Math.random() * 0.5));
@@ -9696,6 +9715,8 @@ export class Game {
         type.armor,
         type.shieldRechPerSec,
         (type.flags & 0x10) !== 0 ? 0.1 : 0.33,
+        type.ionizeMax,
+        type.deionize * 0.3,
       );
     }
     npc.sprite = typeId ? (SHIP_SPRITES[typeId] ?? null) : null;
