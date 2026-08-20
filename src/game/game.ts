@@ -9247,6 +9247,111 @@ export class Game {
     return { winner, won, stake: bet, payout };
   }
 
+  /**
+   * How many of an outfit the pilot holds. Ammunition is kept in
+   * `player.ammo` keyed by the weapon it feeds, everything else in
+   * `player.outfits`, so "how many do I have" has to ask the right map —
+   * getting that wrong is what let ammo ignore its own Max.
+   */
+  outfitHeld(outfId: string): number {
+    const outf = OUTFITS[outfId];
+    if (!outf) return 0;
+    const ammMod = outf.mods.find((m) => m.type === 3);
+    if (ammMod) return this.player.ammo[this.ammoWeaponId(ammMod.val)] ?? 0;
+    return this.player.outfits[outfId] ?? 0;
+  }
+
+  /**
+   * How many more of this item could be bought right now — what the quantity
+   * dialog offers as its maximum, and the reason the pilot is not asked to
+   * click a hundred times for a hundred missiles.
+   *
+   * Every limit `buyOutfit` enforces one at a time is applied here in bulk:
+   * the item's Max, the purse, free mass, and free mounts. Maps are the
+   * documented oddity — they are consumed on purchase rather than carried, so
+   * there is never more than one to buy.
+   */
+  maxBuyable(outfId: string): number {
+    const outf = OUTFITS[outfId];
+    if (!outf) return 0;
+    if (!evalTest(outf.avail, this.player.bits, testContext(this.player)))
+      return 0;
+    if (outf.mods.some((m) => m.type === 16)) return 1;
+    const hullMass = SHIPS[this.player.shipId]?.mass ?? 0;
+    const price = outfitCost(outf, hullMass);
+    const itemMass = outfitMass(outf, hullMass);
+
+    let n = outf.max > 0 ? Math.max(0, outf.max - this.outfitHeld(outfId)) : Infinity;
+    // a free item is unlimited by the purse, not divided by zero
+    if (price > 0) n = Math.min(n, Math.floor(this.player.credits / price));
+    if (itemMass > 0) n = Math.min(n, Math.floor(this.freeMassLeft() / itemMass));
+    /*
+     * Weapons also need somewhere to bolt on. Missiles and fighter bays take
+     * no mount, which is why the count is taken per weapon rather than from
+     * the outfit carrying one.
+     */
+    const fitted = countMounts(this.player.shipId, this.player.outfits);
+    const limits = mountLimits(this.player.shipId, this.player.outfits);
+    for (const mod of outf.mods) {
+      if (mod.type !== 1) continue;
+      const weap = WEAPONS[String(mod.val)];
+      if (!weap) continue;
+      const kind = mountKind(weap.guidance);
+      if (kind === "gun") n = Math.min(n, limits.guns - fitted.guns);
+      if (kind === "turret") n = Math.min(n, limits.turrets - fitted.turrets);
+    }
+    return Math.max(0, n === Infinity ? 0 : n);
+  }
+
+  /** How many of this item the pilot could sell back right now. */
+  maxSellable(outfId: string): number {
+    const outf = OUTFITS[outfId];
+    if (!outf) return 0;
+    if ((outf.flags & 0x0008) !== 0) return 0; // can never be sold
+    return this.outfitHeld(outfId);
+  }
+
+  /**
+   * Buy `qty` of an item, stopping at the first one that will not go through.
+   * Each unit runs the full single-purchase path — its OnPurchase string, its
+   * mount and mass checks, its price against the hull — so a bulk buy can
+   * never do something a run of single buys would not.
+   */
+  buyOutfits(
+    outfId: string,
+    qty: number,
+  ): { ok: boolean; count: number; reason?: string } {
+    let count = 0;
+    let reason: string | undefined;
+    for (let i = 0; i < Math.max(0, Math.floor(qty)); i++) {
+      const r = this.buyOutfit(outfId);
+      if (!r.ok) {
+        reason = r.reason;
+        break;
+      }
+      count++;
+    }
+    return { ok: count > 0, count, reason: count > 0 ? undefined : reason };
+  }
+
+  /** Sell `qty` of an item, stopping at the first refusal. */
+  sellOutfits(
+    outfId: string,
+    qty: number,
+  ): { ok: boolean; count: number; reason?: string } {
+    let count = 0;
+    let reason: string | undefined;
+    for (let i = 0; i < Math.max(0, Math.floor(qty)); i++) {
+      const r = this.sellOutfit(outfId);
+      if (!r.ok) {
+        reason = r.reason;
+        break;
+      }
+      count++;
+    }
+    return { ok: count > 0, count, reason: count > 0 ? undefined : reason };
+  }
+
   buyOutfit(outfId: string): { ok: boolean; reason?: string } {
     const outf = OUTFITS[outfId];
     if (!outf) return { ok: false, reason: "Unknown outfit." };
@@ -9255,12 +9360,20 @@ export class Game {
     if (!evalTest(outf.avail, this.player.bits, testContext(this.player))) {
       return { ok: false, reason: "That is not for sale here." };
     }
-    const owned = this.player.outfits[outfId] ?? 0;
     const isMap = outf.mods.some((m) => m.type === 16);
+    /*
+     * How many of this item the pilot already holds. Ammunition lives in
+     * `player.ammo` keyed by weapon, not in `player.outfits`, so reading the
+     * outfit map for it always answered 0 and the Max check never fired —
+     * an IR Missile outfit states Max 200 and you could buy 300. The weapon's
+     * own MaxAmmo is 0 or -1 on every shipped round, which the Bible reads as
+     * "the weapon sets no limit of its own and the outfit's Max governs".
+     */
+    const owned = this.outfitHeld(outfId);
     if (outf.max > 0 && owned >= outf.max && !isMap) {
       return {
         ok: false,
-        reason: "You already have the maximum number of these.",
+        reason: ui(219, "Can't have any more!"),
       };
     }
     /*

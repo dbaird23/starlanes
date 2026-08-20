@@ -303,18 +303,19 @@ export class LandedUi {
        * type into the input when it has focus; they are otherwise swallowed
        * so B/S/T cannot re-fire under the overlay.
        */
-      if (this.tradeQty) {
+      if (this.tradeQty || this.outfitQty) {
         if (e.code === "Escape") {
           e.preventDefault();
           handled();
           this.tradeQty = null;
+          this.outfitQty = null;
           this.render();
           return;
         }
         if (e.code === "Enter" || e.code === "NumpadEnter") {
           e.preventDefault();
           handled();
-          this.root.querySelector<HTMLButtonElement>("#tc-qty-ok")?.click();
+          this.root.querySelector<HTMLButtonElement>("#qty-dlg-ok")?.click();
           return;
         }
         if (typing) return;
@@ -403,6 +404,32 @@ export class LandedUi {
         if (sel) {
           const btn = this.root.querySelector<HTMLButtonElement>(sel);
           if (btn && !btn.disabled) btn.click();
+        }
+        return;
+      }
+      /*
+       * Alt+Enter is the keyboard twin of the manual's Alt-click: these
+       * screens are arrow-navigable, so the gesture has to exist for someone
+       * who never touches the mouse. Falls through to the ordinary Enter when
+       * there is only one to move.
+       */
+      if (
+        this.planet &&
+        this.view === "outfitter" &&
+        e.altKey &&
+        (e.code === "Enter" || e.code === "NumpadEnter")
+      ) {
+        e.preventDefault();
+        handled();
+        const sellFocused =
+          document.activeElement ===
+          this.root.querySelector("#btn-sell-outfit");
+        if (!this.openOutfitQty(sellFocused ? "sell" : "buy")) {
+          this.root
+            .querySelector<HTMLButtonElement>(
+              sellFocused ? "#btn-sell-outfit" : "#btn-buy-outfit",
+            )
+            ?.click();
         }
         return;
       }
@@ -1058,8 +1085,9 @@ export class LandedUi {
     if (!this.planet || !this.system) return;
     // the Info dialog belongs to the shipyard; anything that leaves closes it
     if (this.view !== "shipyard") this.shipInfoOpen = false;
-    // quantity chooser is trade-only
+    // each counter's quantity chooser belongs to that counter alone
     if (this.view !== "trade") this.tradeQty = null;
+    if (this.view !== "outfitter") this.outfitQty = null;
     if (this.view === "spaceport") this.renderSpaceport();
     else if (this.view === "trade") this.renderTrade();
     else if (this.view === "shipyard") this.renderShipyard();
@@ -2062,23 +2090,22 @@ export class LandedUi {
     const q = this.tradeQty;
     if (!q) return "";
     const verb = q.dir === "buy" ? "Buy" : "Sell";
-    const prompt =
-      STR_LISTS["2002"]?.[370] ?? "Enter quantity:";
+    const prompt = ui(371, "Enter quantity:");
     const total = q.price * q.max;
     return `
-      <div class="tc-qty-back" role="dialog" aria-label="${escapeHtml(prompt)}">
-        <div class="panel tc-qty">
+      <div class="qty-dlg-back" role="dialog" aria-label="${escapeHtml(prompt)}">
+        <div class="panel qty-dlg">
           <h2>${verb} ${escapeHtml(q.name)}</h2>
           <p class="menu-hint">${q.price.toLocaleString()} cr each · max ${q.max.toLocaleString()} ton${q.max === 1 ? "" : "s"}</p>
-          <label class="tc-qty-label" for="tc-qty-input">${escapeHtml(prompt)}</label>
-          <div class="tc-qty-row">
-            <input id="tc-qty-input" type="number" min="1" max="${q.max}" value="${q.max}" inputmode="numeric">
-            <button class="evbtn" type="button" id="tc-qty-max">Max</button>
+          <label class="qty-dlg-label" for="qty-dlg-input">${escapeHtml(prompt)}</label>
+          <div class="qty-dlg-row">
+            <input id="qty-dlg-input" type="number" min="1" max="${q.max}" value="${q.max}" inputmode="numeric">
+            <button class="evbtn" type="button" id="qty-dlg-max">Max</button>
           </div>
-          <p class="tc-qty-total" id="tc-qty-total">${verb === "Buy" ? "Cost" : "Proceeds"}: ${total.toLocaleString()} cr</p>
+          <p class="qty-dlg-total" id="qty-dlg-total">${verb === "Buy" ? "Cost" : "Proceeds"}: ${total.toLocaleString()} cr</p>
           <div class="btnrow">
-            <button class="evbtn" type="button" id="tc-qty-cancel">Cancel</button>
-            <button class="evbtn primary" type="button" id="tc-qty-ok">${verb}</button>
+            <button class="evbtn" type="button" id="qty-dlg-cancel">Cancel</button>
+            <button class="evbtn primary" type="button" id="qty-dlg-ok">${verb}</button>
           </div>
         </div>
       </div>`;
@@ -2087,8 +2114,8 @@ export class LandedUi {
   private bindTradeQtyDialog(): void {
     const q = this.tradeQty;
     if (!q) return;
-    const input = this.root.querySelector<HTMLInputElement>("#tc-qty-input");
-    const totalEl = this.root.querySelector<HTMLElement>("#tc-qty-total");
+    const input = this.root.querySelector<HTMLInputElement>("#qty-dlg-input");
+    const totalEl = this.root.querySelector<HTMLElement>("#qty-dlg-total");
     if (!input || !totalEl) return;
 
     const clamp = (): number => {
@@ -2107,17 +2134,17 @@ export class LandedUi {
       input.value = n > 0 ? String(n) : "";
       paintTotal();
     });
-    this.root.querySelector("#tc-qty-max")!.addEventListener("click", () => {
+    this.root.querySelector("#qty-dlg-max")!.addEventListener("click", () => {
       input.value = String(q.max);
       paintTotal();
       input.focus();
       input.select();
     });
-    this.root.querySelector("#tc-qty-cancel")!.addEventListener("click", () => {
+    this.root.querySelector("#qty-dlg-cancel")!.addEventListener("click", () => {
       this.tradeQty = null;
       this.render();
     });
-    this.root.querySelector("#tc-qty-ok")!.addEventListener("click", () => {
+    this.root.querySelector("#qty-dlg-ok")!.addEventListener("click", () => {
       const qty = clamp();
       if (qty <= 0) {
         input.focus();
@@ -2142,6 +2169,102 @@ export class LandedUi {
     });
   }
 
+  /**
+   * The outfitter's twin of `tradeQtyDialog`. Ammunition is the case that
+   * makes it necessary — an IR Missile outfit states Max 200, and buying a
+   * full rack one click at a time is what the original's Alt-click dialog
+   * exists to avoid.
+   */
+  private outfitQtyDialog(): string {
+    const q = this.outfitQty;
+    if (!q) return "";
+    const verb = q.dir === "buy" ? "Buy" : "Sell";
+    const prompt = ui(371, "Enter quantity:");
+    const unitPrice = q.dir === "buy" ? q.price : Math.floor(q.price * 0.75);
+    return `
+      <div class="qty-dlg-back" role="dialog" aria-label="${escapeHtml(prompt)}">
+        <div class="panel qty-dlg">
+          <h2>${verb} ${escapeHtml(q.name)}</h2>
+          <p class="menu-hint">${unitPrice.toLocaleString()} cr each · max ${q.max.toLocaleString()} ${escapeHtml(q.unit)}${q.max === 1 ? "" : "s"}</p>
+          <label class="qty-dlg-label" for="qty-dlg-input">${escapeHtml(prompt)}</label>
+          <div class="qty-dlg-row">
+            <input id="qty-dlg-input" type="number" min="1" max="${q.max}" value="${q.max}" inputmode="numeric">
+            <button class="evbtn" type="button" id="qty-dlg-max">Max</button>
+          </div>
+          <p class="qty-dlg-total" id="qty-dlg-total">${verb === "Buy" ? "Cost" : "Proceeds"}: ${(unitPrice * q.max).toLocaleString()} cr</p>
+          <div class="btnrow">
+            <button class="evbtn" type="button" id="qty-dlg-cancel">Cancel</button>
+            <button class="evbtn primary" type="button" id="qty-dlg-ok">${verb}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  private bindOutfitQtyDialog(): void {
+    const q = this.outfitQty;
+    if (!q) return;
+    const input = this.root.querySelector<HTMLInputElement>("#qty-dlg-input");
+    const totalEl = this.root.querySelector<HTMLElement>("#qty-dlg-total");
+    if (!input || !totalEl) return;
+    const unitPrice = q.dir === "buy" ? q.price : Math.floor(q.price * 0.75);
+
+    const clamp = (): number => {
+      const raw = parseInt(input.value, 10);
+      if (!Number.isFinite(raw)) return 0;
+      return Math.max(0, Math.min(q.max, raw));
+    };
+    const paintTotal = (): void => {
+      const label = q.dir === "buy" ? "Cost" : "Proceeds";
+      totalEl.textContent = `${label}: ${(clamp() * unitPrice).toLocaleString()} cr`;
+    };
+    input.addEventListener("input", paintTotal);
+    input.addEventListener("change", () => {
+      const n = clamp();
+      input.value = n > 0 ? String(n) : "";
+      paintTotal();
+    });
+    this.root.querySelector("#qty-dlg-max")!.addEventListener("click", () => {
+      input.value = String(q.max);
+      paintTotal();
+      input.focus();
+      input.select();
+    });
+    this.root.querySelector("#qty-dlg-cancel")!.addEventListener("click", () => {
+      this.outfitQty = null;
+      this.render();
+    });
+    this.root.querySelector("#qty-dlg-ok")!.addEventListener("click", () => {
+      const n = clamp();
+      if (n <= 0) {
+        input.focus();
+        input.select();
+        return;
+      }
+      const g = this.game;
+      const r =
+        q.dir === "buy" ? g.buyOutfits(q.outfId, n) : g.sellOutfits(q.outfId, n);
+      /*
+       * A bulk buy stops at the first refusal rather than failing whole, so
+       * say what actually went through — asking for 200 with room for 150 is
+       * a sale of 150, not an error.
+       */
+      if (!r.ok && r.reason) this.toast(r.reason);
+      else if (r.count < n)
+        this.toast(
+          `${q.dir === "buy" ? "Bought" : "Sold"} ${r.count} of ${n} — ${q.name}.`,
+        );
+      if (q.dir === "buy" && r.count > 0 && OUTFITS[q.outfId]?.mods.some((m) => m.type === 16))
+        this.mapsBoughtThisLanding.add(q.outfId);
+      this.outfitQty = null;
+      this.render();
+    });
+    // Focus after the DOM is live so Enter confirms without an extra click.
+    requestAnimationFrame(() => {
+      input.focus();
+      input.select();
+    });
+  }
+
   private selectedGood: string | null = null;
   private tradeNote = "";
   /**
@@ -2154,6 +2277,21 @@ export class LandedUi {
     name: string;
     price: number;
     max: number;
+  } | null = null;
+  /**
+   * Quantity dialog for the outfitter's Buy / Sell, opened by Alt-clicking
+   * either button. The manual states the gesture outright: "If you want to
+   * buy or sell more than one of an item, you can hold down the Alt-click to
+   * bring up a dialog asking how many to buy or sell." Null when the counter
+   * is free to use.
+   */
+  private outfitQty: {
+    dir: "buy" | "sell";
+    outfId: string;
+    name: string;
+    price: number;
+    max: number;
+    unit: string;
   } | null = null;
   private selectedShip: string | null = null;
   /** whether the shipyard's Info dialog is up over the showroom */
@@ -2342,6 +2480,7 @@ export class LandedUi {
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.shopScroll = 0;
+      this.outfitQty = null;
       this.setView("spaceport");
     });
     this.root.querySelector("#btn-buy-ship")?.addEventListener("click", () => {
@@ -2564,6 +2703,7 @@ export class LandedUi {
     let info = "";
     let buttons = `<button class="evbtn" disabled>Buy</button>
       <button class="evbtn" disabled>Sell</button>`;
+    let qtyHint = "";
 
     if (this.selectedOutfit) {
       const id = this.selectedOutfit;
@@ -2636,8 +2776,18 @@ export class LandedUi {
           <div class="oi-status">${status}</div>
         </div>`;
 
-      buttons = `<button class="evbtn" id="btn-buy-outfit" ${canBuy ? "" : "disabled"}>Buy</button>
-        <button class="evbtn" id="btn-sell-outfit" ${canSell ? "" : "disabled"}>Sell</button>`;
+      /*
+       * The manual's own gesture: "If you want to buy or sell more than one
+       * of an item, you can hold down the Alt-click to bring up a dialog
+       * asking how many to buy or sell." Advertised in the title attribute
+       * and in the status line, since an unhinted modifier is invisible.
+       */
+      const bulkBuy = g.maxBuyable(id) > 1;
+      const bulkSell = g.maxSellable(id) > 1;
+      const altHint = "Alt-click (or Alt+Enter) to choose a quantity";
+      buttons = `<button class="evbtn" id="btn-buy-outfit" ${canBuy ? "" : "disabled"}${canBuy && bulkBuy ? ` title="${altHint}"` : ""}>Buy</button>
+        <button class="evbtn" id="btn-sell-outfit" ${canSell ? "" : "disabled"}${canSell && bulkSell ? ` title="${altHint}"` : ""}>Sell</button>`;
+      if ((canBuy && bulkBuy) || (canSell && bulkSell)) qtyHint = altHint;
     }
 
     this.root.innerHTML = `
@@ -2652,16 +2802,19 @@ export class LandedUi {
         <div class="oi-bar">
           <button class="oi-arrow" id="oi-up">&#9650;</button>
           <button class="oi-arrow" id="oi-down">&#9660;</button>
+          <span class="oi-hint">${escapeHtml(qtyHint)}</span>
           <span class="oi-spacer"></span>
           ${buttons}
           <button class="evbtn primary" id="btn-back">Done</button>
         </div>
-      </div>`;
+      </div>
+      ${this.outfitQtyDialog()}`;
 
     const grid = this.root.querySelector<HTMLElement>(".oi-grid")!;
     grid.scrollTop = this.shopScroll;
     this.root.querySelectorAll<HTMLElement>(".oi-cell").forEach((cell) => {
       cell.addEventListener("click", () => {
+        if (this.outfitQty) return; // the chooser is modal over the grid
         this.shopScroll = grid.scrollTop;
         this.selectedOutfit = cell.dataset.id!;
         this.render();
@@ -2675,13 +2828,16 @@ export class LandedUi {
     });
     this.root.querySelector("#btn-back")!.addEventListener("click", () => {
       this.shopScroll = 0;
+      this.outfitQty = null;
       this.setView("spaceport");
     });
     this.root
       .querySelector("#btn-buy-outfit")
-      ?.addEventListener("click", () => {
+      ?.addEventListener("click", (e) => {
         this.shopScroll = grid.scrollTop;
         const outfId = this.selectedOutfit!;
+        // Alt-click asks how many; a plain click buys one, as it always did
+        if ((e as MouseEvent).altKey && this.openOutfitQty("buy")) return;
         const result = this.game.buyOutfit(outfId);
         if (!result.ok && result.reason) this.toast(result.reason);
         if (result.ok && OUTFITS[outfId]?.mods.some((m) => m.type === 16)) {
@@ -2691,11 +2847,40 @@ export class LandedUi {
       });
     this.root
       .querySelector("#btn-sell-outfit")
-      ?.addEventListener("click", () => {
+      ?.addEventListener("click", (e) => {
         this.shopScroll = grid.scrollTop;
+        if ((e as MouseEvent).altKey && this.openOutfitQty("sell")) return;
         this.game.sellOutfit(this.selectedOutfit!);
         this.render();
       });
+    this.bindOutfitQtyDialog();
+  }
+
+  /**
+   * Open the outfitter's quantity dialog, if there is more than one to move.
+   * Returns false when there is not, so the caller falls through to the plain
+   * single-item Buy / Sell rather than putting up a dialog that can only
+   * answer "1".
+   */
+  private openOutfitQty(dir: "buy" | "sell"): boolean {
+    const outfId = this.selectedOutfit;
+    if (!outfId) return false;
+    const outf = OUTFITS[outfId];
+    if (!outf) return false;
+    const g = this.game;
+    const max = dir === "buy" ? g.maxBuyable(outfId) : g.maxSellable(outfId);
+    if (max <= 1) return false;
+    const hullMass = SHIPS[g.player.shipId]?.mass ?? 0;
+    this.outfitQty = {
+      dir,
+      outfId,
+      name: outf.name.split(";")[0].trim(),
+      price: this.shopPrice(outfitCost(outf, hullMass)),
+      max,
+      unit: outf.mods.some((m) => m.type === 3) ? "round" : "unit",
+    };
+    this.render();
+    return true;
   }
 }
 

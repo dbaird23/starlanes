@@ -813,6 +813,59 @@ pilot both ways, the one-arm form yields nothing when false, escaped quotes
 survive, and the outfitter shows the Vell-os `b424` arm — "you may never be
 able to buy any of them ever again" — only once that bit is set.
 
+**Alt-click asks how many — and it turned up an ammo cap that was never
+enforced.** Buying a full rack of missiles a click at a time is not how the
+original works, and the manual names the gesture outright: "If you want to buy
+or sell more than one of an item, you can hold down the Alt-click to bring up
+a dialog asking how many to buy or sell." STR# **2002 entry 371 is "Enter
+quantity:"**, which is the dialog's own prompt, and the beta history confirms
+its shape — it is a typed field ("quantity dialog properly handles non-numeric
+characters and empty strings"), it serves selling as well as buying, and it
+appears "for all outfits when applicable", not only ammunition.
+
+The trade centre already had this chooser, so the outfitter's is its twin
+rather than a new idiom: `outfitQtyDialog` / `bindOutfitQtyDialog` beside
+`tradeQtyDialog` / `bindTradeQtyDialog`, sharing one stylesheet block. That
+block is named **`.qty-dlg-*`** now, not `.tc-qty-*` — two counters use it.
+
+- **Plain click still moves one.** Alt-click opens the chooser, matching the
+  manual; Alt+Enter is its keyboard twin, since these screens are
+  arrow-navigable and an unhinted modifier is unreachable without a mouse. It
+  reads the focused button, so Alt+Enter on Sell asks how many to sell.
+- **It only opens when there is more than one to move**, which is the beta
+  history's "when applicable" — Alt-clicking an Escape Pod (Max 1) just buys
+  it. The gesture is advertised in a hint line in the button bar and in each
+  button's tooltip, and both appear only when a bulk move is actually
+  possible.
+- **`Game.maxBuyable` / `maxSellable`** are the dialog's ceiling, applying in
+  bulk every limit `buyOutfit` enforces one at a time: the item's Max, the
+  purse, free mass and free mounts. Maps return 1 — they are consumed on
+  purchase rather than carried. Measured on a Starbridge at Earth: 200 IR
+  Missiles, 10 at 7,500 credits (750 each), 15 EMP Torpedoes against 63 free
+  tons at 4 each, and 4 Light Blasters against four gun mounts.
+- **`buyOutfits` / `sellOutfits` loop the single-item path** rather than
+  reimplementing it, so a bulk buy can never do something a run of single
+  clicks could not — every unit runs its own OnPurchase, mount and mass
+  checks. They stop at the first refusal and report what went through, so
+  asking for 200 with room for 150 is a sale of 150 and a note saying so,
+  not an error.
+
+**The cap it exposed: ammunition ignored its own Max.** `buyOutfit` read
+`player.outfits[outfId]` for the "already have the maximum" test, but rounds
+live in **`player.ammo`** keyed by the weapon they feed, so that lookup was
+always 0 and the check never fired. The IR Missile outfit states **Max 200**
+and 300 could be bought; the EMP Torpedo's 20 and the Radar Missile's 150 were
+equally open. The outfit's Max is the right limit — every shipped round reads
+MaxAmmo 0 or -1 on the weapon, which the Bible reads as "the weapon sets no
+limit of its own and the outfit's Max governs". **`Game.outfitHeld`** asks the
+right map and is what the check, the dialog and both bulk paths use. Verified:
+300 requested now yields 200, selling 50 back re-opens exactly 50.
+
+One thing deliberately left alone: the manual also says the trade centre's
+"Buy and Sell buttons will buy and sell **up to 10 tons**" per click, where
+ours opens the chooser on a plain click. That divergence predates this work
+and reads better for a pointer UI, so it stands.
+
 **The outfit audit: fifteen fixes, and two of them were the wrong constant.**
 A census of every ModType and Flag across the 242 oütfs, checked against the
 Bible and verified in the browser. Six ModTypes present in the data were

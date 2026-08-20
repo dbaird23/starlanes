@@ -1740,6 +1740,14 @@ td.actions button:disabled {
 .oi-spacer {
   flex: 1;
 }
+/* Alt-click discoverability line in the outfitter's button bar */
+.oi-hint {
+  font-size: 11px;
+  color: #7d8ea0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .oi-arrow {
   width: 28px;
   height: 26px;
@@ -2557,8 +2565,9 @@ td.actions button:disabled {
   min-height: 34px;
 }
 
-/* Trade Center quantity dialog (replaces browser prompt) */
-.tc-qty-back {
+/* Quantity dialog, shared by the trade centre and the outfitter
+   (replaces the browser prompt; Nova's own STR# 2002/371 "Enter quantity:") */
+.qty-dlg-back {
   position: fixed;
   inset: 0;
   display: flex;
@@ -2567,31 +2576,31 @@ td.actions button:disabled {
   background: rgba(2, 5, 10, 0.72);
   z-index: 10;
 }
-.panel.tc-qty {
+.panel.qty-dlg {
   width: min(360px, 92vw);
   padding: 16px 18px 14px;
 }
-.panel.tc-qty h2 {
+.panel.qty-dlg h2 {
   margin: 0 0 6px;
   font-size: 17px;
   color: #eaf3ff;
 }
-.panel.tc-qty .menu-hint {
+.panel.qty-dlg .menu-hint {
   margin: 0 0 14px;
 }
-.tc-qty-label {
+.qty-dlg-label {
   display: block;
   margin-bottom: 6px;
   font-size: 13px;
   color: #8fa2ba;
 }
-.tc-qty-row {
+.qty-dlg-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
 }
-.tc-qty-row input {
+.qty-dlg-row input {
   flex: 1;
   min-width: 0;
   padding: 8px 10px;
@@ -2605,17 +2614,17 @@ td.actions button:disabled {
     monospace;
   font-variant-numeric: tabular-nums;
 }
-.tc-qty-row input:focus {
+.qty-dlg-row input:focus {
   outline: none;
   border-color: #6b84aa;
 }
-.tc-qty-total {
+.qty-dlg-total {
   margin: 0 0 14px;
   font-size: 14px;
   color: #d6e2f0;
   font-variant-numeric: tabular-nums;
 }
-.panel.tc-qty .btnrow {
+.panel.qty-dlg .btnrow {
   justify-content: flex-end;
   margin: 0;
   gap: 8px;
