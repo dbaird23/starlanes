@@ -464,7 +464,8 @@ export function instantiateMission(
     travelDone: travelSpobId === null,
     cargoName: qty > 0 ? cargoName(m.cargoType) : null,
     cargoQty: qty,
-    cargoLoaded: qty > 0 && m.pickupMode !== 1, // mode 1 = pick up at travel stel
+    // pickupMode 0/-1 = at accept, 1 = at travel stel, 2 = when boarding special ship
+    cargoLoaded: qty > 0 && m.pickupMode !== 1 && m.pickupMode !== 2,
     acceptedDay: player.date,
     timeLimit: m.timeLimit > 0 ? m.timeLimit : 0,
     pay: m.pay,
@@ -725,6 +726,6 @@ function systemNameOf(systemId: string): string {
 
 /** Minimum tons a mission will demand at accept time (random quantities roll ≥ 1). */
 export function minCargoAtAccept(m: MissionType): number {
-  if (m.pickupMode === 1) return 0; // picked up later, at the travel stellar
+  if (m.pickupMode === 1 || m.pickupMode === 2) return 0; // picked up later
   return minCargoQty(m.cargoQty);
 }

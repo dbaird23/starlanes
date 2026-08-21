@@ -503,6 +503,8 @@ export class Game {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private input = new Input();
+  private _nextEscortUid = 1;
+  private newEscortUid(): number { return this._nextEscortUid++; }
   private landedUi: LandedUi;
   private introUi = new IntroUi();
   private plunderUi = new PlunderUi();
@@ -840,6 +842,13 @@ export class Game {
     setPlayerIdentity(this.player);
     if (strict !== undefined) this.player.strict = strict;
     if (difficulty !== undefined) this.player.difficulty = difficulty;
+    // Migration: old saves lack escort uids; backfill so lookups work.
+    for (const e of this.player.escorts) {
+      if (!e.uid) e.uid = this.newEscortUid();
+    }
+    // Ensure new uids never collide with ones loaded from the save file.
+    const maxUid = this.player.escorts.reduce((m, e) => Math.max(m, e.uid), 0);
+    if (maxUid >= this._nextEscortUid) this._nextEscortUid = maxUid + 1;
     // Migration: Sigma4 onAccept fires k147 (rank 147 = hypergate access).
     // Pilots that completed the mission before rank granting was wired have b49
     // but no rank 147. Grant it retroactively so the hypergate unlocks.
@@ -2513,8 +2522,9 @@ export class Game {
   }
 
   private cycleTarget(): void {
-    // Allies/escorts are only pickable with select-under-cursor, not R / `.
-    const visible = this.npcs.filter((n) => this.canSee(n) && !n.ally);
+    // Disabled escorts are included so the player can board them; active allies
+    // are still only pickable with select-under-cursor.
+    const visible = this.npcs.filter((n) => this.canSee(n) && (!n.ally || n.disabled));
     if (visible.length === 0) {
       this.targetNpc = null;
       this.message("No contacts on sensors.");
@@ -2938,6 +2948,34 @@ export class Game {
       this.message("Matching velocity failed — slow down to board.");
       return;
     }
+
+    /*
+     * Mission ships can only be boarded when the mission calls for it.
+     *   goal 2 (board) / 5 (rescue): handled here — load pickupMode-2 cargo,
+     *     fire onShipDone, no plunder UI.
+     *   goal 3 (escort): fall through to normal boarding (Temmin Shard case).
+     *   everything else (destroy, disable, observe, chase-off, no-goal):
+     *     cannot be boarded at all.
+     */
+    if (t.missionMisnId !== null) {
+      const mDef = MISSIONS[String(t.missionMisnId)];
+      const goal = mDef?.shipGoal ?? -1;
+      if (goal === 2 || goal === 5) {
+        if (t.boarded) {
+          this.message(`${this.shipLabel(t)} has already been boarded.`);
+          return;
+        }
+        playSnd(SND.AIRLOCK, 0.45);
+        this.boardMissionTarget(t);
+        return;
+      }
+      if (goal !== 3) {
+        playSnd(SND.LANDING_DENIED, 0.55);
+        this.message(`${this.shipLabel(t)} cannot be boarded.`);
+        return;
+      }
+    }
+
     playSnd(SND.AIRLOCK, 0.45);
 
     // a mission special ship that wanted boarding is satisfied now
@@ -2980,12 +3018,16 @@ export class Game {
     // is a free slot, recover it instantly instead of opening the plunder UI.
     // Match any variant of the same base hull (name before ';') so a bay that
     // carries "Fighter;Fast" will still recover a "Fighter;Heavy" wreck.
-    const recoveryBay = t.typeId ? this.weaponSlots.find(
-      (s) =>
-        isFighterBay(s.weap) &&
-        this.hullName(String(s.weap.ammoType)) === this.hullName(t.typeId!) &&
-        (this.player.ammo[s.weap.id] ?? s.count) < s.count,
-    ) : undefined;
+    const recoveryBay = t.typeId ? this.weaponSlots.find((s) => {
+      if (!isFighterBay(s.weap)) return false;
+      if (this.hullName(String(s.weap.ammoType)) !== this.hullName(t.typeId!)) return false;
+      const recalled = this.player.ammo[s.weap.id] ?? 0;
+      const deployed = this.npcs.filter(
+        (n) => n.ally && n.bayWeapId === s.weap.id && !n.done,
+      ).length;
+      const capacity = s.weap.maxAmmo > 0 ? s.count * s.weap.maxAmmo : s.count;
+      return recalled + deployed < capacity;
+    }) : undefined;
     if (recoveryBay) {
       this.player.ammo[recoveryBay.weap.id] =
         (this.player.ammo[recoveryBay.weap.id] ?? 0) + 1;
@@ -3161,9 +3203,8 @@ export class Game {
         if (Math.random() < odds) {
           // Outcome 1: success
           const captured = t.typeId;
-          t.done = true;
-          if (this.targetNpc === t) this.targetNpc = null;
           this.pendingPrize = captured;
+          this.pendingPrizeNpc = t;
           this.message(
             withMarines
               ? `Your marines take the ${this.hullName(captured)}!`
@@ -3197,6 +3238,7 @@ export class Game {
 
   /** A prize taken but not yet assigned — the plunder panel is asking. */
   private pendingPrize: string | null = null;
+  private pendingPrizeNpc: NpcShip | null = null;
 
   /** The hull's plain class name, without Nova's ";variant" suffix. */
   private hullName(shipId: string): string {
@@ -3213,25 +3255,33 @@ export class Game {
    */
   private claimPrize(choice: "flagship" | "escort"): void {
     const prize = this.pendingPrize;
+    const prizeNpc = this.pendingPrizeNpc;
     this.pendingPrize = null;
+    this.pendingPrizeNpc = null;
     if (!prize) return;
     const room = this.player.escorts.length < MAX_ESCORTS;
 
     if (choice === "flagship") {
+      // The prize NPC is no longer an independent entity — player takes the helm.
+      if (prizeNpc) {
+        prizeNpc.done = true;
+        if (this.targetNpc === prizeNpc) this.targetNpc = null;
+      }
       const old = this.player.shipId;
       // shïp OnRetire fires for the hull you are stepping out of
       const retire = SHIPS[old]?.onRetire;
       if (retire) applySet(retire, this.player.bits, this.bitHandlers());
       const keepOld = room && old !== prize;
+      const oldEscortUid = keepOld ? this.newEscortUid() : 0;
       if (keepOld)
-        this.player.escorts.push({ shipId: old, wage: 0, captured: true });
+        this.player.escorts.push({ uid: oldEscortUid, shipId: old, wage: 0, captured: true });
       this.keepPilotOutfits();
       grantHullOutfits(prize, this.player.outfits);
       this.applyShipType(prize);
       this.player.fuelJumps = this.player.maxFuelJumps;
       // the crew you left behind flies her off the pad beside you, so the
       // handover is visible now rather than only after the next takeoff
-      if (keepOld) this.spawnPrizeEscort(old);
+      if (keepOld) this.spawnPrizeEscort(old, oldEscortUid);
       this.message(
         keepOld
           ? `You take the helm of the ${this.hullName(prize)}; your ${this.hullName(old)} falls in behind.`
@@ -3240,14 +3290,28 @@ export class Game {
             : `You take the helm of the ${this.hullName(prize)}, abandoning your ${this.hullName(old)} — your command was full.`,
       );
     } else if (room) {
-      this.player.escorts.push({ shipId: prize, wage: 0, captured: true });
-      this.spawnPrizeEscort(prize);
+      const prizeEscortUid = this.newEscortUid();
+      this.player.escorts.push({ uid: prizeEscortUid, shipId: prize, wage: 0, captured: true });
+      if (prizeNpc) {
+        // Convert the captured NPC in-place — no position change, no new spawn.
+        const limp = prizeNpc.maxArmor * prizeNpc.disableAt + prizeNpc.maxArmor * 0.05;
+        prizeNpc.armor = Math.min(prizeNpc.maxArmor, limp);
+        prizeNpc.disabled = false;
+        prizeNpc.ally = true;
+        prizeNpc.hired = true;
+        prizeNpc.escortUid = prizeEscortUid;
+        prizeNpc.hostile = false;
+        prizeNpc.govtId = -1;
+        prizeNpc.order = "formup";
+        this.targetNpc = prizeNpc;
+      } else {
+        this.spawnPrizeEscort(prize, prizeEscortUid);
+      }
       this.message(`The ${this.hullName(prize)} joins your fleet.`);
     } else {
       this.message(
         `Your command is full — the ${this.hullName(prize)} is cut loose.`,
       );
-      this.pendingPrize = null;
       return;
     }
     // taking the helm of a smaller prize can leave the manifest over capacity,
@@ -3259,7 +3323,7 @@ export class Game {
   }
 
   /** Put a freshly taken prize in the sky beside you, crewed and friendly. */
-  private spawnPrizeEscort(shipId: string): void {
+  private spawnPrizeEscort(shipId: string, escortUid: number): void {
     const type = SHIPS[shipId];
     if (!type) return;
     const npc = new NpcShip({
@@ -3268,6 +3332,7 @@ export class Game {
       maxSpeed: type.maxSpeed,
     });
     npc.typeId = shipId;
+    npc.escortUid = escortUid;
     npc.ally = true;
     npc.hired = true;
     npc.hostile = false;
@@ -3346,6 +3411,58 @@ export class Game {
         }
       }
     }
+  }
+
+  /**
+   * Board a mission special ship whose goal is 2 (board) or 5 (rescue).
+   * Loads the mission cargo when pickupMode is 2, fires onShipDone, then
+   * removes the ship. No plunder UI.
+   */
+  private boardMissionTarget(t: NpcShip): void {
+    // Stop both ships as the boarding party crosses over.
+    this.ship.vel.x = 0;
+    this.ship.vel.y = 0;
+    t.vel.x = 0;
+    t.vel.y = 0;
+
+    const active = this.player.activeMissions.find(
+      (a) => a.misnId === t.missionMisnId,
+    );
+    const m = active ? MISSIONS[String(active.misnId)] : null;
+
+    // pickupMode 2: cargo is picked up by boarding the special ship.
+    if (active && m && m.pickupMode === 2 && !active.cargoLoaded && active.cargoQty > 0) {
+      if (active.cargoQty > freeHoldSpace(this.player)) {
+        this.message(
+          `Not enough cargo space to secure ${active.cargoName ?? "the cargo"}.`,
+        );
+        return;
+      }
+      active.cargoLoaded = true;
+      // Queue the loadCargText narrative for the next landing, same as the
+      // travel-leg cargo pickup path.
+      const loadText = descText(m.loadCargText);
+      if (loadText && !isSilentMission(m)) {
+        this.pendingMissionEvents.push({
+          title: active.name,
+          text: substituteTags(
+            loadText,
+            m,
+            active,
+            this.pilotName,
+            this.descTags(),
+          ),
+        });
+      }
+      this.message(`${active.cargoQty} ${active.cargoName ?? "cargo"} secured.`);
+    }
+
+    // Credit the boarding objective (fires onShipDone, marks shipsDone).
+    this.creditBoardGoal(t);
+
+    // Mark as boarded so a second attempt is rejected; the hull stays visible
+    // on the field (disabled, drifting) rather than vanishing.
+    t.boarded = true;
   }
 
   /** A named captain hands you a job. */
@@ -3566,7 +3683,7 @@ export class Game {
               this.player.credits,
               2000 +
                 Math.floor(
-                  this.player.credits * (greedyPlanet ? 0.33 : 0.1),
+                  this.player.credits * (greedyPlanet ? 0.0033 : 0.001),
                 ),
             );
           if (this.player.credits < startAmount)
@@ -3691,7 +3808,7 @@ export class Game {
 
   /** Build the reply text shown when an escort is hailed. */
   private escortHailGreeting(t: NpcShip): string {
-    const hire = this.player.escorts.find((e) => e.shipId === t.typeId);
+    const hire = this.player.escorts.find((e) => e.uid === t.escortUid);
     if (!hire)
       return shipComm(SHIP_COMM.channelOpen, "Communications channel open.");
     const type = SHIPS[hire.shipId];
@@ -3725,7 +3842,7 @@ export class Game {
     // Hired escorts get dedicated management options, not the standard comms menu.
     if (t.hired) {
       const opts: { label: string; action: () => string | null | void }[] = [];
-      const hire = this.player.escorts.find((e) => e.shipId === t.typeId);
+      const hire = this.player.escorts.find((e) => e.uid === t.escortUid);
       if (hire) {
         const type = SHIPS[hire.shipId];
         const upgradeId = type?.upgradeTo ?? -1;
@@ -4784,14 +4901,10 @@ export class Game {
     fighter.initDefense(type.shield, type.armor, type.shieldRechPerSec, 0.33, type.ionizeMax, type.deionize * 0.3);
     fighter.sprite = SHIP_SPRITES[typeId] ?? null;
     const side = Math.random() < 0.5 ? 1 : -1;
-    const off = this.ship.radius + 20;
+    const off = this.ship.radius - 2;
     fighter.pos = {
-      x:
-        this.ship.pos.x +
-        Math.cos(this.ship.angle + (Math.PI / 2) * side) * off,
-      y:
-        this.ship.pos.y +
-        Math.sin(this.ship.angle + (Math.PI / 2) * side) * off,
+      x: this.ship.pos.x + Math.cos(this.ship.angle) * off,
+      y: this.ship.pos.y + Math.sin(this.ship.angle) * off,
     };
     fighter.angle = this.ship.angle;
     fighter.vel = { ...this.ship.vel };
@@ -4833,6 +4946,7 @@ export class Game {
         maxSpeed: type.maxSpeed,
       });
       npc.typeId = hire.shipId;
+      npc.escortUid = hire.uid;
       npc.ally = true;
       npc.hired = true;
       npc.hostile = false;
@@ -4905,7 +5019,7 @@ export class Game {
       return { ok: false, reason: "You cannot afford the hiring fee." };
     }
     this.player.credits -= fee;
-    this.player.escorts.push({ shipId, wage: escortWage(type.cost) });
+    this.player.escorts.push({ uid: this.newEscortUid(), shipId, wage: escortWage(type.cost) });
     // wages start accruing from today, not from whenever they were last drawn
     this.player.escortPayDay = Math.floor(this.player.date);
     return { ok: true };
@@ -5007,7 +5121,7 @@ export class Game {
       // "hold" pins a world-space position that won't survive a transit anyway,
       // so we store the order but it will be read back correctly (escorts just
       // respawn near the player and then hold that new spot).
-      const hire = this.player.escorts.find(e => e.shipId === npc.typeId);
+      const hire = this.player.escorts.find(e => e.uid === npc.escortUid);
       if (hire) hire.order = order;
     }
     // On an attack order the target becomes aware of being hunted immediately.
@@ -5163,7 +5277,16 @@ export class Game {
     // that partial columns are centred symmetrically (e.g. 7 ships → 2/3/2).
     const numInCol = Math.min(col + 1, total - start);
     const lx = -col * s;
-    const ly = (rowInCol - (numInCol - 1) / 2) * s;
+    // Fill center-first, alternating left/right: 0, -1, +1, -2, +2, …
+    // For even numInCol the center is between slots, giving half-steps (±0.5, ±1.5, …).
+    const k = rowInCol;
+    let lyOffset: number;
+    if (numInCol % 2 === 1) {
+      lyOffset = k === 0 ? 0 : (k % 2 === 1 ? -Math.ceil(k / 2) : k / 2);
+    } else {
+      lyOffset = k % 2 === 0 ? -(Math.floor(k / 2) + 0.5) : (Math.floor(k / 2) + 0.5);
+    }
+    const ly = lyOffset * s;
     const cosA = Math.cos(this.ship.angle);
     const sinA = Math.sin(this.ship.angle);
     return {
@@ -6372,8 +6495,8 @@ export class Game {
       this.domination.set(npc.defenderOf, left);
     }
     // a hired escort that dies is off the payroll for good
-    if (npc.hired && npc.typeId) {
-      const idx = this.player.escorts.findIndex((e) => e.shipId === npc.typeId);
+    if (npc.hired && npc.escortUid !== null) {
+      const idx = this.player.escorts.findIndex((e) => e.uid === npc.escortUid);
       if (idx >= 0) {
         this.player.escorts.splice(idx, 1);
         // whatever she was hauling for you burned with her
@@ -10402,13 +10525,15 @@ export class Game {
     const { x, y } = npc.pos;
     const r = npc.radius + 6;
     const arm = 9;
-    const color = npc.ally
-      ? "#40c060"
-      : npc.disabled
-        ? "#909090"
-        : npc.hostile
-          ? "#e04040"
-          : "#e0c040";
+    const color = npc.disabled && npc.ally
+      ? "#809a86"  // mostly gray, slight green — disabled escort
+      : npc.ally
+        ? "#40c060"
+        : npc.disabled
+          ? "#909090"
+          : npc.hostile
+            ? "#e04040"
+            : "#e0c040";
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;

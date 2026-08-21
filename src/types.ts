@@ -251,6 +251,8 @@ export interface PlayerState {
  * beside you each time you launch, and struck from this list when it dies.
  */
 export interface HiredEscort {
+  /** unique id to distinguish two escorts of the same ship type */
+  uid: number;
   /** shïp resource id */
   shipId: string;
   /** credits per day, drawn whenever the calendar advances */

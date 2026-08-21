@@ -340,6 +340,8 @@ export class NpcShip extends Ship {
   /** hired to fly with the player, and its standing order */
   hired = false;
   order: EscortOrder = "formup";
+  /** uid of the HiredEscort entry this NpcShip was spawned from */
+  escortUid: number | null = null;
   /**
    * In "defend" stance: the hostile this escort broke formation to disable.
    * Cleared when the target is disabled or destroyed so the escort returns.
