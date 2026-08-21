@@ -540,6 +540,9 @@ export class Game {
   private repairFull = false;
   private observeTimer = 0.5;
   private secondaryIdx = 0;
+  /** Time of the last error message shown for a failed secondary fire, used to
+   *  debounce the message whether the key is held or tapped repeatedly. */
+  private secondaryErrAt = -Infinity;
   private reinforceTimer = 45;
   /** seconds until the next contraband scan attempt */
   private scanTimer = 25;
@@ -632,6 +635,9 @@ export class Game {
   private pendingGateDest: string | null = null;
   private jump: JumpSequence | null = null;
   private jumpFlash = 0;
+  /** Velocity samples recorded each frame during the hyperspace burn, so
+   *  escorts can replay the same acceleration curve with a time offset. */
+  private jumpBurnHistory: { t: number; vx: number; vy: number }[] = [];
   /** Offscreen buffer for the solid-white hull silhouette during gateFlash. */
   private gateFlashBuf: HTMLCanvasElement | null = null;
   private gateFlashCtx: CanvasRenderingContext2D | null = null;
@@ -2969,6 +2975,29 @@ export class Game {
     // charged once, as the boarding party crosses over. The Bible marks only
     // ShootPenalty ignored; this one the original collects.
     if (t.govtId >= 128) applyCrime(this.player, t.govtId, "board");
+
+    // If the target is a fighter type that fits in one of our bays and there
+    // is a free slot, recover it instantly instead of opening the plunder UI.
+    // Match any variant of the same base hull (name before ';') so a bay that
+    // carries "Fighter;Fast" will still recover a "Fighter;Heavy" wreck.
+    const recoveryBay = t.typeId ? this.weaponSlots.find(
+      (s) =>
+        isFighterBay(s.weap) &&
+        this.hullName(String(s.weap.ammoType)) === this.hullName(t.typeId!) &&
+        (this.player.ammo[s.weap.id] ?? s.count) < s.count,
+    ) : undefined;
+    if (recoveryBay) {
+      this.player.ammo[recoveryBay.weap.id] =
+        (this.player.ammo[recoveryBay.weap.id] ?? 0) + 1;
+      t.done = true;
+      if (this.targetNpc === t) this.targetNpc = null;
+      playSnd(150, 0.3);
+      this.message(
+        `${t.typeId ? this.hullName(t.typeId) : "Fighter"} recovered and stowed in bay.`,
+      );
+      return;
+    }
+
     this.openPlunder(t);
   }
 
@@ -4387,26 +4416,33 @@ export class Game {
       }
     }
     // Secondary fires whichever is selected — missiles launch, fighter bays
-    // scramble, exactly as EV treats bays as secondary weapons
-    if (actionConsume(this.input, "fireSecondary") && canShoot) {
+    // scramble, exactly as EV treats bays as secondary weapons.
+    // actionDown so holding repeats at the cooldown rate.
+    // Error messages are debounced: at most one per second, whether held or tapped.
+    if (actionDown(this.input, "fireSecondary") && canShoot) {
+      const canMsg = this.time - this.secondaryErrAt > 2;
+      const secondaryError = (msg: string) => {
+        if (canMsg) { this.message(msg); this.secondaryErrAt = this.time; }
+      };
       const slot = this.selectedSecondary();
       if (!slot) {
-        this.message("No secondary weapon selected.");
+        secondaryError("No secondary weapon selected.");
       } else if (slot.cooldown <= 0) {
         if (isFighterBay(slot.weap)) {
           const bays = this.player.ammo[slot.weap.id] ?? slot.count;
-          if (bays <= 0) this.message(`${slot.weap.name}: no fighters left.`);
-          else {
-            slot.cooldown = Math.max(1, slot.weap.reloadSec);
+          if (bays <= 0) {
+            secondaryError(`${slot.weap.name}: no fighters left.`);
+          } else {
+            slot.cooldown = reloadInterval(slot.weap, slot.count);
             this.player.ammo[slot.weap.id] = bays - 1;
             this.launchFighter(slot.weap);
           }
         } else {
           const ammoLeft = this.player.ammo[slot.weap.id] ?? 0;
-          if (ammoLeft <= 0)
-            this.message(`No ammunition for ${slot.weap.name}.`);
-          else if (slot.weap.guidance === 1 && !this.targetNpc) {
-            this.message("Select a target first (`).");
+          if (ammoLeft <= 0) {
+            secondaryError(`No ammunition for ${slot.weap.name}.`);
+          } else if (slot.weap.guidance === 1 && !this.targetNpc) {
+            secondaryError("Select a target first (`).");
           } else {
             applyReload(slot);
             if (slot.weap.sndId) playSnd(slot.weap.sndId, 0.4);
@@ -4729,7 +4765,7 @@ export class Game {
   }
 
   /** Launch a carried fighter; it fights alongside you until it dies. */
-  private launchFighter(bay: WeaponType): void {
+  private launchFighter(bay: WeaponType, silent = false): void {
     const typeId = String(bay.ammoType);
     const type = SHIPS[typeId];
     if (!type) {
@@ -4761,8 +4797,8 @@ export class Game {
     fighter.vel = { ...this.ship.vel };
     fighter.bayWeapId = bay.id;
     this.npcs.push(fighter);
-    if (bay.sndId) playSnd(bay.sndId, 0.4);
-    this.message(`${type.name.split(";")[0]} launched.`);
+    if (!silent && bay.sndId) playSnd(bay.sndId, 0.4);
+    if (!silent) this.message(`${type.name.split(";")[0]} launched.`);
   }
 
   // ---------------- hired escorts ----------------
@@ -4774,14 +4810,21 @@ export class Game {
    */
   private spawnEscorts(gateTransit = false): void {
     // Pre-compute the fleet's max radius so all slots use the same grid.
-    const maxR = this.player.escorts.reduce((m, hire) => {
+    const escortRadius = (hire: (typeof this.player.escorts)[0]) => {
       const sp = SHIP_SPRITES[hire.shipId];
-      const r = sp ? Math.max(sp.w, sp.h) / 2 : 12;
-      return Math.max(m, r);
-    }, this.ship.radius);
+      return sp ? Math.max(sp.w, sp.h) / 2 : 12;
+    };
+    const maxR = this.player.escorts.reduce(
+      (m, hire) => Math.max(m, escortRadius(hire)),
+      0,
+    );
+    // Sort largest-first so initial placement matches formationFollow's order.
+    const sortedEscorts = [...this.player.escorts].sort(
+      (a, b) => escortRadius(b) - escortRadius(a),
+    );
 
-    for (let i = 0; i < this.player.escorts.length; i++) {
-      const hire = this.player.escorts[i];
+    for (let i = 0; i < sortedEscorts.length; i++) {
+      const hire = sortedEscorts[i];
       const type = SHIPS[hire.shipId];
       if (!type) continue;
       const npc = new NpcShip({
@@ -4815,7 +4858,7 @@ export class Game {
         npc.gateFlash = 1;
       } else {
         // Place directly at the formation slot so there is no fly-in delay.
-        npc.pos = this.formationSlotPos(i, maxR);
+        npc.pos = this.formationSlotPos(i, this.player.escorts.length, maxR);
       }
       npc.angle = this.ship.angle;
       npc.vel = { ...this.ship.vel };
@@ -5104,32 +5147,55 @@ export class Game {
    * World-space position of formation slot `idx` given a fleet whose largest
    * ship has radius `maxR` and using the player's current position and angle.
    */
-  private formationSlotPos(idx: number, maxR: number): { x: number; y: number } {
+  private formationSlotPos(idx: number, total: number, maxR: number): { x: number; y: number } {
     const s = maxR * 2 + 5;
-    const SLOTS = [
-      { x: -s,     y:  s / 2 },
-      { x: -s,     y: -s / 2 },
-      { x: -2 * s, y:  0     },
-      { x: -2 * s, y:  s     },
-      { x: -2 * s, y: -s     },
-      { x: -3 * s, y:  s / 2 },
-      { x: -3 * s, y: -s / 2 },
-      { x: -3 * s, y:  0     },
-    ];
-    const sl = SLOTS[Math.min(idx, SLOTS.length - 1)];
+    // Expanding wedge: column c (1-based) holds at most c+1 ships.
+    // Col 1: 2 ships, col 2: 3, col 3: 4, …
+    // Walk forward until the current column's start index surpasses idx.
+    let col = 1;
+    let start = 0;
+    while (start + col + 1 <= idx) {
+      start += col + 1;
+      col++;
+    }
+    const rowInCol = idx - start;
+    // Use the *actual* ship count in this column rather than the maximum so
+    // that partial columns are centred symmetrically (e.g. 7 ships → 2/3/2).
+    const numInCol = Math.min(col + 1, total - start);
+    const lx = -col * s;
+    const ly = (rowInCol - (numInCol - 1) / 2) * s;
     const cosA = Math.cos(this.ship.angle);
     const sinA = Math.sin(this.ship.angle);
     return {
-      x: this.ship.pos.x + sl.x * cosA - sl.y * sinA,
-      y: this.ship.pos.y + sl.x * sinA + sl.y * cosA,
+      x: this.ship.pos.x + lx * cosA - ly * sinA,
+      y: this.ship.pos.y + lx * sinA + ly * cosA,
     };
   }
 
+  /** Place every current ally at its correct formation slot, no fly-in. */
+  private snapAllToFormation(): void {
+    const alliesUnsorted = this.npcs.filter(n => (n.ally || n.escorting) && !n.done);
+    const allies = [...alliesUnsorted].sort((a, b) =>
+      b.radius - a.radius || alliesUnsorted.indexOf(a) - alliesUnsorted.indexOf(b)
+    );
+    const maxR = allies.reduce((m, n) => Math.max(m, n.radius), 0);
+    for (let i = 0; i < allies.length; i++) {
+      allies[i].pos = this.formationSlotPos(i, allies.length, maxR);
+      allies[i].vel = { ...this.ship.vel };
+      allies[i].angle = this.ship.angle;
+    }
+  }
+
   private formationFollow(npc: NpcShip, dt: number): void {
-    const allies = this.npcs.filter(n => (n.ally || n.escorting) && !n.done);
+    const alliesUnsorted = this.npcs.filter(n => (n.ally || n.escorting) && !n.done);
+    // Largest ships get the innermost (lowest-index) slots; use npcs array
+    // position as a stable tiebreaker so same-size ships don't swap slots.
+    const allies = [...alliesUnsorted].sort((a, b) =>
+      b.radius - a.radius || alliesUnsorted.indexOf(a) - alliesUnsorted.indexOf(b)
+    );
     const slotIdx = Math.max(0, allies.indexOf(npc));
-    const maxR = allies.reduce((m, n) => Math.max(m, n.radius), this.ship.radius);
-    const { x: wx, y: wy } = this.formationSlotPos(slotIdx, maxR);
+    const maxR = allies.reduce((m, n) => Math.max(m, n.radius), 0);
+    const { x: wx, y: wy } = this.formationSlotPos(slotIdx, allies.length, maxR);
     // Raw offset from current position — used for rejoin distance check only.
     const dxRaw = wx - npc.pos.x;
     const dyRaw = wy - npc.pos.y;
@@ -5146,14 +5212,25 @@ export class Game {
       return;
     }
 
-    // During a hyperspace burn escorts accelerate at the same rate as the
-    // player but with a short delay — they lerp toward the player's velocity
-    // so the player gets a headstart and escorts gradually catch up.
+    // During a hyperspace burn escorts replay the player's acceleration curve
+    // with a fixed time offset — same physics, just started a beat later.
     if (this.jump?.phase === "burning") {
-      const LAG = 0.5; // seconds — tune for feel
-      const alpha = Math.min(1, dt / LAG);
-      npc.vel.x += (this.ship.vel.x - npc.vel.x) * alpha;
-      npc.vel.y += (this.ship.vel.y - npc.vel.y) * alpha;
+      const ESCORT_BURN_DELAY = 0.35; // seconds — tune for feel
+      const elapsed = this.jump.burnTotal - this.jump.burnLeft;
+      const lookupT = elapsed - ESCORT_BURN_DELAY;
+      if (lookupT > 0 && this.jumpBurnHistory.length >= 2) {
+        // Linear-interpolate between the two nearest recorded samples.
+        const h = this.jumpBurnHistory;
+        let lo = 0;
+        for (let k = 1; k < h.length; k++) {
+          if (h[k].t <= lookupT) lo = k; else break;
+        }
+        const hi = Math.min(lo + 1, h.length - 1);
+        const a = h[lo], b = h[hi];
+        const frac = a.t === b.t ? 0 : (lookupT - a.t) / (b.t - a.t);
+        npc.vel.x = a.vx + (b.vx - a.vx) * frac;
+        npc.vel.y = a.vy + (b.vy - a.vy) * frac;
+      }
       npc.steerToward(dt, this.ship.angle);
       npc.thrusting = false;
       npc.pos.x += npc.vel.x * dt;
@@ -8549,6 +8626,7 @@ export class Game {
     const j = this.jump;
     if (!j || j.phase === "burning") return;
     j.phase = "burning";
+    this.jumpBurnHistory = [];
     this.message("Hyperdrive engaged...");
   }
 
@@ -8611,6 +8689,9 @@ export class Game {
     this.ship.update(dt, 0, true);
     this.ship.stats = base;
     j.burnLeft -= dt;
+    // Record velocity history so escorts can replay the same curve delayed.
+    const elapsed = j.burnTotal - j.burnLeft;
+    this.jumpBurnHistory.push({ t: elapsed, vx: this.ship.vel.x, vy: this.ship.vel.y });
     // white-out in the last ~12% of the burn (scales with slow/fast jumpers)
     const flashWindow = Math.max(0.2, j.burnTotal * 0.12);
     if (j.burnLeft < flashWindow) {
@@ -8685,6 +8766,14 @@ export class Game {
     }
     this.gateAnim.clear(); // rings belong to the system you just left
     this.gateDocking = null;
+    // Count deployed fighters per bay before clearing, so they re-launch in
+    // the new system.
+    const deployedFighters = new Map<string, number>();
+    for (const n of this.npcs) {
+      if (n.ally && n.bayWeapId !== null) {
+        deployedFighters.set(n.bayWeapId, (deployedFighters.get(n.bayWeapId) ?? 0) + 1);
+      }
+    }
     this.npcs = [];
     this.projectiles = [];
     this.beams = [];
@@ -8695,6 +8784,15 @@ export class Game {
     this.populateAsteroids();
     this.spawnMissionShips();
     this.spawnEscorts(); // your wing makes the jump with you
+    for (const [weapId, count] of deployedFighters) {
+      const bay = this.weaponSlots.find((s) => s.weap.id === weapId)?.weap;
+      if (!bay) continue;
+      for (let i = 0; i < count; i++) this.launchFighter(bay, true);
+    }
+    // Snap every ally to its correct slot now that the full fleet is known.
+    // spawnEscorts used escorts-only count; fighters were placed at a random
+    // side; this single pass puts everyone in the right spot with no fly-in.
+    this.snapAllToFormation();
     playSnd(SND.WARP_OUT, 0.5); // dropping out of hyperspace
     this.message(
       `Arrived in the ${next.name} system. Fuel: ${this.player.fuelJumps}/${this.player.maxFuelJumps} jumps.`,

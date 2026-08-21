@@ -527,10 +527,8 @@ export class HudUi {
       extra: number,
       ammo: boolean,
     ): string => {
-      const count = slot.count > 1 ? ` ×${slot.count}` : "";
-      const rounds = ammo ? ` ×${g.player.ammo[slot.weap.id] ?? 0}` : "";
-      const more = extra > 0 ? ` +${extra}` : "";
-      return `${slot.weap.name.split(";")[0]}${count}${rounds}${more}`;
+      const rounds = ammo ? ` [${g.player.ammo[slot.weap.id] ?? 0}]` : "";
+      return `${slot.weap.name.split(";")[0]}${rounds}`;
     };
 
     weapLine(
